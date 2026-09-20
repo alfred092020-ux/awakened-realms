@@ -10,7 +10,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "verify": "npm run test && npm run build",
-    "balance": "tsx scripts/run-balance.ts"
+    "balance": "tsx scripts/run-balance.ts",
+    "progression": "tsx scripts/run-progression.ts"
   },
   "devDependencies": {
     "jsdom": "^30.1.0",
