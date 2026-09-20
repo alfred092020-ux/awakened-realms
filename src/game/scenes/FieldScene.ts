@@ -2,6 +2,7 @@ import Phaser from 'phaser'
 import { PlayerController } from '../entities/PlayerController'
 import { VirtualJoystick } from '../input/VirtualJoystick'
 import { Enemy } from '../entities/Enemy'
+import { TargetingSystem } from '../combat/TargetingSystem'
 import {
   createStartingStats,
   type PlayerStats,
@@ -25,6 +26,7 @@ export class FieldScene extends Phaser.Scene {
 
   private stats: PlayerStats = createStartingStats()
   private enemies: Enemy[] = []
+  private targeting!: TargetingSystem
 
   private attackButton!: Phaser.GameObjects.Arc
 
@@ -107,6 +109,11 @@ export class FieldScene extends Phaser.Scene {
       joystick,
     )
 
+    this.targeting = new TargetingSystem(
+      this,
+      this.player,
+    )
+
     this.createInteractionUI()
     this.createDialogueUI()
     this.createCombatUI()
@@ -128,6 +135,7 @@ export class FieldScene extends Phaser.Scene {
     }
 
     this.updateInteractionState()
+    this.targeting.update()
 
     if (!this.playerDead && !this.dialogueVisible) {
       for (const enemy of this.enemies) {
@@ -148,6 +156,7 @@ export class FieldScene extends Phaser.Scene {
     const enemy = new Enemy(this, x, y)
 
     this.enemies.push(enemy)
+    this.targeting.setEnemies(this.enemies)
 
     this.physics.add.collider(
       enemy.sprite,
@@ -191,7 +200,7 @@ export class FieldScene extends Phaser.Scene {
       return
     }
 
-    const target = this.getNearestLivingEnemy()
+    const target = this.targeting.getTarget()
 
     if (!target) {
       this.showCombatMessage('No enemy nearby')
@@ -231,28 +240,10 @@ export class FieldScene extends Phaser.Scene {
     }
   }
 
-  private getNearestLivingEnemy() {
-    let nearest: Enemy | undefined
-    let nearestDistance = Number.MAX_VALUE
-
-    for (const enemy of this.enemies) {
-      if (enemy.isDead()) continue
-
-      const distance = enemy.distanceTo(
-        this.player.x,
-        this.player.y,
-      )
-
-      if (distance < nearestDistance) {
-        nearest = enemy
-        nearestDistance = distance
-      }
-    }
-
-    return nearest
-  }
 
   private rewardEnemy(enemy: Enemy) {
+    this.targeting.clearTarget(enemy)
+
     this.stats.coins += 12
     this.stats.xp += 40
 
