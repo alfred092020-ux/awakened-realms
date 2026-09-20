@@ -3,6 +3,7 @@ import { PlayerController } from '../entities/PlayerController'
 import { VirtualJoystick } from '../input/VirtualJoystick'
 import { Enemy } from '../entities/Enemy'
 import { TargetingSystem } from '../combat/TargetingSystem'
+import { ArcShotSystem } from '../combat/ArcShotSystem'
 import {
   createStartingStats,
   type PlayerStats,
@@ -27,6 +28,8 @@ export class FieldScene extends Phaser.Scene {
   private stats: PlayerStats = createStartingStats()
   private enemies: Enemy[] = []
   private targeting!: TargetingSystem
+  private arcShot!: ArcShotSystem
+  private energyText!: Phaser.GameObjects.Text
 
   private attackButton!: Phaser.GameObjects.Arc
 
@@ -114,6 +117,21 @@ export class FieldScene extends Phaser.Scene {
       this.player,
     )
 
+    this.arcShot = new ArcShotSystem(
+      this,
+      this.player,
+      this.stats,
+      this.targeting,
+      {
+        onEnemyKilled: (enemy) =>
+          this.rewardEnemy(enemy),
+        onMessage: (message) =>
+          this.showCombatMessage(message),
+        onEnergyChanged: () =>
+          this.refreshEnergyHUD(),
+      },
+    )
+
     this.createInteractionUI()
     this.createDialogueUI()
     this.createCombatUI()
@@ -125,7 +143,10 @@ export class FieldScene extends Phaser.Scene {
     this.refreshHUD()
   }
 
-  update() {
+  update(
+    _time: number,
+    delta: number,
+  ) {
     if (!this.playerController) return
 
     if (!this.dialogueVisible) {
@@ -136,6 +157,7 @@ export class FieldScene extends Phaser.Scene {
 
     this.updateInteractionState()
     this.targeting.update()
+    this.arcShot.update(delta)
 
     if (!this.playerDead && !this.dialogueVisible) {
       for (const enemy of this.enemies) {
@@ -188,6 +210,56 @@ export class FieldScene extends Phaser.Scene {
 
     this.attackButton.on('pointerdown', () => {
       this.playerAttack()
+    })
+
+    const arcX = x - 125
+    const arcY = y + 10
+
+    const arcButton = this.add
+      .circle(
+        arcX,
+        arcY,
+        46,
+        0x287a94,
+        0.94,
+      )
+      .setStrokeStyle(
+        3,
+        0xbfeeff,
+        0.9,
+      )
+      .setScrollFactor(0)
+      .setDepth(210)
+      .setInteractive()
+
+    this.add
+      .text(arcX, arcY - 7, 'ARC', {
+        fontFamily: 'Arial, sans-serif',
+        fontSize: '16px',
+        fontStyle: 'bold',
+        color: '#ffffff',
+      })
+      .setOrigin(0.5)
+      .setScrollFactor(0)
+      .setDepth(211)
+
+    this.add
+      .text(arcX, arcY + 14, '25 EP', {
+        fontFamily: 'Arial, sans-serif',
+        fontSize: '11px',
+        color: '#d7f5ff',
+      })
+      .setOrigin(0.5)
+      .setScrollFactor(0)
+      .setDepth(211)
+
+    arcButton.on('pointerdown', () => {
+      if (
+        !this.playerDead &&
+        !this.dialogueVisible
+      ) {
+        this.arcShot.cast()
+      }
     })
   }
 
@@ -373,6 +445,16 @@ export class FieldScene extends Phaser.Scene {
 
     this.coinText.setText(
       `${this.stats.coins} coins`,
+    )
+  }
+
+  private refreshEnergyHUD() {
+    if (!this.energyText || !this.arcShot) {
+      return
+    }
+
+    this.energyText.setText(
+      `EP ${this.arcShot.getEnergy()} / ${this.arcShot.getMaxEnergy()}`,
     )
   }
 
@@ -681,7 +763,7 @@ export class FieldScene extends Phaser.Scene {
         24,
         24,
         330,
-        138,
+        162,
         0x090d18,
         0.86,
       )
@@ -737,6 +819,15 @@ export class FieldScene extends Phaser.Scene {
         fontFamily: 'Arial, sans-serif',
         fontSize: '14px',
         color: '#e9cb6f',
+      })
+      .setScrollFactor(0)
+      .setDepth(101)
+
+    this.energyText = this.add
+      .text(44, 142, 'EP 100 / 100', {
+        fontFamily: 'Arial, sans-serif',
+        fontSize: '14px',
+        color: '#70dcf5',
       })
       .setScrollFactor(0)
       .setDepth(101)
