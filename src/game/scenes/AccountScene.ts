@@ -336,10 +336,20 @@ export class AccountScene
       this.scene.start(
         'HubScene',
       )
-    } catch {
+    } catch (error) {
+      const details =
+        error instanceof Error
+          ? error.message
+          : String(error)
+
+      console.error(
+        'Google sign-in failed:',
+        error,
+      )
+
       this.statusText
         .setText(
-          'SIGN-IN FAILED\nYou can retry or continue as guest.',
+          `SIGN-IN FAILED\n${details.slice(0, 180)}`,
         )
         .setColor(
           '#ff9aa8',
