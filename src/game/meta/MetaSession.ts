@@ -19,6 +19,11 @@ import {
   CloudSaveService,
 } from '../cloud/CloudSaveService'
 
+import {
+  LeaderboardService,
+} from '../social/LeaderboardService'
+
+
 import type {
   MetaState,
   MetaUpgradeId,
@@ -35,6 +40,9 @@ export class MetaSession {
   private readonly cloud:
     CloudSaveService
 
+  private readonly leaderboard:
+    LeaderboardService
+
   private state:
     MetaState
 
@@ -46,12 +54,18 @@ export class MetaSession {
 
     cloud =
       new CloudSaveService(),
+
+    leaderboard =
+      new LeaderboardService(),
   ) {
     this.saves =
       saves
 
     this.cloud =
       cloud
+
+    this.leaderboard =
+      leaderboard
 
     this.state =
       this.saves.load(
@@ -173,6 +187,14 @@ export class MetaSession {
       .saveIfSignedIn(
         this.state,
         updatedAt,
+      )
+      .then(
+        () =>
+          this.leaderboard
+            .publishIfSignedIn(
+              this.state,
+              updatedAt,
+            ),
       )
       .catch(
         () => undefined,

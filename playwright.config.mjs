@@ -17,7 +17,7 @@ export default defineConfig({
 
   use: {
     baseURL:
-      'http://127.0.0.1:4173',
+      'http://127.0.0.1:4174',
 
     headless:
       true,
@@ -33,13 +33,13 @@ export default defineConfig({
 
   webServer: {
     command:
-      'npm run dev -- --host 127.0.0.1 --port 4173',
+      'npm run preview -- --host 127.0.0.1 --port 4174',
 
     url:
-      'http://127.0.0.1:4173',
+      'http://127.0.0.1:4174',
 
     reuseExistingServer:
-      true,
+      false,
 
     timeout:
       120000,

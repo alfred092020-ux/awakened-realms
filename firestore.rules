@@ -7,5 +7,47 @@ service cloud.firestore {
         if request.auth != null
         && request.auth.uid == userId;
     }
+
+    match /publicProfiles/{userId} {
+      allow read: if true;
+
+      allow create, update:
+        if request.auth != null
+        && request.auth.uid == userId
+        && request.resource.data.keys().hasOnly([
+          'uid',
+          'displayName',
+          'bestWave',
+          'lifetimeRuns',
+          'power',
+          'updatedAt'
+        ])
+        && request.resource.data.uid == userId
+        && request.resource.data.displayName is string
+        && request.resource.data.displayName.size() > 0
+        && request.resource.data.displayName.size() <= 40
+        && request.resource.data.bestWave is int
+        && request.resource.data.bestWave >= 0
+        && request.resource.data.lifetimeRuns is int
+        && request.resource.data.lifetimeRuns >= 0
+        && request.resource.data.power is int
+        && request.resource.data.power >= 100
+        && request.resource.data.updatedAt is int
+        && exists(
+          /databases/$(database)/documents/players/$(userId)
+        )
+        && request.resource.data.bestWave ==
+          get(
+            /databases/$(database)/documents/players/$(userId)
+          ).data.meta.bestWave
+        && request.resource.data.lifetimeRuns ==
+          get(
+            /databases/$(database)/documents/players/$(userId)
+          ).data.meta.lifetimeRuns;
+
+      allow delete:
+        if request.auth != null
+        && request.auth.uid == userId;
+    }
   }
 }

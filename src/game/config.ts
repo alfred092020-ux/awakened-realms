@@ -21,6 +21,11 @@ import {
 } from './scenes/HubScene'
 
 import {
+  LeaderboardScene,
+} from './scenes/LeaderboardScene'
+
+
+import {
   RoguelikeBattleScene,
 } from './scenes/RoguelikeBattleScene'
 
@@ -71,6 +76,7 @@ export const gameConfig:
     MainMenuScene,
     AccountScene,
     HubScene,
+    LeaderboardScene,
     RoguelikeBattleScene,
   ],
 

@@ -98,8 +98,35 @@ test(
       'AccountScene',
     )
 
-    await page.waitForTimeout(
-      250,
+    await page.waitForFunction(
+      () => {
+        const game =
+          window
+            .__AWAKENED_REALMS_GAME__
+
+        const scene =
+          game?.scene
+            .getScene(
+              'AccountScene',
+            )
+
+        if (!scene) {
+          return false
+        }
+
+        return scene.children.list
+          .some(
+            (child) =>
+              child &&
+              child.text ===
+                'CONTINUE AS GUEST',
+          )
+      },
+      undefined,
+      {
+        timeout:
+          10000,
+      },
     )
 
     // CONTINUE AS GUEST

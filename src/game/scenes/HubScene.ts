@@ -523,6 +523,59 @@ export class HubScene
       },
     )
 
+    const rankingsButton =
+      this.add
+        .rectangle(
+          width / 2,
+          height - 215,
+          width - 76,
+          64,
+          0x1d2a42,
+        )
+        .setStrokeStyle(
+          2,
+          0x5576a8,
+        )
+        .setInteractive({
+          useHandCursor:
+            true,
+        })
+
+    this.add
+      .text(
+        width / 2,
+        height - 215,
+        'GLOBAL RANKINGS',
+        {
+          fontFamily:
+            'Arial, sans-serif',
+
+          fontSize:
+            '20px',
+
+          fontStyle:
+            'bold',
+
+          color:
+            '#cfe1ff',
+
+          letterSpacing:
+            2,
+        },
+      )
+      .setOrigin(
+        0.5,
+      )
+
+    rankingsButton.on(
+      'pointerdown',
+      () => {
+        this.scene.start(
+          'LeaderboardScene',
+        )
+      },
+    )
+
     const startButton =
       this.add
         .rectangle(
