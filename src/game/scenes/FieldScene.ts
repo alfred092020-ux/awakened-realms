@@ -18,6 +18,7 @@ import {
   LootTableSystem,
   SLIME_LOOT_TABLE,
 } from '../loot/LootTableSystem'
+import { QuestSystem } from '../quests/QuestSystem'
 import {
   createStartingStats,
   type PlayerStats,
@@ -37,9 +38,13 @@ export class FieldScene extends Phaser.Scene {
   private dialogueText!: Phaser.GameObjects.Text
   private dialogueVisible = false
 
+  private questMarker!: Phaser.GameObjects.Text
+  private questTrackerText!: Phaser.GameObjects.Text
+
   private readonly interactionRange = 145
   private readonly saveSystem = new SaveSystem()
   private readonly lootTable = new LootTableSystem()
+  private readonly quests = new QuestSystem()
 
   private stats: PlayerStats = createStartingStats()
   private inventory!: InventorySystem
@@ -124,6 +129,24 @@ export class FieldScene extends Phaser.Scene {
     this.npc = this.physics.add
       .staticSprite(930, 820, 'npc')
       .setDepth(20)
+
+    this.questMarker = this.add
+      .text(
+        this.npc.x,
+        this.npc.y - 92,
+        '!',
+        {
+          fontFamily:
+            'Arial, sans-serif',
+          fontSize: '30px',
+          fontStyle: 'bold',
+          color: '#f3d46b',
+          stroke: '#10151c',
+          strokeThickness: 5,
+        },
+      )
+      .setOrigin(0.5)
+      .setDepth(22)
 
     this.add
       .text(this.npc.x, this.npc.y - 58, 'Lyra', {
@@ -249,6 +272,7 @@ export class FieldScene extends Phaser.Scene {
     this.spawnEnemy(1780, 600)
 
     this.refreshHUD()
+    this.refreshQuestUI()
   }
 
   update(
@@ -554,6 +578,27 @@ export class FieldScene extends Phaser.Scene {
 
     this.stats.coins += 12
     this.stats.xp += 40
+
+    const questResult =
+      this.quests.recordEnemyDefeat(
+        'slime',
+      )
+
+    if (questResult.changed) {
+      this.refreshQuestUI()
+
+      if (
+        questResult.becameReady
+      ) {
+        this.showCombatMessage(
+          'Quest complete • Return to Lyra',
+        )
+      } else {
+        this.showCombatMessage(
+          `Quest progress • ${this.quests.getProgress()} / 5 slimes`,
+        )
+      }
+    }
 
     const lootSummary =
       this.rewardLoot()
@@ -866,6 +911,51 @@ export class FieldScene extends Phaser.Scene {
     )
   }
 
+  private refreshQuestUI() {
+    if (
+      !this.questTrackerText ||
+      !this.questMarker
+    ) {
+      return
+    }
+
+    const status =
+      this.quests.getStatus()
+
+    this.questTrackerText
+      .setText(
+        this.quests.getTrackerText(),
+      )
+
+    switch (status) {
+      case 'available':
+        this.questMarker
+          .setText('!')
+          .setColor('#f3d46b')
+          .setVisible(true)
+        break
+
+      case 'active':
+        this.questMarker
+          .setText('•')
+          .setColor('#9fc7ff')
+          .setVisible(true)
+        break
+
+      case 'ready':
+        this.questMarker
+          .setText('?')
+          .setColor('#8ff0a4')
+          .setVisible(true)
+        break
+
+      case 'completed':
+        this.questMarker
+          .setVisible(false)
+        break
+    }
+  }
+
   private refreshSkillCooldownUI() {
     if (
       !this.arcCooldownText ||
@@ -988,28 +1078,116 @@ export class FieldScene extends Phaser.Scene {
       return
     }
 
-    const distance = Phaser.Math.Distance.Between(
-      this.player.x,
-      this.player.y,
-      this.npc.x,
-      this.npc.y,
-    )
+    const distance =
+      Phaser.Math.Distance.Between(
+        this.player.x,
+        this.player.y,
+        this.npc.x,
+        this.npc.y,
+      )
 
-    if (distance > this.interactionRange) return
+    if (
+      distance >
+      this.interactionRange
+    ) {
+      return
+    }
+
+    const result =
+      this.quests.interact()
+
+    if (result.claimed) {
+      this.stats.coins +=
+        result.rewardCoins
+
+      const rewards: string[] = []
+
+      if (
+        result.rewardCoins > 0
+      ) {
+        rewards.push(
+          `${result.rewardCoins} coins`,
+        )
+      }
+
+      for (
+        const reward of
+        result.rewardItems
+      ) {
+        const definition =
+          getItemDefinition(
+            reward.itemId,
+          )
+
+        if (!definition) {
+          continue
+        }
+
+        const added =
+          this.inventory.addItem(
+            reward.itemId,
+            reward.quantity,
+          )
+
+        if (added > 0) {
+          rewards.push(
+            `${added} ${definition.name}`,
+          )
+        }
+
+        const lost =
+          reward.quantity - added
+
+        if (lost > 0) {
+          this.showCombatMessage(
+            `Bag full • ${lost} ${definition.name} could not be stored`,
+          )
+        }
+      }
+
+      if (rewards.length > 0) {
+        this.showCombatMessage(
+          `Quest reward • ${rewards.join(', ')}`,
+        )
+      }
+
+      this.refreshHUD()
+      this.saveGame()
+    }
+
+    this.refreshQuestUI()
 
     this.dialogueVisible = true
 
-    this.dialoguePanel.setVisible(true)
-    this.dialogueName.setVisible(true)
-    this.dialogueText.setVisible(true)
+    this.dialoguePanel
+      .setVisible(true)
 
-    this.interactButton.setVisible(false)
-    this.interactLabel.setVisible(false)
-    this.interactionHint.setVisible(false)
+    this.dialogueName
+      .setText(
+        this.quests.getNpcLabel(),
+      )
+      .setVisible(true)
+
+    this.dialogueText
+      .setText(
+        result.message,
+      )
+      .setVisible(true)
+
+    this.interactButton
+      .setVisible(false)
+
+    this.interactLabel
+      .setVisible(false)
+
+    this.interactionHint
+      .setVisible(false)
   }
 
   private closeDialogue() {
     this.dialogueVisible = false
+
+    this.refreshQuestUI()
 
     this.dialoguePanel.setVisible(false)
     this.dialogueName.setVisible(false)
@@ -1338,6 +1516,28 @@ export class FieldScene extends Phaser.Scene {
       .setScrollFactor(0)
       .setDepth(101)
       .setInteractive()
+
+    this.questTrackerText =
+      this.add
+        .text(
+          this.scale.width - 330,
+          32,
+          '',
+          {
+            fontFamily:
+              'Arial, sans-serif',
+            fontSize: '15px',
+            fontStyle: 'bold',
+            color: '#e8d99c',
+            stroke: '#10151c',
+            strokeThickness: 4,
+            align: 'right',
+            lineSpacing: 5,
+          },
+        )
+        .setOrigin(1, 0)
+        .setScrollFactor(0)
+        .setDepth(101)
 
     this.inventoryText.on(
       'pointerdown',
