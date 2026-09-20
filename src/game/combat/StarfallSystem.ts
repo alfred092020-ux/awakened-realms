@@ -329,6 +329,12 @@ export class StarfallSystem {
         this.callbacks.onEnemyKilled(
           enemy,
         )
+      } else {
+        enemy.reactToHit(
+          x,
+          y,
+          200,
+        )
       }
     }
 

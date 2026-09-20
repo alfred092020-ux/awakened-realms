@@ -406,6 +406,12 @@ export class FieldScene extends Phaser.Scene {
 
     if (killed) {
       this.rewardEnemy(target)
+    } else {
+      target.reactToHit(
+        this.player.x,
+        this.player.y,
+        165,
+      )
     }
   }
 

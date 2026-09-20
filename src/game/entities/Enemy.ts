@@ -13,6 +13,7 @@ export class Enemy {
 
   private lastAttack = 0
   private dead = false
+  private knockbackUntil = 0
 
   private hpBackground: Phaser.GameObjects.Rectangle
   private hpBar: Phaser.GameObjects.Rectangle
@@ -55,6 +56,13 @@ export class Enemy {
       this.sprite.x - 29,
       this.sprite.y - 48,
     )
+
+    if (
+      this.scene.time.now <
+      this.knockbackUntil
+    ) {
+      return
+    }
 
     const distance = Phaser.Math.Distance.Between(
       this.sprite.x,
@@ -160,6 +168,53 @@ export class Enemy {
 
   isDead() {
     return this.dead
+  }
+
+  reactToHit(
+    sourceX: number,
+    sourceY: number,
+    strength = 180,
+  ) {
+    if (this.dead) {
+      return
+    }
+
+    const dx =
+      this.sprite.x - sourceX
+
+    const dy =
+      this.sprite.y - sourceY
+
+    const length = Math.hypot(
+      dx,
+      dy,
+    )
+
+    const normalX =
+      length > 0.001
+        ? dx / length
+        : 1
+
+    const normalY =
+      length > 0.001
+        ? dy / length
+        : 0
+
+    this.sprite.setVelocity(
+      normalX * strength,
+      normalY * strength,
+    )
+
+    this.knockbackUntil =
+      this.scene.time.now + 140
+
+    this.scene.tweens.add({
+      targets: this.sprite,
+      scaleX: 1.14,
+      scaleY: 0.86,
+      duration: 70,
+      yoyo: true,
+    })
   }
 
   distanceTo(x: number, y: number) {

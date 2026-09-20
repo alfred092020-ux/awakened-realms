@@ -141,6 +141,12 @@ export class ArcShotSystem {
         if (killed) {
           this.targeting.clearTarget(target)
           this.callbacks.onEnemyKilled(target)
+        } else {
+          target.reactToHit(
+            this.player.x,
+            this.player.y,
+            220,
+          )
         }
       },
     })
