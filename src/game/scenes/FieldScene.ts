@@ -8,6 +8,7 @@ import { EnergySystem } from '../combat/EnergySystem'
 import { StarfallSystem } from '../combat/StarfallSystem'
 import { CriticalHitSystem } from '../combat/CriticalHitSystem'
 import { SaveSystem } from '../persistence/SaveSystem'
+import { InventorySystem } from '../inventory/InventorySystem'
 import {
   createStartingStats,
   type PlayerStats,
@@ -31,6 +32,7 @@ export class FieldScene extends Phaser.Scene {
   private readonly saveSystem = new SaveSystem()
 
   private stats: PlayerStats = createStartingStats()
+  private inventory!: InventorySystem
   private enemies: Enemy[] = []
   private targeting!: TargetingSystem
   private energy!: EnergySystem
@@ -49,6 +51,7 @@ export class FieldScene extends Phaser.Scene {
   private levelText!: Phaser.GameObjects.Text
   private xpText!: Phaser.GameObjects.Text
   private coinText!: Phaser.GameObjects.Text
+  private inventoryText!: Phaser.GameObjects.Text
 
   private playerDead = false
   private attackReady = true
@@ -61,6 +64,11 @@ export class FieldScene extends Phaser.Scene {
     this.stats = this.saveSystem.load(
       createStartingStats(),
     )
+
+    this.inventory =
+      new InventorySystem(
+        this.saveSystem.loadInventory(),
+      )
 
     this.registerSaveLifecycle()
 
@@ -494,7 +502,10 @@ export class FieldScene extends Phaser.Scene {
     }
 
     this.refreshHUD()
-    this.saveSystem.save(this.stats)
+    this.saveSystem.save(
+      this.stats,
+      this.inventory.getStacks(),
+    )
 
     this.time.delayedCall(3000, () => {
       const x = enemy.sprite.x
@@ -590,6 +601,7 @@ export class FieldScene extends Phaser.Scene {
     const saveNow = () => {
       this.saveSystem.save(
         this.stats,
+        this.inventory.getStacks(),
       )
     }
 
@@ -653,6 +665,10 @@ export class FieldScene extends Phaser.Scene {
 
     this.coinText.setText(
       `${this.stats.coins} coins`,
+    )
+
+    this.inventoryText.setText(
+      `BAG ${this.inventory.getUsedSlots()} / ${this.inventory.getCapacity()}`,
     )
   }
 
@@ -1087,6 +1103,15 @@ export class FieldScene extends Phaser.Scene {
         fontFamily: 'Arial, sans-serif',
         fontSize: '14px',
         color: '#70dcf5',
+      })
+      .setScrollFactor(0)
+      .setDepth(101)
+
+    this.inventoryText = this.add
+      .text(235, 142, 'BAG 0 / 30', {
+        fontFamily: 'Arial, sans-serif',
+        fontSize: '14px',
+        color: '#c6b7e8',
       })
       .setScrollFactor(0)
       .setDepth(101)

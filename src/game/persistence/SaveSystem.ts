@@ -1,4 +1,5 @@
 import type { PlayerStats } from '../combat/CombatStats'
+import type { InventoryStack } from '../inventory/ItemTypes'
 
 interface LegacyPlayerSave {
   version: 1
@@ -20,7 +21,7 @@ interface SavedPlayerProgress {
 }
 
 interface SavedInventory {
-  items: unknown[]
+  items: InventoryStack[]
 }
 
 interface SavedEquipment {
@@ -72,7 +73,29 @@ export class SaveSystem {
     }
   }
 
-  save(stats: PlayerStats) {
+  loadInventory() {
+    try {
+      const current =
+        this.loadCurrentSave()
+
+      if (!current) {
+        return []
+      }
+
+      return current.inventory.items.map(
+        (item) => ({
+          ...item,
+        }),
+      )
+    } catch {
+      return []
+    }
+  }
+
+  save(
+    stats: PlayerStats,
+    inventoryItems?: InventoryStack[],
+  ) {
     try {
       const existing =
         this.loadCurrentSave()
@@ -82,9 +105,18 @@ export class SaveSystem {
         player:
           this.toSavedPlayer(stats),
         inventory:
-          existing?.inventory ?? {
-            items: [],
-          },
+          inventoryItems
+            ? {
+                items:
+                  inventoryItems.map(
+                    (item) => ({
+                      ...item,
+                    }),
+                  ),
+              }
+            : existing?.inventory ?? {
+                items: [],
+              },
         equipment:
           existing?.equipment ?? {
             slots: {},
@@ -204,7 +236,7 @@ export class SaveSystem {
       typeof save.inventory ===
         'object' &&
       save.inventory !== null &&
-      Array.isArray(
+      this.isValidInventory(
         save.inventory.items,
       ) &&
       typeof save.equipment ===
@@ -273,6 +305,40 @@ export class SaveSystem {
         player.coins,
         0,
       )
+    )
+  }
+
+  private isValidInventory(
+    value: unknown,
+  ): value is InventoryStack[] {
+    if (!Array.isArray(value)) {
+      return false
+    }
+
+    return value.every(
+      (item) => {
+        if (
+          typeof item !== 'object' ||
+          item === null
+        ) {
+          return false
+        }
+
+        const stack =
+          item as Partial<InventoryStack>
+
+        return (
+          typeof stack.itemId ===
+            'string' &&
+          stack.itemId.length > 0 &&
+          typeof stack.quantity ===
+            'number' &&
+          Number.isInteger(
+            stack.quantity,
+          ) &&
+          stack.quantity > 0
+        )
+      },
     )
   }
 
