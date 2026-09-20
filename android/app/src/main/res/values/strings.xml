@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Awakened Realms</string>
+    <string name="title_activity_main">Awakened Realms</string>
+    <string name="package_name">com.nexuscore.awakenedrealms</string>
+    <string name="custom_url_scheme">com.nexuscore.awakenedrealms</string>
+</resources>
