@@ -3,6 +3,7 @@ import type { Enemy } from '../entities/Enemy'
 import type { PlayerStats } from './CombatStats'
 import type { TargetingSystem } from './TargetingSystem'
 import type { EnergySystem } from './EnergySystem'
+import { CriticalHitSystem } from './CriticalHitSystem'
 
 export interface ArcShotCallbacks {
   onEnemyKilled: (enemy: Enemy) => void
@@ -127,10 +128,14 @@ export class ArcShotSystem {
           target.sprite.y,
         )
 
-        const killed = target.damage(
-          Math.round(
+        const hit =
+          CriticalHitSystem.roll(
             this.stats.attack * 1.8,
-          ),
+          )
+
+        const killed = target.damage(
+          hit.damage,
+          hit.critical,
         )
 
         if (killed) {

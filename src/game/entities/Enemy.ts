@@ -96,7 +96,10 @@ export class Enemy {
     }
   }
 
-  damage(amount: number) {
+  damage(
+    amount: number,
+    critical = false,
+  ) {
     if (this.dead) return false
 
     this.hp = Math.max(0, this.hp - amount)
@@ -116,14 +119,24 @@ export class Enemy {
       .text(
         this.sprite.x,
         this.sprite.y - 70,
-        `-${amount}`,
+        critical
+          ? `CRIT! -${amount}`
+          : `-${amount}`,
         {
           fontFamily: 'Arial, sans-serif',
-          fontSize: '22px',
+          fontSize: critical
+            ? '30px'
+            : '22px',
           fontStyle: 'bold',
-          color: '#fff0b8',
-          stroke: '#35151c',
-          strokeThickness: 4,
+          color: critical
+            ? '#fff36b'
+            : '#fff0b8',
+          stroke: critical
+            ? '#8a3215'
+            : '#35151c',
+          strokeThickness: critical
+            ? 6
+            : 4,
         },
       )
       .setOrigin(0.5)

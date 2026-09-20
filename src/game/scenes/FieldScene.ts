@@ -6,6 +6,7 @@ import { TargetingSystem } from '../combat/TargetingSystem'
 import { ArcShotSystem } from '../combat/ArcShotSystem'
 import { EnergySystem } from '../combat/EnergySystem'
 import { StarfallSystem } from '../combat/StarfallSystem'
+import { CriticalHitSystem } from '../combat/CriticalHitSystem'
 import {
   createStartingStats,
   type PlayerStats,
@@ -394,8 +395,13 @@ export class FieldScene extends Phaser.Scene {
       duration: 90,
     })
 
-    const killed = target.damage(
+    const hit = CriticalHitSystem.roll(
       this.stats.attack,
+    )
+
+    const killed = target.damage(
+      hit.damage,
+      hit.critical,
     )
 
     if (killed) {

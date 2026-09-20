@@ -3,6 +3,7 @@ import type { Enemy } from '../entities/Enemy'
 import type { PlayerStats } from './CombatStats'
 import type { TargetingSystem } from './TargetingSystem'
 import type { EnergySystem } from './EnergySystem'
+import { CriticalHitSystem } from './CriticalHitSystem'
 
 export interface StarfallCallbacks {
   onEnemyKilled: (enemy: Enemy) => void
@@ -310,8 +311,14 @@ export class StarfallSystem {
         continue
       }
 
+      const hit =
+        CriticalHitSystem.roll(
+          damage,
+        )
+
       const killed = enemy.damage(
-        damage,
+        hit.damage,
+        hit.critical,
       )
 
       if (killed) {
