@@ -9,6 +9,11 @@ import { StarfallSystem } from '../combat/StarfallSystem'
 import { CriticalHitSystem } from '../combat/CriticalHitSystem'
 import { SaveSystem } from '../persistence/SaveSystem'
 import { InventorySystem } from '../inventory/InventorySystem'
+import { getItemDefinition } from '../inventory/ItemCatalog'
+import {
+  LootTableSystem,
+  SLIME_LOOT_TABLE,
+} from '../loot/LootTableSystem'
 import {
   createStartingStats,
   type PlayerStats,
@@ -30,6 +35,7 @@ export class FieldScene extends Phaser.Scene {
 
   private readonly interactionRange = 145
   private readonly saveSystem = new SaveSystem()
+  private readonly lootTable = new LootTableSystem()
 
   private stats: PlayerStats = createStartingStats()
   private inventory!: InventorySystem
@@ -484,30 +490,7 @@ export class FieldScene extends Phaser.Scene {
     this.stats.coins += 12
     this.stats.xp += 40
 
-    const slimeGelAdded =
-      this.inventory.addItem(
-        'slime-gel',
-        1,
-      )
-
-    this.showCombatMessage(
-      '+40 XP   +12 coins',
-    )
-
-    if (slimeGelAdded > 0) {
-      const totalGel =
-        this.inventory.countItem(
-          'slime-gel',
-        )
-
-      this.showCombatMessage(
-        `+1 Slime Gel   •   Total ${totalGel}`,
-      )
-    } else {
-      this.showCombatMessage(
-        'Bag full • Slime Gel lost',
-      )
-    }
+    this.rewardLoot()
 
     while (this.stats.xp >= this.stats.xpToNext) {
       this.stats.xp -= this.stats.xpToNext
@@ -542,6 +525,50 @@ export class FieldScene extends Phaser.Scene {
 
       this.spawnEnemy(x, y)
     })
+  }
+
+  private rewardLoot() {
+    const drops =
+      this.lootTable.roll(
+        SLIME_LOOT_TABLE,
+      )
+
+    for (const drop of drops) {
+      const definition =
+        getItemDefinition(
+          drop.itemId,
+        )
+
+      if (!definition) {
+        continue
+      }
+
+      const added =
+        this.inventory.addItem(
+          drop.itemId,
+          drop.quantity,
+        )
+
+      if (added > 0) {
+        const total =
+          this.inventory.countItem(
+            drop.itemId,
+          )
+
+        this.showCombatMessage(
+          `+${added} ${definition.name}   •   Total ${total}`,
+        )
+      }
+
+      const lost =
+        drop.quantity - added
+
+      if (lost > 0) {
+        this.showCombatMessage(
+          `Bag full • ${lost} ${definition.name} lost`,
+        )
+      }
+    }
   }
 
   private damagePlayer(amount: number) {
