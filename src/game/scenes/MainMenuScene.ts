@@ -54,13 +54,16 @@ export class MainMenuScene extends Phaser.Scene {
     button.on('pointerout', () => button.setFillStyle(0xc89d4b))
 
     button.on('pointerdown', () => {
-      label.setText('COMING NEXT')
+      label.setText('ENTERING REALM')
       this.tweens.add({
         targets: button,
         scaleX: 0.96,
         scaleY: 0.96,
         yoyo: true,
         duration: 90,
+        onComplete: () => {
+          this.scene.start('FieldScene')
+        },
       })
     })
 
