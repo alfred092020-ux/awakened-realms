@@ -4,6 +4,7 @@ import { VirtualJoystick } from '../input/VirtualJoystick'
 import { Enemy } from '../entities/Enemy'
 import { TargetingSystem } from '../combat/TargetingSystem'
 import { ArcShotSystem } from '../combat/ArcShotSystem'
+import { EnergySystem } from '../combat/EnergySystem'
 import {
   createStartingStats,
   type PlayerStats,
@@ -28,6 +29,7 @@ export class FieldScene extends Phaser.Scene {
   private stats: PlayerStats = createStartingStats()
   private enemies: Enemy[] = []
   private targeting!: TargetingSystem
+  private energy!: EnergySystem
   private arcShot!: ArcShotSystem
   private energyText!: Phaser.GameObjects.Text
 
@@ -117,18 +119,23 @@ export class FieldScene extends Phaser.Scene {
       this.player,
     )
 
+    this.energy = new EnergySystem(
+      100,
+      8,
+      () => this.refreshEnergyHUD(),
+    )
+
     this.arcShot = new ArcShotSystem(
       this,
       this.player,
       this.stats,
       this.targeting,
+      this.energy,
       {
         onEnemyKilled: (enemy) =>
           this.rewardEnemy(enemy),
         onMessage: (message) =>
           this.showCombatMessage(message),
-        onEnergyChanged: () =>
-          this.refreshEnergyHUD(),
       },
     )
 
@@ -157,7 +164,7 @@ export class FieldScene extends Phaser.Scene {
 
     this.updateInteractionState()
     this.targeting.update()
-    this.arcShot.update(delta)
+    this.energy.update(delta)
 
     if (!this.playerDead && !this.dialogueVisible) {
       for (const enemy of this.enemies) {
@@ -454,7 +461,7 @@ export class FieldScene extends Phaser.Scene {
     }
 
     this.energyText.setText(
-      `EP ${this.arcShot.getEnergy()} / ${this.arcShot.getMaxEnergy()}`,
+      `EP ${this.energy.getEnergy()} / ${this.energy.getMaximum()}`,
     )
   }
 

@@ -2,11 +2,11 @@ import Phaser from 'phaser'
 import type { Enemy } from '../entities/Enemy'
 import type { PlayerStats } from './CombatStats'
 import type { TargetingSystem } from './TargetingSystem'
+import type { EnergySystem } from './EnergySystem'
 
 export interface ArcShotCallbacks {
   onEnemyKilled: (enemy: Enemy) => void
   onMessage: (message: string) => void
-  onEnergyChanged: () => void
 }
 
 export class ArcShotSystem {
@@ -14,10 +14,9 @@ export class ArcShotSystem {
   private readonly player: Phaser.Physics.Arcade.Sprite
   private readonly stats: PlayerStats
   private readonly targeting: TargetingSystem
+  private readonly energy: EnergySystem
   private readonly callbacks: ArcShotCallbacks
 
-  private energy = 100
-  private readonly maxEnergy = 100
   private readonly cost = 25
   private ready = true
 
@@ -26,27 +25,17 @@ export class ArcShotSystem {
     player: Phaser.Physics.Arcade.Sprite,
     stats: PlayerStats,
     targeting: TargetingSystem,
+    energy: EnergySystem,
     callbacks: ArcShotCallbacks,
   ) {
     this.scene = scene
     this.player = player
     this.stats = stats
     this.targeting = targeting
+    this.energy = energy
     this.callbacks = callbacks
   }
 
-  update(delta: number) {
-    const previous = Math.floor(this.energy)
-
-    this.energy = Math.min(
-      this.maxEnergy,
-      this.energy + delta * 0.008,
-    )
-
-    if (Math.floor(this.energy) !== previous) {
-      this.callbacks.onEnergyChanged()
-    }
-  }
 
   cast() {
     if (!this.ready) {
@@ -56,7 +45,7 @@ export class ArcShotSystem {
       return
     }
 
-    if (this.energy < this.cost) {
+    if (!this.energy.canSpend(this.cost)) {
       this.callbacks.onMessage(
         'Not enough EP',
       )
@@ -84,10 +73,8 @@ export class ArcShotSystem {
       return
     }
 
-    this.energy -= this.cost
+    this.energy.spend(this.cost)
     this.ready = false
-
-    this.callbacks.onEnergyChanged()
 
     this.scene.time.delayedCall(
       2600,
@@ -154,13 +141,6 @@ export class ArcShotSystem {
     })
   }
 
-  getEnergy() {
-    return Math.floor(this.energy)
-  }
-
-  getMaxEnergy() {
-    return this.maxEnergy
-  }
 
   private createImpact(
     x: number,
