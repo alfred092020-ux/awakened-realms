@@ -24,3 +24,6 @@ dist-ssr
 *.sw?
 test-results
 playwright-report
+
+firebase-login.txt
+firebase-login.html
