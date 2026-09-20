@@ -1,78 +1,271 @@
 import Phaser from 'phaser'
 
-export class MainMenuScene extends Phaser.Scene {
+export class MainMenuScene
+  extends Phaser.Scene {
   constructor() {
     super('MainMenuScene')
   }
 
   create() {
-    const { width, height } = this.scale
+    const {
+      width,
+      height,
+    } = this.scale
 
-    for (let i = 0; i < 70; i++) {
-      const x = Phaser.Math.Between(0, width)
-      const y = Phaser.Math.Between(0, height)
-      const radius = Phaser.Math.FloatBetween(0.6, 1.8)
+    this.cameras.main
+      .setBackgroundColor(
+        '#080c18',
+      )
 
-      this.add.circle(x, y, radius, 0xffffff, Phaser.Math.FloatBetween(0.15, 0.65))
+    for (
+      let index = 0;
+      index < 75;
+      index += 1
+    ) {
+      this.add
+        .circle(
+          Phaser.Math.Between(
+            0,
+            width,
+          ),
+
+          Phaser.Math.Between(
+            0,
+            height,
+          ),
+
+          Phaser.Math.FloatBetween(
+            0.8,
+            2.4,
+          ),
+
+          0xffffff,
+
+          Phaser.Math.FloatBetween(
+            0.12,
+            0.6,
+          ),
+        )
     }
 
     this.add
-      .text(width / 2, height * 0.31, 'AWAKENED REALMS', {
-        fontFamily: 'Arial, sans-serif',
-        fontSize: '72px',
-        fontStyle: 'bold',
-        color: '#f5e8bd',
-        stroke: '#3c294f',
-        strokeThickness: 5,
-      })
-      .setOrigin(0.5)
+      .circle(
+        width / 2,
+        height * 0.32,
+        235,
+        0x50396f,
+        0.16,
+      )
 
     this.add
-      .text(width / 2, height * 0.42, 'ANIME FANTASY RPG', {
-        fontFamily: 'Arial, sans-serif',
-        fontSize: '22px',
-        color: '#b8b4ca',
-        letterSpacing: 8,
-      })
-      .setOrigin(0.5)
+      .circle(
+        width / 2,
+        height * 0.32,
+        155,
+        0x366996,
+        0.12,
+      )
 
-    const button = this.add
-      .rectangle(width / 2, height * 0.62, 330, 76, 0xc89d4b)
-      .setStrokeStyle(3, 0xf7df9a)
-      .setInteractive({ useHandCursor: true })
+    this.add
+      .text(
+        width / 2,
+        height * 0.22,
+        'AWAKENED',
+        {
+          fontFamily:
+            'Arial, sans-serif',
 
-    const label = this.add
-      .text(width / 2, height * 0.62, 'BEGIN JOURNEY', {
-        fontFamily: 'Arial, sans-serif',
-        fontSize: '27px',
-        fontStyle: 'bold',
-        color: '#17121d',
-      })
-      .setOrigin(0.5)
+          fontSize:
+            '34px',
 
-    button.on('pointerover', () => button.setFillStyle(0xe0b65d))
-    button.on('pointerout', () => button.setFillStyle(0xc89d4b))
+          fontStyle:
+            'bold',
 
-    button.on('pointerdown', () => {
-      label.setText('ENTERING REALM')
-      this.tweens.add({
-        targets: button,
-        scaleX: 0.96,
-        scaleY: 0.96,
-        yoyo: true,
-        duration: 90,
-        onComplete: () => {
-          this.scene.start('FieldScene')
+          color:
+            '#a4afd0',
+
+          letterSpacing:
+            8,
         },
-      })
-    })
+      )
+      .setOrigin(
+        0.5,
+      )
 
     this.add
-      .text(width / 2, height - 38, 'FOUNDATION BUILD • MILESTONE 1', {
-        fontFamily: 'Arial, sans-serif',
-        fontSize: '15px',
-        color: '#696779',
-      })
-      .setOrigin(0.5)
+      .text(
+        width / 2,
+        height * 0.28,
+        'REALMS',
+        {
+          fontFamily:
+            'Arial, sans-serif',
+
+          fontSize:
+            '76px',
+
+          fontStyle:
+            'bold',
+
+          color:
+            '#f4e4a9',
+
+          stroke:
+            '#302441',
+
+          strokeThickness:
+            6,
+        },
+      )
+      .setOrigin(
+        0.5,
+      )
+
+    this.add
+      .text(
+        width / 2,
+        height * 0.365,
+        'IDLE ROGUELIKE',
+        {
+          fontFamily:
+            'Arial, sans-serif',
+
+          fontSize:
+            '20px',
+
+          color:
+            '#9ba7c1',
+
+          letterSpacing:
+            7,
+        },
+      )
+      .setOrigin(
+        0.5,
+      )
+
+    this.add
+      .text(
+        width / 2,
+        height * 0.47,
+        'Fight automatically.\nChoose your power.\nAwaken stronger.',
+        {
+          fontFamily:
+            'Arial, sans-serif',
+
+          fontSize:
+            '23px',
+
+          color:
+            '#c7cee0',
+
+          align:
+            'center',
+
+          lineSpacing:
+            10,
+        },
+      )
+      .setOrigin(
+        0.5,
+      )
+
+    const button =
+      this.add
+        .rectangle(
+          width / 2,
+          height * 0.69,
+          width - 110,
+          92,
+          0xd2a54b,
+        )
+        .setStrokeStyle(
+          3,
+          0xffdf91,
+        )
+        .setInteractive({
+          useHandCursor:
+            true,
+        })
+
+    const label =
+      this.add
+        .text(
+          width / 2,
+          height * 0.69,
+          'ENTER REALM',
+          {
+            fontFamily:
+              'Arial, sans-serif',
+
+            fontSize:
+              '29px',
+
+            fontStyle:
+              'bold',
+
+            color:
+              '#17131e',
+          },
+        )
+        .setOrigin(
+          0.5,
+        )
+
+    button.on(
+      'pointerdown',
+      () => {
+        label.setText(
+          'AWAKENING...',
+        )
+
+        this.tweens.add({
+          targets:
+            button,
+
+          scaleX:
+            0.96,
+
+          scaleY:
+            0.96,
+
+          yoyo:
+            true,
+
+          duration:
+            90,
+
+          onComplete:
+            () => {
+              this.scene.start(
+                'HubScene',
+              )
+            },
+        })
+      },
+    )
+
+    this.add
+      .text(
+        width / 2,
+        height - 48,
+        'AUTO BATTLE • ROGUELIKE BUILDS • IDLE PROGRESSION',
+        {
+          fontFamily:
+            'Arial, sans-serif',
+
+          fontSize:
+            '12px',
+
+          color:
+            '#606b84',
+
+          letterSpacing:
+            2,
+        },
+      )
+      .setOrigin(
+        0.5,
+      )
   }
 }
