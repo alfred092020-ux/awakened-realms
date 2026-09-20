@@ -49,5 +49,71 @@ service cloud.firestore {
         if request.auth != null
         && request.auth.uid == userId;
     }
+
+    match /friendRequests/{requestId} {
+      allow read:
+        if request.auth != null
+        && (
+          request.auth.uid ==
+            resource.data.fromUid
+          ||
+          request.auth.uid ==
+            resource.data.toUid
+        );
+
+      allow create:
+        if request.auth != null
+        && request.auth.uid ==
+          request.resource.data.fromUid
+        && request.resource.data.fromUid !=
+          request.resource.data.toUid
+        && request.resource.data.keys().hasOnly([
+          'fromUid',
+          'toUid',
+          'status',
+          'createdAt',
+          'updatedAt'
+        ])
+        && request.resource.data.fromUid is string
+        && request.resource.data.toUid is string
+        && request.resource.data.status == 'pending'
+        && request.resource.data.createdAt is int
+        && request.resource.data.updatedAt is int;
+
+      allow update:
+        if request.auth != null
+        && request.auth.uid ==
+          resource.data.toUid
+        && resource.data.status ==
+          'pending'
+        && request.resource.data.fromUid ==
+          resource.data.fromUid
+        && request.resource.data.toUid ==
+          resource.data.toUid
+        && request.resource.data.createdAt ==
+          resource.data.createdAt
+        && request.resource.data.status in [
+          'accepted',
+          'declined'
+        ]
+        && request.resource.data.updatedAt is int
+        && request.resource.data
+          .diff(resource.data)
+          .affectedKeys()
+          .hasOnly([
+            'status',
+            'updatedAt'
+          ]);
+
+      allow delete:
+        if request.auth != null
+        && (
+          request.auth.uid ==
+            resource.data.fromUid
+          ||
+          request.auth.uid ==
+            resource.data.toUid
+        );
+    }
   }
 }

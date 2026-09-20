@@ -153,17 +153,13 @@ test(
       'RoguelikeBattleScene',
     )
 
-    // Wait for the first real
-    // level-up decision.
-    await page.waitForFunction(
+    // Deterministically fast-forward
+    // to the first upgrade decision.
+    await page.evaluate(
       () => {
         const game =
           window
             .__AWAKENED_REALMS_GAME__
-
-        if (!game) {
-          return false
-        }
 
         const scene =
           game.scene.getScene(
@@ -173,21 +169,41 @@ test(
         const engine =
           scene.engine
 
-        if (!engine) {
-          return false
-        }
+        let guard = 0
 
-        return (
+        while (
           engine
             .getSnapshot()
             .status ===
-          'upgrade'
+            'running' &&
+          guard < 100
+        ) {
+          engine.advance(
+            1000,
+          )
+
+          guard += 1
+        }
+
+        const snapshot =
+          engine
+            .getSnapshot()
+
+        scene.snapshot =
+          snapshot
+
+        scene.renderSnapshot(
+          snapshot,
         )
-      },
-      undefined,
-      {
-        timeout:
-          20000,
+
+        if (
+          snapshot.status !==
+          'upgrade'
+        ) {
+          throw new Error(
+            `Expected upgrade, got ${snapshot.status}.`,
+          )
+        }
       },
     )
 

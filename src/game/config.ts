@@ -24,6 +24,14 @@ import {
   LeaderboardScene,
 } from './scenes/LeaderboardScene'
 
+import {
+  FriendsScene,
+} from './scenes/FriendsScene'
+
+import {
+  PlayerProfileScene,
+} from './scenes/PlayerProfileScene'
+
 
 import {
   RoguelikeBattleScene,
@@ -77,6 +85,8 @@ export const gameConfig:
     AccountScene,
     HubScene,
     LeaderboardScene,
+    FriendsScene,
+    PlayerProfileScene,
     RoguelikeBattleScene,
   ],
 

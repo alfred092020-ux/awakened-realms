@@ -523,6 +523,59 @@ export class HubScene
       },
     )
 
+    const friendsButton =
+      this.add
+        .rectangle(
+          width / 2,
+          height - 295,
+          width - 76,
+          58,
+          0x1b3044,
+        )
+        .setStrokeStyle(
+          2,
+          0x4f7d9f,
+        )
+        .setInteractive({
+          useHandCursor:
+            true,
+        })
+
+    this.add
+      .text(
+        width / 2,
+        height - 295,
+        'FRIENDS & PLAYERS',
+        {
+          fontFamily:
+            'Arial, sans-serif',
+
+          fontSize:
+            '18px',
+
+          fontStyle:
+            'bold',
+
+          color:
+            '#ccecff',
+
+          letterSpacing:
+            2,
+        },
+      )
+      .setOrigin(
+        0.5,
+      )
+
+    friendsButton.on(
+      'pointerdown',
+      () => {
+        this.scene.start(
+          'FriendsScene',
+        )
+      },
+    )
+
     const rankingsButton =
       this.add
         .rectangle(
