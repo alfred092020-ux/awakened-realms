@@ -20,6 +20,7 @@ export interface ItemDefinition {
   category: ItemCategory
   rarity: ItemRarity
   maxStack: number
+  healAmount?: number
 }
 
 export interface InventoryStack {

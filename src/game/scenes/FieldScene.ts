@@ -9,6 +9,8 @@ import { StarfallSystem } from '../combat/StarfallSystem'
 import { CriticalHitSystem } from '../combat/CriticalHitSystem'
 import { SaveSystem } from '../persistence/SaveSystem'
 import { InventorySystem } from '../inventory/InventorySystem'
+import { ConsumableSystem } from '../inventory/ConsumableSystem'
+import { InventoryPanel } from '../inventory/ui/InventoryPanel'
 import { getItemDefinition } from '../inventory/ItemCatalog'
 import {
   LootTableSystem,
@@ -39,6 +41,9 @@ export class FieldScene extends Phaser.Scene {
 
   private stats: PlayerStats = createStartingStats()
   private inventory!: InventorySystem
+  private inventoryPanel!: InventoryPanel
+  private readonly consumables = new ConsumableSystem()
+  private inventoryOpen = false
   private enemies: Enemy[] = []
   private targeting!: TargetingSystem
   private energy!: EnergySystem
@@ -189,6 +194,31 @@ export class FieldScene extends Phaser.Scene {
     this.createDialogueUI()
     this.createCombatUI()
 
+    this.inventoryPanel =
+      new InventoryPanel(
+        this,
+        this.inventory,
+        {
+          onUseItem: (itemId) =>
+            this.useInventoryItem(
+              itemId,
+            ),
+
+          onVisibilityChanged:
+            (visible) => {
+              this.inventoryOpen =
+                visible
+
+              if (visible) {
+                this.player.setVelocity(
+                  0,
+                  0,
+                )
+              }
+            },
+        },
+      )
+
     this.spawnEnemy(1280, 720)
     this.spawnEnemy(1520, 900)
     this.spawnEnemy(1780, 600)
@@ -202,7 +232,10 @@ export class FieldScene extends Phaser.Scene {
   ) {
     if (!this.playerController) return
 
-    if (!this.dialogueVisible) {
+    if (
+      !this.dialogueVisible &&
+      !this.inventoryOpen
+    ) {
       this.playerController.update()
     } else {
       this.player.setVelocity(0, 0)
@@ -213,7 +246,11 @@ export class FieldScene extends Phaser.Scene {
     this.energy.update(delta)
     this.refreshSkillCooldownUI()
 
-    if (!this.playerDead && !this.dialogueVisible) {
+    if (
+      !this.playerDead &&
+      !this.dialogueVisible &&
+      !this.inventoryOpen
+    ) {
       for (const enemy of this.enemies) {
         enemy.update(
           this.player,
@@ -331,7 +368,8 @@ export class FieldScene extends Phaser.Scene {
     this.arcButton.on('pointerdown', () => {
       if (
         !this.playerDead &&
-        !this.dialogueVisible
+        !this.dialogueVisible &&
+        !this.inventoryOpen
       ) {
         this.arcShot.cast()
       }
@@ -427,6 +465,7 @@ export class FieldScene extends Phaser.Scene {
     if (
       this.playerDead ||
       this.dialogueVisible ||
+      this.inventoryOpen ||
       !this.attackReady
     ) {
       return
@@ -490,7 +529,12 @@ export class FieldScene extends Phaser.Scene {
     this.stats.coins += 12
     this.stats.xp += 40
 
-    this.rewardLoot()
+    const lootSummary =
+      this.rewardLoot()
+
+    this.showCombatMessage(
+      `+40 XP • +12 coins • ${lootSummary}`,
+    )
 
     while (this.stats.xp >= this.stats.xpToNext) {
       this.stats.xp -= this.stats.xpToNext
@@ -533,6 +577,13 @@ export class FieldScene extends Phaser.Scene {
         SLIME_LOOT_TABLE,
       )
 
+    if (drops.length === 0) {
+      return 'No loot'
+    }
+
+    const received: string[] = []
+    let lostItems = 0
+
     for (const drop of drops) {
       const definition =
         getItemDefinition(
@@ -550,25 +601,49 @@ export class FieldScene extends Phaser.Scene {
         )
 
       if (added > 0) {
-        const total =
-          this.inventory.countItem(
-            drop.itemId,
-          )
-
-        this.showCombatMessage(
-          `+${added} ${definition.name}   •   Total ${total}`,
+        received.push(
+          `${added} ${definition.name}`,
         )
       }
 
-      const lost =
+      lostItems +=
         drop.quantity - added
-
-      if (lost > 0) {
-        this.showCombatMessage(
-          `Bag full • ${lost} ${definition.name} lost`,
-        )
-      }
     }
+
+    if (received.length === 0) {
+      return lostItems > 0
+        ? 'Bag full'
+        : 'No loot'
+    }
+
+    const summary =
+      `Loot: ${received.join(', ')}`
+
+    return lostItems > 0
+      ? `${summary} • Bag full`
+      : summary
+  }
+
+  private useInventoryItem(
+    itemId: string,
+  ) {
+    const result =
+      this.consumables.use(
+        itemId,
+        this.inventory,
+        this.stats,
+      )
+
+    if (result.used) {
+      this.refreshHUD()
+
+      this.saveSystem.save(
+        this.stats,
+        this.inventory.getStacks(),
+      )
+    }
+
+    return result
   }
 
   private damagePlayer(amount: number) {
@@ -821,12 +896,29 @@ export class FieldScene extends Phaser.Scene {
 
     const canInteract = distance <= this.interactionRange
 
-    this.interactButton.setVisible(canInteract && !this.dialogueVisible)
-    this.interactLabel.setVisible(canInteract && !this.dialogueVisible)
-    this.interactionHint.setVisible(canInteract && !this.dialogueVisible)
+    const showInteraction =
+      canInteract &&
+      !this.dialogueVisible &&
+      !this.inventoryOpen
+
+    this.interactButton.setVisible(
+      showInteraction,
+    )
+
+    this.interactLabel.setVisible(
+      showInteraction,
+    )
+
+    this.interactionHint.setVisible(
+      showInteraction,
+    )
   }
 
   private interactWithNpc() {
+    if (this.inventoryOpen) {
+      return
+    }
+
     const distance = Phaser.Math.Distance.Between(
       this.player.x,
       this.player.y,
@@ -1161,9 +1253,25 @@ export class FieldScene extends Phaser.Scene {
       .text(235, 142, 'BAG 0 / 30', {
         fontFamily: 'Arial, sans-serif',
         fontSize: '14px',
+        fontStyle: 'bold',
         color: '#c6b7e8',
       })
       .setScrollFactor(0)
       .setDepth(101)
+      .setInteractive()
+
+    this.inventoryText.on(
+      'pointerdown',
+      () => {
+        if (
+          this.playerDead ||
+          this.dialogueVisible
+        ) {
+          return
+        }
+
+        this.inventoryPanel.toggle()
+      },
+    )
   }
 }

@@ -24,15 +24,16 @@ const ITEMS: Record<
     category: 'consumable',
     rarity: 'common',
     maxStack: 20,
+    healAmount: 45,
   },
 
   'novice-blade': {
     id: 'novice-blade',
     name: 'Novice Blade',
     description:
-      'A simple training weapon issued to new Rangers.',
+      'A dependable starter blade made for new Rangers.',
     category: 'weapon',
-    rarity: 'common',
+    rarity: 'uncommon',
     maxStack: 1,
   },
 }
