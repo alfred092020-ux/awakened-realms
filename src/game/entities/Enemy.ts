@@ -1,61 +1,151 @@
 import Phaser from 'phaser'
 
+import type {
+  EnemyDefinition,
+} from './EnemyTypes'
+
 export class Enemy {
-  readonly sprite: Phaser.Physics.Arcade.Sprite
-  private readonly scene: Phaser.Scene
+  readonly sprite:
+    Phaser.Physics.Arcade.Sprite
 
-  private hp = 70
-  private readonly maxHp = 70
+  readonly id: string
+  readonly name: string
+  readonly xpReward: number
+  readonly coinReward: number
 
-  private readonly aggroRange = 360
-  private readonly attackRange = 78
-  private readonly speed = 105
+  private readonly scene:
+    Phaser.Scene
+
+  private readonly definition:
+    EnemyDefinition
+
+  private hp: number
+  private readonly maxHp:
+    number
+
+  private readonly aggroRange:
+    number
+
+  private readonly attackRange:
+    number
+
+  private readonly speed:
+    number
+
+  private readonly attackDamage:
+    number
+
+  private readonly attackCooldown:
+    number
 
   private lastAttack = 0
   private dead = false
   private knockbackUntil = 0
 
-  private hpBackground: Phaser.GameObjects.Rectangle
-  private hpBar: Phaser.GameObjects.Rectangle
+  private hpBackground:
+    Phaser.GameObjects.Rectangle
+
+  private hpBar:
+    Phaser.GameObjects.Rectangle
 
   constructor(
     scene: Phaser.Scene,
     x: number,
     y: number,
+    definition: EnemyDefinition,
   ) {
     this.scene = scene
+    this.definition =
+      definition
 
-    this.sprite = scene.physics.add
-      .sprite(x, y, 'slime')
-      .setDepth(18)
+    this.id = definition.id
+    this.name =
+      definition.name
 
-    this.sprite.body?.setSize(48, 38)
+    this.xpReward =
+      definition.xpReward
 
-    this.hpBackground = scene.add
-      .rectangle(x, y - 48, 58, 7, 0x24171c)
-      .setDepth(30)
+    this.coinReward =
+      definition.coinReward
 
-    this.hpBar = scene.add
-      .rectangle(x - 29, y - 48, 58, 7, 0x75d66d)
-      .setOrigin(0, 0.5)
-      .setDepth(31)
+    this.hp =
+      definition.maxHp
+
+    this.maxHp =
+      definition.maxHp
+
+    this.aggroRange =
+      definition.aggroRange
+
+    this.attackRange =
+      definition.attackRange
+
+    this.speed =
+      definition.speed
+
+    this.attackDamage =
+      definition.attackDamage
+
+    this.attackCooldown =
+      definition.attackCooldown
+
+    this.sprite =
+      scene.physics.add
+        .sprite(
+          x,
+          y,
+          definition.textureKey,
+        )
+        .setDepth(18)
+
+    this.sprite.body?.setSize(
+      definition.bodyWidth,
+      definition.bodyHeight,
+    )
+
+    this.hpBackground =
+      scene.add
+        .rectangle(
+          x,
+          y - 48,
+          58,
+          7,
+          0x24171c,
+        )
+        .setDepth(30)
+
+    this.hpBar =
+      scene.add
+        .rectangle(
+          x - 29,
+          y - 48,
+          58,
+          7,
+          definition.hpBarColor,
+        )
+        .setOrigin(0, 0.5)
+        .setDepth(31)
   }
 
   update(
-    player: Phaser.Physics.Arcade.Sprite,
-    onAttack: (damage: number) => void,
+    player:
+      Phaser.Physics.Arcade.Sprite,
+    onAttack:
+      (damage: number) => void,
   ) {
     if (this.dead) return
 
-    this.hpBackground.setPosition(
-      this.sprite.x,
-      this.sprite.y - 48,
-    )
+    this.hpBackground
+      .setPosition(
+        this.sprite.x,
+        this.sprite.y - 48,
+      )
 
-    this.hpBar.setPosition(
-      this.sprite.x - 29,
-      this.sprite.y - 48,
-    )
+    this.hpBar
+      .setPosition(
+        this.sprite.x - 29,
+        this.sprite.y - 48,
+      )
 
     if (
       this.scene.time.now <
@@ -64,38 +154,57 @@ export class Enemy {
       return
     }
 
-    const distance = Phaser.Math.Distance.Between(
-      this.sprite.x,
-      this.sprite.y,
-      player.x,
-      player.y,
-    )
-
-    if (distance > this.aggroRange) {
-      this.sprite.setVelocity(0, 0)
-      return
-    }
-
-    if (distance > this.attackRange) {
-      this.scene.physics.moveToObject(
-        this.sprite,
-        player,
-        this.speed,
+    const distance =
+      Phaser.Math.Distance.Between(
+        this.sprite.x,
+        this.sprite.y,
+        player.x,
+        player.y,
       )
 
+    if (
+      distance >
+      this.aggroRange
+    ) {
+      this.sprite
+        .setVelocity(0, 0)
+
       return
     }
 
-    this.sprite.setVelocity(0, 0)
+    if (
+      distance >
+      this.attackRange
+    ) {
+      this.scene.physics
+        .moveToObject(
+          this.sprite,
+          player,
+          this.speed,
+        )
 
-    const now = this.scene.time.now
+      return
+    }
 
-    if (now - this.lastAttack >= 1100) {
+    this.sprite
+      .setVelocity(0, 0)
+
+    const now =
+      this.scene.time.now
+
+    if (
+      now - this.lastAttack >=
+      this.attackCooldown
+    ) {
       this.lastAttack = now
-      onAttack(12)
+
+      onAttack(
+        this.attackDamage,
+      )
 
       this.scene.tweens.add({
-        targets: this.sprite,
+        targets:
+          this.sprite,
         scaleX: 1.18,
         scaleY: 0.82,
         yoyo: true,
@@ -108,54 +217,72 @@ export class Enemy {
     amount: number,
     critical = false,
   ) {
-    if (this.dead) return false
+    if (this.dead) {
+      return false
+    }
 
-    this.hp = Math.max(0, this.hp - amount)
+    this.hp =
+      Math.max(
+        0,
+        this.hp - amount,
+      )
 
     this.hpBar.width =
-      58 * (this.hp / this.maxHp)
+      58 *
+      (this.hp / this.maxHp)
 
     this.scene.tweens.add({
-      targets: this.sprite,
+      targets:
+        this.sprite,
       alpha: 0.25,
       yoyo: true,
       duration: 70,
       repeat: 1,
     })
 
-    const damageText = this.scene.add
-      .text(
-        this.sprite.x,
-        this.sprite.y - 70,
-        critical
-          ? `CRIT! -${amount}`
-          : `-${amount}`,
-        {
-          fontFamily: 'Arial, sans-serif',
-          fontSize: critical
-            ? '30px'
-            : '22px',
-          fontStyle: 'bold',
-          color: critical
-            ? '#fff36b'
-            : '#fff0b8',
-          stroke: critical
-            ? '#8a3215'
-            : '#35151c',
-          strokeThickness: critical
-            ? 6
-            : 4,
-        },
-      )
-      .setOrigin(0.5)
-      .setDepth(60)
+    const damageText =
+      this.scene.add
+        .text(
+          this.sprite.x,
+          this.sprite.y - 70,
+          critical
+            ? `CRIT! -${amount}`
+            : `-${amount}`,
+          {
+            fontFamily:
+              'Arial, sans-serif',
+            fontSize:
+              critical
+                ? '30px'
+                : '22px',
+            fontStyle:
+              'bold',
+            color:
+              critical
+                ? '#fff36b'
+                : '#fff0b8',
+            stroke:
+              critical
+                ? '#8a3215'
+                : '#35151c',
+            strokeThickness:
+              critical
+                ? 6
+                : 4,
+          },
+        )
+        .setOrigin(0.5)
+        .setDepth(60)
 
     this.scene.tweens.add({
-      targets: damageText,
-      y: damageText.y - 35,
+      targets:
+        damageText,
+      y:
+        damageText.y - 35,
       alpha: 0,
       duration: 600,
-      onComplete: () => damageText.destroy(),
+      onComplete: () =>
+        damageText.destroy(),
     })
 
     if (this.hp <= 0) {
@@ -170,6 +297,15 @@ export class Enemy {
     return this.dead
   }
 
+  getDefinition() {
+    return this.definition
+  }
+
+  getLootTable() {
+    return this.definition
+      .lootTable
+  }
+
   reactToHit(
     sourceX: number,
     sourceY: number,
@@ -180,15 +316,18 @@ export class Enemy {
     }
 
     const dx =
-      this.sprite.x - sourceX
+      this.sprite.x -
+      sourceX
 
     const dy =
-      this.sprite.y - sourceY
+      this.sprite.y -
+      sourceY
 
-    const length = Math.hypot(
-      dx,
-      dy,
-    )
+    const length =
+      Math.hypot(
+        dx,
+        dy,
+      )
 
     const normalX =
       length > 0.001
@@ -206,10 +345,12 @@ export class Enemy {
     )
 
     this.knockbackUntil =
-      this.scene.time.now + 140
+      this.scene.time.now +
+      140
 
     this.scene.tweens.add({
-      targets: this.sprite,
+      targets:
+        this.sprite,
       scaleX: 1.14,
       scaleY: 0.86,
       duration: 70,
@@ -217,13 +358,17 @@ export class Enemy {
     })
   }
 
-  distanceTo(x: number, y: number) {
-    return Phaser.Math.Distance.Between(
-      this.sprite.x,
-      this.sprite.y,
-      x,
-      y,
-    )
+  distanceTo(
+    x: number,
+    y: number,
+  ) {
+    return Phaser.Math
+      .Distance.Between(
+        this.sprite.x,
+        this.sprite.y,
+        x,
+        y,
+      )
   }
 
   destroy() {
@@ -235,17 +380,23 @@ export class Enemy {
   private die() {
     this.dead = true
 
-    this.sprite.setVelocity(0, 0)
+    this.sprite
+      .setVelocity(0, 0)
 
     if (this.sprite.body) {
-      this.sprite.body.enable = false
+      this.sprite.body.enable =
+        false
     }
 
-    this.hpBackground.setVisible(false)
-    this.hpBar.setVisible(false)
+    this.hpBackground
+      .setVisible(false)
+
+    this.hpBar
+      .setVisible(false)
 
     this.scene.tweens.add({
-      targets: this.sprite,
+      targets:
+        this.sprite,
       alpha: 0,
       scaleX: 1.35,
       scaleY: 0.35,

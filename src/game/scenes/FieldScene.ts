@@ -2,6 +2,13 @@ import Phaser from 'phaser'
 import { PlayerController } from '../entities/PlayerController'
 import { VirtualJoystick } from '../input/VirtualJoystick'
 import { Enemy } from '../entities/Enemy'
+import {
+  SLIME_ENEMY,
+  MOONFANG_ENEMY,
+} from '../entities/EnemyCatalog'
+import type {
+  EnemyDefinition,
+} from '../entities/EnemyTypes'
 import { TargetingSystem } from '../combat/TargetingSystem'
 import { ArcShotSystem } from '../combat/ArcShotSystem'
 import { EnergySystem } from '../combat/EnergySystem'
@@ -16,9 +23,11 @@ import { InventoryPanel } from '../inventory/ui/InventoryPanel'
 import { getItemDefinition } from '../inventory/ItemCatalog'
 import {
   LootTableSystem,
-  SLIME_LOOT_TABLE,
 } from '../loot/LootTableSystem'
 import { QuestSystem } from '../quests/QuestSystem'
+import type {
+  QuestId,
+} from '../quests/QuestTypes'
 import {
   createStartingStats,
   type PlayerStats,
@@ -28,6 +37,7 @@ export class FieldScene extends Phaser.Scene {
   private player!: Phaser.Physics.Arcade.Sprite
   private playerController!: PlayerController
   private npc!: Phaser.Physics.Arcade.Sprite
+  private serenNpc!: Phaser.Physics.Arcade.Sprite
 
   private interactButton!: Phaser.GameObjects.Arc
   private interactLabel!: Phaser.GameObjects.Text
@@ -39,6 +49,7 @@ export class FieldScene extends Phaser.Scene {
   private dialogueVisible = false
 
   private questMarker!: Phaser.GameObjects.Text
+  private serenQuestMarker!: Phaser.GameObjects.Text
   private questTrackerText!: Phaser.GameObjects.Text
 
   private readonly interactionRange = 145
@@ -102,7 +113,7 @@ export class FieldScene extends Phaser.Scene {
 
     this.registerSaveLifecycle()
 
-    const worldWidth = 2400
+    const worldWidth = 3600
     const worldHeight = 1600
 
     this.physics.world.setBounds(0, 0, worldWidth, worldHeight)
@@ -120,6 +131,11 @@ export class FieldScene extends Phaser.Scene {
       [1650, 980],
       [700, 1100],
       [1900, 650],
+      [2240, 500],
+      [2480, 1060],
+      [2860, 520],
+      [3180, 1040],
+      [3380, 720],
     ]
 
     obstaclePositions.forEach(([x, y]) => {
@@ -160,6 +176,52 @@ export class FieldScene extends Phaser.Scene {
       .setOrigin(0.5)
       .setDepth(21)
 
+    this.serenNpc =
+      this.physics.add
+        .staticSprite(
+          2520,
+          820,
+          'npc-seren',
+        )
+        .setDepth(20)
+
+    this.serenQuestMarker =
+      this.add
+        .text(
+          this.serenNpc.x,
+          this.serenNpc.y - 92,
+          '!',
+          {
+            fontFamily:
+              'Arial, sans-serif',
+            fontSize: '30px',
+            fontStyle: 'bold',
+            color: '#f3d46b',
+            stroke: '#10151c',
+            strokeThickness: 5,
+          },
+        )
+        .setOrigin(0.5)
+        .setDepth(22)
+
+    this.add
+      .text(
+        this.serenNpc.x,
+        this.serenNpc.y - 58,
+        'Seren',
+        {
+          fontFamily:
+            'Arial, sans-serif',
+          fontSize: '17px',
+          fontStyle: 'bold',
+          color: '#b9d7ff',
+          stroke: '#10151c',
+          strokeThickness: 4,
+        },
+      )
+      .setOrigin(0.5)
+      .setDepth(21)
+
     this.player = this.physics.add
       .sprite(600, 700, 'player')
       .setDepth(20)
@@ -168,7 +230,15 @@ export class FieldScene extends Phaser.Scene {
     this.player.body?.setSize(38, 48)
 
     this.physics.add.collider(this.player, obstacles)
-    this.physics.add.collider(this.player, this.npc)
+    this.physics.add.collider(
+      this.player,
+      this.npc,
+    )
+
+    this.physics.add.collider(
+      this.player,
+      this.serenNpc,
+    )
 
     this.cameras.main.startFollow(this.player, true, 0.09, 0.09)
 
@@ -267,9 +337,41 @@ export class FieldScene extends Phaser.Scene {
         },
       )
 
-    this.spawnEnemy(1280, 720)
-    this.spawnEnemy(1520, 900)
-    this.spawnEnemy(1780, 600)
+    this.spawnEnemy(
+      1280,
+      720,
+      SLIME_ENEMY,
+    )
+
+    this.spawnEnemy(
+      1520,
+      900,
+      SLIME_ENEMY,
+    )
+
+    this.spawnEnemy(
+      1780,
+      600,
+      SLIME_ENEMY,
+    )
+
+    this.spawnEnemy(
+      2780,
+      620,
+      MOONFANG_ENEMY,
+    )
+
+    this.spawnEnemy(
+      3070,
+      920,
+      MOONFANG_ENEMY,
+    )
+
+    this.spawnEnemy(
+      3320,
+      650,
+      MOONFANG_ENEMY,
+    )
 
     this.refreshHUD()
     this.refreshQuestUI()
@@ -294,6 +396,7 @@ export class FieldScene extends Phaser.Scene {
     this.targeting.update()
     this.energy.update(delta)
     this.refreshSkillCooldownUI()
+    this.refreshHUD()
 
     if (
       !this.playerDead &&
@@ -314,12 +417,34 @@ export class FieldScene extends Phaser.Scene {
   }
 
 
-  private spawnEnemy(x: number, y: number) {
-    const enemy = new Enemy(this, x, y)
+  private spawnEnemy(
+    x: number,
+    y: number,
+    definition:
+      EnemyDefinition =
+        SLIME_ENEMY,
+  ) {
+    const enemy =
+      new Enemy(
+        this,
+        x,
+        y,
+        definition,
+      )
 
-    this.enemies.push(enemy)
-    this.targeting.setEnemies(this.enemies)
-    this.starfall.setEnemies(this.enemies)
+    this.enemies.push(
+      enemy,
+    )
+
+    this.targeting
+      .setEnemies(
+        this.enemies,
+      )
+
+    this.starfall
+      .setEnemies(
+        this.enemies,
+      )
 
     this.physics.add.collider(
       enemy.sprite,
@@ -573,48 +698,85 @@ export class FieldScene extends Phaser.Scene {
   }
 
 
-  private rewardEnemy(enemy: Enemy) {
-    this.targeting.clearTarget(enemy)
-
-    this.stats.coins += 12
-    this.stats.xp += 40
-
-    const questResult =
-      this.quests.recordEnemyDefeat(
-        'slime',
+  private rewardEnemy(
+    enemy: Enemy,
+  ) {
+    this.targeting
+      .clearTarget(
+        enemy,
       )
 
-    if (questResult.changed) {
+    this.stats.coins +=
+      enemy.coinReward
+
+    this.stats.xp +=
+      enemy.xpReward
+
+    const questResult =
+      this.quests
+        .recordEnemyDefeat(
+          enemy.id,
+        )
+
+    if (
+      questResult.changed &&
+      questResult.questId
+    ) {
+      const questId =
+        questResult.questId
+
+      const quest =
+        this.quests
+          .getDefinition(
+            questId,
+          )
+
       this.refreshQuestUI()
 
       if (
-        questResult.becameReady
+        questResult
+          .becameReady
       ) {
         this.showCombatMessage(
-          'Quest complete • Return to Lyra',
+          `Quest complete • Return to ${quest.giverName}`,
         )
       } else {
         this.showCombatMessage(
-          `Quest progress • ${this.quests.getProgress()} / 5 slimes`,
+          `${quest.progressLabel} • ${this.quests.getProgress(questId)} / ${quest.requiredKills}`,
         )
       }
     }
 
     const lootSummary =
-      this.rewardLoot()
+      this.rewardLoot(
+        enemy,
+      )
 
     this.showCombatMessage(
-      `+40 XP • +12 coins • ${lootSummary}`,
+      `+${enemy.xpReward} XP • +${enemy.coinReward} coins • ${lootSummary}`,
     )
 
-    while (this.stats.xp >= this.stats.xpToNext) {
-      this.stats.xp -= this.stats.xpToNext
+    while (
+      this.stats.xp >=
+      this.stats.xpToNext
+    ) {
+      this.stats.xp -=
+        this.stats.xpToNext
+
       this.stats.level += 1
+
       this.stats.xpToNext =
-        Math.floor(this.stats.xpToNext * 1.35)
+        Math.floor(
+          this.stats
+            .xpToNext *
+            1.35,
+        )
 
       this.stats.maxHp += 20
-      this.stats.hp = this.stats.maxHp
+
+      this.stats.hp =
+        this.stats.maxHp
+
       this.stats.attack += 5
 
       this.showCombatMessage(
@@ -625,34 +787,57 @@ export class FieldScene extends Phaser.Scene {
     this.refreshHUD()
     this.saveGame()
 
-    this.time.delayedCall(3000, () => {
-      const x = enemy.sprite.x
-      const y = enemy.sprite.y
+    const respawnX =
+      enemy.sprite.x
 
-      enemy.destroy()
+    const respawnY =
+      enemy.sprite.y
 
-      this.enemies = this.enemies.filter(
-        (item) => item !== enemy,
-      )
+    const enemyDefinition =
+      enemy.getDefinition()
 
-      this.spawnEnemy(x, y)
-    })
+    this.time.delayedCall(
+      3000,
+      () => {
+        enemy.destroy()
+
+        this.enemies =
+          this.enemies.filter(
+            (item) =>
+              item !== enemy,
+          )
+
+        this.spawnEnemy(
+          respawnX,
+          respawnY,
+          enemyDefinition,
+        )
+      },
+    )
   }
 
-  private rewardLoot() {
+  private rewardLoot(
+    enemy: Enemy,
+  ) {
     const drops =
       this.lootTable.roll(
-        SLIME_LOOT_TABLE,
+        enemy.getLootTable(),
       )
 
-    if (drops.length === 0) {
+    if (
+      drops.length === 0
+    ) {
       return 'No loot'
     }
 
-    const received: string[] = []
+    const received:
+      string[] = []
+
     let lostItems = 0
 
-    for (const drop of drops) {
+    for (
+      const drop of drops
+    ) {
       const definition =
         getItemDefinition(
           drop.itemId,
@@ -663,10 +848,11 @@ export class FieldScene extends Phaser.Scene {
       }
 
       const added =
-        this.inventory.addItem(
-          drop.itemId,
-          drop.quantity,
-        )
+        this.inventory
+          .addItem(
+            drop.itemId,
+            drop.quantity,
+          )
 
       if (added > 0) {
         received.push(
@@ -675,10 +861,13 @@ export class FieldScene extends Phaser.Scene {
       }
 
       lostItems +=
-        drop.quantity - added
+        drop.quantity -
+        added
     }
 
-    if (received.length === 0) {
+    if (
+      received.length === 0
+    ) {
       return lostItems > 0
         ? 'Bag full'
         : 'No loot'
@@ -894,8 +1083,14 @@ export class FieldScene extends Phaser.Scene {
       `ATK ${this.stats.attack}`,
     )
 
+    const zoneName =
+      this.player &&
+      this.player.x >= 2000
+        ? 'Moonveil Grove'
+        : 'Starfall Meadow'
+
     this.levelText.setText(
-      `Lv. ${this.stats.level}   •   Starfall Meadow`,
+      `Lv. ${this.stats.level}   •   ${zoneName}`,
     )
 
     this.xpText.setText(
@@ -914,46 +1109,50 @@ export class FieldScene extends Phaser.Scene {
   private refreshQuestUI() {
     if (
       !this.questTrackerText ||
-      !this.questMarker
+      !this.questMarker ||
+      !this.serenQuestMarker
     ) {
       return
     }
 
-    const status =
-      this.quests.getStatus()
-
     this.questTrackerText
       .setText(
-        this.quests.getTrackerText(),
+        this.quests
+          .getTrackerText(),
       )
 
-    switch (status) {
-      case 'available':
-        this.questMarker
-          .setText('!')
-          .setColor('#f3d46b')
-          .setVisible(true)
-        break
+    this.applyQuestMarker(
+      this.questMarker,
+      'meadow-menace',
+    )
 
-      case 'active':
-        this.questMarker
-          .setText('•')
-          .setColor('#9fc7ff')
-          .setVisible(true)
-        break
+    this.applyQuestMarker(
+      this.serenQuestMarker,
+      'moonveil-hunt',
+    )
+  }
 
-      case 'ready':
-        this.questMarker
-          .setText('?')
-          .setColor('#8ff0a4')
-          .setVisible(true)
-        break
+  private applyQuestMarker(
+    marker:
+      Phaser.GameObjects.Text,
+    questId: QuestId,
+  ) {
+    const state =
+      this.quests
+        .getMarkerState(
+          questId,
+        )
 
-      case 'completed':
-        this.questMarker
-          .setVisible(false)
-        break
-    }
+    marker
+      .setText(
+        state.text,
+      )
+      .setColor(
+        state.color,
+      )
+      .setVisible(
+        state.visible,
+      )
   }
 
   private refreshSkillCooldownUI() {
@@ -1045,62 +1244,130 @@ export class FieldScene extends Phaser.Scene {
     })
   }
 
+  private getNearbyQuestNpc() {
+    const candidates: Array<{
+      sprite:
+        Phaser.Physics.Arcade.Sprite
+      questId: QuestId
+      name: string
+    }> = [
+      {
+        sprite:
+          this.npc,
+        questId:
+          'meadow-menace',
+        name:
+          'Lyra',
+      },
+
+      {
+        sprite:
+          this.serenNpc,
+        questId:
+          'moonveil-hunt',
+        name:
+          'Seren',
+      },
+    ]
+
+    let nearest:
+      typeof candidates[
+        number
+      ] | undefined
+
+    let nearestDistance =
+      Number.POSITIVE_INFINITY
+
+    for (
+      const candidate of
+      candidates
+    ) {
+      const distance =
+        Phaser.Math
+          .Distance.Between(
+            this.player.x,
+            this.player.y,
+            candidate.sprite.x,
+            candidate.sprite.y,
+          )
+
+      if (
+        distance <=
+          this.interactionRange &&
+        distance <
+          nearestDistance
+      ) {
+        nearest =
+          candidate
+
+        nearestDistance =
+          distance
+      }
+    }
+
+    return nearest
+  }
+
   private updateInteractionState() {
-    const distance = Phaser.Math.Distance.Between(
-      this.player.x,
-      this.player.y,
-      this.npc.x,
-      this.npc.y,
-    )
+    const npc =
+      this.getNearbyQuestNpc()
 
-    const canInteract = distance <= this.interactionRange
-
-    const showInteraction =
-      canInteract &&
+    const visible =
+      Boolean(npc) &&
       !this.dialogueVisible &&
       !this.inventoryOpen
 
-    this.interactButton.setVisible(
-      showInteraction,
-    )
+    this.interactButton
+      .setVisible(
+        visible,
+      )
 
-    this.interactLabel.setVisible(
-      showInteraction,
-    )
+    this.interactLabel
+      .setVisible(
+        visible,
+      )
 
-    this.interactionHint.setVisible(
-      showInteraction,
-    )
+    this.interactionHint
+      .setVisible(
+        visible,
+      )
+
+    if (npc) {
+      this.interactionHint
+        .setText(
+          npc.name,
+        )
+    }
   }
 
   private interactWithNpc() {
-    if (this.inventoryOpen) {
-      return
-    }
-
-    const distance =
-      Phaser.Math.Distance.Between(
-        this.player.x,
-        this.player.y,
-        this.npc.x,
-        this.npc.y,
-      )
-
     if (
-      distance >
-      this.interactionRange
+      this.inventoryOpen
     ) {
       return
     }
 
-    const result =
-      this.quests.interact()
+    const npc =
+      this.getNearbyQuestNpc()
 
-    if (result.claimed) {
+    if (!npc) {
+      return
+    }
+
+    const result =
+      this.quests
+        .interact(
+          npc.questId,
+        )
+
+    if (
+      result.claimed
+    ) {
       this.stats.coins +=
         result.rewardCoins
 
-      const rewards: string[] = []
+      const rewards:
+        string[] = []
 
       if (
         result.rewardCoins > 0
@@ -1124,10 +1391,11 @@ export class FieldScene extends Phaser.Scene {
         }
 
         const added =
-          this.inventory.addItem(
-            reward.itemId,
-            reward.quantity,
-          )
+          this.inventory
+            .addItem(
+              reward.itemId,
+              reward.quantity,
+            )
 
         if (added > 0) {
           rewards.push(
@@ -1136,7 +1404,8 @@ export class FieldScene extends Phaser.Scene {
         }
 
         const lost =
-          reward.quantity - added
+          reward.quantity -
+          added
 
         if (lost > 0) {
           this.showCombatMessage(
@@ -1145,7 +1414,9 @@ export class FieldScene extends Phaser.Scene {
         }
       }
 
-      if (rewards.length > 0) {
+      if (
+        rewards.length > 0
+      ) {
         this.showCombatMessage(
           `Quest reward • ${rewards.join(', ')}`,
         )
@@ -1157,14 +1428,18 @@ export class FieldScene extends Phaser.Scene {
 
     this.refreshQuestUI()
 
-    this.dialogueVisible = true
+    this.dialogueVisible =
+      true
 
     this.dialoguePanel
       .setVisible(true)
 
     this.dialogueName
       .setText(
-        this.quests.getNpcLabel(),
+        this.quests
+          .getNpcLabel(
+            npc.questId,
+          ),
       )
       .setVisible(true)
 
@@ -1290,7 +1565,10 @@ export class FieldScene extends Phaser.Scene {
     this.dialogueText.setVisible(false)
   }
 
-  private createWorld(width: number, height: number) {
+  private createWorld(
+    width: number,
+    height: number,
+  ) {
     this.add.rectangle(
       width / 2,
       height / 2,
@@ -1299,48 +1577,165 @@ export class FieldScene extends Phaser.Scene {
       0x182b32,
     )
 
-    const graphics = this.add.graphics()
+    this.add.rectangle(
+      2800,
+      height / 2,
+      1600,
+      height,
+      0x18233f,
+      0.92,
+    )
 
-    for (let x = 0; x < width; x += 160) {
-      for (let y = 0; y < height; y += 160) {
-        const alternate = (x / 160 + y / 160) % 2 === 0
+    const graphics =
+      this.add.graphics()
+
+    for (
+      let x = 0;
+      x < width;
+      x += 160
+    ) {
+      for (
+        let y = 0;
+        y < height;
+        y += 160
+      ) {
+        const alternate =
+          (
+            x / 160 +
+            y / 160
+          ) % 2 === 0
+
+        const moonveil =
+          x >= 2000
 
         graphics.fillStyle(
-          alternate ? 0x1e3538 : 0x213b3d,
-          0.8,
+          moonveil
+            ? (
+                alternate
+                  ? 0x202d4a
+                  : 0x253451
+              )
+            : (
+                alternate
+                  ? 0x1e3538
+                  : 0x213b3d
+              ),
+          0.72,
         )
 
-        graphics.fillRect(x, y, 160, 160)
+        graphics.fillRect(
+          x,
+          y,
+          160,
+          160,
+        )
       }
     }
 
-    for (let i = 0; i < 100; i++) {
+    for (
+      let i = 0;
+      i < 130;
+      i += 1
+    ) {
+      const x =
+        Phaser.Math.Between(
+          40,
+          width - 40,
+        )
+
+      const moonveil =
+        x >= 2000
+
       this.add.circle(
-        Phaser.Math.Between(40, width - 40),
-        Phaser.Math.Between(40, height - 40),
-        Phaser.Math.Between(2, 5),
-        0x8ec9a3,
-        Phaser.Math.FloatBetween(0.15, 0.4),
+        x,
+        Phaser.Math.Between(
+          40,
+          height - 40,
+        ),
+        Phaser.Math.Between(
+          2,
+          5,
+        ),
+        moonveil
+          ? 0x9ba9ff
+          : 0x8ec9a3,
+        Phaser.Math.FloatBetween(
+          0.15,
+          0.4,
+        ),
       )
     }
 
     this.add
-      .text(600, 470, 'STARFALL MEADOW', {
-        fontFamily: 'Arial, sans-serif',
-        fontSize: '42px',
-        fontStyle: 'bold',
-        color: '#e7ddb5',
-        stroke: '#142027',
-        strokeThickness: 5,
-      })
+      .rectangle(
+        2000,
+        height / 2,
+        20,
+        height,
+        0x8792c9,
+        0.18,
+      )
+
+    this.add
+      .text(
+        600,
+        470,
+        'STARFALL MEADOW',
+        {
+          fontFamily:
+            'Arial, sans-serif',
+          fontSize: '42px',
+          fontStyle: 'bold',
+          color: '#e7ddb5',
+          stroke: '#142027',
+          strokeThickness: 5,
+        },
+      )
       .setOrigin(0.5)
 
     this.add
-      .text(600, 520, 'The First Frontier', {
-        fontFamily: 'Arial, sans-serif',
-        fontSize: '20px',
-        color: '#a8c6bc',
-      })
+      .text(
+        600,
+        520,
+        'The First Frontier',
+        {
+          fontFamily:
+            'Arial, sans-serif',
+          fontSize: '20px',
+          color: '#a8c6bc',
+        },
+      )
+      .setOrigin(0.5)
+
+    this.add
+      .text(
+        2760,
+        420,
+        'MOONVEIL GROVE',
+        {
+          fontFamily:
+            'Arial, sans-serif',
+          fontSize: '42px',
+          fontStyle: 'bold',
+          color: '#cbd6ff',
+          stroke: '#11172a',
+          strokeThickness: 5,
+        },
+      )
+      .setOrigin(0.5)
+
+    this.add
+      .text(
+        2760,
+        470,
+        'Where moonlight meets the wild',
+        {
+          fontFamily:
+            'Arial, sans-serif',
+          fontSize: '20px',
+          color: '#aebce7',
+        },
+      )
       .setOrigin(0.5)
   }
 
@@ -1419,6 +1814,154 @@ export class FieldScene extends Phaser.Scene {
       g.generateTexture('npc', 64, 68)
       g.destroy()
     }
+    if (
+      !this.textures.exists(
+        'moonfang',
+      )
+    ) {
+      const g =
+        this.make.graphics(
+          { x: 0, y: 0 },
+          false,
+        )
+
+      g.fillStyle(
+        0x455c8f,
+      )
+
+      g.fillEllipse(
+        38,
+        39,
+        70,
+        44,
+      )
+
+      g.fillStyle(
+        0x26324f,
+      )
+
+      g.fillTriangle(
+        8,
+        32,
+        22,
+        7,
+        29,
+        35,
+      )
+
+      g.fillTriangle(
+        48,
+        35,
+        57,
+        7,
+        69,
+        33,
+      )
+
+      g.fillStyle(
+        0xc8d8ff,
+      )
+
+      g.fillCircle(
+        26,
+        37,
+        4,
+      )
+
+      g.fillCircle(
+        50,
+        37,
+        4,
+      )
+
+      g.fillStyle(
+        0x172038,
+      )
+
+      g.fillCircle(
+        26,
+        37,
+        2,
+      )
+
+      g.fillCircle(
+        50,
+        37,
+        2,
+      )
+
+      g.generateTexture(
+        'moonfang',
+        76,
+        64,
+      )
+
+      g.destroy()
+    }
+
+    if (
+      !this.textures.exists(
+        'npc-seren',
+      )
+    ) {
+      const g =
+        this.make.graphics(
+          { x: 0, y: 0 },
+          false,
+        )
+
+      g.fillStyle(
+        0x27345c,
+      )
+
+      g.fillCircle(
+        32,
+        34,
+        27,
+      )
+
+      g.fillStyle(
+        0xf0cfb5,
+      )
+
+      g.fillCircle(
+        32,
+        25,
+        15,
+      )
+
+      g.fillStyle(
+        0xbccaff,
+      )
+
+      g.fillTriangle(
+        13,
+        26,
+        32,
+        3,
+        51,
+        26,
+      )
+
+      g.fillStyle(
+        0xa6f0ff,
+      )
+
+      g.fillCircle(
+        32,
+        32,
+        4,
+      )
+
+      g.generateTexture(
+        'npc-seren',
+        64,
+        68,
+      )
+
+      g.destroy()
+    }
+
   }
 
   private createHUD() {

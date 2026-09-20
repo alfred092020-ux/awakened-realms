@@ -1,16 +1,34 @@
 import {
-  MEADOW_MENACE,
+  QUEST_DEFINITIONS,
+  QUEST_ORDER,
 } from './QuestCatalog'
 
 import type {
+  QuestDefinition,
+  QuestId,
   QuestInteractionResult,
   QuestProgressResult,
   QuestSaveData,
+  QuestState,
   QuestStatus,
 } from './QuestTypes'
 
+interface LegacyQuestSave {
+  version: 1
+  questId: string
+  status:
+    | 'available'
+    | 'active'
+    | 'ready'
+    | 'completed'
+  progress: number
+}
+
 export class QuestSystem {
   private readonly storageKey =
+    'awakened-realms.quests.v2'
+
+  private readonly legacyStorageKey =
     'awakened-realms.quests.v1'
 
   private state:
@@ -19,188 +37,459 @@ export class QuestSystem {
   constructor() {
     this.state =
       this.load()
+
+    if (this.syncUnlocks()) {
+      this.save()
+    }
   }
 
   recordEnemyDefeat(
     enemyId: string,
   ): QuestProgressResult {
-    if (
-      this.state.status !==
-        'active' ||
-      enemyId !==
-        MEADOW_MENACE
-          .targetEnemyId
+    for (
+      const questId of
+      QUEST_ORDER
     ) {
+      const definition =
+        QUEST_DEFINITIONS[
+          questId
+        ]
+
+      const quest =
+        this.state.quests[
+          questId
+        ]
+
+      if (
+        quest.status !==
+          'active' ||
+        definition
+          .targetEnemyId !==
+          enemyId
+      ) {
+        continue
+      }
+
+      quest.progress =
+        Math.min(
+          definition
+            .requiredKills,
+          quest.progress + 1,
+        )
+
+      const becameReady =
+        quest.progress >=
+        definition
+          .requiredKills
+
+      if (becameReady) {
+        quest.status =
+          'ready'
+      }
+
+      this.save()
+
       return {
-        changed: false,
-        becameReady: false,
+        changed: true,
+        becameReady,
+        questId,
       }
     }
 
-    this.state.progress =
-      Math.min(
-        MEADOW_MENACE
-          .requiredKills,
-        this.state.progress + 1,
-      )
-
-    const becameReady =
-      this.state.progress >=
-      MEADOW_MENACE
-        .requiredKills
-
-    if (becameReady) {
-      this.state.status =
-        'ready'
-    }
-
-    this.save()
-
     return {
-      changed: true,
-      becameReady,
+      changed: false,
+      becameReady: false,
     }
   }
 
-  interact():
-    QuestInteractionResult {
+  interact(
+    questId: QuestId =
+      'meadow-menace',
+  ): QuestInteractionResult {
+    const definition =
+      QUEST_DEFINITIONS[
+        questId
+      ]
+
+    const quest =
+      this.state.quests[
+        questId
+      ]
+
     switch (
-      this.state.status
+      quest.status
     ) {
+      case 'locked':
+        return this.result(
+          questId,
+          definition
+            .lockedMessage,
+        )
+
       case 'available':
-        this.state.status =
+        quest.status =
           'active'
 
-        this.state.progress =
-          0
+        quest.progress = 0
 
         this.save()
 
         return {
-          message:
-            'The meadow slimes are multiplying too quickly.\nDefeat 5 slimes and return to me.',
+          ...this.result(
+            questId,
+            definition
+              .acceptMessage,
+          ),
+
           accepted: true,
-          claimed: false,
-          rewardCoins: 0,
-          rewardItems: [],
         }
 
       case 'active':
-        return {
-          message:
-            `Keep going, Ranger.\nSlimes defeated: ${this.state.progress} / ${MEADOW_MENACE.requiredKills}`,
-          accepted: false,
-          claimed: false,
-          rewardCoins: 0,
-          rewardItems: [],
-        }
+        return this.result(
+          questId,
+          [
+            'Keep going, Ranger.',
+            `${definition.progressLabel}: ${quest.progress} / ${definition.requiredKills}`,
+          ].join('\n'),
+        )
 
       case 'ready':
-        this.state.status =
+        quest.status =
           'completed'
 
+        this.syncUnlocks()
         this.save()
 
         return {
+          questId,
+
           message:
-            'Excellent work. Starfall Meadow is safer because of you.',
+            definition
+              .readyMessage,
+
           accepted: false,
           claimed: true,
+
           rewardCoins:
-            MEADOW_MENACE
+            definition
               .rewardCoins,
+
           rewardItems:
-            MEADOW_MENACE
+            definition
               .rewardItems.map(
-                (item) => ({
-                  ...item,
+                (reward) => ({
+                  ...reward,
                 }),
               ),
         }
 
       case 'completed':
-        return {
-          message:
-            'You handled those slimes well, Ranger.\nI will call on you when another threat appears.',
-          accepted: false,
-          claimed: false,
-          rewardCoins: 0,
-          rewardItems: [],
-        }
+        return this.result(
+          questId,
+          definition
+            .completedMessage,
+        )
     }
   }
 
-  getStatus():
-    QuestStatus {
-    return this.state.status
+  getDefinition(
+    questId: QuestId =
+      'meadow-menace',
+  ): QuestDefinition {
+    return QUEST_DEFINITIONS[
+      questId
+    ]
   }
 
-  getProgress() {
+  getStatus(
+    questId: QuestId =
+      'meadow-menace',
+  ): QuestStatus {
+    return this.state
+      .quests[questId]
+      .status
+  }
+
+  getProgress(
+    questId: QuestId =
+      'meadow-menace',
+  ) {
+    const definition =
+      QUEST_DEFINITIONS[
+        questId
+      ]
+
     return Math.min(
-      this.state.progress,
-      MEADOW_MENACE
+      this.state
+        .quests[questId]
+        .progress,
+
+      definition
         .requiredKills,
     )
   }
 
-  getNpcLabel() {
-    switch (
-      this.state.status
-    ) {
-      case 'available':
-        return 'LYRA • QUEST AVAILABLE'
+  getTrackedQuestId():
+    QuestId {
+    const ready =
+      QUEST_ORDER.find(
+        (questId) =>
+          this.getStatus(
+            questId,
+          ) === 'ready',
+      )
 
-      case 'active':
-        return 'LYRA • QUEST IN PROGRESS'
-
-      case 'ready':
-        return 'LYRA • QUEST COMPLETE'
-
-      case 'completed':
-        return 'LYRA • STARFALL SCOUT'
+    if (ready) {
+      return ready
     }
+
+    const active =
+      QUEST_ORDER.find(
+        (questId) =>
+          this.getStatus(
+            questId,
+          ) === 'active',
+      )
+
+    if (active) {
+      return active
+    }
+
+    const available =
+      QUEST_ORDER.find(
+        (questId) =>
+          this.getStatus(
+            questId,
+          ) ===
+          'available',
+      )
+
+    if (available) {
+      return available
+    }
+
+    return 'moonveil-hunt'
   }
 
   getTrackerText() {
+    const questId =
+      this.getTrackedQuestId()
+
+    const definition =
+      QUEST_DEFINITIONS[
+        questId
+      ]
+
+    const quest =
+      this.state.quests[
+        questId
+      ]
+
     switch (
-      this.state.status
+      quest.status
     ) {
+      case 'locked':
+        return [
+          definition.title
+            .toUpperCase(),
+          'Locked',
+        ].join('\n')
+
       case 'available':
         return [
-          'MEADOW MENACE',
-          'Talk to Lyra',
+          definition.title
+            .toUpperCase(),
+          `Talk to ${definition.giverName}`,
         ].join('\n')
 
       case 'active':
         return [
-          'MEADOW MENACE',
-          `Defeat slimes ${this.state.progress} / ${MEADOW_MENACE.requiredKills}`,
+          definition.title
+            .toUpperCase(),
+          `${definition.progressLabel} ${quest.progress} / ${definition.requiredKills}`,
         ].join('\n')
 
       case 'ready':
         return [
-          'MEADOW MENACE',
-          'Return to Lyra',
+          definition.title
+            .toUpperCase(),
+          `Return to ${definition.giverName}`,
         ].join('\n')
 
       case 'completed':
         return [
-          'MEADOW MENACE',
+          definition.title
+            .toUpperCase(),
           'Completed',
         ].join('\n')
+    }
+  }
+
+  getNpcLabel(
+    questId: QuestId =
+      'meadow-menace',
+  ) {
+    const definition =
+      QUEST_DEFINITIONS[
+        questId
+      ]
+
+    const status =
+      this.getStatus(
+        questId,
+      )
+
+    const name =
+      definition
+        .giverName
+        .toUpperCase()
+
+    switch (status) {
+      case 'locked':
+        return `${name} • GROVE WARDEN`
+
+      case 'available':
+        return `${name} • QUEST AVAILABLE`
+
+      case 'active':
+        return `${name} • QUEST IN PROGRESS`
+
+      case 'ready':
+        return `${name} • QUEST COMPLETE`
+
+      case 'completed':
+        return `${name} • FRONTIER ALLY`
+    }
+  }
+
+  getMarkerState(
+    questId: QuestId =
+      'meadow-menace',
+  ) {
+    const status =
+      this.getStatus(
+        questId,
+      )
+
+    switch (status) {
+      case 'locked':
+        return {
+          visible: false,
+          text: '',
+          color: '#ffffff',
+        }
+
+      case 'available':
+        return {
+          visible: true,
+          text: '!',
+          color: '#f3d46b',
+        }
+
+      case 'active':
+        return {
+          visible: true,
+          text: '•',
+          color: '#9fc7ff',
+        }
+
+      case 'ready':
+        return {
+          visible: true,
+          text: '?',
+          color: '#8ff0a4',
+        }
+
+      case 'completed':
+        return {
+          visible: false,
+          text: '',
+          color: '#ffffff',
+        }
+    }
+  }
+
+  private result(
+    questId: QuestId,
+    message: string,
+  ): QuestInteractionResult {
+    return {
+      questId,
+      message,
+
+      accepted: false,
+      claimed: false,
+
+      rewardCoins: 0,
+      rewardItems: [],
     }
   }
 
   private createDefault():
     QuestSaveData {
     return {
-      version: 1,
-      questId:
-        MEADOW_MENACE.id,
-      status:
-        'available',
-      progress: 0,
+      version: 2,
+
+      quests: {
+        'meadow-menace': {
+          status:
+            'available',
+          progress: 0,
+        },
+
+        'moonveil-hunt': {
+          status:
+            'locked',
+          progress: 0,
+        },
+      },
     }
+  }
+
+  private syncUnlocks() {
+    let changed = false
+
+    for (
+      const questId of
+      QUEST_ORDER
+    ) {
+      const definition =
+        QUEST_DEFINITIONS[
+          questId
+        ]
+
+      if (
+        !definition
+          .requiresQuestId
+      ) {
+        continue
+      }
+
+      const quest =
+        this.state.quests[
+          questId
+        ]
+
+      const requirement =
+        this.state.quests[
+          definition
+            .requiresQuestId
+        ]
+
+      if (
+        quest.status ===
+          'locked' &&
+        requirement.status ===
+          'completed'
+      ) {
+        quest.status =
+          'available'
+
+        changed = true
+      }
+    }
+
+    return changed
   }
 
   private load():
@@ -211,26 +500,100 @@ export class QuestSystem {
           this.storageKey,
         )
 
-      if (!raw) {
-        return this.createDefault()
+      if (raw) {
+        const parsed:
+          unknown =
+          JSON.parse(raw)
+
+        if (
+          this.isValidSave(
+            parsed,
+          )
+        ) {
+          return parsed
+        }
       }
 
-      const parsed: unknown =
-        JSON.parse(raw)
-
-      if (
-        !this.isValidSave(
-          parsed,
+      const legacyRaw =
+        localStorage.getItem(
+          this.legacyStorageKey,
         )
-      ) {
-        return this.createDefault()
-      }
 
-      return {
-        ...parsed,
+      if (legacyRaw) {
+        const legacy:
+          unknown =
+          JSON.parse(
+            legacyRaw,
+          )
+
+        if (
+          this.isValidLegacy(
+            legacy,
+          )
+        ) {
+          const migrated =
+            this.migrateLegacy(
+              legacy,
+            )
+
+          localStorage.setItem(
+            this.storageKey,
+            JSON.stringify(
+              migrated,
+            ),
+          )
+
+          return migrated
+        }
       }
     } catch {
       return this.createDefault()
+    }
+
+    return this.createDefault()
+  }
+
+  private migrateLegacy(
+    legacy:
+      LegacyQuestSave,
+  ): QuestSaveData {
+    const progress =
+      Math.max(
+        0,
+        Math.min(
+          5,
+          legacy.progress,
+        ),
+      )
+
+    const first:
+      QuestState = {
+        status:
+          legacy.status,
+        progress,
+      }
+
+    const second:
+      QuestState = {
+        status:
+          legacy.status ===
+            'completed'
+            ? 'available'
+            : 'locked',
+
+        progress: 0,
+      }
+
+    return {
+      version: 2,
+
+      quests: {
+        'meadow-menace':
+          first,
+
+        'moonveil-hunt':
+          second,
+      },
     }
   }
 
@@ -262,30 +625,109 @@ export class QuestSystem {
       value as
         Partial<QuestSaveData>
 
+    if (
+      save.version !== 2 ||
+      typeof save.quests !==
+        'object' ||
+      save.quests === null
+    ) {
+      return false
+    }
+
+    const quests =
+      save.quests as
+        Partial<
+          Record<
+            QuestId,
+            QuestState
+          >
+        >
+
+    return QUEST_ORDER.every(
+      (questId) =>
+        this.isValidQuestState(
+          questId,
+          quests[questId],
+        ),
+    )
+  }
+
+  private isValidQuestState(
+    questId: QuestId,
+    state:
+      QuestState |
+      undefined,
+  ) {
+    if (!state) {
+      return false
+    }
+
+    const status =
+      state.status
+
     const validStatus =
-      save.status ===
+      status === 'locked' ||
+      status ===
         'available' ||
-      save.status ===
+      status === 'active' ||
+      status === 'ready' ||
+      status ===
+        'completed'
+
+    const maximum =
+      QUEST_DEFINITIONS[
+        questId
+      ].requiredKills
+
+    return (
+      validStatus &&
+      Number.isInteger(
+        state.progress,
+      ) &&
+      state.progress >= 0 &&
+      state.progress <=
+        maximum
+    )
+  }
+
+  private isValidLegacy(
+    value: unknown,
+  ): value is LegacyQuestSave {
+    if (
+      typeof value !==
+        'object' ||
+      value === null
+    ) {
+      return false
+    }
+
+    const save =
+      value as
+        Partial<LegacyQuestSave>
+
+    const status =
+      save.status
+
+    const validStatus =
+      status ===
+        'available' ||
+      status ===
         'active' ||
-      save.status ===
+      status ===
         'ready' ||
-      save.status ===
+      status ===
         'completed'
 
     return (
       save.version === 1 &&
       save.questId ===
-        MEADOW_MENACE.id &&
+        'meadow-menace' &&
       validStatus &&
       typeof save.progress ===
         'number' &&
       Number.isInteger(
         save.progress,
-      ) &&
-      save.progress >= 0 &&
-      save.progress <=
-        MEADOW_MENACE
-          .requiredKills
+      )
     )
   }
 }

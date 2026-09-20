@@ -16,6 +16,16 @@ const ITEMS: Record<
     maxStack: 99,
   },
 
+  'moonfang-claw': {
+    id: 'moonfang-claw',
+    name: 'Moonfang Claw',
+    description:
+      'A sharp claw taken from a Moonfang prowling Moonveil Grove.',
+    category: 'material',
+    rarity: 'uncommon',
+    maxStack: 99,
+  },
+
   'minor-potion': {
     id: 'minor-potion',
     name: 'Minor Potion',

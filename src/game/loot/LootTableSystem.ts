@@ -44,6 +44,34 @@ export const SLIME_LOOT_TABLE:
     },
   ]
 
+export const MOONFANG_LOOT_TABLE:
+  LootEntry[] = [
+    {
+      itemId: 'moonfang-claw',
+      chance: 0.9,
+      minQuantity: 1,
+      maxQuantity: 2,
+    },
+    {
+      itemId: 'minor-potion',
+      chance: 0.25,
+      minQuantity: 1,
+      maxQuantity: 1,
+    },
+    {
+      itemId: 'ranger-vest',
+      chance: 0.08,
+      minQuantity: 1,
+      maxQuantity: 1,
+    },
+    {
+      itemId: 'meadow-charm',
+      chance: 0.06,
+      minQuantity: 1,
+      maxQuantity: 1,
+    },
+  ]
+
 export class LootTableSystem {
   roll(
     entries: LootEntry[],
