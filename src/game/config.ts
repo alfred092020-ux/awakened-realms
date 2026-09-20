@@ -13,6 +13,10 @@ import {
 } from './scenes/MainMenuScene'
 
 import {
+  AccountScene,
+} from './scenes/AccountScene'
+
+import {
   HubScene,
 } from './scenes/HubScene'
 
@@ -65,6 +69,7 @@ export const gameConfig:
     BootScene,
     LoadingScene,
     MainMenuScene,
+    AccountScene,
     HubScene,
     RoguelikeBattleScene,
   ],

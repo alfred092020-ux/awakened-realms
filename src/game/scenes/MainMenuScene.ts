@@ -238,7 +238,7 @@ export class MainMenuScene
           onComplete:
             () => {
               this.scene.start(
-                'HubScene',
+                'AccountScene',
               )
             },
         })

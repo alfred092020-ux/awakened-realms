@@ -24,5 +24,8 @@ jobs:
       - name: Install
         run: npm ci
 
-      - name: Test and build
-        run: npm run verify
+      - name: Install browser
+        run: npx playwright install --with-deps chromium
+
+      - name: Test, build, and browser smoke
+        run: npm run verify:all

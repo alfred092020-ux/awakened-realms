@@ -15,6 +15,10 @@ import {
   purchaseMetaUpgrade,
 } from './MetaProgression'
 
+import {
+  CloudSaveService,
+} from '../cloud/CloudSaveService'
+
 import type {
   MetaState,
   MetaUpgradeId,
@@ -28,16 +32,26 @@ export class MetaSession {
   private readonly saves:
     MetaSaveSystem
 
+  private readonly cloud:
+    CloudSaveService
+
   private state:
     MetaState
 
   constructor(
     saves =
       new MetaSaveSystem(),
+
     now = Date.now(),
+
+    cloud =
+      new CloudSaveService(),
   ) {
     this.saves =
       saves
+
+    this.cloud =
+      cloud
 
     this.state =
       this.saves.load(
@@ -54,9 +68,7 @@ export class MetaSession {
         now,
       )
 
-    this.saves.save(
-      this.state,
-    )
+    this.persist()
 
     return reward
   }
@@ -69,9 +81,7 @@ export class MetaSession {
       result,
     )
 
-    this.saves.save(
-      this.state,
-    )
+    this.persist()
   }
 
   purchase(
@@ -86,9 +96,7 @@ export class MetaSession {
     if (
       result.purchased
     ) {
-      this.saves.save(
-        this.state,
-      )
+      this.persist()
     }
 
     return result
@@ -103,9 +111,30 @@ export class MetaSession {
         now,
       )
 
+    this.persist()
+  }
+
+  replaceState(
+    state: MetaState,
+    updatedAt = Date.now(),
+  ) {
+    this.state = {
+      ...state,
+
+      upgrades: {
+        ...state.upgrades,
+      },
+    }
+
     this.saves.save(
       this.state,
+      updatedAt,
     )
+  }
+
+  getUpdatedAt() {
+    return this.saves
+      .getUpdatedAt()
   }
 
   getRunModifiers() {
@@ -124,5 +153,29 @@ export class MetaSession {
           .upgrades,
       },
     }
+  }
+
+  private persist() {
+    const updatedAt =
+      Math.max(
+        Date.now(),
+        this.saves
+          .getUpdatedAt() +
+          1,
+      )
+
+    this.saves.save(
+      this.state,
+      updatedAt,
+    )
+
+    void this.cloud
+      .saveIfSignedIn(
+        this.state,
+        updatedAt,
+      )
+      .catch(
+        () => undefined,
+      )
   }
 }

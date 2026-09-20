@@ -95,6 +95,22 @@ test(
 
     await waitForScene(
       page,
+      'AccountScene',
+    )
+
+    await page.waitForTimeout(
+      250,
+    )
+
+    // CONTINUE AS GUEST
+    await clickGame(
+      page,
+      360,
+      790,
+    )
+
+    await waitForScene(
+      page,
       'HubScene',
     )
 

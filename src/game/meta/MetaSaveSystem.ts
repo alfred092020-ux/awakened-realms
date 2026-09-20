@@ -10,6 +10,9 @@ import type {
 const META_SAVE_KEY =
   'awakened-realms.meta.v1'
 
+const META_UPDATED_KEY =
+  'awakened-realms.meta.updated.v1'
+
 function isObject(
   value: unknown,
 ): value is Record<
@@ -176,6 +179,7 @@ export class MetaSaveSystem {
 
   save(
     state: MetaState,
+    updatedAt = Date.now(),
   ) {
     localStorage.setItem(
       META_SAVE_KEY,
@@ -183,11 +187,45 @@ export class MetaSaveSystem {
         state,
       ),
     )
+
+    localStorage.setItem(
+      META_UPDATED_KEY,
+      String(
+        updatedAt,
+      ),
+    )
+  }
+
+  getUpdatedAt() {
+    const raw =
+      localStorage.getItem(
+        META_UPDATED_KEY,
+      )
+
+    if (!raw) {
+      return 0
+    }
+
+    const value =
+      Number(raw)
+
+    return Number.isFinite(
+      value,
+    )
+      ? Math.max(
+          0,
+          value,
+        )
+      : 0
   }
 
   clear() {
     localStorage.removeItem(
       META_SAVE_KEY,
+    )
+
+    localStorage.removeItem(
+      META_UPDATED_KEY,
     )
   }
 }
