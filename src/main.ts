@@ -8,4 +8,13 @@ if (!container) {
   throw new Error('Game container was not found.')
 }
 
-new Phaser.Game(gameConfig)
+const game =
+  new Phaser.Game(gameConfig)
+
+Object.assign(
+  window,
+  {
+    __AWAKENED_REALMS_GAME__:
+      game,
+  },
+)
