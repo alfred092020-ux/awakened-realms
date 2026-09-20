@@ -5,6 +5,7 @@ import { Enemy } from '../entities/Enemy'
 import { TargetingSystem } from '../combat/TargetingSystem'
 import { ArcShotSystem } from '../combat/ArcShotSystem'
 import { EnergySystem } from '../combat/EnergySystem'
+import { StarfallSystem } from '../combat/StarfallSystem'
 import {
   createStartingStats,
   type PlayerStats,
@@ -31,6 +32,7 @@ export class FieldScene extends Phaser.Scene {
   private targeting!: TargetingSystem
   private energy!: EnergySystem
   private arcShot!: ArcShotSystem
+  private starfall!: StarfallSystem
   private energyText!: Phaser.GameObjects.Text
 
   private attackButton!: Phaser.GameObjects.Arc
@@ -139,6 +141,22 @@ export class FieldScene extends Phaser.Scene {
       },
     )
 
+
+    this.starfall = new StarfallSystem(
+      this,
+      this.player,
+      this.stats,
+      this.targeting,
+      this.energy,
+      {
+        onEnemyKilled: (enemy) =>
+          this.rewardEnemy(enemy),
+        onMessage: (message) =>
+          this.showCombatMessage(message),
+      },
+    )
+
+
     this.createInteractionUI()
     this.createDialogueUI()
     this.createCombatUI()
@@ -186,6 +204,7 @@ export class FieldScene extends Phaser.Scene {
 
     this.enemies.push(enemy)
     this.targeting.setEnemies(this.enemies)
+    this.starfall.setEnemies(this.enemies)
 
     this.physics.add.collider(
       enemy.sprite,
@@ -268,6 +287,71 @@ export class FieldScene extends Phaser.Scene {
         this.arcShot.cast()
       }
     })
+
+    const starX = arcX - 105
+    const starY = arcY
+
+    const starButton = this.add
+      .circle(
+        starX,
+        starY,
+        46,
+        0x6845a8,
+        0.94,
+      )
+      .setStrokeStyle(
+        3,
+        0xdac9ff,
+        0.9,
+      )
+      .setScrollFactor(0)
+      .setDepth(210)
+      .setInteractive()
+
+    this.add
+      .text(
+        starX,
+        starY - 7,
+        'STAR',
+        {
+          fontFamily:
+            'Arial, sans-serif',
+          fontSize: '15px',
+          fontStyle: 'bold',
+          color: '#ffffff',
+        },
+      )
+      .setOrigin(0.5)
+      .setScrollFactor(0)
+      .setDepth(211)
+
+    this.add
+      .text(
+        starX,
+        starY + 14,
+        '45 EP',
+        {
+          fontFamily:
+            'Arial, sans-serif',
+          fontSize: '11px',
+          color: '#eadfff',
+        },
+      )
+      .setOrigin(0.5)
+      .setScrollFactor(0)
+      .setDepth(211)
+
+    starButton.on(
+      'pointerdown',
+      () => {
+        if (
+          !this.playerDead &&
+          !this.dialogueVisible
+        ) {
+          this.starfall.cast()
+        }
+      },
+    )
   }
 
   private playerAttack() {
