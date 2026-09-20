@@ -484,7 +484,30 @@ export class FieldScene extends Phaser.Scene {
     this.stats.coins += 12
     this.stats.xp += 40
 
-    this.showCombatMessage('+40 XP   +12 coins')
+    const slimeGelAdded =
+      this.inventory.addItem(
+        'slime-gel',
+        1,
+      )
+
+    this.showCombatMessage(
+      '+40 XP   +12 coins',
+    )
+
+    if (slimeGelAdded > 0) {
+      const totalGel =
+        this.inventory.countItem(
+          'slime-gel',
+        )
+
+      this.showCombatMessage(
+        `+1 Slime Gel   •   Total ${totalGel}`,
+      )
+    } else {
+      this.showCombatMessage(
+        'Bag full • Slime Gel lost',
+      )
+    }
 
     while (this.stats.xp >= this.stats.xpToNext) {
       this.stats.xp -= this.stats.xpToNext
