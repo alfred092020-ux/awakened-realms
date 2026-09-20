@@ -18,6 +18,19 @@ export interface UpgradeDefinition {
   description: string
 }
 
+export interface RunModifiers {
+  attackMultiplier: number
+  hpMultiplier: number
+  attackSpeedMultiplier: number
+}
+
+export const DEFAULT_RUN_MODIFIERS:
+  RunModifiers = {
+    attackMultiplier: 1,
+    hpMultiplier: 1,
+    attackSpeedMultiplier: 1,
+  }
+
 export interface RunPlayerStats {
   hp: number
   maxHp: number

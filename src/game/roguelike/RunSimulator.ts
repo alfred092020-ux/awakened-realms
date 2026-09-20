@@ -6,6 +6,11 @@ import type {
   RunResult,
   UpgradeDefinition,
   UpgradeId,
+  RunModifiers,
+} from './RunTypes'
+
+import {
+  DEFAULT_RUN_MODIFIERS,
 } from './RunTypes'
 
 export type UpgradeStrategy =
@@ -42,9 +47,15 @@ export function simulateRun(
   strategy:
     UpgradeStrategy =
       DEFAULT_STRATEGY,
+  modifiers:
+    RunModifiers =
+      DEFAULT_RUN_MODIFIERS,
 ): SimulationResult {
   const engine =
-    new RunEngine(seed)
+    new RunEngine(
+      seed,
+      modifiers,
+    )
 
   const upgradesChosen:
     UpgradeId[] = []

@@ -18,6 +18,11 @@ import type {
   RunSnapshot,
   UpgradeDefinition,
   UpgradeId,
+  RunModifiers,
+} from './RunTypes'
+
+import {
+  DEFAULT_RUN_MODIFIERS,
 } from './RunTypes'
 
 export function createEnemyForWave(
@@ -149,6 +154,9 @@ export class RunEngine {
 
   constructor(
     seed: number,
+    modifiers:
+      RunModifiers =
+        DEFAULT_RUN_MODIFIERS,
   ) {
     this.seed =
       seed >>> 0
@@ -160,18 +168,33 @@ export class RunEngine {
 
     this.player = {
       hp:
-        RUN_BALANCE.startingHp,
+        Math.round(
+          RUN_BALANCE.startingHp *
+          modifiers.hpMultiplier,
+        ),
 
       maxHp:
-        RUN_BALANCE.startingHp,
+        Math.round(
+          RUN_BALANCE.startingHp *
+          modifiers.hpMultiplier,
+        ),
 
       attack:
-        RUN_BALANCE
-          .startingAttack,
+        Math.round(
+          RUN_BALANCE.startingAttack *
+          modifiers.attackMultiplier,
+        ),
 
       attackIntervalMs:
-        RUN_BALANCE
-          .startingAttackIntervalMs,
+        Math.max(
+          180,
+          Math.round(
+            RUN_BALANCE
+              .startingAttackIntervalMs /
+            modifiers
+              .attackSpeedMultiplier,
+          ),
+        ),
 
       critChance:
         RUN_BALANCE
