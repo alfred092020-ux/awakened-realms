@@ -37,6 +37,11 @@ export class FieldScene extends Phaser.Scene {
   private energyText!: Phaser.GameObjects.Text
 
   private attackButton!: Phaser.GameObjects.Arc
+  private arcButton!: Phaser.GameObjects.Arc
+  private starButton!: Phaser.GameObjects.Arc
+
+  private arcCooldownText!: Phaser.GameObjects.Text
+  private starCooldownText!: Phaser.GameObjects.Text
 
   private hpText!: Phaser.GameObjects.Text
   private levelText!: Phaser.GameObjects.Text
@@ -184,6 +189,7 @@ export class FieldScene extends Phaser.Scene {
     this.updateInteractionState()
     this.targeting.update()
     this.energy.update(delta)
+    this.refreshSkillCooldownUI()
 
     if (!this.playerDead && !this.dialogueVisible) {
       for (const enemy of this.enemies) {
@@ -242,7 +248,7 @@ export class FieldScene extends Phaser.Scene {
     const arcX = x - 125
     const arcY = y + 10
 
-    const arcButton = this.add
+    this.arcButton = this.add
       .circle(
         arcX,
         arcY,
@@ -280,7 +286,27 @@ export class FieldScene extends Phaser.Scene {
       .setScrollFactor(0)
       .setDepth(211)
 
-    arcButton.on('pointerdown', () => {
+    this.arcCooldownText = this.add
+      .text(
+        arcX,
+        arcY - 1,
+        '',
+        {
+          fontFamily:
+            'Arial, sans-serif',
+          fontSize: '22px',
+          fontStyle: 'bold',
+          color: '#ffffff',
+          stroke: '#102731',
+          strokeThickness: 5,
+        },
+      )
+      .setOrigin(0.5)
+      .setScrollFactor(0)
+      .setDepth(214)
+      .setVisible(false)
+
+    this.arcButton.on('pointerdown', () => {
       if (
         !this.playerDead &&
         !this.dialogueVisible
@@ -292,7 +318,7 @@ export class FieldScene extends Phaser.Scene {
     const starX = arcX - 105
     const starY = arcY
 
-    const starButton = this.add
+    this.starButton = this.add
       .circle(
         starX,
         starY,
@@ -342,7 +368,27 @@ export class FieldScene extends Phaser.Scene {
       .setScrollFactor(0)
       .setDepth(211)
 
-    starButton.on(
+    this.starCooldownText = this.add
+      .text(
+        starX,
+        starY - 1,
+        '',
+        {
+          fontFamily:
+            'Arial, sans-serif',
+          fontSize: '22px',
+          fontStyle: 'bold',
+          color: '#ffffff',
+          stroke: '#281842',
+          strokeThickness: 5,
+        },
+      )
+      .setOrigin(0.5)
+      .setScrollFactor(0)
+      .setDepth(214)
+      .setVisible(false)
+
+    this.starButton.on(
       'pointerdown',
       () => {
         if (
@@ -549,6 +595,57 @@ export class FieldScene extends Phaser.Scene {
     this.coinText.setText(
       `${this.stats.coins} coins`,
     )
+  }
+
+  private refreshSkillCooldownUI() {
+    if (
+      !this.arcCooldownText ||
+      !this.starCooldownText
+    ) {
+      return
+    }
+
+    const arcRemaining =
+      this.arcShot.getCooldownRemaining()
+
+    const arcCooling =
+      arcRemaining > 0
+
+    this.arcButton.setAlpha(
+      arcCooling
+        ? 0.45
+        : 1,
+    )
+
+    this.arcCooldownText
+      .setVisible(arcCooling)
+      .setText(
+        arcCooling
+          ? (arcRemaining / 1000)
+              .toFixed(1)
+          : '',
+      )
+
+    const starRemaining =
+      this.starfall.getCooldownRemaining()
+
+    const starCooling =
+      starRemaining > 0
+
+    this.starButton.setAlpha(
+      starCooling
+        ? 0.45
+        : 1,
+    )
+
+    this.starCooldownText
+      .setVisible(starCooling)
+      .setText(
+        starCooling
+          ? (starRemaining / 1000)
+              .toFixed(1)
+          : '',
+      )
   }
 
   private refreshEnergyHUD() {

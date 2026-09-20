@@ -19,7 +19,9 @@ export class ArcShotSystem {
   private readonly callbacks: ArcShotCallbacks
 
   private readonly cost = 25
+  private readonly cooldown = 2600
   private ready = true
+  private cooldownEndsAt = 0
 
   constructor(
     scene: Phaser.Scene,
@@ -77,10 +79,15 @@ export class ArcShotSystem {
     this.energy.spend(this.cost)
     this.ready = false
 
+    this.cooldownEndsAt =
+      this.scene.time.now +
+      this.cooldown
+
     this.scene.time.delayedCall(
-      2600,
+      this.cooldown,
       () => {
         this.ready = true
+        this.cooldownEndsAt = 0
       },
     )
 
@@ -152,6 +159,14 @@ export class ArcShotSystem {
     })
   }
 
+
+  getCooldownRemaining() {
+    return Math.max(
+      0,
+      this.cooldownEndsAt -
+        this.scene.time.now,
+    )
+  }
 
   private createImpact(
     x: number,

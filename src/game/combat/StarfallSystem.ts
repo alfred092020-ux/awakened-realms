@@ -20,6 +20,7 @@ export class StarfallSystem {
 
   private enemies: Enemy[] = []
   private ready = true
+  private cooldownEndsAt = 0
 
   private readonly cost = 45
   private readonly cooldown = 5200
@@ -85,10 +86,15 @@ export class StarfallSystem {
     this.energy.spend(this.cost)
     this.ready = false
 
+    this.cooldownEndsAt =
+      this.scene.time.now +
+      this.cooldown
+
     this.scene.time.delayedCall(
       this.cooldown,
       () => {
         this.ready = true
+        this.cooldownEndsAt = 0
       },
     )
 
@@ -108,6 +114,14 @@ export class StarfallSystem {
           centerY,
         )
       },
+    )
+  }
+
+  getCooldownRemaining() {
+    return Math.max(
+      0,
+      this.cooldownEndsAt -
+        this.scene.time.now,
     )
   }
 
