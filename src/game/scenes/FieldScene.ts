@@ -1,6 +1,11 @@
 import Phaser from 'phaser'
 import { PlayerController } from '../entities/PlayerController'
 import { VirtualJoystick } from '../input/VirtualJoystick'
+import { Enemy } from '../entities/Enemy'
+import {
+  createStartingStats,
+  type PlayerStats,
+} from '../combat/CombatStats'
 
 export class FieldScene extends Phaser.Scene {
   private player!: Phaser.Physics.Arcade.Sprite
@@ -17,6 +22,20 @@ export class FieldScene extends Phaser.Scene {
   private dialogueVisible = false
 
   private readonly interactionRange = 145
+
+  private stats: PlayerStats = createStartingStats()
+  private enemies: Enemy[] = []
+
+  private attackButton!: Phaser.GameObjects.Arc
+  private attackLabel!: Phaser.GameObjects.Text
+
+  private hpText!: Phaser.GameObjects.Text
+  private levelText!: Phaser.GameObjects.Text
+  private xpText!: Phaser.GameObjects.Text
+  private coinText!: Phaser.GameObjects.Text
+
+  private playerDead = false
+  private attackReady = true
 
   constructor() {
     super('FieldScene')
@@ -91,6 +110,13 @@ export class FieldScene extends Phaser.Scene {
 
     this.createInteractionUI()
     this.createDialogueUI()
+    this.createCombatUI()
+
+    this.spawnEnemy(1280, 720)
+    this.spawnEnemy(1520, 900)
+    this.spawnEnemy(1780, 600)
+
+    this.refreshHUD()
   }
 
   update() {
@@ -103,6 +129,289 @@ export class FieldScene extends Phaser.Scene {
     }
 
     this.updateInteractionState()
+
+    if (!this.playerDead && !this.dialogueVisible) {
+      for (const enemy of this.enemies) {
+        enemy.update(
+          this.player,
+          (damage) => this.damagePlayer(damage),
+        )
+      }
+    } else {
+      for (const enemy of this.enemies) {
+        enemy.sprite.setVelocity(0, 0)
+      }
+    }
+  }
+
+
+  private spawnEnemy(x: number, y: number) {
+    const enemy = new Enemy(this, x, y)
+
+    this.enemies.push(enemy)
+
+    this.physics.add.collider(
+      enemy.sprite,
+      this.player,
+    )
+  }
+
+  private createCombatUI() {
+    const x = this.scale.width - 115
+    const y = this.scale.height - 120
+
+    this.attackButton = this.add
+      .circle(x, y, 62, 0x8d3344, 0.94)
+      .setStrokeStyle(4, 0xf0a06c)
+      .setScrollFactor(0)
+      .setDepth(210)
+      .setInteractive()
+
+    this.attackLabel = this.add
+      .text(x, y, 'ATTACK', {
+        fontFamily: 'Arial, sans-serif',
+        fontSize: '17px',
+        fontStyle: 'bold',
+        color: '#fff0c9',
+      })
+      .setOrigin(0.5)
+      .setScrollFactor(0)
+      .setDepth(211)
+
+    this.attackButton.on('pointerdown', () => {
+      this.playerAttack()
+    })
+  }
+
+  private playerAttack() {
+    if (
+      this.playerDead ||
+      this.dialogueVisible ||
+      !this.attackReady
+    ) {
+      return
+    }
+
+    const target = this.getNearestLivingEnemy()
+
+    if (!target) {
+      this.showCombatMessage('No enemy nearby')
+      return
+    }
+
+    const distance = target.distanceTo(
+      this.player.x,
+      this.player.y,
+    )
+
+    if (distance > 155) {
+      this.showCombatMessage('Out of range')
+      return
+    }
+
+    this.attackReady = false
+
+    this.time.delayedCall(420, () => {
+      this.attackReady = true
+    })
+
+    this.tweens.add({
+      targets: this.player,
+      scaleX: 1.18,
+      scaleY: 0.88,
+      yoyo: true,
+      duration: 90,
+    })
+
+    const killed = target.damage(
+      this.stats.attack,
+    )
+
+    if (killed) {
+      this.rewardEnemy(target)
+    }
+  }
+
+  private getNearestLivingEnemy() {
+    let nearest: Enemy | undefined
+    let nearestDistance = Number.MAX_VALUE
+
+    for (const enemy of this.enemies) {
+      if (enemy.isDead()) continue
+
+      const distance = enemy.distanceTo(
+        this.player.x,
+        this.player.y,
+      )
+
+      if (distance < nearestDistance) {
+        nearest = enemy
+        nearestDistance = distance
+      }
+    }
+
+    return nearest
+  }
+
+  private rewardEnemy(enemy: Enemy) {
+    this.stats.coins += 12
+    this.stats.xp += 40
+
+    this.showCombatMessage('+40 XP   +12 coins')
+
+    while (this.stats.xp >= this.stats.xpToNext) {
+      this.stats.xp -= this.stats.xpToNext
+      this.stats.level += 1
+      this.stats.xpToNext =
+        Math.floor(this.stats.xpToNext * 1.35)
+
+      this.stats.maxHp += 20
+      this.stats.hp = this.stats.maxHp
+      this.stats.attack += 5
+
+      this.showCombatMessage(
+        `LEVEL UP!  Lv. ${this.stats.level}`,
+      )
+    }
+
+    this.refreshHUD()
+
+    this.time.delayedCall(3000, () => {
+      const x = enemy.sprite.x
+      const y = enemy.sprite.y
+
+      enemy.destroy()
+
+      this.enemies = this.enemies.filter(
+        (item) => item !== enemy,
+      )
+
+      this.spawnEnemy(x, y)
+    })
+  }
+
+  private damagePlayer(amount: number) {
+    if (this.playerDead) return
+
+    this.stats.hp = Math.max(
+      0,
+      this.stats.hp - amount,
+    )
+
+    this.refreshHUD()
+
+    const damageText = this.add
+      .text(
+        this.player.x,
+        this.player.y - 70,
+        `-${amount}`,
+        {
+          fontFamily: 'Arial, sans-serif',
+          fontSize: '22px',
+          fontStyle: 'bold',
+          color: '#ff8b8b',
+          stroke: '#35151c',
+          strokeThickness: 4,
+        },
+      )
+      .setOrigin(0.5)
+      .setDepth(70)
+
+    this.tweens.add({
+      targets: damageText,
+      y: damageText.y - 32,
+      alpha: 0,
+      duration: 550,
+      onComplete: () => damageText.destroy(),
+    })
+
+    this.cameras.main.shake(
+      100,
+      0.003,
+    )
+
+    if (this.stats.hp <= 0) {
+      this.defeatPlayer()
+    }
+  }
+
+  private defeatPlayer() {
+    this.playerDead = true
+    this.player.setVelocity(0, 0)
+
+    if (this.player.body) {
+      this.player.body.enable = false
+    }
+
+    this.showCombatMessage(
+      'DEFEATED • Respawning...',
+    )
+
+    this.player.setAlpha(0.35)
+
+    this.time.delayedCall(2200, () => {
+      this.stats.hp = this.stats.maxHp
+
+      this.player.setPosition(600, 700)
+      this.player.setAlpha(1)
+
+      if (this.player.body) {
+        this.player.body.enable = true
+      }
+
+      this.playerDead = false
+
+      this.refreshHUD()
+      this.showCombatMessage('Returned to Starfall')
+    })
+  }
+
+  private refreshHUD() {
+    if (!this.hpText) return
+
+    this.hpText.setText(
+      `HP  ${this.stats.hp} / ${this.stats.maxHp}`,
+    )
+
+    this.levelText.setText(
+      `Lv. ${this.stats.level}   •   Starfall Meadow`,
+    )
+
+    this.xpText.setText(
+      `XP ${this.stats.xp} / ${this.stats.xpToNext}`,
+    )
+
+    this.coinText.setText(
+      `${this.stats.coins} coins`,
+    )
+  }
+
+  private showCombatMessage(message: string) {
+    const text = this.add
+      .text(
+        this.scale.width / 2,
+        105,
+        message,
+        {
+          fontFamily: 'Arial, sans-serif',
+          fontSize: '24px',
+          fontStyle: 'bold',
+          color: '#ffe7a3',
+          stroke: '#17101d',
+          strokeThickness: 5,
+        },
+      )
+      .setOrigin(0.5)
+      .setScrollFactor(0)
+      .setDepth(500)
+
+    this.tweens.add({
+      targets: text,
+      y: 80,
+      alpha: 0,
+      duration: 1100,
+      onComplete: () => text.destroy(),
+    })
   }
 
   private updateInteractionState() {
@@ -332,6 +641,30 @@ export class FieldScene extends Phaser.Scene {
       g.destroy()
     }
 
+    if (!this.textures.exists('slime')) {
+      const g = this.make.graphics(
+        { x: 0, y: 0 },
+        false,
+      )
+
+      g.fillStyle(0x57b779)
+      g.fillEllipse(36, 40, 64, 48)
+
+      g.fillStyle(0x91e4a8, 0.8)
+      g.fillEllipse(25, 28, 24, 16)
+
+      g.fillStyle(0x14231b)
+      g.fillCircle(24, 39, 4)
+      g.fillCircle(47, 39, 4)
+
+      g.fillStyle(0xc8ffd4)
+      g.fillCircle(23, 38, 1.5)
+      g.fillCircle(46, 38, 1.5)
+
+      g.generateTexture('slime', 72, 64)
+      g.destroy()
+    }
+
     if (!this.textures.exists('npc')) {
       const g = this.make.graphics({ x: 0, y: 0 }, false)
 
@@ -354,15 +687,26 @@ export class FieldScene extends Phaser.Scene {
 
   private createHUD() {
     const panel = this.add
-      .rectangle(24, 24, 300, 94, 0x090d18, 0.82)
+      .rectangle(
+        24,
+        24,
+        330,
+        138,
+        0x090d18,
+        0.86,
+      )
       .setOrigin(0)
       .setScrollFactor(0)
       .setDepth(100)
 
-    panel.setStrokeStyle(2, 0xb79852, 0.75)
+    panel.setStrokeStyle(
+      2,
+      0xb79852,
+      0.75,
+    )
 
     this.add
-      .text(44, 39, 'RANGER', {
+      .text(44, 38, 'RANGER', {
         fontFamily: 'Arial, sans-serif',
         fontSize: '18px',
         fontStyle: 'bold',
@@ -371,8 +715,8 @@ export class FieldScene extends Phaser.Scene {
       .setScrollFactor(0)
       .setDepth(101)
 
-    this.add
-      .text(44, 69, 'HP  120 / 120', {
+    this.hpText = this.add
+      .text(44, 67, '', {
         fontFamily: 'Arial, sans-serif',
         fontSize: '17px',
         color: '#d8e6df',
@@ -380,11 +724,29 @@ export class FieldScene extends Phaser.Scene {
       .setScrollFactor(0)
       .setDepth(101)
 
-    this.add
-      .text(44, 94, 'Lv. 1   •   Starfall Meadow', {
+    this.levelText = this.add
+      .text(44, 93, '', {
         fontFamily: 'Arial, sans-serif',
         fontSize: '14px',
         color: '#8fa8a2',
+      })
+      .setScrollFactor(0)
+      .setDepth(101)
+
+    this.xpText = this.add
+      .text(44, 118, '', {
+        fontFamily: 'Arial, sans-serif',
+        fontSize: '14px',
+        color: '#a9c8dc',
+      })
+      .setScrollFactor(0)
+      .setDepth(101)
+
+    this.coinText = this.add
+      .text(235, 118, '', {
+        fontFamily: 'Arial, sans-serif',
+        fontSize: '14px',
+        color: '#e9cb6f',
       })
       .setScrollFactor(0)
       .setDepth(101)
