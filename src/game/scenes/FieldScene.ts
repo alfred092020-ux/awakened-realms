@@ -27,7 +27,6 @@ export class FieldScene extends Phaser.Scene {
   private enemies: Enemy[] = []
 
   private attackButton!: Phaser.GameObjects.Arc
-  private attackLabel!: Phaser.GameObjects.Text
 
   private hpText!: Phaser.GameObjects.Text
   private levelText!: Phaser.GameObjects.Text
@@ -167,7 +166,7 @@ export class FieldScene extends Phaser.Scene {
       .setDepth(210)
       .setInteractive()
 
-    this.attackLabel = this.add
+    this.add
       .text(x, y, 'ATTACK', {
         fontFamily: 'Arial, sans-serif',
         fontSize: '17px',

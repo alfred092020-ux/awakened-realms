@@ -2,6 +2,7 @@ import Phaser from 'phaser'
 
 export class Enemy {
   readonly sprite: Phaser.Physics.Arcade.Sprite
+  private readonly scene: Phaser.Scene
 
   private hp = 70
   private readonly maxHp = 70
@@ -17,10 +18,12 @@ export class Enemy {
   private hpBar: Phaser.GameObjects.Rectangle
 
   constructor(
-    private readonly scene: Phaser.Scene,
+    scene: Phaser.Scene,
     x: number,
     y: number,
   ) {
+    this.scene = scene
+
     this.sprite = scene.physics.add
       .sprite(x, y, 'slime')
       .setDepth(18)
