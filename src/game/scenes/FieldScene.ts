@@ -1,10 +1,22 @@
 import Phaser from 'phaser'
+import { PlayerController } from '../entities/PlayerController'
+import { VirtualJoystick } from '../input/VirtualJoystick'
 
 export class FieldScene extends Phaser.Scene {
   private player!: Phaser.Physics.Arcade.Sprite
-  private cursors!: Phaser.Types.Input.Keyboard.CursorKeys
-  private target?: Phaser.Math.Vector2
-  private readonly speed = 260
+  private playerController!: PlayerController
+  private npc!: Phaser.Physics.Arcade.Sprite
+
+  private interactButton!: Phaser.GameObjects.Arc
+  private interactLabel!: Phaser.GameObjects.Text
+  private interactionHint!: Phaser.GameObjects.Text
+
+  private dialoguePanel!: Phaser.GameObjects.Rectangle
+  private dialogueName!: Phaser.GameObjects.Text
+  private dialogueText!: Phaser.GameObjects.Text
+  private dialogueVisible = false
+
+  private readonly interactionRange = 145
 
   constructor() {
     super('FieldScene')
@@ -19,13 +31,6 @@ export class FieldScene extends Phaser.Scene {
 
     this.createTextures()
     this.createWorld(worldWidth, worldHeight)
-
-    this.player = this.physics.add
-      .sprite(600, 700, 'player')
-      .setDepth(20)
-      .setCollideWorldBounds(true)
-
-    this.player.body?.setSize(38, 48)
 
     const obstacles = this.physics.add.staticGroup()
 
@@ -42,85 +47,202 @@ export class FieldScene extends Phaser.Scene {
       obstacles.create(x, y, 'crystal')
     })
 
+    this.npc = this.physics.add
+      .staticSprite(930, 820, 'npc')
+      .setDepth(20)
+
+    this.add
+      .text(this.npc.x, this.npc.y - 58, 'Lyra', {
+        fontFamily: 'Arial, sans-serif',
+        fontSize: '17px',
+        fontStyle: 'bold',
+        color: '#f4dd91',
+        stroke: '#10151c',
+        strokeThickness: 4,
+      })
+      .setOrigin(0.5)
+      .setDepth(21)
+
+    this.player = this.physics.add
+      .sprite(600, 700, 'player')
+      .setDepth(20)
+      .setCollideWorldBounds(true)
+
+    this.player.body?.setSize(38, 48)
+
     this.physics.add.collider(this.player, obstacles)
+    this.physics.add.collider(this.player, this.npc)
 
     this.cameras.main.startFollow(this.player, true, 0.09, 0.09)
-    this.cameras.main.setZoom(1)
-
-    if (this.input.keyboard) {
-      this.cursors = this.input.keyboard.createCursorKeys()
-    }
-
-    this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
-      const worldPoint = this.cameras.main.getWorldPoint(pointer.x, pointer.y)
-
-      this.target = new Phaser.Math.Vector2(worldPoint.x, worldPoint.y)
-
-      this.tweens.add({
-        targets: this.add
-          .circle(worldPoint.x, worldPoint.y, 12, 0xffe08a, 0.75)
-          .setDepth(30),
-        radius: 38,
-        alpha: 0,
-        duration: 350,
-        onComplete: (_tween, targets) => {
-          targets[0].destroy()
-        },
-      })
-    })
 
     this.createHUD()
+
+    const joystick = new VirtualJoystick(
+      this,
+      125,
+      this.scale.height - 125,
+    )
+
+    this.playerController = new PlayerController(
+      this,
+      this.player,
+      joystick,
+    )
+
+    this.createInteractionUI()
+    this.createDialogueUI()
   }
 
   update() {
-    if (!this.player) return
+    if (!this.playerController) return
 
-    let vx = 0
-    let vy = 0
-
-    if (this.cursors) {
-      if (this.cursors.left.isDown) vx -= 1
-      if (this.cursors.right.isDown) vx += 1
-      if (this.cursors.up.isDown) vy -= 1
-      if (this.cursors.down.isDown) vy += 1
+    if (!this.dialogueVisible) {
+      this.playerController.update()
+    } else {
+      this.player.setVelocity(0, 0)
     }
 
-    if (vx !== 0 || vy !== 0) {
-      this.target = undefined
+    this.updateInteractionState()
+  }
 
-      const direction = new Phaser.Math.Vector2(vx, vy)
-        .normalize()
-        .scale(this.speed)
+  private updateInteractionState() {
+    const distance = Phaser.Math.Distance.Between(
+      this.player.x,
+      this.player.y,
+      this.npc.x,
+      this.npc.y,
+    )
 
-      this.player.setVelocity(direction.x, direction.y)
-      return
-    }
+    const canInteract = distance <= this.interactionRange
 
-    if (this.target) {
-      const distance = Phaser.Math.Distance.Between(
-        this.player.x,
-        this.player.y,
-        this.target.x,
-        this.target.y,
+    this.interactButton.setVisible(canInteract && !this.dialogueVisible)
+    this.interactLabel.setVisible(canInteract && !this.dialogueVisible)
+    this.interactionHint.setVisible(canInteract && !this.dialogueVisible)
+  }
+
+  private interactWithNpc() {
+    const distance = Phaser.Math.Distance.Between(
+      this.player.x,
+      this.player.y,
+      this.npc.x,
+      this.npc.y,
+    )
+
+    if (distance > this.interactionRange) return
+
+    this.dialogueVisible = true
+
+    this.dialoguePanel.setVisible(true)
+    this.dialogueName.setVisible(true)
+    this.dialogueText.setVisible(true)
+
+    this.interactButton.setVisible(false)
+    this.interactLabel.setVisible(false)
+    this.interactionHint.setVisible(false)
+  }
+
+  private closeDialogue() {
+    this.dialogueVisible = false
+
+    this.dialoguePanel.setVisible(false)
+    this.dialogueName.setVisible(false)
+    this.dialogueText.setVisible(false)
+  }
+
+  private createInteractionUI() {
+    const x = this.scale.width - 115
+    const y = this.scale.height - 120
+
+    this.interactButton = this.add
+      .circle(x, y, 58, 0xb99145, 0.88)
+      .setStrokeStyle(4, 0xf1dc91)
+      .setScrollFactor(0)
+      .setDepth(220)
+      .setInteractive()
+
+    this.interactLabel = this.add
+      .text(x, y, 'TALK', {
+        fontFamily: 'Arial, sans-serif',
+        fontSize: '18px',
+        fontStyle: 'bold',
+        color: '#17121c',
+      })
+      .setOrigin(0.5)
+      .setScrollFactor(0)
+      .setDepth(221)
+
+    this.interactionHint = this.add
+      .text(x, y - 83, 'Lyra', {
+        fontFamily: 'Arial, sans-serif',
+        fontSize: '16px',
+        color: '#f0dfaa',
+      })
+      .setOrigin(0.5)
+      .setScrollFactor(0)
+      .setDepth(221)
+
+    this.interactButton.on('pointerdown', () => {
+      this.interactWithNpc()
+    })
+
+    this.interactButton.setVisible(false)
+    this.interactLabel.setVisible(false)
+    this.interactionHint.setVisible(false)
+  }
+
+  private createDialogueUI() {
+    const width = this.scale.width
+    const height = this.scale.height
+
+    this.dialoguePanel = this.add
+      .rectangle(
+        width / 2,
+        height - 120,
+        width - 300,
+        190,
+        0x090d18,
+        0.95,
       )
+      .setStrokeStyle(3, 0xc4a75c)
+      .setScrollFactor(0)
+      .setDepth(300)
+      .setInteractive()
 
-      if (distance < 12) {
-        this.player.setVelocity(0, 0)
-        this.target = undefined
-        return
-      }
+    this.dialogueName = this.add
+      .text(190, height - 190, 'LYRA • STARFALL SCOUT', {
+        fontFamily: 'Arial, sans-serif',
+        fontSize: '20px',
+        fontStyle: 'bold',
+        color: '#e8cb74',
+      })
+      .setScrollFactor(0)
+      .setDepth(301)
 
-      this.physics.moveTo(
-        this.player,
-        this.target.x,
-        this.target.y,
-        this.speed,
+    this.dialogueText = this.add
+      .text(
+        190,
+        height - 150,
+        'The crystals have been restless since dawn.\nStay alert, Ranger. Something is waking beyond the meadow.',
+        {
+          fontFamily: 'Arial, sans-serif',
+          fontSize: '20px',
+          color: '#e2e5e4',
+          lineSpacing: 10,
+          wordWrap: {
+            width: width - 390,
+          },
+        },
       )
+      .setScrollFactor(0)
+      .setDepth(301)
 
-      return
-    }
+    this.dialoguePanel.on('pointerdown', () => {
+      this.closeDialogue()
+    })
 
-    this.player.setVelocity(0, 0)
+    this.dialoguePanel.setVisible(false)
+    this.dialogueName.setVisible(false)
+    this.dialogueText.setVisible(false)
   }
 
   private createWorld(width: number, height: number) {
@@ -148,12 +270,9 @@ export class FieldScene extends Phaser.Scene {
     }
 
     for (let i = 0; i < 100; i++) {
-      const x = Phaser.Math.Between(40, width - 40)
-      const y = Phaser.Math.Between(40, height - 40)
-
       this.add.circle(
-        x,
-        y,
+        Phaser.Math.Between(40, width - 40),
+        Phaser.Math.Between(40, height - 40),
         Phaser.Math.Between(2, 5),
         0x8ec9a3,
         Phaser.Math.FloatBetween(0.15, 0.4),
@@ -212,11 +331,28 @@ export class FieldScene extends Phaser.Scene {
       g.generateTexture('crystal', 64, 64)
       g.destroy()
     }
+
+    if (!this.textures.exists('npc')) {
+      const g = this.make.graphics({ x: 0, y: 0 }, false)
+
+      g.fillStyle(0x274c5d)
+      g.fillCircle(32, 34, 27)
+
+      g.fillStyle(0xf2d2b5)
+      g.fillCircle(32, 25, 15)
+
+      g.fillStyle(0xd4b85e)
+      g.fillTriangle(13, 26, 32, 3, 51, 26)
+
+      g.fillStyle(0x80d6d1)
+      g.fillCircle(32, 32, 4)
+
+      g.generateTexture('npc', 64, 68)
+      g.destroy()
+    }
   }
 
   private createHUD() {
-    const camera = this.cameras.main
-
     const panel = this.add
       .rectangle(24, 24, 300, 94, 0x090d18, 0.82)
       .setOrigin(0)
@@ -250,16 +386,6 @@ export class FieldScene extends Phaser.Scene {
         fontSize: '14px',
         color: '#8fa8a2',
       })
-      .setScrollFactor(0)
-      .setDepth(101)
-
-    this.add
-      .text(camera.width - 28, camera.height - 26, 'TAP THE FIELD TO MOVE', {
-        fontFamily: 'Arial, sans-serif',
-        fontSize: '17px',
-        color: '#c7c4b8',
-      })
-      .setOrigin(1)
       .setScrollFactor(0)
       .setDepth(101)
   }
