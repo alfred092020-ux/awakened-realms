@@ -13,6 +13,19 @@ export type ItemCategory =
   | 'accessory'
   | 'quest'
 
+export type EquipmentSlot =
+  | 'weapon'
+  | 'armor'
+  | 'accessory'
+
+export type EquipmentState =
+  Partial<
+    Record<
+      EquipmentSlot,
+      string
+    >
+  >
+
 export interface ItemDefinition {
   id: string
   name: string
@@ -21,6 +34,9 @@ export interface ItemDefinition {
   rarity: ItemRarity
   maxStack: number
   healAmount?: number
+  equipmentSlot?: EquipmentSlot
+  attackBonus?: number
+  maxHpBonus?: number
 }
 
 export interface InventoryStack {

@@ -9,6 +9,8 @@ import { StarfallSystem } from '../combat/StarfallSystem'
 import { CriticalHitSystem } from '../combat/CriticalHitSystem'
 import { SaveSystem } from '../persistence/SaveSystem'
 import { InventorySystem } from '../inventory/InventorySystem'
+import { EquipmentSystem } from '../inventory/EquipmentSystem'
+import type { EquipmentSlot } from '../inventory/ItemTypes'
 import { ConsumableSystem } from '../inventory/ConsumableSystem'
 import { InventoryPanel } from '../inventory/ui/InventoryPanel'
 import { getItemDefinition } from '../inventory/ItemCatalog'
@@ -41,6 +43,7 @@ export class FieldScene extends Phaser.Scene {
 
   private stats: PlayerStats = createStartingStats()
   private inventory!: InventorySystem
+  private equipment!: EquipmentSystem
   private inventoryPanel!: InventoryPanel
   private readonly consumables = new ConsumableSystem()
   private inventoryOpen = false
@@ -59,6 +62,7 @@ export class FieldScene extends Phaser.Scene {
   private starCooldownText!: Phaser.GameObjects.Text
 
   private hpText!: Phaser.GameObjects.Text
+  private attackText!: Phaser.GameObjects.Text
   private levelText!: Phaser.GameObjects.Text
   private xpText!: Phaser.GameObjects.Text
   private coinText!: Phaser.GameObjects.Text
@@ -79,6 +83,16 @@ export class FieldScene extends Phaser.Scene {
     this.inventory =
       new InventorySystem(
         this.saveSystem.loadInventory(),
+      )
+
+    this.equipment =
+      new EquipmentSystem(
+        this.saveSystem.loadEquipment(),
+      )
+
+    this.equipment
+      .applyLoadedBonuses(
+        this.stats,
       )
 
     this.registerSaveLifecycle()
@@ -198,10 +212,21 @@ export class FieldScene extends Phaser.Scene {
       new InventoryPanel(
         this,
         this.inventory,
+        this.equipment,
         {
           onUseItem: (itemId) =>
             this.useInventoryItem(
               itemId,
+            ),
+
+          onEquipItem: (itemId) =>
+            this.equipInventoryItem(
+              itemId,
+            ),
+
+          onUnequipSlot: (slot) =>
+            this.unequipEquipment(
+              slot,
             ),
 
           onVisibilityChanged:
@@ -453,7 +478,8 @@ export class FieldScene extends Phaser.Scene {
       () => {
         if (
           !this.playerDead &&
-          !this.dialogueVisible
+          !this.dialogueVisible &&
+          !this.inventoryOpen
         ) {
           this.starfall.cast()
         }
@@ -552,10 +578,7 @@ export class FieldScene extends Phaser.Scene {
     }
 
     this.refreshHUD()
-    this.saveSystem.save(
-      this.stats,
-      this.inventory.getStacks(),
-    )
+    this.saveGame()
 
     this.time.delayedCall(3000, () => {
       const x = enemy.sprite.x
@@ -636,11 +659,43 @@ export class FieldScene extends Phaser.Scene {
 
     if (result.used) {
       this.refreshHUD()
+      this.saveGame()
+    }
 
-      this.saveSystem.save(
+    return result
+  }
+
+  private equipInventoryItem(
+    itemId: string,
+  ) {
+    const result =
+      this.equipment.equip(
+        itemId,
+        this.inventory,
         this.stats,
-        this.inventory.getStacks(),
       )
+
+    if (result.changed) {
+      this.refreshHUD()
+      this.saveGame()
+    }
+
+    return result
+  }
+
+  private unequipEquipment(
+    slot: EquipmentSlot,
+  ) {
+    const result =
+      this.equipment.unequip(
+        slot,
+        this.inventory,
+        this.stats,
+      )
+
+    if (result.changed) {
+      this.refreshHUD()
+      this.saveGame()
     }
 
     return result
@@ -722,12 +777,22 @@ export class FieldScene extends Phaser.Scene {
     })
   }
 
+  private saveGame() {
+    const baseStats =
+      this.equipment.getBaseStats(
+        this.stats,
+      )
+
+    this.saveSystem.save(
+      baseStats,
+      this.inventory.getStacks(),
+      this.equipment.getSlots(),
+    )
+  }
+
   private registerSaveLifecycle() {
     const saveNow = () => {
-      this.saveSystem.save(
-        this.stats,
-        this.inventory.getStacks(),
-      )
+      this.saveGame()
     }
 
     const saveWhenHidden = () => {
@@ -778,6 +843,10 @@ export class FieldScene extends Phaser.Scene {
 
     this.hpText.setText(
       `HP  ${this.stats.hp} / ${this.stats.maxHp}`,
+    )
+
+    this.attackText.setText(
+      `ATK ${this.stats.attack}`,
     )
 
     this.levelText.setText(
@@ -1209,6 +1278,16 @@ export class FieldScene extends Phaser.Scene {
         fontFamily: 'Arial, sans-serif',
         fontSize: '17px',
         color: '#d8e6df',
+      })
+      .setScrollFactor(0)
+      .setDepth(101)
+
+    this.attackText = this.add
+      .text(235, 67, 'ATK 0', {
+        fontFamily: 'Arial, sans-serif',
+        fontSize: '15px',
+        fontStyle: 'bold',
+        color: '#e7a8a8',
       })
       .setScrollFactor(0)
       .setDepth(101)

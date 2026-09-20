@@ -9,18 +9,31 @@ import type {
 } from '../InventorySystem'
 
 import type {
+  EquipmentSystem,
+} from '../EquipmentSystem'
+
+import type {
+  EquipmentSlot,
+  ItemDefinition,
   ItemRarity,
 } from '../ItemTypes'
 
-export interface InventoryUseResult {
-  used: boolean
+export interface InventoryPanelResult {
   message: string
 }
 
 export interface InventoryPanelCallbacks {
   onUseItem: (
     itemId: string,
-  ) => InventoryUseResult
+  ) => InventoryPanelResult
+
+  onEquipItem: (
+    itemId: string,
+  ) => InventoryPanelResult
+
+  onUnequipSlot: (
+    slot: EquipmentSlot,
+  ) => InventoryPanelResult
 
   onVisibilityChanged: (
     visible: boolean,
@@ -28,9 +41,14 @@ export interface InventoryPanelCallbacks {
 }
 
 export class InventoryPanel {
-  private readonly scene: Phaser.Scene
+  private readonly scene:
+    Phaser.Scene
+
   private readonly inventory:
     InventorySystem
+
+  private readonly equipment:
+    EquipmentSystem
 
   private readonly callbacks:
     InventoryPanelCallbacks
@@ -50,10 +68,12 @@ export class InventoryPanel {
   constructor(
     scene: Phaser.Scene,
     inventory: InventorySystem,
+    equipment: EquipmentSystem,
     callbacks: InventoryPanelCallbacks,
   ) {
     this.scene = scene
     this.inventory = inventory
+    this.equipment = equipment
     this.callbacks = callbacks
 
     this.container = scene.add
@@ -85,35 +105,32 @@ export class InventoryPanel {
       .setStrokeStyle(
         3,
         0xb99b58,
-        0.95,
       )
 
-    const title = scene.add
-      .text(
-        72,
-        48,
-        'RANGER INVENTORY',
-        {
-          fontFamily:
-            'Arial, sans-serif',
-          fontSize: '25px',
-          fontStyle: 'bold',
-          color: '#f0d789',
-        },
-      )
+    const title = scene.add.text(
+      72,
+      48,
+      'RANGER INVENTORY',
+      {
+        fontFamily:
+          'Arial, sans-serif',
+        fontSize: '25px',
+        fontStyle: 'bold',
+        color: '#f0d789',
+      },
+    )
 
-    const subtitle = scene.add
-      .text(
-        72,
-        81,
-        'Tap an item to inspect it',
-        {
-          fontFamily:
-            'Arial, sans-serif',
-          fontSize: '14px',
-          color: '#8fa8a2',
-        },
-      )
+    const subtitle = scene.add.text(
+      72,
+      81,
+      'Tap an item to inspect or equip it',
+      {
+        fontFamily:
+          'Arial, sans-serif',
+        fontSize: '14px',
+        color: '#8fa8a2',
+      },
+    )
 
     const closeButton = scene.add
       .rectangle(
@@ -162,7 +179,7 @@ export class InventoryPanel {
     this.statusText = scene.add
       .text(
         720,
-        575,
+        625,
         '',
         {
           fontFamily:
@@ -170,7 +187,7 @@ export class InventoryPanel {
           fontSize: '15px',
           color: '#e7cb7a',
           wordWrap: {
-            width: 450,
+            width: 440,
           },
         },
       )
@@ -188,36 +205,45 @@ export class InventoryPanel {
 
     closeButton.on(
       'pointerdown',
-      () => {
-        this.close()
-      },
+      () => this.close(),
     )
   }
 
   toggle() {
     if (this.opened) {
       this.close()
-    } else {
-      this.open()
+      return
     }
+
+    this.open()
   }
 
   open() {
     this.opened = true
     this.statusText.setText('')
     this.refresh()
-    this.container.setVisible(true)
+
+    this.container.setVisible(
+      true,
+    )
 
     this.callbacks
-      .onVisibilityChanged(true)
+      .onVisibilityChanged(
+        true,
+      )
   }
 
   close() {
     this.opened = false
-    this.container.setVisible(false)
+
+    this.container.setVisible(
+      false,
+    )
 
     this.callbacks
-      .onVisibilityChanged(false)
+      .onVisibilityChanged(
+        false,
+      )
   }
 
   refresh() {
@@ -255,13 +281,14 @@ export class InventoryPanel {
 
     this.renderCapacity()
     this.renderSlots(stacks)
+    this.renderEquipment()
     this.renderDetails()
   }
 
   private renderCapacity() {
-    const text = this.scene.add
-      .text(
-        480,
+    this.addDynamic(
+      this.scene.add.text(
+        470,
         78,
         `Slots ${this.inventory.getUsedSlots()} / ${this.inventory.getCapacity()}`,
         {
@@ -270,9 +297,8 @@ export class InventoryPanel {
           fontSize: '15px',
           color: '#c7b8e9',
         },
-      )
-
-    this.addDynamic(text)
+      ),
+    )
   }
 
   private renderSlots(
@@ -282,16 +308,14 @@ export class InventoryPanel {
   ) {
     const startX = 76
     const startY = 122
-
     const cellWidth = 116
     const cellHeight = 76
-
     const columns = 5
 
     for (
       let index = 0;
       index <
-        this.inventory.getCapacity();
+      this.inventory.getCapacity();
       index += 1
     ) {
       const column =
@@ -324,13 +348,6 @@ export class InventoryPanel {
         stack?.itemId ===
         this.selectedItemId
 
-      const borderColor =
-        definition
-          ? this.getRarityColor(
-              definition.rarity,
-            )
-          : 0x394454
-
       const slot = this.scene.add
         .rectangle(
           x + 52,
@@ -346,16 +363,21 @@ export class InventoryPanel {
           selected
             ? 4
             : 2,
-          borderColor,
-          selected
-            ? 1
-            : 0.75,
+          definition
+            ? this.getRarityColor(
+                definition.rarity,
+              )
+            : 0x394454,
+          0.85,
         )
 
       this.addDynamic(slot)
 
-      if (!stack || !definition) {
-        const empty =
+      if (
+        !stack ||
+        !definition
+      ) {
+        this.addDynamic(
           this.scene.add
             .text(
               x + 52,
@@ -368,9 +390,9 @@ export class InventoryPanel {
                 color: '#4f5c6d',
               },
             )
-            .setOrigin(0.5)
+            .setOrigin(0.5),
+        )
 
-        this.addDynamic(empty)
         continue
       }
 
@@ -382,30 +404,32 @@ export class InventoryPanel {
           this.selectedItemId =
             stack.itemId
 
-          this.statusText.setText('')
+          this.statusText
+            .setText('')
+
           this.refresh()
         },
       )
 
-      const name =
-        this.scene.add
-          .text(
-            x + 7,
-            y + 9,
-            definition.name,
-            {
-              fontFamily:
-                'Arial, sans-serif',
-              fontSize: '12px',
-              fontStyle: 'bold',
-              color: '#edf1f5',
-              wordWrap: {
-                width: 90,
-              },
+      this.addDynamic(
+        this.scene.add.text(
+          x + 7,
+          y + 9,
+          definition.name,
+          {
+            fontFamily:
+              'Arial, sans-serif',
+            fontSize: '12px',
+            fontStyle: 'bold',
+            color: '#edf1f5',
+            wordWrap: {
+              width: 90,
             },
-          )
+          },
+        ),
+      )
 
-      const quantity =
+      this.addDynamic(
         this.scene.add
           .text(
             x + 94,
@@ -419,30 +443,192 @@ export class InventoryPanel {
               color: '#f0d789',
             },
           )
-          .setOrigin(1, 1)
-
-      this.addDynamic(name)
-      this.addDynamic(quantity)
+          .setOrigin(1, 1),
+      )
     }
+  }
+
+  private renderEquipment() {
+    this.addDynamic(
+      this.scene.add.text(
+        720,
+        120,
+        'EQUIPMENT',
+        {
+          fontFamily:
+            'Arial, sans-serif',
+          fontSize: '18px',
+          fontStyle: 'bold',
+          color: '#f0d789',
+        },
+      ),
+    )
+
+    const slots:
+      EquipmentSlot[] = [
+        'weapon',
+        'armor',
+        'accessory',
+      ]
+
+    slots.forEach(
+      (slot, index) => {
+        const y =
+          157 +
+          index * 50
+
+        const itemId =
+          this.equipment
+            .getEquippedItem(
+              slot,
+            )
+
+        const definition =
+          itemId
+            ? getItemDefinition(
+                itemId,
+              )
+            : undefined
+
+        const row =
+          this.scene.add
+            .rectangle(
+              940,
+              y,
+              440,
+              40,
+              0x172131,
+              0.98,
+            )
+            .setStrokeStyle(
+              2,
+              definition
+                ? this.getRarityColor(
+                    definition.rarity,
+                  )
+                : 0x405066,
+            )
+
+        this.addDynamic(row)
+
+        this.addDynamic(
+          this.scene.add
+            .text(
+              730,
+              y,
+              slot.toUpperCase(),
+              {
+                fontFamily:
+                  'Arial, sans-serif',
+                fontSize: '12px',
+                fontStyle: 'bold',
+                color: '#8fa8b7',
+              },
+            )
+            .setOrigin(0, 0.5),
+        )
+
+        this.addDynamic(
+          this.scene.add
+            .text(
+              820,
+              y,
+              definition
+                ? `${definition.name} ${this.getEquipmentBonusText(definition)}`
+                : 'Empty',
+              {
+                fontFamily:
+                  'Arial, sans-serif',
+                fontSize: '13px',
+                color: definition
+                  ? '#e8edf2'
+                  : '#667487',
+              },
+            )
+            .setOrigin(0, 0.5),
+        )
+
+        if (!definition) {
+          return
+        }
+
+        const removeButton =
+          this.scene.add
+            .rectangle(
+              1135,
+              y,
+              82,
+              28,
+              0x713847,
+              0.96,
+            )
+            .setStrokeStyle(
+              2,
+              0xdf909e,
+            )
+            .setInteractive()
+
+        const removeText =
+          this.scene.add
+            .text(
+              1135,
+              y,
+              'REMOVE',
+              {
+                fontFamily:
+                  'Arial, sans-serif',
+                fontSize: '11px',
+                fontStyle: 'bold',
+                color: '#ffffff',
+              },
+            )
+            .setOrigin(0.5)
+
+        removeButton.on(
+          'pointerdown',
+          () => {
+            const result =
+              this.callbacks
+                .onUnequipSlot(
+                  slot,
+                )
+
+            this.statusText
+              .setText(
+                result.message,
+              )
+
+            this.refresh()
+          },
+        )
+
+        this.addDynamic(
+          removeButton,
+        )
+
+        this.addDynamic(
+          removeText,
+        )
+      },
+    )
   }
 
   private renderDetails() {
     if (!this.selectedItemId) {
-      const empty =
-        this.scene.add
-          .text(
-            720,
-            145,
-            'Your bag is empty.',
-            {
-              fontFamily:
-                'Arial, sans-serif',
-              fontSize: '20px',
-              color: '#8fa0ae',
-            },
-          )
+      this.addDynamic(
+        this.scene.add.text(
+          720,
+          325,
+          'Select an item from the bag.',
+          {
+            fontFamily:
+              'Arial, sans-serif',
+            fontSize: '20px',
+            color: '#8fa0ae',
+          },
+        ),
+      )
 
-      this.addDynamic(empty)
       return
     }
 
@@ -465,111 +651,124 @@ export class InventoryPanel {
         definition.rarity,
       )
 
-    const name =
-      this.scene.add
-        .text(
-          720,
-          135,
-          definition.name,
-          {
-            fontFamily:
-              'Arial, sans-serif',
-            fontSize: '28px',
-            fontStyle: 'bold',
-            color: rarityColor,
-          },
-        )
+    this.addDynamic(
+      this.scene.add.text(
+        720,
+        310,
+        definition.name,
+        {
+          fontFamily:
+            'Arial, sans-serif',
+          fontSize: '28px',
+          fontStyle: 'bold',
+          color: rarityColor,
+        },
+      ),
+    )
 
-    const rarity =
-      this.scene.add
-        .text(
+    this.addDynamic(
+      this.scene.add.text(
+        720,
+        348,
+        `${definition.rarity.toUpperCase()} • ${definition.category.toUpperCase()}`,
+        {
+          fontFamily:
+            'Arial, sans-serif',
+          fontSize: '15px',
+          fontStyle: 'bold',
+          color: rarityColor,
+        },
+      ),
+    )
+
+    this.addDynamic(
+      this.scene.add.text(
+        720,
+        378,
+        `Owned: ${quantity}`,
+        {
+          fontFamily:
+            'Arial, sans-serif',
+          fontSize: '16px',
+          color: '#d7dde5',
+        },
+      ),
+    )
+
+    this.addDynamic(
+      this.scene.add.text(
+        720,
+        410,
+        definition.description,
+        {
+          fontFamily:
+            'Arial, sans-serif',
+          fontSize: '17px',
+          color: '#bec8d3',
+          lineSpacing: 8,
+          wordWrap: {
+            width: 440,
+          },
+        },
+      ),
+    )
+
+    const equipmentBonus =
+      this.getEquipmentBonusText(
+        definition,
+      )
+
+    if (equipmentBonus) {
+      this.addDynamic(
+        this.scene.add.text(
           720,
-          178,
-          `${definition.rarity.toUpperCase()} • ${definition.category.toUpperCase()}`,
+          475,
+          `Bonus: ${equipmentBonus}`,
           {
             fontFamily:
               'Arial, sans-serif',
             fontSize: '15px',
             fontStyle: 'bold',
-            color: rarityColor,
+            color: '#9bd8ad',
           },
-        )
+        ),
+      )
+    }
 
-    const amount =
-      this.scene.add
-        .text(
-          720,
-          210,
-          `Owned: ${quantity}`,
-          {
-            fontFamily:
-              'Arial, sans-serif',
-            fontSize: '16px',
-            color: '#d7dde5',
-          },
-        )
+    if (
+      definition.equipmentSlot
+    ) {
+      this.renderActionButton(
+        'EQUIP',
+        0x456e9d,
+        0x9fc8f5,
+        () => {
+          const result =
+            this.callbacks
+              .onEquipItem(
+                definition.id,
+              )
 
-    const description =
-      this.scene.add
-        .text(
-          720,
-          255,
-          definition.description,
-          {
-            fontFamily:
-              'Arial, sans-serif',
-            fontSize: '17px',
-            color: '#bec8d3',
-            lineSpacing: 8,
-            wordWrap: {
-              width: 440,
-            },
-          },
-        )
+          this.statusText
+            .setText(
+              result.message,
+            )
 
-    this.addDynamic(name)
-    this.addDynamic(rarity)
-    this.addDynamic(amount)
-    this.addDynamic(description)
+          this.refresh()
+        },
+      )
+
+      return
+    }
 
     if (
       definition.category ===
-        'consumable'
+      'consumable'
     ) {
-      const useButton =
-        this.scene.add
-          .rectangle(
-            815,
-            500,
-            190,
-            58,
-            0x367b66,
-            0.96,
-          )
-          .setStrokeStyle(
-            3,
-            0x9ee0c8,
-          )
-          .setInteractive()
-
-      const useText =
-        this.scene.add
-          .text(
-            815,
-            500,
-            'USE ITEM',
-            {
-              fontFamily:
-                'Arial, sans-serif',
-              fontSize: '17px',
-              fontStyle: 'bold',
-              color: '#ffffff',
-            },
-          )
-          .setOrigin(0.5)
-
-      useButton.on(
-        'pointerdown',
+      this.renderActionButton(
+        'USE ITEM',
+        0x367b66,
+        0x9ee0c8,
         () => {
           const result =
             this.callbacks
@@ -577,50 +776,115 @@ export class InventoryPanel {
                 definition.id,
               )
 
-          this.statusText.setText(
-            result.message,
-          )
+          this.statusText
+            .setText(
+              result.message,
+            )
 
           this.refresh()
         },
       )
 
-      this.addDynamic(useButton)
-      this.addDynamic(useText)
       return
     }
 
-    const note =
+    this.addDynamic(
+      this.scene.add.text(
+        720,
+        525,
+        'This item is not directly usable.',
+        {
+          fontFamily:
+            'Arial, sans-serif',
+          fontSize: '15px',
+          color: '#8997a8',
+        },
+      ),
+    )
+  }
+
+  private renderActionButton(
+    label: string,
+    fillColor: number,
+    borderColor: number,
+    onPress: () => void,
+  ) {
+    const button =
+      this.scene.add
+        .rectangle(
+          815,
+          545,
+          190,
+          52,
+          fillColor,
+          0.96,
+        )
+        .setStrokeStyle(
+          3,
+          borderColor,
+        )
+        .setInteractive()
+
+    const text =
       this.scene.add
         .text(
-          720,
-          490,
-          definition.category ===
-            'weapon'
-            ? 'Equipment support arrives in the next progression batch.'
-            : 'This item is not directly usable.',
+          815,
+          545,
+          label,
           {
             fontFamily:
               'Arial, sans-serif',
-            fontSize: '15px',
-            color: '#8997a8',
-            wordWrap: {
-              width: 430,
-            },
+            fontSize: '17px',
+            fontStyle: 'bold',
+            color: '#ffffff',
           },
         )
+        .setOrigin(0.5)
 
-    this.addDynamic(note)
+    button.on(
+      'pointerdown',
+      onPress,
+    )
+
+    this.addDynamic(button)
+    this.addDynamic(text)
+  }
+
+  private getEquipmentBonusText(
+    definition: ItemDefinition,
+  ) {
+    const bonuses: string[] = []
+
+    if (
+      definition.attackBonus
+    ) {
+      bonuses.push(
+        `+${definition.attackBonus} ATK`,
+      )
+    }
+
+    if (
+      definition.maxHpBonus
+    ) {
+      bonuses.push(
+        `+${definition.maxHpBonus} HP`,
+      )
+    }
+
+    return bonuses.join('  ')
   }
 
   private addDynamic(
-    object: Phaser.GameObjects.GameObject,
+    object:
+      Phaser.GameObjects.GameObject,
   ) {
     this.dynamicObjects.push(
       object,
     )
 
-    this.container.add(object)
+    this.container.add(
+      object,
+    )
   }
 
   private getRarityColor(

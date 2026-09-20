@@ -31,10 +31,37 @@ const ITEMS: Record<
     id: 'novice-blade',
     name: 'Novice Blade',
     description:
-      'A dependable starter blade made for new Rangers.',
+      'A dependable starter blade forged for new Rangers.',
     category: 'weapon',
     rarity: 'uncommon',
     maxStack: 1,
+    equipmentSlot: 'weapon',
+    attackBonus: 6,
+  },
+
+  'ranger-vest': {
+    id: 'ranger-vest',
+    name: 'Ranger Vest',
+    description:
+      'Light frontier armor reinforced around vital areas.',
+    category: 'armor',
+    rarity: 'uncommon',
+    maxStack: 1,
+    equipmentSlot: 'armor',
+    maxHpBonus: 30,
+  },
+
+  'meadow-charm': {
+    id: 'meadow-charm',
+    name: 'Meadow Charm',
+    description:
+      'A crystal charm carrying faint Starfall energy.',
+    category: 'accessory',
+    rarity: 'rare',
+    maxStack: 1,
+    equipmentSlot: 'accessory',
+    attackBonus: 3,
+    maxHpBonus: 15,
   },
 }
 

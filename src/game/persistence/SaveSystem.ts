@@ -1,5 +1,11 @@
-import type { PlayerStats } from '../combat/CombatStats'
-import type { InventoryStack } from '../inventory/ItemTypes'
+import type {
+  PlayerStats,
+} from '../combat/CombatStats'
+
+import type {
+  EquipmentState,
+  InventoryStack,
+} from '../inventory/ItemTypes'
 
 interface LegacyPlayerSave {
   version: 1
@@ -25,7 +31,7 @@ interface SavedInventory {
 }
 
 interface SavedEquipment {
-  slots: Record<string, unknown>
+  slots: EquipmentState
 }
 
 interface GameSaveData {
@@ -92,9 +98,28 @@ export class SaveSystem {
     }
   }
 
+  loadEquipment():
+    EquipmentState {
+    try {
+      const current =
+        this.loadCurrentSave()
+
+      if (!current) {
+        return {}
+      }
+
+      return {
+        ...current.equipment.slots,
+      }
+    } catch {
+      return {}
+    }
+  }
+
   save(
     stats: PlayerStats,
     inventoryItems?: InventoryStack[],
+    equipmentSlots?: EquipmentState,
   ) {
     try {
       const existing =
@@ -102,8 +127,12 @@ export class SaveSystem {
 
       const saveData: GameSaveData = {
         version: 2,
+
         player:
-          this.toSavedPlayer(stats),
+          this.toSavedPlayer(
+            stats,
+          ),
+
         inventory:
           inventoryItems
             ? {
@@ -117,15 +146,24 @@ export class SaveSystem {
             : existing?.inventory ?? {
                 items: [],
               },
+
         equipment:
-          existing?.equipment ?? {
-            slots: {},
-          },
+          equipmentSlots
+            ? {
+                slots: {
+                  ...equipmentSlots,
+                },
+              }
+            : existing?.equipment ?? {
+                slots: {},
+              },
       }
 
       localStorage.setItem(
         this.storageKey,
-        JSON.stringify(saveData),
+        JSON.stringify(
+          saveData,
+        ),
       )
 
       return true
@@ -151,9 +189,10 @@ export class SaveSystem {
   }
 
   private loadCurrentSave() {
-    const raw = localStorage.getItem(
-      this.storageKey,
-    )
+    const raw =
+      localStorage.getItem(
+        this.storageKey,
+      )
 
     if (!raw) {
       return undefined
@@ -162,7 +201,11 @@ export class SaveSystem {
     const parsed: unknown =
       JSON.parse(raw)
 
-    if (!this.isValidCurrentSave(parsed)) {
+    if (
+      !this.isValidCurrentSave(
+        parsed,
+      )
+    ) {
       return undefined
     }
 
@@ -170,9 +213,10 @@ export class SaveSystem {
   }
 
   private loadLegacySave() {
-    const raw = localStorage.getItem(
-      this.legacyStorageKey,
-    )
+    const raw =
+      localStorage.getItem(
+        this.legacyStorageKey,
+      )
 
     if (!raw) {
       return undefined
@@ -181,7 +225,11 @@ export class SaveSystem {
     const parsed: unknown =
       JSON.parse(raw)
 
-    if (!this.isValidLegacySave(parsed)) {
+    if (
+      !this.isValidLegacySave(
+        parsed,
+      )
+    ) {
       return undefined
     }
 
@@ -194,7 +242,8 @@ export class SaveSystem {
     return {
       level: stats.level,
       xp: stats.xp,
-      xpToNext: stats.xpToNext,
+      xpToNext:
+        stats.xpToNext,
       maxHp: stats.maxHp,
       attack: stats.attack,
       coins: stats.coins,
@@ -207,7 +256,8 @@ export class SaveSystem {
     return {
       level: saved.level,
       xp: saved.xp,
-      xpToNext: saved.xpToNext,
+      xpToNext:
+        saved.xpToNext,
       hp: saved.maxHp,
       maxHp: saved.maxHp,
       attack: saved.attack,
@@ -242,9 +292,9 @@ export class SaveSystem {
       typeof save.equipment ===
         'object' &&
       save.equipment !== null &&
-      typeof save.equipment.slots ===
-        'object' &&
-      save.equipment.slots !== null
+      this.isValidEquipment(
+        save.equipment.slots,
+      )
     )
   }
 
@@ -259,11 +309,14 @@ export class SaveSystem {
     }
 
     const save =
-      value as Partial<LegacyPlayerSave>
+      value as
+        Partial<LegacyPlayerSave>
 
     return (
       save.version === 1 &&
-      this.isValidPlayer(save)
+      this.isValidPlayer(
+        save,
+      )
     )
   }
 
@@ -278,7 +331,8 @@ export class SaveSystem {
     }
 
     const player =
-      value as Partial<SavedPlayerProgress>
+      value as
+        Partial<SavedPlayerProgress>
 
     return (
       this.isValidNumber(
@@ -318,14 +372,16 @@ export class SaveSystem {
     return value.every(
       (item) => {
         if (
-          typeof item !== 'object' ||
+          typeof item !==
+            'object' ||
           item === null
         ) {
           return false
         }
 
         const stack =
-          item as Partial<InventoryStack>
+          item as
+            Partial<InventoryStack>
 
         return (
           typeof stack.itemId ===
@@ -339,6 +395,35 @@ export class SaveSystem {
           stack.quantity > 0
         )
       },
+    )
+  }
+
+  private isValidEquipment(
+    value: unknown,
+  ): value is EquipmentState {
+    if (
+      typeof value !== 'object' ||
+      value === null
+    ) {
+      return false
+    }
+
+    const entries =
+      Object.entries(value)
+
+    const validSlots =
+      new Set([
+        'weapon',
+        'armor',
+        'accessory',
+      ])
+
+    return entries.every(
+      ([slot, itemId]) =>
+        validSlots.has(slot) &&
+        typeof itemId ===
+          'string' &&
+        itemId.length > 0,
     )
   }
 

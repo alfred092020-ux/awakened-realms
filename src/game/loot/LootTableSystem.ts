@@ -26,7 +26,19 @@ export const SLIME_LOOT_TABLE:
     },
     {
       itemId: 'novice-blade',
-      chance: 0.04,
+      chance: 0.08,
+      minQuantity: 1,
+      maxQuantity: 1,
+    },
+    {
+      itemId: 'ranger-vest',
+      chance: 0.06,
+      minQuantity: 1,
+      maxQuantity: 1,
+    },
+    {
+      itemId: 'meadow-charm',
+      chance: 0.03,
       minQuantity: 1,
       maxQuantity: 1,
     },
