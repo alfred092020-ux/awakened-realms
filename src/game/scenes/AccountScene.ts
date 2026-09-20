@@ -8,6 +8,10 @@ import {
   CloudSyncCoordinator,
 } from '../cloud/CloudSyncCoordinator'
 
+import {
+  PresenceService,
+} from '../social/PresenceService'
+
 export class AccountScene
   extends Phaser.Scene {
   private readonly cloud =
@@ -383,6 +387,9 @@ export class AccountScene
   }
 
   private async useGuestAfterSignOut() {
+    await new PresenceService()
+      .stop()
+
     await this.cloud
       .signOut()
 

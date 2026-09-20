@@ -29,10 +29,19 @@ import type {
   Firestore,
 } from 'firebase/firestore'
 
+import {
+  getDatabase,
+} from 'firebase/database'
+
+import type {
+  Database,
+} from 'firebase/database'
+
 export interface FirebaseServices {
   app: FirebaseApp
   auth: Auth
   db: Firestore
+  realtime: Database
 }
 
 let cachedServices:
@@ -83,6 +92,13 @@ function readFirebaseConfig():
       (
         import.meta.env
           .VITE_FIREBASE_APP_ID ??
+        ''
+      ).trim(),
+
+    databaseURL:
+      (
+        import.meta.env
+          .VITE_FIREBASE_DATABASE_URL ??
         ''
       ).trim(),
   }
@@ -137,6 +153,12 @@ getFirebaseServices():
 
     db:
       getFirestore(app),
+
+    realtime:
+      getDatabase(
+        app,
+        config.databaseURL,
+      ),
   }
 
   return cachedServices

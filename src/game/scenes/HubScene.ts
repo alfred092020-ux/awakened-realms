@@ -5,6 +5,10 @@ import {
 } from '../meta/MetaSession'
 
 import {
+  PresenceService,
+} from '../social/PresenceService'
+
+import {
   META_UPGRADES,
   getMetaUpgradeCost,
 } from '../meta/MetaUpgradeCatalog'
@@ -31,6 +35,9 @@ export class HubScene
 
     const state =
       session.getState()
+
+    void new PresenceService()
+      .start()
 
     this.cameras.main
       .setBackgroundColor(

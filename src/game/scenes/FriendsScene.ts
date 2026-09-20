@@ -184,11 +184,64 @@ export class FriendsScene
       },
     )
 
+    const multiplayer =
+      this.add
+        .rectangle(
+          width / 2,
+          255,
+          width - 72,
+          58,
+          0x1d4b45,
+        )
+        .setStrokeStyle(
+          2,
+          0x55a88f,
+        )
+        .setInteractive({
+          useHandCursor:
+            true,
+        })
+
+    this.add
+      .text(
+        width / 2,
+        255,
+        'LIVE CO-OP',
+        {
+          fontFamily:
+            'Arial, sans-serif',
+
+          fontSize:
+            '19px',
+
+          fontStyle:
+            'bold',
+
+          color:
+            '#c9f7e6',
+
+          letterSpacing:
+            3,
+        },
+      )
+      .setOrigin(
+        0.5,
+      )
+
+    multiplayer.on(
+      'pointerdown',
+      () => {
+        this.scene.start(
+          'MultiplayerScene',
+        )
+      },
+    )
+
     this.statusText =
       this.add
         .text(
           width / 2,
-          270,
+          335,
           '',
           {
             fontFamily:
@@ -274,7 +327,7 @@ export class FriendsScene
         )
 
       let y =
-        330
+        395
 
       if (
         overview.incoming.length >
@@ -469,7 +522,7 @@ export class FriendsScene
         )
 
       let y =
-        340
+        405
 
       for (
         const profile of

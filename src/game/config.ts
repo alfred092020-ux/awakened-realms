@@ -32,6 +32,14 @@ import {
   PlayerProfileScene,
 } from './scenes/PlayerProfileScene'
 
+import {
+  MultiplayerScene,
+} from './scenes/MultiplayerScene'
+
+import {
+  CoopLobbyScene,
+} from './scenes/CoopLobbyScene'
+
 
 import {
   RoguelikeBattleScene,
@@ -87,6 +95,8 @@ export const gameConfig:
     LeaderboardScene,
     FriendsScene,
     PlayerProfileScene,
+    MultiplayerScene,
+    CoopLobbyScene,
     RoguelikeBattleScene,
   ],
 

@@ -1,0 +1,38 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+
+    "presence": {
+      "$uid": {
+        ".read": "auth != null",
+
+        ".write": "auth != null && auth.uid === $uid",
+
+        ".validate": "newData.hasChildren(['online', 'lastChanged']) && newData.child('online').isBoolean() && newData.child('lastChanged').isNumber()"
+      }
+    },
+
+    "multiplayerInvites": {
+      "$toUid": {
+        ".read": "auth != null && auth.uid === $toUid",
+
+        "$inviteId": {
+          ".write": "auth != null && ((!data.exists() && newData.child('fromUid').val() === auth.uid && newData.child('toUid').val() === $toUid && auth.uid !== $toUid && newData.child('status').val() === 'pending') || (data.exists() && auth.uid === $toUid && newData.child('fromUid').val() === data.child('fromUid').val() && newData.child('toUid').val() === data.child('toUid').val() && newData.child('roomId').val() === data.child('roomId').val() && newData.child('createdAt').val() === data.child('createdAt').val() && (newData.child('status').val() === 'accepted' || newData.child('status').val() === 'declined')))",
+
+          ".validate": "newData.hasChildren(['fromUid', 'toUid', 'roomId', 'status', 'createdAt', 'updatedAt']) && newData.child('fromUid').isString() && newData.child('toUid').isString() && newData.child('roomId').isString() && (newData.child('status').val() === 'pending' || newData.child('status').val() === 'accepted' || newData.child('status').val() === 'declined') && newData.child('createdAt').isNumber() && newData.child('updatedAt').isNumber()"
+        }
+      }
+    },
+
+    "multiplayerRooms": {
+      "$roomId": {
+        ".read": "auth != null && (auth.uid === data.child('hostUid').val() || auth.uid === data.child('guestUid').val())",
+
+        ".write": "auth != null && ((!data.exists() && newData.child('hostUid').val() === auth.uid && newData.child('guestUid').val() !== auth.uid) || (data.exists() && (auth.uid === data.child('hostUid').val() || auth.uid === data.child('guestUid').val()) && newData.child('hostUid').val() === data.child('hostUid').val() && newData.child('guestUid').val() === data.child('guestUid').val() && newData.child('createdAt').val() === data.child('createdAt').val()))",
+
+        ".validate": "newData.hasChildren(['hostUid', 'guestUid', 'status', 'createdAt', 'updatedAt']) && newData.child('hostUid').isString() && newData.child('guestUid').isString() && newData.child('hostUid').val() !== newData.child('guestUid').val() && (newData.child('status').val() === 'invited' || newData.child('status').val() === 'ready' || newData.child('status').val() === 'closed') && newData.child('createdAt').isNumber() && newData.child('updatedAt').isNumber()"
+      }
+    }
+  }
+}
