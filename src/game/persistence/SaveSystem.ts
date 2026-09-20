@@ -1,6 +1,6 @@
 import type { PlayerStats } from '../combat/CombatStats'
 
-interface SavedPlayerProgress {
+interface LegacyPlayerSave {
   version: 1
   level: number
   xp: number
@@ -10,58 +10,90 @@ interface SavedPlayerProgress {
   coins: number
 }
 
+interface SavedPlayerProgress {
+  level: number
+  xp: number
+  xpToNext: number
+  maxHp: number
+  attack: number
+  coins: number
+}
+
+interface SavedInventory {
+  items: unknown[]
+}
+
+interface SavedEquipment {
+  slots: Record<string, unknown>
+}
+
+interface GameSaveData {
+  version: 2
+  player: SavedPlayerProgress
+  inventory: SavedInventory
+  equipment: SavedEquipment
+}
+
 export class SaveSystem {
   private readonly storageKey =
+    'awakened-realms.save'
+
+  private readonly legacyStorageKey =
     'awakened-realms.player-progress.v1'
 
   load(
     fallback: PlayerStats,
   ): PlayerStats {
     try {
-      const raw = localStorage.getItem(
-        this.storageKey,
-      )
+      const current =
+        this.loadCurrentSave()
 
-      if (!raw) {
-        return { ...fallback }
+      if (current) {
+        return this.toPlayerStats(
+          current.player,
+        )
       }
 
-      const parsed: unknown =
-        JSON.parse(raw)
+      const legacy =
+        this.loadLegacySave()
 
-      if (!this.isValidSave(parsed)) {
-        return { ...fallback }
+      if (legacy) {
+        const stats =
+          this.toPlayerStats(legacy)
+
+        this.save(stats)
+
+        return stats
       }
 
-      return {
-        level: parsed.level,
-        xp: parsed.xp,
-        xpToNext: parsed.xpToNext,
-        hp: parsed.maxHp,
-        maxHp: parsed.maxHp,
-        attack: parsed.attack,
-        coins: parsed.coins,
-      }
+      return { ...fallback }
     } catch {
       return { ...fallback }
     }
   }
 
   save(stats: PlayerStats) {
-    const progress: SavedPlayerProgress = {
-      version: 1,
-      level: stats.level,
-      xp: stats.xp,
-      xpToNext: stats.xpToNext,
-      maxHp: stats.maxHp,
-      attack: stats.attack,
-      coins: stats.coins,
-    }
-
     try {
+      const existing =
+        this.loadCurrentSave()
+
+      const saveData: GameSaveData = {
+        version: 2,
+        player:
+          this.toSavedPlayer(stats),
+        inventory:
+          existing?.inventory ?? {
+            items: [],
+          },
+        equipment:
+          existing?.equipment ?? {
+            slots: {},
+          },
+      }
+
       localStorage.setItem(
         this.storageKey,
-        JSON.stringify(progress),
+        JSON.stringify(saveData),
       )
 
       return true
@@ -76,13 +108,134 @@ export class SaveSystem {
         this.storageKey,
       )
 
+      localStorage.removeItem(
+        this.legacyStorageKey,
+      )
+
       return true
     } catch {
       return false
     }
   }
 
-  private isValidSave(
+  private loadCurrentSave() {
+    const raw = localStorage.getItem(
+      this.storageKey,
+    )
+
+    if (!raw) {
+      return undefined
+    }
+
+    const parsed: unknown =
+      JSON.parse(raw)
+
+    if (!this.isValidCurrentSave(parsed)) {
+      return undefined
+    }
+
+    return parsed
+  }
+
+  private loadLegacySave() {
+    const raw = localStorage.getItem(
+      this.legacyStorageKey,
+    )
+
+    if (!raw) {
+      return undefined
+    }
+
+    const parsed: unknown =
+      JSON.parse(raw)
+
+    if (!this.isValidLegacySave(parsed)) {
+      return undefined
+    }
+
+    return parsed
+  }
+
+  private toSavedPlayer(
+    stats: PlayerStats,
+  ): SavedPlayerProgress {
+    return {
+      level: stats.level,
+      xp: stats.xp,
+      xpToNext: stats.xpToNext,
+      maxHp: stats.maxHp,
+      attack: stats.attack,
+      coins: stats.coins,
+    }
+  }
+
+  private toPlayerStats(
+    saved: SavedPlayerProgress,
+  ): PlayerStats {
+    return {
+      level: saved.level,
+      xp: saved.xp,
+      xpToNext: saved.xpToNext,
+      hp: saved.maxHp,
+      maxHp: saved.maxHp,
+      attack: saved.attack,
+      coins: saved.coins,
+    }
+  }
+
+  private isValidCurrentSave(
+    value: unknown,
+  ): value is GameSaveData {
+    if (
+      typeof value !== 'object' ||
+      value === null
+    ) {
+      return false
+    }
+
+    const save =
+      value as Partial<GameSaveData>
+
+    return (
+      save.version === 2 &&
+      this.isValidPlayer(
+        save.player,
+      ) &&
+      typeof save.inventory ===
+        'object' &&
+      save.inventory !== null &&
+      Array.isArray(
+        save.inventory.items,
+      ) &&
+      typeof save.equipment ===
+        'object' &&
+      save.equipment !== null &&
+      typeof save.equipment.slots ===
+        'object' &&
+      save.equipment.slots !== null
+    )
+  }
+
+  private isValidLegacySave(
+    value: unknown,
+  ): value is LegacyPlayerSave {
+    if (
+      typeof value !== 'object' ||
+      value === null
+    ) {
+      return false
+    }
+
+    const save =
+      value as Partial<LegacyPlayerSave>
+
+    return (
+      save.version === 1 &&
+      this.isValidPlayer(save)
+    )
+  }
+
+  private isValidPlayer(
     value: unknown,
   ): value is SavedPlayerProgress {
     if (
@@ -92,27 +245,32 @@ export class SaveSystem {
       return false
     }
 
-    const save =
+    const player =
       value as Partial<SavedPlayerProgress>
 
     return (
-      save.version === 1 &&
-      this.isValidNumber(save.level, 1) &&
-      this.isValidNumber(save.xp, 0) &&
       this.isValidNumber(
-        save.xpToNext,
+        player.level,
         1,
       ) &&
       this.isValidNumber(
-        save.maxHp,
+        player.xp,
+        0,
+      ) &&
+      this.isValidNumber(
+        player.xpToNext,
         1,
       ) &&
       this.isValidNumber(
-        save.attack,
+        player.maxHp,
         1,
       ) &&
       this.isValidNumber(
-        save.coins,
+        player.attack,
+        1,
+      ) &&
+      this.isValidNumber(
+        player.coins,
         0,
       )
     )

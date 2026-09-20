@@ -62,6 +62,8 @@ export class FieldScene extends Phaser.Scene {
       createStartingStats(),
     )
 
+    this.registerSaveLifecycle()
+
     const worldWidth = 2400
     const worldHeight = 1600
 
@@ -582,6 +584,56 @@ export class FieldScene extends Phaser.Scene {
       this.refreshHUD()
       this.showCombatMessage('Returned to Starfall')
     })
+  }
+
+  private registerSaveLifecycle() {
+    const saveNow = () => {
+      this.saveSystem.save(
+        this.stats,
+      )
+    }
+
+    const saveWhenHidden = () => {
+      if (
+        document.visibilityState ===
+        'hidden'
+      ) {
+        saveNow()
+      }
+    }
+
+    this.time.addEvent({
+      delay: 5000,
+      loop: true,
+      callback: saveNow,
+    })
+
+    window.addEventListener(
+      'pagehide',
+      saveNow,
+    )
+
+    document.addEventListener(
+      'visibilitychange',
+      saveWhenHidden,
+    )
+
+    this.events.once(
+      Phaser.Scenes.Events.SHUTDOWN,
+      () => {
+        saveNow()
+
+        window.removeEventListener(
+          'pagehide',
+          saveNow,
+        )
+
+        document.removeEventListener(
+          'visibilitychange',
+          saveWhenHidden,
+        )
+      },
+    )
   }
 
   private refreshHUD() {
