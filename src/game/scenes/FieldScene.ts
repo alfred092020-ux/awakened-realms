@@ -7,6 +7,7 @@ import { ArcShotSystem } from '../combat/ArcShotSystem'
 import { EnergySystem } from '../combat/EnergySystem'
 import { StarfallSystem } from '../combat/StarfallSystem'
 import { CriticalHitSystem } from '../combat/CriticalHitSystem'
+import { SaveSystem } from '../persistence/SaveSystem'
 import {
   createStartingStats,
   type PlayerStats,
@@ -27,6 +28,7 @@ export class FieldScene extends Phaser.Scene {
   private dialogueVisible = false
 
   private readonly interactionRange = 145
+  private readonly saveSystem = new SaveSystem()
 
   private stats: PlayerStats = createStartingStats()
   private enemies: Enemy[] = []
@@ -56,6 +58,10 @@ export class FieldScene extends Phaser.Scene {
   }
 
   create() {
+    this.stats = this.saveSystem.load(
+      createStartingStats(),
+    )
+
     const worldWidth = 2400
     const worldHeight = 1600
 
@@ -486,6 +492,7 @@ export class FieldScene extends Phaser.Scene {
     }
 
     this.refreshHUD()
+    this.saveSystem.save(this.stats)
 
     this.time.delayedCall(3000, () => {
       const x = enemy.sprite.x
