@@ -211,14 +211,36 @@ export class LogresFieldScene
         )
     }
 
+    const initialViewScale =
+      field
+        ?.initial_view_scale
+
+    /*
+     * field_settings.json supplies the
+     * original client's initial field view
+     * scale. Apply it directly when present
+     * rather than inventing a fallback value.
+     */
+    if (
+      typeof initialViewScale ===
+        'number' &&
+      Number.isFinite(
+        initialViewScale,
+      ) &&
+      initialViewScale > 0
+    ) {
+      this.cameras.main.setZoom(
+        initialViewScale,
+      )
+    }
+
     /*
      * Read and retain actual field values.
      * We do not invent missing world data.
      */
     this.registry.set(
       'logres.field.initialViewScale',
-      field
-        ?.initial_view_scale,
+      initialViewScale,
     )
 
     this.registry.set(
