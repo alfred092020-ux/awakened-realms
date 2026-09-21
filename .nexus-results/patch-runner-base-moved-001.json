@@ -1,0 +1,7 @@
+{
+  "error": "BASE_MOVED: expected 0000000000000000000000000000000000000000, got 02bf7cc2014eb502171fddeff97e9e7aabf0494b",
+  "job_id": "patch-runner-base-moved-001",
+  "job_type": "PATCH",
+  "status": "BASE_MOVED",
+  "written_at": "2026-09-21T20:28:11.782761+00:00"
+}
