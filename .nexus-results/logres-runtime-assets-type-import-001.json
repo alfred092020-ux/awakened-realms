@@ -1,0 +1,7 @@
+{
+  "error": "PATCH_APPLY_FAILED: error: corrupt patch at line 9",
+  "job_id": "logres-runtime-assets-type-import-001",
+  "job_type": "PATCH",
+  "status": "PATCH_APPLY_FAILED",
+  "written_at": "2026-09-21T20:37:11.018644+00:00"
+}
