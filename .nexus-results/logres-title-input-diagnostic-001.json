@@ -1,0 +1,18 @@
+{
+  "branch": "agent/logres-title-input-diagnostic-001",
+  "changed_paths": [
+    "e2e/logres-smoke.spec.mjs",
+    "src/game/config.ts",
+    "src/game/logres/LogresDevSettings.ts",
+    "src/game/logres/ui/LogresRuntimeAssets.ts",
+    "src/game/scenes/LogresTitleScene.ts",
+    "src/game/scenes/LogresWorldSelectScene.ts",
+    "tests/LogresTiming.test.ts"
+  ],
+  "commit": "f10fc55604a570581eabc8036d281643986dd420",
+  "job_id": "logres-title-input-diagnostic-001",
+  "job_type": "PATCH",
+  "status": "SUCCESS",
+  "verification": "\n> awakened-realms@0.0.0 verify:all\n> npm run verify && npm run test:e2e\n\n\n> awakened-realms@0.0.0 verify\n> npm run test && npm run build\n\n\n> awakened-realms@0.0.0 test\n> vitest run\n\n\n\u001b[1m\u001b[30m\u001b[46m RUN \u001b[49m\u001b[39m\u001b[22m \u001b[36mv5.0.1 \u001b[39m\u001b[90m/srv/awakened-realms/worktrees/logres-title-input-diagnostic-001\u001b[39m\n\n \u001b[32m\u2713\u001b[39m tests/LogresStrictClient.test.ts \u001b[2m(\u001b[22m\u001b[2m5 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 4\u001b[2mms\u001b[22m\u001b[39m\n \u001b[32m\u2713\u001b[39m tests/LogresTiming.test.ts \u001b[2m(\u001b[22m\u001b[2m1 test\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 2\u001b[2mms\u001b[22m\u001b[39m\n\n\u001b[2m Test Files \u001b[22m \u001b[1m\u001b[32m2 passed\u001b[39m\u001b[22m\u001b[90m (2)\u001b[39m\n\u001b[2m      Tests \u001b[22m \u001b[1m\u001b[32m6 passed\u001b[39m\u001b[22m\u001b[90m (6)\u001b[39m\n\u001b[2m   Start at \u001b[22m 23:13:09\n\u001b[2m   Duration \u001b[22m 1.28s\u001b[2m (environment 93%, transform 4%, import 1%, worker 1%, tests 1%)\u001b[22m\n\n\u001b[2m    Isolate \u001b[22m \u001b[33m2 workers spawned\u001b[39m\u001b[2m \u00b7 ~595ms startup each (spawn + environment, per file)\u001b[22m\n\u001b[2m            \u001b[22m \u001b[2mat least ~595ms faster with \u001b[22m\u001b[33misolate: false\u001b[39m\u001b[2m \u2014 reuses workers across files instead of one per file\u001b[22m\n\n\n> awakened-realms@0.0.0 build\n> tsc && vite build\n\nvite v8.3.0 building client environment for production...\ntransforming...\n\u2713 16 modules transformed.\nrendering chunks...\ncomputing gzip size...\ndist/index.html                     0.51 kB \u2502 gzip:   0.32 kB\ndist/assets/index-DLrp2nQI.css      0.50 kB \u2502 gzip:   0.30 kB\ndist/assets/index-hCRUYWmy.js   1,384.78 kB \u2502 gzip: 360.47 kB\n\n\u2713 built in 564ms\n[plugin builtin:vite-reporter] \n(!) Some chunks are larger than 500 kB after minification. Consider:\n- Using dynamic import() to code-split the application\n- Use build.rolldownOptions.output.codeSplitting to improve chunking: https://rolldown.rs/reference/OutputOptions.codeSplitting\n- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.\n\n> awakened-realms@0.0.0 test:e2e\n> playwright test\n\n\nRunning 1 test using 1 worker\n\nTITLE_CONTROL_INITIAL { alpha: 0, enabled: true, willRender: false }\nTITLE_CONTROL_REVEALED { alpha: 1, willRender: true }\n  \u2713  1 e2e/logres-smoke.spec.mjs:68:1 \u203a diagnoses recovered title reveal before input (3.2s)\n\n  1 passed (4.1s)\n",
+  "written_at": "2026-09-21T23:13:19.319744+00:00"
+}
