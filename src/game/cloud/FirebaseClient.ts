@@ -1,4 +1,12 @@
 import {
+  Capacitor,
+} from '@capacitor/core'
+
+import {
+  FirebaseAuthentication,
+} from '@capacitor-firebase/authentication'
+
+import {
   getApps,
   initializeApp,
 } from 'firebase/app'
@@ -12,6 +20,7 @@ import {
   getAuth,
   GoogleAuthProvider,
   onAuthStateChanged,
+  signInWithCredential,
   signInWithPopup,
   signOut,
 } from 'firebase/auth'
@@ -221,6 +230,52 @@ signInFirebaseGoogle() {
     throw new Error(
       'Firebase is not configured.',
     )
+  }
+
+  if (
+    Capacitor.isNativePlatform()
+  ) {
+    const result =
+      await FirebaseAuthentication
+        .signInWithGoogle({
+          useCredentialManager:
+            false,
+        })
+
+    const idToken =
+      result.credential
+        ?.idToken
+
+    const accessToken =
+      result.credential
+        ?.accessToken
+
+    if (
+      !idToken &&
+      !accessToken
+    ) {
+      throw new Error(
+        'Google did not return a usable credential.',
+      )
+    }
+
+    const credential =
+      GoogleAuthProvider
+        .credential(
+          idToken ??
+            null,
+
+          accessToken ??
+            null,
+        )
+
+    const signedIn =
+      await signInWithCredential(
+        services.auth,
+        credential,
+      )
+
+    return signedIn.user
   }
 
   const provider =

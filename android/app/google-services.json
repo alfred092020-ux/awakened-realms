@@ -1,0 +1,40 @@
+{
+  "project_info": {
+    "project_number": "488116567878",
+    "firebase_url": "https://awakened-realms-default-rtdb.firebaseio.com",
+    "project_id": "awakened-realms",
+    "storage_bucket": "awakened-realms.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:488116567878:android:1785e3f9e2f0d8f6f72f47",
+        "android_client_info": {
+          "package_name": "com.nexuscore.awakenedrealms"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "488116567878-0uvf4q2u1h2oh9hbnh45sggbv0q7tidb.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDhepNtnyS6Jrf3iF51jmDJifzCi7qCbzI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "488116567878-0uvf4q2u1h2oh9hbnh45sggbv0q7tidb.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

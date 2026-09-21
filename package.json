@@ -25,6 +25,7 @@
     "vitest": "^5.0.1"
   },
   "dependencies": {
+    "@capacitor-firebase/authentication": "^8.5.2",
     "@capacitor/android": "^8.5.2",
     "@capacitor/core": "^8.5.2",
     "firebase": "^12.19.0",
