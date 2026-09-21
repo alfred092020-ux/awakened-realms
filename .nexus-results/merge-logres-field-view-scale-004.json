@@ -1,0 +1,8 @@
+{
+  "commit": "3a1296b00650e0d596737e6f9bdaabbe8c1e31b5",
+  "job_id": "merge-logres-field-view-scale-004",
+  "job_type": "MERGE",
+  "status": "SUCCESS",
+  "target_branch": "feat/logres-reconstruction",
+  "written_at": "2026-09-21T20:36:21.991574+00:00"
+}
