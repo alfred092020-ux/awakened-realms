@@ -10,6 +10,10 @@ import {
   type LogresGender,
 } from '../logres/protocol/CharacterCreateProtocol'
 
+import {
+  logresDevMs,
+} from '../logres/LogresDevSettings'
+
 type CharacterSex =
   | 'man'
   | 'woman'
@@ -118,7 +122,7 @@ export class LogresCharacterCreateScene
      * fade 0.15 sec
      */
     this.time.delayedCall(
-      100,
+      logresDevMs(100),
       () => {
         this.tweens.add({
           targets: [
@@ -130,7 +134,7 @@ export class LogresCharacterCreateScene
             1,
 
           duration:
-            150,
+            logresDevMs(150),
         })
       },
     )
@@ -171,7 +175,7 @@ export class LogresCharacterCreateScene
      * fade 0.30 sec
      */
     this.time.delayedCall(
-      500,
+      logresDevMs(500),
       () => {
         this.tweens.add({
           targets:
@@ -181,7 +185,7 @@ export class LogresCharacterCreateScene
             1,
 
           duration:
-            300,
+            logresDevMs(300),
         })
       },
     )
@@ -218,7 +222,7 @@ export class LogresCharacterCreateScene
         0,
 
       duration:
-        500,
+        logresDevMs(500),
     })
 
     const texts =
