@@ -1,0 +1,7 @@
+{
+  "error": "verify_command not allowed: 'npm run test:e2e'",
+  "job_id": "logres-title-world-red-001",
+  "job_type": "PATCH",
+  "status": "INVALID_JOB",
+  "written_at": "2026-09-21T23:00:04.078360+00:00"
+}
