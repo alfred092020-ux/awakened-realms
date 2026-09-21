@@ -239,7 +239,7 @@ signInFirebaseGoogle() {
       await FirebaseAuthentication
         .signInWithGoogle({
           useCredentialManager:
-            true,
+            false,
         })
 
     const idToken =
