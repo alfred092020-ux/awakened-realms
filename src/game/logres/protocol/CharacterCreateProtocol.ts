@@ -31,6 +31,8 @@ export function createCharacterCreateRequest(
   randomB: number,
 ): CharacterCreateRequest {
   if (
+    !Number.isInteger(randomA) ||
+    !Number.isInteger(randomB) ||
     randomA < 1 ||
     randomA > 5 ||
     randomB < 1 ||
