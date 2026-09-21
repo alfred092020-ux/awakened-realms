@@ -1,0 +1,7 @@
+{
+  "error": "PATCH_APPLY_FAILED: error: corrupt patch at line 43",
+  "job_id": "logres-field-view-scale-002",
+  "job_type": "PATCH",
+  "status": "PATCH_APPLY_FAILED",
+  "written_at": "2026-09-21T20:34:00.903020+00:00"
+}
