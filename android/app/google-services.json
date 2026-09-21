@@ -15,6 +15,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "488116567878-htuqpuqne2ak0seeilhmqngb24fbobhq.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.nexuscore.awakenedrealms",
+            "certificate_hash": "856c86bf24fa74425a3242d89389716fba84b75a"
+          }
+        },
+        {
           "client_id": "488116567878-0uvf4q2u1h2oh9hbnh45sggbv0q7tidb.apps.googleusercontent.com",
           "client_type": 3
         }
