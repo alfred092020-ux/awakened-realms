@@ -1,0 +1,128 @@
+[
+  {
+    "system": "battle",
+    "evidence": "Battle/Bout systems, command skills, HP/status UI, battle result and synchronization",
+    "basis": "client+protocol",
+    "reconstruction_confidence": "HIGH"
+  },
+  {
+    "system": "field",
+    "evidence": "Field/world movement, warp/object/weather/encounter behavior",
+    "basis": "client+protocol",
+    "reconstruction_confidence": "HIGH"
+  },
+  {
+    "system": "jobs",
+    "evidence": "Job change, job text/progression hooks",
+    "basis": "client+protocol",
+    "reconstruction_confidence": "HIGH"
+  },
+  {
+    "system": "equipment",
+    "evidence": "Inventory, equipment, garage, filters/sorts, item movement",
+    "basis": "client+protocol",
+    "reconstruction_confidence": "HIGH"
+  },
+  {
+    "system": "skills",
+    "evidence": "Command skills, item skills, Sixth Sense, skill detail",
+    "basis": "client+protocol",
+    "reconstruction_confidence": "HIGH"
+  },
+  {
+    "system": "quests",
+    "evidence": "Quest info, acceptance/progress/rewards, quest gacha hooks",
+    "basis": "client+protocol",
+    "reconstruction_confidence": "HIGH"
+  },
+  {
+    "system": "party",
+    "evidence": "Party info/invites/synchronization",
+    "basis": "protocol",
+    "reconstruction_confidence": "HIGH"
+  },
+  {
+    "system": "friends",
+    "evidence": "Friend requests/list",
+    "basis": "protocol",
+    "reconstruction_confidence": "HIGH"
+  },
+  {
+    "system": "chat",
+    "evidence": "Chat initialization/send/options",
+    "basis": "client+protocol",
+    "reconstruction_confidence": "HIGH"
+  },
+  {
+    "system": "clans",
+    "evidence": "Clan core + JP clan boards/skills/room items",
+    "basis": "client+protocol",
+    "reconstruction_confidence": "HIGH"
+  },
+  {
+    "system": "gacha",
+    "evidence": "Gacha UI/protocol, quest/slot/coupon variants",
+    "basis": "client+protocol",
+    "reconstruction_confidence": "HIGH"
+  },
+  {
+    "system": "shops",
+    "evidence": "Shop/store/gem shop/payment client flows",
+    "basis": "client+protocol",
+    "reconstruction_confidence": "HIGH"
+  },
+  {
+    "system": "pvp",
+    "evidence": "PvP protocol and battle presentation hooks",
+    "basis": "client+protocol",
+    "reconstruction_confidence": "MEDIUM-HIGH"
+  },
+  {
+    "system": "raid",
+    "evidence": "JP raid battle UI/protocol",
+    "basis": "client+protocol",
+    "reconstruction_confidence": "HIGH"
+  },
+  {
+    "system": "artifacts",
+    "evidence": "JP artifact equip/fusion/cache/config hooks",
+    "basis": "client+protocol",
+    "reconstruction_confidence": "HIGH"
+  },
+  {
+    "system": "emblems",
+    "evidence": "JP emblem parameters/filter/release conditions",
+    "basis": "client config",
+    "reconstruction_confidence": "MEDIUM-HIGH"
+  },
+  {
+    "system": "avatar_collection",
+    "evidence": "JP avatar collection config/text",
+    "basis": "client config",
+    "reconstruction_confidence": "MEDIUM-HIGH"
+  },
+  {
+    "system": "battle_board",
+    "evidence": "JP battle board accept/reward/card strength",
+    "basis": "client config",
+    "reconstruction_confidence": "MEDIUM-HIGH"
+  },
+  {
+    "system": "events",
+    "evidence": "Event points/gauges/settings/collaboration/east-west war",
+    "basis": "client config+protocol",
+    "reconstruction_confidence": "HIGH"
+  },
+  {
+    "system": "server_master_data",
+    "evidence": "Exact historical server-only rows/formulas not shipped in client",
+    "basis": "inferred/reconstructed",
+    "reconstruction_confidence": "MEDIUM"
+  },
+  {
+    "system": "original_player_database",
+    "evidence": "Historical production accounts/progress",
+    "basis": "not present",
+    "reconstruction_confidence": "NONE"
+  }
+]

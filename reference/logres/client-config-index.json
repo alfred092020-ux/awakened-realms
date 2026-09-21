@@ -1,0 +1,2216 @@
+{
+  "preferredSource": "japanese",
+  "fallbackSource": "global",
+  "configCount": 171,
+  "configs": [
+    {
+      "source": "japanese",
+      "name": "account_operation_setting.json",
+      "topLevelKeys": [
+        "delete"
+      ],
+      "sha256": "b45748323b4cd27036123d8532ecf53517a81e1ff71361a07f974a803ea24e14"
+    },
+    {
+      "source": "japanese",
+      "name": "activityWoindow_text.json",
+      "topLevelKeys": [
+        "activityWoindowText"
+      ],
+      "sha256": "54914663b52db20631417f0f52a86718bf4fd18fa28b351fea1d89d50be16cc9"
+    },
+    {
+      "source": "japanese",
+      "name": "alt_money_text.json",
+      "topLevelKeys": [
+        "abnormal_value_log_format",
+        "auto_fusion_result_element_format",
+        "material_days_Limit",
+        "material_list",
+        "time_out_interval",
+        "unified_icon_config"
+      ],
+      "sha256": "9b80925a2b61f3abb9150269bd2c80af1601338f0a5196804c9ec36860f0492d"
+    },
+    {
+      "source": "japanese",
+      "name": "app_review_dialog_text.json",
+      "topLevelKeys": [
+        "app_review_dialog_text"
+      ],
+      "sha256": "8d66699472bf77cddcd14dd3d86b0272752e0ecb04aaabb129733e6ecb229b81"
+    },
+    {
+      "source": "japanese",
+      "name": "artifact_settings.json",
+      "topLevelKeys": [
+        "cache",
+        "detail",
+        "fusion",
+        "icon",
+        "list",
+        "list_tab",
+        "notify_mask",
+        "protect",
+        "sell",
+        "set_artifact",
+        "set_artifact_select_window",
+        "set_confirm_window",
+        "ui",
+        "unified_icon_config"
+      ],
+      "sha256": "ee942d303dca88b07bfcbf37d6a9aa09b58b5ce076c632d5e0bbd29b6c6b51f9"
+    },
+    {
+      "source": "japanese",
+      "name": "auth_strings.json",
+      "topLevelKeys": [
+        "auth"
+      ],
+      "sha256": "c3fe0949fe245179169e8ea309f993e88d928d130992f9e278967f5dab8701c4"
+    },
+    {
+      "source": "japanese",
+      "name": "avatar_collection_settings.json",
+      "topLevelKeys": [
+        "avatar_quest_icon",
+        "avatar_shop",
+        "coordinate",
+        "coordinate_list",
+        "fashion_show",
+        "fixed_size_icon_setting",
+        "item_box",
+        "item_cache",
+        "item_filter",
+        "reaction_component",
+        "sealed",
+        "select_shape_tab"
+      ],
+      "sha256": "fa03b2e31cc373fe574659629526efa8b191adc9a30c1baeeaede0c3bd0d0f58"
+    },
+    {
+      "source": "japanese",
+      "name": "avatar_collection_texts.json",
+      "topLevelKeys": [
+        "avatar_item",
+        "coordinate",
+        "fashion_show",
+        "select_shape_tab"
+      ],
+      "sha256": "7f8a45a82354e112d3df6b176a6647595ad066ed4caeb8f06f601d7a0d5e7b0e"
+    },
+    {
+      "source": "japanese",
+      "name": "battle_board_text.json",
+      "topLevelKeys": [
+        "battle_board_window",
+        "card_setting",
+        "request_accept_battle",
+        "request_board_info",
+        "request_reward_info",
+        "reward_list",
+        "reward_window"
+      ],
+      "sha256": "98b45e77e3e896165f275d8062754a418a3a24d51aea3ddadfe2402814496b7e"
+    },
+    {
+      "source": "japanese",
+      "name": "battle_boost_setting.json",
+      "topLevelKeys": [
+        "battle_boost_enchant_confirm",
+        "battle_boost_production_sound",
+        "battle_boost_tutorial_popup",
+        "status_diff"
+      ],
+      "sha256": "887f467fb166836bcb14298aa210159779aca2ec5420b83161e71047b719e7c4"
+    },
+    {
+      "source": "japanese",
+      "name": "battle_multi_skill_reserve_setting.json",
+      "topLevelKeys": [
+        "multi_skill_reserve_type"
+      ],
+      "sha256": "3d6841ae40e9998b243adb7cac6346f4adc79b3289fdb63a6478f3b5fdf8e90e"
+    },
+    {
+      "source": "japanese",
+      "name": "battle_texts.json",
+      "topLevelKeys": [
+        "additional_skillView",
+        "battle_card_result",
+        "battle_effect_texts",
+        "battle_escape_texts",
+        "battle_raid",
+        "battle_token",
+        "bout_character",
+        "buff_icon_view",
+        "character_tap_hint",
+        "command_skill_selector_view",
+        "continuous_battle_counter",
+        "damage_muzzle",
+        "damage_record",
+        "death_limit_counter",
+        "debug_battle_end_button_setting",
+        "direct_drop",
+        "item_selector_view",
+        "remaining_lives_counter",
+        "skill_view",
+        "status_change_event"
+      ],
+      "sha256": "38cc8cf0c0b568b8eb7e8cf1b07f6135176e864f1eb4d07e1286a6732ed6d8b4"
+    },
+    {
+      "source": "japanese",
+      "name": "blacklist_texts.json",
+      "topLevelKeys": [
+        "blacklist"
+      ],
+      "sha256": "36eaa75234b3a7b908e0f8276e1fc4f29095a451c6d37458a303712d5d21d145"
+    },
+    {
+      "source": "japanese",
+      "name": "bout_character_view_info_setting.json",
+      "topLevelKeys": [
+        "digit_summary",
+        "enemy",
+        "gimmick_enemy",
+        "mercenary",
+        "player",
+        "shield"
+      ],
+      "sha256": "f1c0e2b11cdb51c415a38831ebaee9d21d2294daa3f8b52042d53f1c9e7f5463"
+    },
+    {
+      "source": "japanese",
+      "name": "characterInfoTitles.json",
+      "topLevelKeys": [
+        "battle_character_info_titles"
+      ],
+      "sha256": "6c3661e835d3cc8d48064a62597f17651f73bf07f2a80e3afd609cd53c8f316b"
+    },
+    {
+      "source": "japanese",
+      "name": "character_encounter_setting.json",
+      "topLevelKeys": [
+        "pvp"
+      ],
+      "sha256": "561485fe689f6cc199ff7ad507b4600b117eabbabfd3ba7b6b4b1cac011ba558"
+    },
+    {
+      "source": "japanese",
+      "name": "character_growth_setting.json",
+      "topLevelKeys": [
+        "levelup_sound_id",
+        "not_data_message",
+        "reward_list"
+      ],
+      "sha256": "7e8950f827e54c08ad5d4c3008e4ae72c236b30cf1c32e7c85f449bd79bd294e"
+    },
+    {
+      "source": "japanese",
+      "name": "character_growth_text.json",
+      "topLevelKeys": [
+        "character_growth_list",
+        "character_growth_reward_text"
+      ],
+      "sha256": "d461a5dac030913eb15746a6021f8115786f7f5911ead6c1ddc48bb398fc8a0d"
+    },
+    {
+      "source": "japanese",
+      "name": "character_text.json",
+      "topLevelKeys": [
+        "char_talk_limit_time_interval",
+        "char_talk_time_interval"
+      ],
+      "sha256": "587e5e4507dead2037dbcaf8491920628a17dd0e5c6cd764b7d4ac9106e4d65e"
+    },
+    {
+      "source": "japanese",
+      "name": "charactermake_texts.json",
+      "topLevelKeys": [
+        "charactermake_message",
+        "charactermake_part_list",
+        "charactermake_payment_confirm_check",
+        "charactermake_payment_price",
+        "charactermake_paymentcharactermake_result_message"
+      ],
+      "sha256": "a23325f785e851605848ddf4045af6c943b01b97f9fe6c54a463eb9f5edf5e26"
+    },
+    {
+      "source": "japanese",
+      "name": "chat_option.json",
+      "topLevelKeys": [
+        "chatOption"
+      ],
+      "sha256": "d8b44faeecceab4d9cd348724cd1562eea8a6cb17d848e9a33ab4810a38341e5"
+    },
+    {
+      "source": "japanese",
+      "name": "chat_text.json",
+      "topLevelKeys": [
+        "chatText",
+        "dialog_message",
+        "directchatlist_tipsmessage",
+        "group_chat_text",
+        "log_panel_empty",
+        "log_panel_world_chat_limit",
+        "stamp"
+      ],
+      "sha256": "9f0d3a9f910b16fc9cc65d539e21b720a4da5a5f96bcfdf6d565ad95cc3fe2b9"
+    },
+    {
+      "source": "japanese",
+      "name": "clan_board_texts.json",
+      "topLevelKeys": [
+        "comment_post_limit_msg",
+        "delete_confirm_msg",
+        "limit",
+        "pinned_confirm_msg",
+        "pinned_delete_msg",
+        "thread_post_limit_msg"
+      ],
+      "sha256": "84856e91232f5dda7bbec3321861b00f180964684d966ee9054b72966b6079eb"
+    },
+    {
+      "source": "japanese",
+      "name": "clan_room_item_icon_setting.json",
+      "topLevelKeys": [
+        "001_003_00001",
+        "001_003_00002",
+        "001_004_00000",
+        "001_004_00003",
+        "001_004_00005",
+        "001_005_00000",
+        "001_006_00000",
+        "001_006_00001",
+        "001_006_00002",
+        "001_009_00000",
+        "001_010_00002",
+        "001_010_00003",
+        "001_012_00000",
+        "001_013_00001",
+        "001_014_00000",
+        "001_015_00000",
+        "001_028_00000",
+        "001_029_00001",
+        "001_029_00003",
+        "001_029_00005",
+        "001_029_00007",
+        "001_029_00009",
+        "001_030_00000",
+        "001_030_00001",
+        "001_030_00005",
+        "001_030_00008",
+        "001_030_00009",
+        "001_030_00010",
+        "001_030_00012",
+        "001_031_00001",
+        "001_031_00002",
+        "001_031_00004",
+        "001_031_00007",
+        "001_031_00009",
+        "001_031_00015",
+        "001_031_00017",
+        "001_033_00004",
+        "001_033_00006",
+        "001_033_00008",
+        "001_033_00009",
+        "001_033_00010",
+        "001_033_00011",
+        "001_033_00013",
+        "001_033_00014",
+        "001_035_00021",
+        "001_035_00022",
+        "001_037_00001",
+        "001_041_00000",
+        "001_042_00000",
+        "001_043_00101",
+        "001_043_00200",
+        "001_043_00300",
+        "001_043_00301",
+        "001_043_00302",
+        "001_046_00000",
+        "001_054_00009",
+        "001_054_00012",
+        "001_056_00001",
+        "001_056_00006",
+        "001_056_00016",
+        "001_056_00020",
+        "001_056_00023",
+        "001_056_00025",
+        "001_056_00045",
+        "001_056_00048",
+        "001_056_00049",
+        "001_057_00010",
+        "001_057_00100",
+        "001_058_00003",
+        "001_058_00007",
+        "001_058_00008",
+        "001_060_00005",
+        "001_062_00000",
+        "001_062_00001",
+        "001_062_00002",
+        "001_062_00003",
+        "001_062_00004",
+        "001_062_00007",
+        "001_062_00009",
+        "001_062_00010",
+        "001_063_00100",
+        "001_064_00003",
+        "001_064_00007",
+        "001_064_00010",
+        "001_064_00101",
+        "001_064_10001",
+        "001_066_00030",
+        "001_066_00040",
+        "001_067_00000",
+        "001_067_00002",
+        "001_067_00003",
+        "001_068_00000",
+        "001_068_00001",
+        "001_068_02100",
+        "001_068_02101",
+        "001_068_02500",
+        "001_068_02501",
+        "001_068_02502",
+        "001_068_02503",
+        "001_069_00000",
+        "001_069_00003",
+        "001_069_03009",
+        "001_069_05010",
+        "001_069_06005",
+        "001_069_06008",
+        "001_069_08008",
+        "001_070_00010",
+        "001_070_00016",
+        "001_070_00020",
+        "001_070_00022",
+        "001_070_00024",
+        "001_070_00030",
+        "001_070_00031",
+        "001_070_00048",
+        "001_070_00051",
+        "001_070_00052",
+        "001_070_00053",
+        "001_070_00054",
+        "001_070_00055",
+        "001_070_00056",
+        "001_070_00057",
+        "001_070_00099",
+        "001_071_00050",
+        "001_071_00052",
+        "001_071_00060",
+        "001_071_00061",
+        "001_071_00064",
+        "001_071_00065",
+        "001_071_00100",
+        "001_071_01000",
+        "001_071_01001",
+        "001_071_01002",
+        "001_072_00110",
+        "001_072_01000",
+        "001_075_00000",
+        "001_075_00011",
+        "001_075_10001",
+        "001_075_10002",
+        "001_200_00023",
+        "004_006_00000",
+        "004_006_00024",
+        "004_006_00041",
+        "008_002_00000",
+        "008_002_00001",
+        "008_003_00000",
+        "008_003_00004",
+        "009_007_00000",
+        "010_006_00011",
+        "010_006_00012",
+        "010_006_00015",
+        "010_006_00042",
+        "012_003_00010",
+        "012_004_00000",
+        "012_004_00002",
+        "012_005_00001",
+        "012_013_00201",
+        "012_013_00209",
+        "012_014_00150",
+        "012_014_00160",
+        "012_103_00000",
+        "012_110_00000",
+        "012_110_00005",
+        "012_112_00000",
+        "012_113_00000",
+        "012_113_00001",
+        "012_121_00010",
+        "012_200_00000",
+        "012_200_00001",
+        "012_200_00002",
+        "012_200_00050",
+        "012_200_00100",
+        "012_200_00101",
+        "012_200_00150",
+        "012_200_00151",
+        "012_200_00152",
+        "012_200_00501",
+        "013_000_00010",
+        "201_001_00012",
+        "201_001_10012",
+        "222_000_00002",
+        "222_000_00003",
+        "222_000_00005",
+        "222_000_00027",
+        "222_000_00028",
+        "222_000_00030",
+        "222_000_00031",
+        "222_000_00032",
+        "222_000_00033",
+        "222_000_00037",
+        "222_000_00038",
+        "222_000_00048",
+        "222_000_00049",
+        "222_003_00000",
+        "222_003_00001",
+        "249_001_00000",
+        "250_000_00002",
+        "250_000_01000",
+        "250_001_00000",
+        "250_001_00002",
+        "250_001_00003",
+        "250_001_00004",
+        "250_001_00006",
+        "250_001_00009",
+        "250_001_00010",
+        "250_001_00011",
+        "250_002_00000",
+        "250_002_00002",
+        "250_002_00004",
+        "250_002_00005",
+        "250_002_00006",
+        "250_002_00007",
+        "250_002_00008",
+        "250_002_00009",
+        "250_002_00010",
+        "250_004_00000",
+        "250_004_00001",
+        "250_006_00000",
+        "250_006_00002",
+        "250_006_00004",
+        "250_006_00005",
+        "250_007_00000",
+        "250_008_00000",
+        "250_009_00000",
+        "250_009_00001",
+        "250_200_00000",
+        "250_201_00000",
+        "250_201_00001",
+        "250_201_00002",
+        "250_201_00010",
+        "250_201_00011",
+        "250_201_00012",
+        "250_201_00020",
+        "250_201_00021",
+        "250_201_00022",
+        "250_201_00030",
+        "250_201_00031",
+        "250_201_00032",
+        "250_201_00033",
+        "250_201_00034",
+        "250_201_00035",
+        "250_201_00036",
+        "250_201_00037",
+        "250_201_00038",
+        "250_201_00040",
+        "250_201_00041",
+        "250_201_00042",
+        "250_201_00050",
+        "250_201_00051",
+        "250_201_00052",
+        "255_100_00000",
+        "255_100_00001",
+        "255_100_00002",
+        "255_100_00003",
+        "255_100_00004",
+        "255_100_00005",
+        "255_100_00006"
+      ],
+      "sha256": "800b512180b5d1431224663ffe46c85d3672a7c6c236d931e7b8b1376d284b30"
+    },
+    {
+      "source": "japanese",
+      "name": "clan_skill_text.json",
+      "topLevelKeys": [
+        "authorization",
+        "detail",
+        "icon",
+        "inheritance",
+        "main_window",
+        "max_skill_level",
+        "member_record",
+        "result",
+        "skill_list",
+        "skill_record",
+        "sound_id",
+        "web_view"
+      ],
+      "sha256": "76b3376446e07cebd7c6e626ff4a048e5e37adb1298f0601d6be1745da590682"
+    },
+    {
+      "source": "japanese",
+      "name": "clan_text.json",
+      "topLevelKeys": [
+        "affiliation_change_type",
+        "apply_to_clan",
+        "clan_config",
+        "clan_event_log",
+        "clan_manage",
+        "clan_member_list",
+        "clan_mission_meesage",
+        "clan_mission_message",
+        "clan_post_resouce_path",
+        "clan_rank_path",
+        "clan_rank_reward_time",
+        "clan_room",
+        "clan_search_setting",
+        "clan_season",
+        "clan_sort_index",
+        "clan_tutorial",
+        "create_clan",
+        "interwar_period",
+        "invite",
+        "message_box",
+        "mission"
+      ],
+      "sha256": "1dce8d34572b32a955027daa9393d58a5562d9078ef76e974d18e8e5af2c70d6"
+    },
+    {
+      "source": "japanese",
+      "name": "collaboration_text.json",
+      "topLevelKeys": [
+        "elest"
+      ],
+      "sha256": "8153fe15e484147fecc8d4fbfb5da04ad9d4f8f4fe137152834443ee42e1dca5"
+    },
+    {
+      "source": "japanese",
+      "name": "common_texts.json",
+      "topLevelKeys": [
+        "enchant_deposit_point"
+      ],
+      "sha256": "d7e085fccde1902fc97d357f4b6aa630c7717e2b334ad6ce5fb9c763fdba71ec"
+    },
+    {
+      "source": "japanese",
+      "name": "community_texts.json",
+      "topLevelKeys": [
+        "error_list_info",
+        "huntersearch_char_info_failure",
+        "huntersearch_input_notfind",
+        "huntersearch_input_notnumber",
+        "job_empty",
+        "list_view_mode_area",
+        "list_view_mode_area_selected",
+        "loading_chardetail",
+        "login_state",
+        "no_friend_warp_quest_penalty",
+        "no_friend_warp_warning",
+        "not_chardetail",
+        "not_clan",
+        "not_list_info",
+        "not_list_info_area_filter",
+        "not_list_info_friend_filter",
+        "not_party_skill",
+        "not_quest",
+        "party_state",
+        "penalty_icon_delay_time",
+        "penalty_icon_duration",
+        "penalty_room_name",
+        "quest",
+        "quest_warp_retire_warning",
+        "recruitment"
+      ],
+      "sha256": "eb7966fc23b69f3d6b7cfdcc2de519f459f049ad8b3e77c2ac5dbc99abaac376"
+    },
+    {
+      "source": "japanese",
+      "name": "copy_hunter_id.json",
+      "topLevelKeys": [
+        "copy_hunter_id"
+      ],
+      "sha256": "55eda997832ff33cd9f803606f32f5aedab72def7e556c586e8399aa4a43de77"
+    },
+    {
+      "source": "japanese",
+      "name": "coupon_settings.json",
+      "topLevelKeys": [
+        "board",
+        "content_mask",
+        "detail",
+        "icon",
+        "list",
+        "reward",
+        "reward_list_window",
+        "sort",
+        "unified_icon_config"
+      ],
+      "sha256": "2fdb264357ecbd315597cd0d6c03302d153517bb4f0ae48c8cdb237e2866529e"
+    },
+    {
+      "source": "japanese",
+      "name": "deviceChange_tutorial_texts.json",
+      "topLevelKeys": [
+        "deviceChangeTexts"
+      ],
+      "sha256": "cb5894cc87b67bbc67428724dff8088c605569b05b72726fbda77c01f3a33ee6"
+    },
+    {
+      "source": "japanese",
+      "name": "east_west_war_settings.json",
+      "topLevelKeys": [
+        "gauge",
+        "own_point_top_position_ratio",
+        "team",
+        "team_notify"
+      ],
+      "sha256": "ea6a890cbf6dcc0c5dbf7def2b9cf2c3ba909b95a3090b2472120c7e069be654"
+    },
+    {
+      "source": "japanese",
+      "name": "emblem_filter_type_labels.json",
+      "topLevelKeys": [
+        "emblem_filter_type_labels"
+      ],
+      "sha256": "38955137a6276ede8272267fc9b1cca8f5fff9a93e737f04ba550de009ee7a96"
+    },
+    {
+      "source": "japanese",
+      "name": "emblem_setting.json",
+      "topLevelKeys": [
+        "avater_detail_view",
+        "content_mask",
+        "detail_view_parameter",
+        "list",
+        "parameter",
+        "release_condition_message",
+        "skill_detail"
+      ],
+      "sha256": "7cf116761795d97057c96ddaf2e9905fdece537b0fbdc63f763687de08a09238"
+    },
+    {
+      "source": "japanese",
+      "name": "ep_text.json",
+      "topLevelKeys": [
+        "epText"
+      ],
+      "sha256": "625b43431a9328f695b061dafee83a189003fc2fe5774fbd1032124b1ebb9f23"
+    },
+    {
+      "source": "japanese",
+      "name": "equip_tutorial_texts.json",
+      "topLevelKeys": [
+        "additional",
+        "additional_accessory",
+        "additional_protecter",
+        "additional_weapon",
+        "equip_tutorial_texts"
+      ],
+      "sha256": "21b52eb31416c026c1ad10cad32650bf809a60df357fccf10c0fe4a395561a34"
+    },
+    {
+      "source": "japanese",
+      "name": "equipment_filter_type_labels.json",
+      "topLevelKeys": [
+        "equipment_filter_type_labels"
+      ],
+      "sha256": "4de2456328dcf8878562dbcc7b17f16a23327e606e015afccb9d1b7797460352"
+    },
+    {
+      "source": "japanese",
+      "name": "equipment_sort_type_infos.json",
+      "topLevelKeys": [
+        "equipment_sort_type_labels"
+      ],
+      "sha256": "8cba235f77437bded9d820260e554cad9f6b9c0dd7a232b4b719232371d4edb8"
+    },
+    {
+      "source": "japanese",
+      "name": "equipment_texts.json",
+      "topLevelKeys": [
+        "check_not_limit_break_texts",
+        "equipment_detail",
+        "equipment_texts",
+        "favorite_texts",
+        "item_texts",
+        "itembox_texts",
+        "itemlist_option_text",
+        "limit_break_bonus_table",
+        "limit_break_texts",
+        "loading_texts",
+        "shop_texts"
+      ],
+      "sha256": "d62da79600843934e054420ee08dabcb7f0b3af83a3039839bfdab3978b848a2"
+    },
+    {
+      "source": "japanese",
+      "name": "equipment_ui_settings.json",
+      "topLevelKeys": [
+        "equipment_ui_settings",
+        "gift_icon_config",
+        "gift_sell_icon_config",
+        "level_icon_adjustment_anchor_y",
+        "shift_skill_icon_rect",
+        "skill_equip_group_gap",
+        "skill_equip_max_normal",
+        "skill_equip_max_pvp"
+      ],
+      "sha256": "78bf03d195b55402a4bc6e752f344c432882ef0a3f084e42a2e75f7c085e4d5c"
+    },
+    {
+      "source": "japanese",
+      "name": "event_gauge.json",
+      "topLevelKeys": [
+        "accumulation_reward",
+        "exchanges_icon"
+      ],
+      "sha256": "568d0071def9df2a6e62f443283aed377b377b475b942fe9af0623e79383023d"
+    },
+    {
+      "source": "japanese",
+      "name": "event_point.json",
+      "topLevelKeys": [
+        "accumulation_reward",
+        "event_material",
+        "event_medal",
+        "event_point",
+        "item_group"
+      ],
+      "sha256": "8a5a6dc941e98c5aeaed7f2e89c792ebb9b7a43bdf056883090700b7b1072938"
+    },
+    {
+      "source": "japanese",
+      "name": "event_setting.json",
+      "topLevelKeys": [
+        "event_setting"
+      ],
+      "sha256": "da6ebdc511e9824c445939d9fe26e7913c6e5b613ad9951f29a8def984e76e8c"
+    },
+    {
+      "source": "japanese",
+      "name": "favorite_text.json",
+      "topLevelKeys": [
+        "favorite_extend_failed",
+        "favorite_extend_max",
+        "favorite_extend_not_enough_info",
+        "favorite_extend_succeed",
+        "favorite_job_filter_all",
+        "favorite_sort_cancel",
+        "favorite_sort_decision",
+        "name_limit",
+        "pvp_name_limit",
+        "record"
+      ],
+      "sha256": "bae20d054f4dd2efb2e1c8801b56c9017fc20539ee5a0ce18bade4bd92786d68"
+    },
+    {
+      "source": "japanese",
+      "name": "field_settings.json",
+      "topLevelKeys": [
+        "battle_token_settings",
+        "initial_view_scale",
+        "resource_path"
+      ],
+      "sha256": "ffb36e10d6879a7c5758d15f046dffe64dda7112262aa711eee4eed51c7d9089"
+    },
+    {
+      "source": "japanese",
+      "name": "fusion_texts.json",
+      "topLevelKeys": [
+        "alternative_evolution_destionation_item_ids_request",
+        "evolution_failed",
+        "evolution_resource",
+        "evolution_text",
+        "fusion_altitemselect_input",
+        "fusion_confirm_warring",
+        "fusion_contents_mask",
+        "fusion_derive_result_failure",
+        "fusion_emergency_unseal_flag",
+        "fusion_error",
+        "fusion_evolution_notify_image",
+        "fusion_extend",
+        "fusion_extend_result_guidance",
+        "fusion_rarity_confirm",
+        "fusion_recommend_warning",
+        "fusion_recommend_warning2",
+        "fusion_result",
+        "fusion_skill_altmmaterial_limit_value",
+        "fusion_skill_decided_material",
+        "fusion_skill_level_overup",
+        "fusion_skill_leveling_bonus_view_resource_path",
+        "fusion_skill_notify_image",
+        "histories_record_maxsize",
+        "item_rarity",
+        "limit_break",
+        "placeholder_text",
+        "soundID",
+        "unified_icon_config"
+      ],
+      "sha256": "5c81db29dd0afebca8a2ce2e86f7fe63a955cfd44a1a9b0c61758b78b8c826c5"
+    },
+    {
+      "source": "japanese",
+      "name": "fusion_tutorial_texts.json",
+      "topLevelKeys": [
+        "fusion_tutorial_texts",
+        "fusion_update_tutorial_texts"
+      ],
+      "sha256": "11b66146372b83e8d97ee09c8cddd70c59b28e3f3da88a1b9142cae968e57546"
+    },
+    {
+      "source": "japanese",
+      "name": "gacha_texts.json",
+      "topLevelKeys": [
+        "accumulation_reward",
+        "boxgacha_component",
+        "boxgacha_texts",
+        "gacha_banner",
+        "gacha_detail_window",
+        "gacha_helperlist",
+        "gacha_texts",
+        "last_one",
+        "resource_path",
+        "unified_icon_config"
+      ],
+      "sha256": "ff9ff83af085ad994f31621bb25a042bf0dbe95178ca77de3b9e2cb8eac19bff"
+    },
+    {
+      "source": "japanese",
+      "name": "garage_filter_type_labels.json",
+      "topLevelKeys": [
+        "garage_filter_type_labels"
+      ],
+      "sha256": "edce7a83e7327451fa97097dc5db94ac26d08d05d472a1e0c3edf1536e96b6c8"
+    },
+    {
+      "source": "japanese",
+      "name": "garage_settings.json",
+      "topLevelKeys": [
+        "accomplished_item_garage_settings",
+        "garage_settings"
+      ],
+      "sha256": "4408209ce1380e92c2765f79b4dc416dbb7bc6aefb8bf5d6dd721787776933b6"
+    },
+    {
+      "source": "japanese",
+      "name": "garage_sort_type_labels.json",
+      "topLevelKeys": [
+        "garage_sort_type_labels"
+      ],
+      "sha256": "a5309daf3e4f021c10d3443453d4e2471a6a3ccc451e6fc9416b4d07a775cc32"
+    },
+    {
+      "source": "japanese",
+      "name": "garage_texts.json",
+      "topLevelKeys": [
+        "accomplished_item_garage_texts",
+        "garage_texts"
+      ],
+      "sha256": "a1821fc7de0e1e705a45e238ca6dba92fd964f98f72f3b851eda28723e02f5b0"
+    },
+    {
+      "source": "japanese",
+      "name": "gemshop_text.json",
+      "topLevelKeys": [
+        "animationicon_anchor_rect",
+        "bg",
+        "buy_avatar_registed_warning",
+        "buy_cost",
+        "buy_countmax",
+        "buy_limit_count1",
+        "buy_limit_count2",
+        "confirm_limit",
+        "confirm_limit_link_text",
+        "confirm_limit_text0",
+        "confirm_limit_text1",
+        "confirm_limit_text2",
+        "confirm_limit_text3",
+        "confirm_limit_text4",
+        "confirm_text_font",
+        "hud_icon_path",
+        "input",
+        "normalicon_anchor_rect",
+        "product_result",
+        "record",
+        "record_top_banner_scale",
+        "record_unified_icon_config",
+        "recovery_interrupted_message",
+        "recovery_result",
+        "result_line1",
+        "result_line2",
+        "result_message",
+        "suspended",
+        "suspended_message",
+        "tab",
+        "total_quantity"
+      ],
+      "sha256": "699851f80519ea68badbafa4b077a035e2356e150c7bc799619cfce4d0a55eaf"
+    },
+    {
+      "source": "japanese",
+      "name": "gift_text.json",
+      "topLevelKeys": [
+        "altmoney_discard_message",
+        "api",
+        "autoselect_checkbox_selected_warning",
+        "giftFilterItemType",
+        "giftHistoryFilterStateKind",
+        "giftSellText",
+        "giftSortType",
+        "giftText",
+        "period_type_caption"
+      ],
+      "sha256": "8d69407a35db53fe8f4c741d5e1044e4b2baf3a582de7f6f476f193c8493c3a7"
+    },
+    {
+      "source": "japanese",
+      "name": "handover_strings.json",
+      "topLevelKeys": [
+        "handover"
+      ],
+      "sha256": "73d642db3c84743480cbe5c0122042950608d1f9fb13ab1804f761b7915e7705"
+    },
+    {
+      "source": "japanese",
+      "name": "handover_texts.json",
+      "topLevelKeys": [
+        "handover_texts"
+      ],
+      "sha256": "8f0e4f58fd25f178589ac8cd6b258a4244d1b4d8674036767b9f3cbd961a8965"
+    },
+    {
+      "source": "japanese",
+      "name": "hud_settings.json",
+      "topLevelKeys": [
+        "exp_gauge",
+        "limit_timer"
+      ],
+      "sha256": "796270940dd18622972aef63a6f407963a11e41df3a70c648c2ed16b1736ca5a"
+    },
+    {
+      "source": "japanese",
+      "name": "information_texts.json",
+      "topLevelKeys": [
+        "error_message",
+        "period"
+      ],
+      "sha256": "08c3aaced340cbe91dd87d4631a0742baf7d757d2b249db6f17b004da94387e9"
+    },
+    {
+      "source": "japanese",
+      "name": "installmentdelivery_text.json",
+      "topLevelKeys": [
+        "animation_effect_next",
+        "animation_effect_now",
+        "animation_interval_time",
+        "buy_already_proceeded",
+        "buy_canceled",
+        "buy_charge_failed",
+        "buy_purchase_failed",
+        "buy_purchased_but_not_charged",
+        "buyresulthelp_popup",
+        "close_stopwindow_delaytime",
+        "confirm_caution",
+        "confirm_title",
+        "deily_record_title",
+        "deily_title",
+        "getlist_failed",
+        "help_popup",
+        "hud_icon_setting",
+        "period_check_time",
+        "product_icon_path"
+      ],
+      "sha256": "0091004efe4aa25b39161a3425a98d7fb25ac3727fcc3c137a7fc4480a6e6f77"
+    },
+    {
+      "source": "japanese",
+      "name": "inventory_text.json",
+      "topLevelKeys": [
+        "inventoryText"
+      ],
+      "sha256": "739db60cc7fa0a5a8c0efb8b9151a000653e05a04b57112801c4639a70308a2a"
+    },
+    {
+      "source": "japanese",
+      "name": "item_skill_subtype_setting.json",
+      "topLevelKeys": [
+        "label_gap_offset_y",
+        "label_resource_name",
+        "label_size",
+        "skill_class_label_resource_paths"
+      ],
+      "sha256": "b4417f37ec00d3bec75dc51b0f69b8fb006e7483c7c9932896fa28bc3a69073c"
+    },
+    {
+      "source": "japanese",
+      "name": "item_skill_text.json",
+      "topLevelKeys": [
+        "display_recast_mode_name"
+      ],
+      "sha256": "ef9ea7d5ded44e7fce7b5004e61f936aa9c6ba86ad4d6b5dcb86b93be830b630"
+    },
+    {
+      "source": "japanese",
+      "name": "job_text.json",
+      "topLevelKeys": [
+        "error_message",
+        "level_cap",
+        "master_level",
+        "resource_path",
+        "tab_max_count"
+      ],
+      "sha256": "35fd57b2f4330b943a8910deed476f2643e85d64e56bf436df8731a230bbe32e"
+    },
+    {
+      "source": "japanese",
+      "name": "label_setting.json",
+      "topLevelKeys": [
+        "splitLength"
+      ],
+      "sha256": "a15c6e30ac40f1007ffc3889a02a5c01cfd7f8d2a10f87dad3082025c77355a5"
+    },
+    {
+      "source": "japanese",
+      "name": "loading_settings.json",
+      "topLevelKeys": [
+        "loading_settings"
+      ],
+      "sha256": "ff80f71212067b7241dfc8bbcb5953de84da8a24bb36428e522d6ff0b1869cae"
+    },
+    {
+      "source": "japanese",
+      "name": "log_texts.json",
+      "topLevelKeys": [
+        "avatar",
+        "debug_command",
+        "quest_board"
+      ],
+      "sha256": "861eefde10822df3f2d4ded18babf019ce20e35b534aac45dac10ba34013cf12"
+    },
+    {
+      "source": "japanese",
+      "name": "lottery_settings.json",
+      "topLevelKeys": [
+        "board",
+        "detail",
+        "icon",
+        "reward",
+        "reward_list_window",
+        "unified_icon_config"
+      ],
+      "sha256": "00784044963d4db3cc7bdf0ef840b836b89a1abc9558ebdd69c7ebb4b0abc5cf"
+    },
+    {
+      "source": "japanese",
+      "name": "luaLayoutText.json",
+      "topLevelKeys": [],
+      "sha256": "4489f9e3e454748b3521eb214e0a5694d562cff3d9ff511cb456953c8f534c00"
+    },
+    {
+      "source": "japanese",
+      "name": "material_list_setting.json",
+      "topLevelKeys": [
+        "event_material_list_seal",
+        "fusion_material_list_seal",
+        "material_list_seal",
+        "rarerankup_material_list_seal"
+      ],
+      "sha256": "a9509e759c69a1a9462fdc4aca8d15b844cf9f768dc566bbdae98072845af81e"
+    },
+    {
+      "source": "japanese",
+      "name": "menu_top_settings.json",
+      "topLevelKeys": [
+        "menu_top_settings"
+      ],
+      "sha256": "53fce58ed1b50a943b8eb49b83dcf0fb2d7959c67639b8f74b53bbf90bce7014"
+    },
+    {
+      "source": "japanese",
+      "name": "mercenary_texts.json",
+      "topLevelKeys": [
+        "mercenary_select",
+        "select_num",
+        "select_num_limit_warrning"
+      ],
+      "sha256": "8e89817441495a63cc4b05e9d9ef48894c2cf9a62a5cf5389eb19f8bc624dc38"
+    },
+    {
+      "source": "japanese",
+      "name": "mission_texts.json",
+      "topLevelKeys": [
+        "hud",
+        "mission_daily_reset_time",
+        "mission_data_recive_error",
+        "mission_default_quest_targetboard",
+        "mission_recived_error_message",
+        "mission_seal"
+      ],
+      "sha256": "a3d4ec19db7feed91251e573598eec65a818fbc8c3a415d7b16476d1a58dd069"
+    },
+    {
+      "source": "japanese",
+      "name": "notify_url_window_type.json",
+      "topLevelKeys": [
+        "window_type"
+      ],
+      "sha256": "62d5f29b83cb9540d0e2743a2f32c97d06cc0f95cc195134acc9bb46625d23d3"
+    },
+    {
+      "source": "japanese",
+      "name": "other_text.json",
+      "topLevelKeys": [
+        "option",
+        "otherText"
+      ],
+      "sha256": "08fadec93896c64bf7d35d530bb45de27b55cbf349e8171482319fbd86b37bb2"
+    },
+    {
+      "source": "japanese",
+      "name": "patch_strings.json",
+      "topLevelKeys": [
+        "patch"
+      ],
+      "sha256": "1d554aca0aa2000e106649dced2b5fe64abe32cecc114b74c8fa4bcde6ac022f"
+    },
+    {
+      "source": "japanese",
+      "name": "platform_texts.json",
+      "topLevelKeys": [
+        "andapp"
+      ],
+      "sha256": "3fcb3509bd79418546e968ae1b893a6361094e0ef3f0a3134164eb705f4bb143"
+    },
+    {
+      "source": "japanese",
+      "name": "player_news_settings.json",
+      "topLevelKeys": [
+        "record_display_duration",
+        "record_display_max_count",
+        "stock_news_max_count",
+        "stock_news_min_count"
+      ],
+      "sha256": "cc2ec11f9671aa3613ce647915c198057c25bbcf0dce0718a6e93a3fb6a8798b"
+    },
+    {
+      "source": "japanese",
+      "name": "popUp_tutorial_texts.json",
+      "topLevelKeys": [
+        "popUp_tutorial_texts"
+      ],
+      "sha256": "ffce0b850ca119e2f2f6a6d7891b2d64d5ef1d5bb45f184e151cf603ba93dc70"
+    },
+    {
+      "source": "japanese",
+      "name": "post_effect_setting.json",
+      "topLevelKeys": [
+        "bloom",
+        "default",
+        "gray_scale",
+        "radial_blur",
+        "sepia"
+      ],
+      "sha256": "1f7d12d541711e7236f1968100b5c98065a817db76228057a78d7d788166d19b"
+    },
+    {
+      "source": "japanese",
+      "name": "quest_gacha_settings.json",
+      "topLevelKeys": [
+        "draw",
+        "gacha_info",
+        "group_icon",
+        "production",
+        "reset",
+        "result_window",
+        "unified_icon_config",
+        "warning"
+      ],
+      "sha256": "79ad1d265636e4b8f4bf04556eab6465faba2ceb1d639b341819bd6ff07a98a7"
+    },
+    {
+      "source": "japanese",
+      "name": "quest_texts.json",
+      "topLevelKeys": [
+        "battle_penalty_inside_window_adjust_height",
+        "battle_penalty_message",
+        "battle_penalty_message_dimensions",
+        "battle_penalty_message_font_size",
+        "battle_penalty_outside_window_adjust_height",
+        "count_down_notify_number_path",
+        "countdown_cancel",
+        "daliy_quest",
+        "equipment_limit_warning",
+        "gps",
+        "quest_accept",
+        "quest_accept_bufenchant",
+        "quest_accept_clear_cnt",
+        "quest_accept_clear_cnt_upperlimit",
+        "quest_accept_error",
+        "quest_accept_money_confirm",
+        "quest_accept_not_condition",
+        "quest_accept_reward_rule_undefault",
+        "quest_accept_tab",
+        "quest_auto_move_disable_message",
+        "quest_bingo",
+        "quest_board_category_reward",
+        "quest_board_message",
+        "quest_chapter_record_param",
+        "quest_chapter_releaselist",
+        "quest_chapter_showeventskip",
+        "quest_chapter_showrecommend",
+        "quest_chapter_tabs_path",
+        "quest_chapter_targetboard_title",
+        "quest_detail",
+        "quest_enchantbonus_reselect",
+        "quest_gacha_execute_number_setting_window",
+        "quest_gacha_result_window",
+        "quest_icon_rarity",
+        "quest_issue_resttime",
+        "quest_list_clear_hide_empty_message",
+        "quest_lottery",
+        "quest_lottery_common_icon",
+        "quest_name_view_area",
+        "quest_pvp_equipment_check",
+        "quest_record_accept_num_offcover_head",
+        "quest_record_accept_num_offcover_number",
+        "quest_record_accept_num_offcover_unit",
+        "quest_record_accept_num_offrightside_accessories",
+        "quest_record_accept_num_offrightside_accessories_offset",
+        "quest_record_accept_num_offrightside_head",
+        "quest_record_accept_num_offrightside_number",
+        "quest_record_accept_num_offrightside_unit",
+        "quest_record_accept_num_offrightside_width_adjust",
+        "quest_result_exchange_title",
+        "quest_result_submision_disabled_standardreward_ajust",
+        "quest_retire",
+        "quest_retire_error",
+        "quest_reward_drop_rank",
+        "quest_reward_icon_kind",
+        "quest_roomselect_limit_message",
+        "quest_roomselect_state",
+        "quest_skip_mercenary_chapterid",
+        "quest_start_voyage_confirm",
+        "quest_start_voyage_error",
+        "quest_start_voyage_money_confirm",
+        "quest_start_voyage_not_money",
+        "quest_summary_line_head",
+        "quest_target_kind_list_empty_message",
+        "quest_target_kind_list_empty_message_by_party",
+        "quest_targetboard_list",
+        "quest_timer",
+        "quest_title_gap_word_offset",
+        "quest_warning_dialog_not_enough_limit_time",
+        "submission",
+        "ticket"
+      ],
+      "sha256": "21d25bc3a4be7890abf14c58b93dcd1fc650717f5d3e767b70dfd0c1ec2e490a"
+    },
+    {
+      "source": "japanese",
+      "name": "raid_battle_texts.json",
+      "topLevelKeys": [
+        "board",
+        "field",
+        "group_icon",
+        "loading_title_boss_name",
+        "matching_penalty_departure_message",
+        "matching_penalty_message_dimensions",
+        "matching_penalty_message_font_size",
+        "open_icon",
+        "penalty_help_popup_path",
+        "penalty_party",
+        "production",
+        "quest",
+        "raid_gacha_result_window",
+        "seal_message",
+        "telop_sound",
+        "tutorial_induction_message",
+        "unified_icon_config"
+      ],
+      "sha256": "d0aec6cac679fdd0af99be8d2c6164a225d142cf21f6535d21f541f23df7c4c1"
+    },
+    {
+      "source": "japanese",
+      "name": "ranking_texts.json",
+      "topLevelKeys": [
+        "battle_time_ranking",
+        "raid_ranking_job_filter",
+        "raid_ranking_raid_history",
+        "ranking_tabs",
+        "ranking_texts",
+        "ranking_type_infos"
+      ],
+      "sha256": "1d9d6fb92ae4ab352743f5c739e8503961e86ec6f18221574dee1c0c211efdab"
+    },
+    {
+      "source": "japanese",
+      "name": "rcb_text.json",
+      "topLevelKeys": [
+        "andapp_rcb_gpsupdate_sealed",
+        "andapp_sealed",
+        "back_hud_exit",
+        "gps_failed",
+        "help",
+        "help_result_unsealed_delaytime",
+        "hud_team_info",
+        "hunter_card",
+        "loading_effect",
+        "quest_disabled_message",
+        "schedule",
+        "sealed",
+        "select_menu_height",
+        "transform_popup_window",
+        "tutorial"
+      ],
+      "sha256": "910e50f00a4d0d0f3dcc8b8413fa8af8120dc399e603ca586dd3ce1dd67ce7b6"
+    },
+    {
+      "source": "japanese",
+      "name": "rev_text.json",
+      "topLevelKeys": [
+        "revText"
+      ],
+      "sha256": "745cc8e67e2bd519d69ed067f65874e56a4ecce3fd5963ad55a5d6db40ca22a2"
+    },
+    {
+      "source": "japanese",
+      "name": "serial_text.json",
+      "topLevelKeys": [
+        "serialText"
+      ],
+      "sha256": "414d97a87fc6a3ae893dddc767382d2bb189e2a262ff3db42f1cfd94b6cc06df"
+    },
+    {
+      "source": "japanese",
+      "name": "settings.json",
+      "topLevelKeys": [
+        "gui_bg_settings"
+      ],
+      "sha256": "02d52eb21b9aff5cab90f0365764d16cdb09a3bbea0a0369adc35a62605b5cd0"
+    },
+    {
+      "source": "japanese",
+      "name": "shop_text.json",
+      "topLevelKeys": [
+        "banner",
+        "paymentpointconfirm",
+        "shopText"
+      ],
+      "sha256": "3850348b0d4538fc262cd362440d2629ad7956ea860e21f2b1b223d43baa4584"
+    },
+    {
+      "source": "japanese",
+      "name": "sixth_sense_filter_labels.json",
+      "topLevelKeys": [
+        "default",
+        "sixth_sense_filter_labels"
+      ],
+      "sha256": "e166df901fcf823909698a39b5a15810238bc01b5c85acbcc5c0a7112bc686cd"
+    },
+    {
+      "source": "japanese",
+      "name": "sixth_sense_filter_labels_consumable.json",
+      "topLevelKeys": [
+        "default",
+        "sixth_sense_filter_labels_consumable"
+      ],
+      "sha256": "f114a0aacc55cee90f78f4694787926ca0bb8c49a7f9d8edee4d25a587bc4bd0"
+    },
+    {
+      "source": "japanese",
+      "name": "sixth_sense_sort_labels.json",
+      "topLevelKeys": [
+        "default",
+        "sixth_sense_sort_labels"
+      ],
+      "sha256": "8905e37c90f7dd36e55eec6a2c378413cb53bef04b054e08bde8bfe7d51b7a20"
+    },
+    {
+      "source": "japanese",
+      "name": "sixth_sense_texts.json",
+      "topLevelKeys": [
+        "consumable_item_detail",
+        "error_message",
+        "sealed_sixth_sense",
+        "warning_message"
+      ],
+      "sha256": "840174032d7e1aad79088d247cb19a957f5a557666de9ebc2b6bf89d83335b58"
+    },
+    {
+      "source": "japanese",
+      "name": "sixth_sense_ui_settings.json",
+      "topLevelKeys": [
+        "sixth_sense_ui_settings"
+      ],
+      "sha256": "ebf877eb97b8e48c182dd128948e505dec23e43e69b73a0d8c344cd02dfd570f"
+    },
+    {
+      "source": "japanese",
+      "name": "slot_gacha_setting.json",
+      "topLevelKeys": [
+        "bgm_volume_rate",
+        "draw",
+        "effect",
+        "point_deficient_message",
+        "reel",
+        "schedule_start_delay",
+        "skip_delay",
+        "skip_system_enabled",
+        "sound"
+      ],
+      "sha256": "440201e5fc1421316837532aa271df307123c61a3b4c14690608467f9ff88f56"
+    },
+    {
+      "source": "japanese",
+      "name": "system_strings.json",
+      "topLevelKeys": [
+        "account",
+        "application",
+        "client_version",
+        "displaysize",
+        "gps_result",
+        "network_system",
+        "protocol_version"
+      ],
+      "sha256": "4a1d56eac9235e61f4d15baf5f5a488812beff2edc560cd5ff9d7c5ca5c3b6fc"
+    },
+    {
+      "source": "japanese",
+      "name": "telop_settings.json",
+      "topLevelKeys": [
+        "telop_settings"
+      ],
+      "sha256": "4b1409a22fcdeb9675bd9e2a5d874d1cf5667848ea247b5cc12c1025d3ed3497"
+    },
+    {
+      "source": "japanese",
+      "name": "text_input_settings.json",
+      "topLevelKeys": [
+        "text_input"
+      ],
+      "sha256": "86d950b8718fb2d3378301c9580fdc949288417e354dc8c53b99db9c1df56d68"
+    },
+    {
+      "source": "japanese",
+      "name": "time_zone_setting.json",
+      "topLevelKeys": [
+        "time_zone"
+      ],
+      "sha256": "52176f6e6ba11cfee63ed07419c14efcb09faf4e64ddca4ec26c52eb341a3d0d"
+    },
+    {
+      "source": "japanese",
+      "name": "unified_item_filter_setting.json",
+      "topLevelKeys": [
+        "label_info"
+      ],
+      "sha256": "be73b1a09f704d7f9a1a5cb7d19112e69ccc7e5ecd6de9dbb0636973c3bd1cde"
+    },
+    {
+      "source": "japanese",
+      "name": "unified_item_icon_setting.json",
+      "topLevelKeys": [
+        "iconResource"
+      ],
+      "sha256": "8dcd7904fd9e90eaec75a839f6be3b82465e03348733e3db68b9a76b60de0b86"
+    },
+    {
+      "source": "japanese",
+      "name": "unified_item_sort_setting.json",
+      "topLevelKeys": [
+        "label_info"
+      ],
+      "sha256": "3c4342c1a49660c3d371232c1d6f60e4688f5aec7214631535959133af8d87c3"
+    },
+    {
+      "source": "japanese",
+      "name": "weapon_rental_settings.json",
+      "topLevelKeys": [
+        "item_select_window",
+        "member_count",
+        "remove_equipment_link_weapon_message"
+      ],
+      "sha256": "c67750005297edc0efc8928d44bf96fc913aaad77510c65456e85cd52b09c6ef"
+    },
+    {
+      "source": "japanese",
+      "name": "weather_settings.json",
+      "topLevelKeys": [
+        "description_format",
+        "effect_settings",
+        "icon_path_format",
+        "weather_url"
+      ],
+      "sha256": "84c038e98608a537b06c4a3368e91a77915735ba3fc070237fa45ef433c1fedc"
+    },
+    {
+      "source": "japanese",
+      "name": "world_select_strings.json",
+      "topLevelKeys": [
+        "world_select"
+      ],
+      "sha256": "8baeaccac2098b6f493b1d8acc5d89a4142fb828574bd930046f4deeb44746a3"
+    },
+    {
+      "source": "global",
+      "name": "activityWoindow_text.json",
+      "topLevelKeys": [
+        "activityWoindowText"
+      ],
+      "sha256": "54914663b52db20631417f0f52a86718bf4fd18fa28b351fea1d89d50be16cc9"
+    },
+    {
+      "source": "global",
+      "name": "alt_money_text.json",
+      "topLevelKeys": [
+        "time_out_interval"
+      ],
+      "sha256": "5ceb2003c66c1721eeaaf430848a7d2db656c88f4590493d4de0aaca1dd3a1f0"
+    },
+    {
+      "source": "global",
+      "name": "app_review_dialog_text.json",
+      "topLevelKeys": [
+        "app_review_dialog_text"
+      ],
+      "sha256": "7d62877f48d30c97d7487e1208d660ccd6f16c61f75bb3187eb0c8b101d1a859"
+    },
+    {
+      "source": "global",
+      "name": "auth_strings.json",
+      "topLevelKeys": [
+        "auth"
+      ],
+      "sha256": "6aab606c4e6c42b16c8c873db8b30bba3bbae0cedb22c8e3e34ef97d65a2c0eb"
+    },
+    {
+      "source": "global",
+      "name": "battle_multi_skill_reserve_setting.json",
+      "topLevelKeys": [
+        "multi_skill_reserve_type"
+      ],
+      "sha256": "e0de1600da056d1a6d380d5c40eae44e92b3fc7fea520621d8572c029a249a66"
+    },
+    {
+      "source": "global",
+      "name": "battle_texts.json",
+      "topLevelKeys": [
+        "battle_effect_texts",
+        "battle_escape_texts",
+        "bout_character",
+        "damage_muzzle"
+      ],
+      "sha256": "02a8e0fc8ab62b3f4f5ec777f10ff1a027ce47b881f2087ce35bc207d17b5aa2"
+    },
+    {
+      "source": "global",
+      "name": "blacklist_texts.json",
+      "topLevelKeys": [
+        "blacklist"
+      ],
+      "sha256": "50be15cd3b732338e8a4a3ff4ffe6fdbc76a73cc2094150b024824159168a558"
+    },
+    {
+      "source": "global",
+      "name": "bout_character_view_info_setting.json",
+      "topLevelKeys": [
+        "enemy",
+        "mercenary",
+        "player"
+      ],
+      "sha256": "c48b074b3ffd56a1eb1c49ca498f55ec61ff27bacb0f6a120ace861dd616332c"
+    },
+    {
+      "source": "global",
+      "name": "characterInfoTitles.json",
+      "topLevelKeys": [
+        "battle_character_info_titles"
+      ],
+      "sha256": "219ba68bfb721fcc3264676a66a6ab0fc3bf0e6957aa943e63b5302d4e83b41c"
+    },
+    {
+      "source": "global",
+      "name": "character_encounter_setting.json",
+      "topLevelKeys": [
+        "pvp"
+      ],
+      "sha256": "561485fe689f6cc199ff7ad507b4600b117eabbabfd3ba7b6b4b1cac011ba558"
+    },
+    {
+      "source": "global",
+      "name": "charactermake_texts.json",
+      "topLevelKeys": [
+        "charactermake_default",
+        "charactermake_message",
+        "charactermake_message_android",
+        "charactermake_part_list",
+        "charactermake_payment_confirm_check",
+        "charactermake_payment_price",
+        "charactermake_paymentcharactermake_result_message"
+      ],
+      "sha256": "4e1f662936550a0447fcaf50f4c1dde41c5bfbfba047069c142efc052d09a8ab"
+    },
+    {
+      "source": "global",
+      "name": "chat_option.json",
+      "topLevelKeys": [
+        "chatOption"
+      ],
+      "sha256": "44a9334ab8c02460c8556afc005d3af8bba00afd97feb0f7f9469265699adae6"
+    },
+    {
+      "source": "global",
+      "name": "chat_text.json",
+      "topLevelKeys": [
+        "chatText",
+        "dialog_message",
+        "directchatlist_tipsmessage",
+        "group_chat_text"
+      ],
+      "sha256": "4079120599110c2a0a70a0078dbed4a76e57a984230ef6e46b46aa4c8d76d2d2"
+    },
+    {
+      "source": "global",
+      "name": "clan_text.json",
+      "topLevelKeys": [
+        "apply_to_clan",
+        "clan_manage",
+        "clan_member_list",
+        "clan_mission_message",
+        "clan_post_resouce_path",
+        "clan_search_setting",
+        "clan_season",
+        "clan_tutorial",
+        "create_clan",
+        "mission"
+      ],
+      "sha256": "e6ad5d2835a8542269a5c4894bb1280bc2d69d48e058732e06a441a23807a8f9"
+    },
+    {
+      "source": "global",
+      "name": "common_texts.json",
+      "topLevelKeys": [
+        "enchant_deposit_point"
+      ],
+      "sha256": "d7e085fccde1902fc97d357f4b6aa630c7717e2b334ad6ce5fb9c763fdba71ec"
+    },
+    {
+      "source": "global",
+      "name": "community_texts.json",
+      "topLevelKeys": [
+        "error_list_info",
+        "huntersearch_char_info_failure",
+        "huntersearch_input_notfind",
+        "huntersearch_input_notnumber",
+        "list_view_mode_area",
+        "list_view_mode_area_selected",
+        "loading_chardetail",
+        "login_state",
+        "no_friend_warp_warning",
+        "not_chardetail",
+        "not_clan",
+        "not_list_info",
+        "not_list_info_area_filter",
+        "not_list_info_friend_filter",
+        "not_party_skill",
+        "not_quest_accept",
+        "party_state",
+        "quest_warp_retire_warning"
+      ],
+      "sha256": "d6b215c7124b81f87b6aedc4021f695122eb96427ce2d05f5d5ea6951e233456"
+    },
+    {
+      "source": "global",
+      "name": "deviceChange_tutorial_texts.json",
+      "topLevelKeys": [
+        "deviceChangeTexts"
+      ],
+      "sha256": "a6f3f1bec261e72e5fb61f4a7a353ea9da8b869ee3bec3f7ff81b716011d0d96"
+    },
+    {
+      "source": "global",
+      "name": "ep_text.json",
+      "topLevelKeys": [
+        "epText"
+      ],
+      "sha256": "a6cc390abada526d00e7c7e5807cecf38c97a546ea9027b76d4f87aa88e6437c"
+    },
+    {
+      "source": "global",
+      "name": "equip_tutorial_texts.json",
+      "topLevelKeys": [
+        "equip_tutorial_texts"
+      ],
+      "sha256": "39f4b8f1a3885ca1dbd9a0f43e66d8f9afd5bb03549626a2ea5a70909ecc4a34"
+    },
+    {
+      "source": "global",
+      "name": "equipment_filter_type_labels.json",
+      "topLevelKeys": [
+        "equipment_filter_type_labels"
+      ],
+      "sha256": "0cb146543711ccb1098b36c1ad1b2235044b387d0e46af22580d61fee179ab1d"
+    },
+    {
+      "source": "global",
+      "name": "equipment_sort_type_infos.json",
+      "topLevelKeys": [
+        "equipment_sort_type_labels"
+      ],
+      "sha256": "22020797ff514690c4764bf8891e44732154742a35007a4288fba0758fd90ce1"
+    },
+    {
+      "source": "global",
+      "name": "equipment_texts.json",
+      "topLevelKeys": [
+        "equipment_texts",
+        "favorite_texts",
+        "item_texts",
+        "itembox_texts",
+        "itemlist_option_text",
+        "shop_texts"
+      ],
+      "sha256": "fc2f6c04e9de3029145034668779b7ec8b9c9e2004917d823b6abead2dd83e5f"
+    },
+    {
+      "source": "global",
+      "name": "equipment_ui_settings.json",
+      "topLevelKeys": [
+        "equipment_ui_settings"
+      ],
+      "sha256": "a78a49bfb29c9640e8dc4e384a00fdea54bd68695222f87108cdf17efba6436d"
+    },
+    {
+      "source": "global",
+      "name": "event_point.json",
+      "topLevelKeys": [
+        "event_point"
+      ],
+      "sha256": "c12163f494ff69a726726ac5bbabe0b2b85f91c456e5f47e5d9ed6345f302368"
+    },
+    {
+      "source": "global",
+      "name": "event_setting.json",
+      "topLevelKeys": [
+        "event_setting"
+      ],
+      "sha256": "de34a148c31b36cc5c9208f473afd057b2eea03a42714120fbf3208500d46a5e"
+    },
+    {
+      "source": "global",
+      "name": "field_settings.json",
+      "topLevelKeys": [
+        "resource_path"
+      ],
+      "sha256": "110c4f8ec7f85c2cb1634d7d72a9d44b5def349aa3af94a5c12fb34dea24e5ff"
+    },
+    {
+      "source": "global",
+      "name": "fusion_texts.json",
+      "topLevelKeys": [
+        "evolution_failed",
+        "evolution_resource",
+        "evolution_text",
+        "fusion_altitemselect_input",
+        "fusion_confirm_warring",
+        "fusion_derive_result_failure",
+        "fusion_emergency_unseal_flag",
+        "fusion_error",
+        "fusion_extend",
+        "fusion_extend_result_guidance",
+        "fusion_rarity_confirm",
+        "fusion_recommend_warning",
+        "fusion_recommend_warning2",
+        "fusion_result",
+        "fusion_skill_altmmaterial_limit_value",
+        "soundID"
+      ],
+      "sha256": "0f608f232ad83844e787318db0b84936ec9f0a4ee81796952e5e4c7f21fbedb5"
+    },
+    {
+      "source": "global",
+      "name": "fusion_tutorial_texts.json",
+      "topLevelKeys": [
+        "fusion_tutorial_texts",
+        "fusion_update_tutorial_texts"
+      ],
+      "sha256": "b1c213e1bd1c0a95ba8d97a65711bceba6f87781549f3f8ac92b642ad6fd41d9"
+    },
+    {
+      "source": "global",
+      "name": "gacha_texts.json",
+      "topLevelKeys": [
+        "boxgacha_component",
+        "boxgacha_texts",
+        "gacha_helperlist",
+        "gacha_texts",
+        "resource_path"
+      ],
+      "sha256": "3227e5a9a6185068e91c63e7297f60aada38eb56765a45b2b7822c2744dd379d"
+    },
+    {
+      "source": "global",
+      "name": "garage_filter_type_labels.json",
+      "topLevelKeys": [
+        "garage_filter_type_labels"
+      ],
+      "sha256": "37f33d38a36d9065a922c1188002b54302568b4a418fed0ef463541c68f1c27e"
+    },
+    {
+      "source": "global",
+      "name": "garage_settings.json",
+      "topLevelKeys": [
+        "accomplished_item_garage_settings",
+        "garage_settings"
+      ],
+      "sha256": "0f9043225bc5e0400231f235927d026452c1128a39c22434339b03d175f12254"
+    },
+    {
+      "source": "global",
+      "name": "garage_sort_type_labels.json",
+      "topLevelKeys": [
+        "garage_sort_type_labels"
+      ],
+      "sha256": "9e1eaf6fca205b0672317fb5947fd0b8acd6e7d369df1c2ecad6efa5a3ff7b99"
+    },
+    {
+      "source": "global",
+      "name": "garage_texts.json",
+      "topLevelKeys": [
+        "accomplished_item_garage_texts",
+        "garage_texts"
+      ],
+      "sha256": "538da29e68087665053e658ef4c07c594a20a7393bd31c61ea6a1b59440ddc62"
+    },
+    {
+      "source": "global",
+      "name": "generalItem.json",
+      "topLevelKeys": [
+        "generalItemDefs"
+      ],
+      "sha256": "bce4cab0c6bb554a4a2ec7725b63ed75647d0c0f13bc1ac95f95896f52b796ea"
+    },
+    {
+      "source": "global",
+      "name": "gift_text.json",
+      "topLevelKeys": [
+        "giftSellText",
+        "giftSortType",
+        "giftText"
+      ],
+      "sha256": "14897db6b8dd8d9c19a401f27848f92df12f3bfb2e456c703d9813b35b52c3c5"
+    },
+    {
+      "source": "global",
+      "name": "handover_strings.json",
+      "topLevelKeys": [
+        "handover"
+      ],
+      "sha256": "6df629b57fb60dad4eaee773171aae3082779b723918cb9248e54c2e4ce3be11"
+    },
+    {
+      "source": "global",
+      "name": "handover_texts.json",
+      "topLevelKeys": [
+        "handover_texts"
+      ],
+      "sha256": "ad9b2d4587be2784ec5d2b1a7822b37b2f96bcf1b5a4ca38439535d3aada510a"
+    },
+    {
+      "source": "global",
+      "name": "hud_settings.json",
+      "topLevelKeys": [
+        "exp_gauge"
+      ],
+      "sha256": "37ed2e7e403cdef27db1e217ffa5c914a20de51bedb37d43e9805d3406dbe07f"
+    },
+    {
+      "source": "global",
+      "name": "information_texts.json",
+      "topLevelKeys": [
+        "error_message",
+        "period"
+      ],
+      "sha256": "08c3aaced340cbe91dd87d4631a0742baf7d757d2b249db6f17b004da94387e9"
+    },
+    {
+      "source": "global",
+      "name": "inventory_text.json",
+      "topLevelKeys": [
+        "inventoryText"
+      ],
+      "sha256": "97ccd389388e701e50ff52f23fa60c5baafad231fc768b76b20f7b6260095970"
+    },
+    {
+      "source": "global",
+      "name": "loading_settings.json",
+      "topLevelKeys": [
+        "loading_settings"
+      ],
+      "sha256": "1cba71ed6367f799e7f57743e88545f0a92e8bdc7ea159a5dff7533487cba72f"
+    },
+    {
+      "source": "global",
+      "name": "luaLayoutText.json",
+      "topLevelKeys": [],
+      "sha256": "4489f9e3e454748b3521eb214e0a5694d562cff3d9ff511cb456953c8f534c00"
+    },
+    {
+      "source": "global",
+      "name": "menu_top_settings.json",
+      "topLevelKeys": [
+        "menu_top_settings"
+      ],
+      "sha256": "53fce58ed1b50a943b8eb49b83dcf0fb2d7959c67639b8f74b53bbf90bce7014"
+    },
+    {
+      "source": "global",
+      "name": "mercenary_texts.json",
+      "topLevelKeys": [
+        "mercenary_select",
+        "select_num",
+        "select_num_limit_warrning"
+      ],
+      "sha256": "516d92003e33c3a2263cba5dd706492c72b6571b0ac85c6e5bacef38e180b452"
+    },
+    {
+      "source": "global",
+      "name": "mission_texts.json",
+      "topLevelKeys": [
+        "hud",
+        "mission_daily_reset_time",
+        "mission_data_recive_error",
+        "mission_default_quest_targetboard",
+        "mission_recived_error_message",
+        "mission_seal"
+      ],
+      "sha256": "7b4511d1066c39d24b5d393632de45c3562ff5de7031489f5c62e32283c39f24"
+    },
+    {
+      "source": "global",
+      "name": "other_text.json",
+      "topLevelKeys": [
+        "email_login",
+        "otherText"
+      ],
+      "sha256": "f4809eca16be0e57e770347c48e9c5f12b08d11933b466d400e7ecafc8590115"
+    },
+    {
+      "source": "global",
+      "name": "patch_strings.json",
+      "topLevelKeys": [
+        "patch"
+      ],
+      "sha256": "bdf40c6c949f06e74f183ba8334929c9ec49695af2008c6ca6d3850f356e431c"
+    },
+    {
+      "source": "global",
+      "name": "player_news_settings.json",
+      "topLevelKeys": [
+        "record_display_duration",
+        "record_display_max_count",
+        "stock_news_max_count",
+        "stock_news_min_count"
+      ],
+      "sha256": "cc2ec11f9671aa3613ce647915c198057c25bbcf0dce0718a6e93a3fb6a8798b"
+    },
+    {
+      "source": "global",
+      "name": "popUp_tutorial_texts.json",
+      "topLevelKeys": [
+        "popUp_tutorial_texts"
+      ],
+      "sha256": "817b09208afe56662492af27312b6bf11d0928879d42b3c599a7b0a788bbb8c7"
+    },
+    {
+      "source": "global",
+      "name": "post_effect_setting.json",
+      "topLevelKeys": [
+        "bloom",
+        "default",
+        "gray_scale",
+        "radial_blur",
+        "sepia"
+      ],
+      "sha256": "1f7d12d541711e7236f1968100b5c98065a817db76228057a78d7d788166d19b"
+    },
+    {
+      "source": "global",
+      "name": "quest_texts.json",
+      "topLevelKeys": [
+        "gps",
+        "quest_accept_bufenchant",
+        "quest_accept_clear_cnt",
+        "quest_accept_clear_cnt_upperlimit",
+        "quest_accept_error",
+        "quest_accept_money_confirm",
+        "quest_accept_not_condition",
+        "quest_accept_reward_rule_undefault",
+        "quest_board_message",
+        "quest_chapter_record_param",
+        "quest_chapter_releaselist",
+        "quest_chapter_showrecommend",
+        "quest_detail",
+        "quest_enchantbonus_reselect",
+        "quest_issue_resttime",
+        "quest_record_accept_num_offcover_head",
+        "quest_record_accept_num_offcover_number",
+        "quest_record_accept_num_offcover_unit",
+        "quest_record_accept_num_offrightside_accessories",
+        "quest_record_accept_num_offrightside_accessories_offset",
+        "quest_record_accept_num_offrightside_head",
+        "quest_record_accept_num_offrightside_number",
+        "quest_record_accept_num_offrightside_unit",
+        "quest_result_exchange_title",
+        "quest_retire",
+        "quest_retire_error",
+        "quest_reward_icon_kind",
+        "quest_roomselect_limit_message",
+        "quest_roomselect_state",
+        "quest_skip_mercenary_chapterid",
+        "quest_start_voyage_confirm",
+        "quest_start_voyage_error",
+        "quest_start_voyage_money_confirm",
+        "quest_start_voyage_not_money",
+        "quest_summary_line_head",
+        "quest_target_kind_list_empty_message",
+        "quest_timer"
+      ],
+      "sha256": "64f70fa5f16bb0e89aed31c2582944d5ce8fe212a3e38a905ea05faf27f95d1a"
+    },
+    {
+      "source": "global",
+      "name": "ranking_texts.json",
+      "topLevelKeys": [
+        "ranking_texts",
+        "ranking_type_infos"
+      ],
+      "sha256": "6b2093fc18ef60047effb22e428559f3f84c144c8dcf216d50bc77c11c8273ac"
+    },
+    {
+      "source": "global",
+      "name": "rev_text.json",
+      "topLevelKeys": [
+        "revText"
+      ],
+      "sha256": "4cbb73299207a512195172d4cc8ace257364a148ec9334875935ee3aa38ff08d"
+    },
+    {
+      "source": "global",
+      "name": "serial_text.json",
+      "topLevelKeys": [
+        "serialText"
+      ],
+      "sha256": "eedb7a575c89ac7d539652349432a4f970759e2b3b266d54993b9e610d68288d"
+    },
+    {
+      "source": "global",
+      "name": "settings.json",
+      "topLevelKeys": [
+        "gui_bg_settings"
+      ],
+      "sha256": "42add1fb760ae9ca83da83bebafbb7235214cac1926ddfc2b86c9546905f8e54"
+    },
+    {
+      "source": "global",
+      "name": "share_message.json",
+      "topLevelKeys": [
+        "share_message_list",
+        "share_result"
+      ],
+      "sha256": "8de4929e0b96869e84b0d3c9d89d1fd7cb8ea72c071d47333f9dc3773e807066"
+    },
+    {
+      "source": "global",
+      "name": "shop_text.json",
+      "topLevelKeys": [
+        "shopText"
+      ],
+      "sha256": "72f6327821d49e491fa093995bd18e459d001c0c82a57055d90f2f0f54686370"
+    },
+    {
+      "source": "global",
+      "name": "sixth_sense_filter_labels.json",
+      "topLevelKeys": [
+        "default",
+        "sixth_sense_filter_labels"
+      ],
+      "sha256": "77068d744a7f38e05e1dce0650ae70beee2cd87b00e28e333012d387a3fcc510"
+    },
+    {
+      "source": "global",
+      "name": "sixth_sense_filter_labels_consumable.json",
+      "topLevelKeys": [
+        "default",
+        "sixth_sense_filter_labels_consumable"
+      ],
+      "sha256": "6c9a5959b0c9117575dcd677577bfc84059565af4eea7b7a1c2816bd34ae6f93"
+    },
+    {
+      "source": "global",
+      "name": "sixth_sense_sort_labels.json",
+      "topLevelKeys": [
+        "default",
+        "sixth_sense_sort_labels"
+      ],
+      "sha256": "4222a032b98132022e5f0305d9df68509a19382e76cbfc0fb1b5851d358e84ee"
+    },
+    {
+      "source": "global",
+      "name": "sixth_sense_texts.json",
+      "topLevelKeys": [
+        "consumable_item_detail"
+      ],
+      "sha256": "1fc3d827dced43ff873dd5caf732a4571eebf7720cd37b4abb6dc455b1dc87d1"
+    },
+    {
+      "source": "global",
+      "name": "sixth_sense_ui_settings.json",
+      "topLevelKeys": [
+        "sixth_sense_ui_settings"
+      ],
+      "sha256": "df85be9d050d8aba74e0518d7604ec06600e8bd78e7ed607e3efa7eb8392e6a1"
+    },
+    {
+      "source": "global",
+      "name": "system_strings.json",
+      "topLevelKeys": [
+        "application",
+        "client_version",
+        "network_system"
+      ],
+      "sha256": "52398aa8cd7e028756f7b45d388ec17b7ce05981c07e37819d3fc2a0c56c459f"
+    },
+    {
+      "source": "global",
+      "name": "telop_settings.json",
+      "topLevelKeys": [
+        "telop_settings"
+      ],
+      "sha256": "4b1409a22fcdeb9675bd9e2a5d874d1cf5667848ea247b5cc12c1025d3ed3497"
+    },
+    {
+      "source": "global",
+      "name": "weather_settings.json",
+      "topLevelKeys": [
+        "description_format",
+        "icon_path_format"
+      ],
+      "sha256": "cdcccc8fae45c3e241dc1b0621a373700c8c3c8f280052d416531e318354f48f"
+    },
+    {
+      "source": "global",
+      "name": "world_select_strings.json",
+      "topLevelKeys": [
+        "world_select"
+      ],
+      "sha256": "0d4cf0ee2da5d4d019901b7819e31ed226ec60dad8699e31b1bf6d731fd405dc"
+    }
+  ]
+}

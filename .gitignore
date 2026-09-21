@@ -27,3 +27,8 @@ playwright-report
 
 firebase-login.txt
 firebase-login.html
+
+.reference-private/
+logres-reference.zip
+public/__logres_ref/
+logres_reconstruction_pack.zip
