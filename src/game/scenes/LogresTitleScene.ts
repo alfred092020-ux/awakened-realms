@@ -8,11 +8,28 @@ import {
 export class LogresTitleScene
   extends Phaser.Scene {
   constructor() {
-    super('LogresTitleScene')
+    super(
+      'LogresTitleScene',
+    )
   }
 
   preload() {
-    preloadLogresAssets(this)
+    preloadLogresAssets(
+      this,
+    )
+
+    /*
+     * Global client English strings.
+     */
+    this.load.json(
+      'logres-world-select-en',
+      '/__logres_ref/config/global/world_select_strings.json',
+    )
+
+    this.load.json(
+      'logres-system-strings-en',
+      '/__logres_ref/config/global/system_strings.json',
+    )
   }
 
   create() {
@@ -21,30 +38,45 @@ export class LogresTitleScene
       height,
     } = this.scale
 
+    /*
+     * Original Global Logres title background.
+     */
     this.add
-      .tileSprite(
+      .image(
         width / 2,
         height / 2,
+        LOGRES_ASSETS
+          .titleBackground
+          .key,
+      )
+      .setDisplaySize(
         width,
         height,
-        LOGRES_ASSETS
-          .background
-          .key,
       )
 
+    /*
+     * Original Global Logres logo asset.
+     */
     this.add
       .image(
         width / 2,
-        160,
+        220,
         LOGRES_ASSETS
-          .titleBase
+          .titleLogo
           .key,
       )
+      .setDisplaySize(
+        650,
+        306,
+      )
 
+    /*
+     * Original Global world-selection artwork.
+     */
     this.add
       .image(
         width / 2,
-        465,
+        620,
         LOGRES_ASSETS
           .worldSelect
           .key,
@@ -54,17 +86,21 @@ export class LogresTitleScene
         360,
       )
 
+    /*
+     * Original Global NEXT button.
+     */
     const next =
       this.add
         .image(
           width / 2,
-          height - 180,
+          height - 170,
           LOGRES_ASSETS
             .titleNext
             .key,
         )
         .setInteractive({
-          useHandCursor: true,
+          useHandCursor:
+            true,
         })
 
     next.on(

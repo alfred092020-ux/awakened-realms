@@ -54,9 +54,34 @@ export class LogresFieldScene
       '/__logres_ref/config/japanese/field_settings.json',
     )
 
+    /*
+     * Player-facing language always comes
+     * from the translated Global client
+     * when an equivalent file exists.
+     */
     this.load.json(
-      'logres-equip-tutorial',
-      '/__logres_ref/config/japanese/equip_tutorial_texts.json',
+      'logres-equip-tutorial-en',
+      '/__logres_ref/config/global/equip_tutorial_texts.json',
+    )
+
+    this.load.json(
+      'logres-equipment-text-en',
+      '/__logres_ref/config/global/equipment_texts.json',
+    )
+
+    this.load.json(
+      'logres-quest-text-en',
+      '/__logres_ref/config/global/quest_texts.json',
+    )
+
+    this.load.json(
+      'logres-chat-text-en',
+      '/__logres_ref/config/global/chat_text.json',
+    )
+
+    this.load.json(
+      'logres-inventory-text-en',
+      '/__logres_ref/config/global/inventory_text.json',
     )
   }
 
@@ -85,7 +110,7 @@ export class LogresFieldScene
         width,
         height,
         LOGRES_ASSETS
-          .background
+          .titleBackground
           .key,
       )
 
