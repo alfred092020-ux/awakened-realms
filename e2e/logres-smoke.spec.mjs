@@ -66,7 +66,7 @@ async function clickGame(
 }
 
 test(
-  'loads strict Logres title and character flow',
+  'diagnoses recovered title reveal before input',
   async ({
     page,
   }) => {
@@ -77,44 +77,149 @@ test(
       'LogresTitleScene',
     )
 
-    await clickGame(
-      page,
-      360,
-      1110,
-    )
-
-    await waitForScene(
-      page,
-      'LogresCharacterCreateScene',
-    )
-
-    const state =
+    const initial =
       await page.evaluate(
         () => {
           const game =
             window
               .__AWAKENED_REALMS_GAME__
 
-          return {
-            titleActive:
-              game.scene.isActive(
-                'LogresTitleScene',
-              ),
+          const scene =
+            game.scene.getScene(
+              'LogresTitleScene',
+            )
 
-            characterActive:
-              game.scene.isActive(
-                'LogresCharacterCreateScene',
-              ),
+          const control =
+            scene.children.list.find(
+              (child) =>
+                child.x === 360 &&
+                child.y === 1080 &&
+                child.input,
+            )
+
+          return {
+            alpha:
+              control?.alpha,
+
+            enabled:
+              control?.input
+                ?.enabled,
+
+            willRender:
+              control
+                ?.willRender(
+                  scene.cameras.main,
+                ),
           }
         },
       )
 
-    expect(
-      state.titleActive,
-    ).toBe(false)
+    console.info(
+      'TITLE_CONTROL_INITIAL',
+      initial,
+    )
 
     expect(
-      state.characterActive,
+      initial,
+    ).toEqual({
+      alpha:
+        0,
+
+      enabled:
+        true,
+
+      willRender:
+        false,
+    })
+
+    await page.waitForFunction(
+      () => {
+        const game =
+          window
+            .__AWAKENED_REALMS_GAME__
+
+        const scene =
+          game.scene.getScene(
+            'LogresTitleScene',
+          )
+
+        const control =
+          scene.children.list.find(
+            (child) =>
+              child.x === 360 &&
+              child.y === 1080 &&
+              child.input,
+          )
+
+        return Boolean(
+          control &&
+          control.alpha === 1 &&
+          control.willRender(
+            scene.cameras.main,
+          ),
+        )
+      },
+    )
+
+    const revealed =
+      await page.evaluate(
+        () => {
+          const game =
+            window
+              .__AWAKENED_REALMS_GAME__
+
+          const scene =
+            game.scene.getScene(
+              'LogresTitleScene',
+            )
+
+          const control =
+            scene.children.list.find(
+              (child) =>
+                child.x === 360 &&
+                child.y === 1080 &&
+                child.input,
+            )
+
+          return {
+            alpha:
+              control?.alpha,
+
+            willRender:
+              control
+                ?.willRender(
+                  scene.cameras.main,
+                ),
+          }
+        },
+      )
+
+    console.info(
+      'TITLE_CONTROL_REVEALED',
+      revealed,
+    )
+
+    await clickGame(
+      page,
+      360,
+      1080,
+    )
+
+    await waitForScene(
+      page,
+      'LogresWorldSelectScene',
+    )
+
+    expect(
+      await page.evaluate(
+        () =>
+          window
+            .__AWAKENED_REALMS_GAME__
+            .scene
+            .isActive(
+              'LogresWorldSelectScene',
+            ),
+      ),
     ).toBe(true)
   },
 )

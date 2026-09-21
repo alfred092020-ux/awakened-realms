@@ -25,6 +25,14 @@ export const LOGRES_ASSETS = {
       '/__logres_ref/global/gui/title/title_base01.dds.png',
   },
 
+  titleStart: {
+    key:
+      'logres-global-title-start',
+
+    url:
+      '/__logres_ref/global/gui/title/title_ok.png',
+  },
+
   titleNext: {
     key:
       'logres-global-title-next',
@@ -39,6 +47,54 @@ export const LOGRES_ASSETS = {
 
     url:
       '/__logres_ref/global/gui/title/world_select01.png',
+  },
+
+  worldSelect02: {
+    key:
+      'logres-global-world-select-02',
+
+    url:
+      '/__logres_ref/global/gui/title/world_select02.png',
+  },
+
+  worldSelect03: {
+    key:
+      'logres-global-world-select-03',
+
+    url:
+      '/__logres_ref/global/gui/title/world_select03.png',
+  },
+
+  worldSelect04: {
+    key:
+      'logres-global-world-select-04',
+
+    url:
+      '/__logres_ref/global/gui/title/world_select04.png',
+  },
+
+  worldSelect05: {
+    key:
+      'logres-global-world-select-05',
+
+    url:
+      '/__logres_ref/global/gui/title/world_select05.png',
+  },
+
+  worldSelect06: {
+    key:
+      'logres-global-world-select-06',
+
+    url:
+      '/__logres_ref/global/gui/title/world_select06.png',
+  },
+
+  worldSelect07: {
+    key:
+      'logres-global-world-select-07',
+
+    url:
+      '/__logres_ref/global/gui/title/world_select07.png',
   },
 
   skillBase: {
