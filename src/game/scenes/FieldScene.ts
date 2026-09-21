@@ -24,6 +24,19 @@ import {
   type PlayerStats,
 } from '../combat/CombatStats'
 
+import {
+  LOGRES_CLIENT_FACTS,
+} from '../logres/generated/ExtractedClientFacts'
+
+import {
+  MAX_ACTIVE_WEAPONS,
+  WeaponBattleState,
+} from '../logres/battle/WeaponBattleState'
+
+import {
+  LogresBattleHud,
+} from '../logres/ui/LogresBattleHud'
+
 export class FieldScene extends Phaser.Scene {
   private player!: Phaser.Physics.Arcade.Sprite
   private playerController!: PlayerController
@@ -55,16 +68,13 @@ export class FieldScene extends Phaser.Scene {
   private enemies: Enemy[] = []
   private targeting!: TargetingSystem
   private energy!: EnergySystem
+  private weaponBattle!: WeaponBattleState
+  private battleHud!: LogresBattleHud
   private arcShot!: ArcShotSystem
   private starfall!: StarfallSystem
   private energyText!: Phaser.GameObjects.Text
 
   private attackButton!: Phaser.GameObjects.Arc
-  private arcButton!: Phaser.GameObjects.Arc
-  private starButton!: Phaser.GameObjects.Arc
-
-  private arcCooldownText!: Phaser.GameObjects.Text
-  private starCooldownText!: Phaser.GameObjects.Text
 
   private hpText!: Phaser.GameObjects.Text
   private attackText!: Phaser.GameObjects.Text
@@ -107,6 +117,12 @@ export class FieldScene extends Phaser.Scene {
 
     this.physics.world.setBounds(0, 0, worldWidth, worldHeight)
     this.cameras.main.setBounds(0, 0, worldWidth, worldHeight)
+
+    this.cameras.main.setZoom(
+      LOGRES_CLIENT_FACTS
+        .field
+        .initialViewScale,
+    )
 
     this.createTextures()
     this.createWorld(worldWidth, worldHeight)
@@ -191,11 +207,40 @@ export class FieldScene extends Phaser.Scene {
       this.player,
     )
 
+    /*
+     * Five development weapon entries currently
+     * represent the reconstructed active-weapon
+     * capacity.
+     *
+     * Item/skill IDs remain development mappings
+     * until corresponding master rows are
+     * confirmed from client/server evidence.
+     */
+    this.weaponBattle =
+      new WeaponBattleState(
+        Array.from(
+          {
+            length:
+              MAX_ACTIVE_WEAPONS,
+          },
+          (_, index) => ({
+            itemId:
+              `development-weapon-${index + 1}`,
+            skillId:
+              `development-skill-${index + 1}`,
+          }),
+        ),
+        100,
+      )
+
     this.energy = new EnergySystem(
       100,
-      8,
+      0,
       () => this.refreshEnergyHUD(),
+      this.weaponBattle,
     )
+
+    this.refreshEnergyHUD()
 
     this.arcShot = new ArcShotSystem(
       this,
@@ -328,187 +373,130 @@ export class FieldScene extends Phaser.Scene {
   }
 
   private createCombatUI() {
-    const x = this.scale.width - 115
-    const y = this.scale.height - 120
+    const x =
+      this.scale.width - 115
+
+    const y =
+      this.scale.height - 120
 
     this.attackButton = this.add
-      .circle(x, y, 62, 0x8d3344, 0.94)
-      .setStrokeStyle(4, 0xf0a06c)
-      .setScrollFactor(0)
-      .setDepth(210)
-      .setInteractive()
-
-    this.add
-      .text(x, y, 'ATTACK', {
-        fontFamily: 'Arial, sans-serif',
-        fontSize: '17px',
-        fontStyle: 'bold',
-        color: '#fff0c9',
-      })
-      .setOrigin(0.5)
-      .setScrollFactor(0)
-      .setDepth(211)
-
-    this.attackButton.on('pointerdown', () => {
-      this.playerAttack()
-    })
-
-    const arcX = x - 125
-    const arcY = y + 10
-
-    this.arcButton = this.add
       .circle(
-        arcX,
-        arcY,
-        46,
-        0x287a94,
+        x,
+        y,
+        62,
+        0x8d3344,
         0.94,
       )
       .setStrokeStyle(
-        3,
-        0xbfeeff,
-        0.9,
+        4,
+        0xf0a06c,
       )
       .setScrollFactor(0)
-      .setDepth(210)
-      .setInteractive()
-
-    this.add
-      .text(arcX, arcY - 7, 'ARC', {
-        fontFamily: 'Arial, sans-serif',
-        fontSize: '16px',
-        fontStyle: 'bold',
-        color: '#ffffff',
-      })
-      .setOrigin(0.5)
-      .setScrollFactor(0)
-      .setDepth(211)
-
-    this.add
-      .text(arcX, arcY + 14, '25 EP', {
-        fontFamily: 'Arial, sans-serif',
-        fontSize: '11px',
-        color: '#d7f5ff',
-      })
-      .setOrigin(0.5)
-      .setScrollFactor(0)
-      .setDepth(211)
-
-    this.arcCooldownText = this.add
-      .text(
-        arcX,
-        arcY - 1,
-        '',
-        {
-          fontFamily:
-            'Arial, sans-serif',
-          fontSize: '22px',
-          fontStyle: 'bold',
-          color: '#ffffff',
-          stroke: '#102731',
-          strokeThickness: 5,
-        },
-      )
-      .setOrigin(0.5)
-      .setScrollFactor(0)
-      .setDepth(214)
-      .setVisible(false)
-
-    this.arcButton.on('pointerdown', () => {
-      if (
-        !this.playerDead &&
-        !this.dialogueVisible &&
-        !this.inventoryOpen
-      ) {
-        this.arcShot.cast()
-      }
-    })
-
-    const starX = arcX - 105
-    const starY = arcY
-
-    this.starButton = this.add
-      .circle(
-        starX,
-        starY,
-        46,
-        0x6845a8,
-        0.94,
-      )
-      .setStrokeStyle(
-        3,
-        0xdac9ff,
-        0.9,
-      )
-      .setScrollFactor(0)
-      .setDepth(210)
+      .setDepth(240)
       .setInteractive()
 
     this.add
       .text(
-        starX,
-        starY - 7,
-        'STAR',
+        x,
+        y,
+        'ATTACK',
         {
           fontFamily:
             'Arial, sans-serif',
-          fontSize: '15px',
-          fontStyle: 'bold',
-          color: '#ffffff',
+
+          fontSize:
+            '17px',
+
+          fontStyle:
+            'bold',
+
+          color:
+            '#fff0c9',
         },
       )
       .setOrigin(0.5)
       .setScrollFactor(0)
-      .setDepth(211)
+      .setDepth(241)
 
-    this.add
-      .text(
-        starX,
-        starY + 14,
-        '45 EP',
-        {
-          fontFamily:
-            'Arial, sans-serif',
-          fontSize: '11px',
-          color: '#eadfff',
-        },
-      )
-      .setOrigin(0.5)
-      .setScrollFactor(0)
-      .setDepth(211)
-
-    this.starCooldownText = this.add
-      .text(
-        starX,
-        starY - 1,
-        '',
-        {
-          fontFamily:
-            'Arial, sans-serif',
-          fontSize: '22px',
-          fontStyle: 'bold',
-          color: '#ffffff',
-          stroke: '#281842',
-          strokeThickness: 5,
-        },
-      )
-      .setOrigin(0.5)
-      .setScrollFactor(0)
-      .setDepth(214)
-      .setVisible(false)
-
-    this.starButton.on(
+    this.attackButton.on(
       'pointerdown',
       () => {
-        if (
-          !this.playerDead &&
-          !this.dialogueVisible &&
-          !this.inventoryOpen
-        ) {
-          this.starfall.cast()
-        }
+        this.playerAttack()
       },
     )
+
+    this.battleHud =
+      new LogresBattleHud(
+        this,
+        this.weaponBattle,
+        [
+          {
+            label:
+              'ARC',
+
+            detail:
+              '25 EP',
+
+            onPressed:
+              () => {
+                if (
+                  !this.playerDead &&
+                  !this.dialogueVisible &&
+                  !this.inventoryOpen
+                ) {
+                  this.arcShot.cast()
+                }
+              },
+          },
+          {
+            label:
+              'STAR',
+
+            detail:
+              '45 EP',
+
+            onPressed:
+              () => {
+                if (
+                  !this.playerDead &&
+                  !this.dialogueVisible &&
+                  !this.inventoryOpen
+                ) {
+                  this.starfall.cast()
+                }
+              },
+          },
+          {
+            label:
+              'SKILL 3',
+
+            detail:
+              'UNMAPPED',
+
+            onPressed:
+              () => {
+                this.showCombatMessage(
+                  'Third Logres command slot confirmed • skill not mapped yet',
+                )
+              },
+          },
+        ],
+        {
+          onWeaponChanged:
+            (index) => {
+              this.showCombatMessage(
+                `Weapon ${index + 1} selected`,
+              )
+            },
+
+          onMessage:
+            (message) => {
+              this.showCombatMessage(
+                message,
+              )
+            },
+        },
+      )
   }
 
   private playerAttack() {
@@ -560,6 +548,17 @@ export class FieldScene extends Phaser.Scene {
       hit.damage,
       hit.critical,
     )
+
+    /*
+     * EXTRACTED behavior:
+     * Logres restores EP through attacks.
+     *
+     * The exact historical server-side EP
+     * amount is not present in the client.
+     * 5 is therefore a temporary
+     * reconstructed balance value.
+     */
+    this.energy.gainFromAttack(5)
 
     if (killed) {
       this.rewardEnemy(target)
@@ -957,58 +956,33 @@ export class FieldScene extends Phaser.Scene {
   }
 
   private refreshSkillCooldownUI() {
-    if (
-      !this.arcCooldownText ||
-      !this.starCooldownText
-    ) {
+    if (!this.battleHud) {
       return
     }
 
-    const arcRemaining =
-      this.arcShot.getCooldownRemaining()
-
-    const arcCooling =
-      arcRemaining > 0
-
-    this.arcButton.setAlpha(
-      arcCooling
-        ? 0.45
-        : 1,
-    )
-
-    this.arcCooldownText
-      .setVisible(arcCooling)
-      .setText(
-        arcCooling
-          ? (arcRemaining / 1000)
-              .toFixed(1)
-          : '',
+    this.battleHud
+      .setCommandCooldown(
+        0,
+        this.arcShot
+          .getCooldownRemaining(),
       )
 
-    const starRemaining =
-      this.starfall.getCooldownRemaining()
+    this.battleHud
+      .setCommandCooldown(
+        1,
+        this.starfall
+          .getCooldownRemaining(),
+      )
 
-    const starCooling =
-      starRemaining > 0
-
-    this.starButton.setAlpha(
-      starCooling
-        ? 0.45
-        : 1,
-    )
-
-    this.starCooldownText
-      .setVisible(starCooling)
-      .setText(
-        starCooling
-          ? (starRemaining / 1000)
-              .toFixed(1)
-          : '',
+    this.battleHud
+      .setCommandCooldown(
+        2,
+        0,
       )
   }
 
   private refreshEnergyHUD() {
-    if (!this.energyText || !this.arcShot) {
+    if (!this.energyText) {
       return
     }
 
@@ -1498,7 +1472,7 @@ export class FieldScene extends Phaser.Scene {
       .setDepth(101)
 
     this.energyText = this.add
-      .text(44, 142, 'EP 100 / 100', {
+      .text(44, 142, 'EP 0 / 100', {
         fontFamily: 'Arial, sans-serif',
         fontSize: '14px',
         color: '#70dcf5',

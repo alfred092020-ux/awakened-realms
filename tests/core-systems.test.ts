@@ -318,7 +318,7 @@ describe(
       'EnergySystem',
       () => {
         it(
-          'spends and regenerates energy',
+          'gains EP from attacks and does not regenerate passively',
           () => {
             const changed =
               vi.fn()
@@ -326,17 +326,13 @@ describe(
             const energy =
               new EnergySystem(
                 100,
-                8,
+                0,
                 changed,
               )
 
             expect(
-              energy.spend(45),
-            ).toBe(true)
-
-            expect(
               energy.getEnergy(),
-            ).toBe(55)
+            ).toBe(0)
 
             energy.update(
               1000,
@@ -344,7 +340,23 @@ describe(
 
             expect(
               energy.getEnergy(),
-            ).toBe(63)
+            ).toBe(0)
+
+            expect(
+              energy.gainFromAttack(50),
+            ).toBe(50)
+
+            expect(
+              energy.getEnergy(),
+            ).toBe(50)
+
+            expect(
+              energy.spend(45),
+            ).toBe(true)
+
+            expect(
+              energy.getEnergy(),
+            ).toBe(5)
 
             expect(
               changed,

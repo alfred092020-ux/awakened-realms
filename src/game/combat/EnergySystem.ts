@@ -1,59 +1,108 @@
+import {
+  WeaponBattleState,
+  type BattleWeapon,
+} from '../logres/battle/WeaponBattleState'
+
+import {
+  LOGRES_CLIENT_FACTS,
+} from '../logres/generated/ExtractedClientFacts'
+
+const DEVELOPMENT_WEAPONS: BattleWeapon[] = [
+  {
+    itemId: 'development-weapon-slot-1',
+    skillId: 'development-skill-slot-1',
+  },
+]
+
 export class EnergySystem {
-  private energy: number
-  private readonly maximum: number
-  private readonly regenerationPerSecond: number
-  private readonly onChanged: () => void
+  private readonly battleState:
+    WeaponBattleState
+
+  private readonly onChanged:
+    () => void
 
   constructor(
     maximum = 100,
-    regenerationPerSecond = 8,
+    _legacyRegenerationPerSecond = 0,
     onChanged: () => void = () => {},
+    battleState?: WeaponBattleState,
   ) {
-    this.maximum = maximum
-    this.energy = maximum
-    this.regenerationPerSecond = regenerationPerSecond
+    this.battleState =
+      battleState ??
+      new WeaponBattleState(
+        DEVELOPMENT_WEAPONS,
+        maximum,
+      )
+
     this.onChanged = onChanged
   }
 
-  update(delta: number) {
-    if (this.energy >= this.maximum) {
-      return
+  update(_delta: number) {
+    /*
+     * Logres client evidence confirms EP
+     * recovers through attacks.
+     *
+     * Passive regeneration is intentionally
+     * disabled.
+     */
+  }
+
+  gainFromAttack(amount: number) {
+    if (
+      !LOGRES_CLIENT_FACTS
+        .battle
+        .epRecoversByAttack
+    ) {
+      return 0
     }
 
-    const previous = Math.floor(this.energy)
+    const gained =
+      this.battleState.gainEp(amount)
 
-    this.energy = Math.min(
-      this.maximum,
-      this.energy +
-        this.regenerationPerSecond *
-          (delta / 1000),
-    )
-
-    if (Math.floor(this.energy) !== previous) {
+    if (gained > 0) {
       this.onChanged()
     }
+
+    return gained
   }
 
   canSpend(amount: number) {
-    return this.energy >= amount
+    return (
+      this.battleState
+        .getSnapshot()
+        .ep >= amount
+    )
   }
 
   spend(amount: number) {
-    if (!this.canSpend(amount)) {
-      return false
+    const spent =
+      this.battleState
+        .spendEp(amount)
+
+    if (spent) {
+      this.onChanged()
     }
 
-    this.energy -= amount
-    this.onChanged()
-
-    return true
+    return spent
   }
 
   getEnergy() {
-    return Math.floor(this.energy)
+    return (
+      this.battleState
+        .getSnapshot()
+        .ep
+    )
   }
 
   getMaximum() {
-    return this.maximum
+    return (
+      this.battleState
+        .getSnapshot()
+        .maxEp
+    )
+  }
+
+  getBattleState() {
+    return this.battleState
   }
 }
