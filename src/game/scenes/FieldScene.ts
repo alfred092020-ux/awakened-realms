@@ -37,6 +37,10 @@ import {
   LogresBattleHud,
 } from '../logres/ui/LogresBattleHud'
 
+import {
+  preloadLogresRuntimeAssets,
+} from '../logres/ui/LogresRuntimeAssets'
+
 export class FieldScene extends Phaser.Scene {
   private player!: Phaser.Physics.Arcade.Sprite
   private playerController!: PlayerController
@@ -88,6 +92,12 @@ export class FieldScene extends Phaser.Scene {
 
   constructor() {
     super('FieldScene')
+  }
+
+  preload() {
+    preloadLogresRuntimeAssets(
+      this,
+    )
   }
 
   create() {

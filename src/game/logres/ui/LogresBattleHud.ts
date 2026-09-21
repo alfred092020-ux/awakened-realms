@@ -8,6 +8,10 @@ import {
   LOGRES_CLIENT_FACTS,
 } from '../generated/ExtractedClientFacts'
 
+import {
+  LOGRES_UI_ASSETS,
+} from './LogresRuntimeAssets'
+
 export interface LogresCommandSkill {
   label: string
   detail: string
@@ -35,13 +39,13 @@ export class LogresBattleHud {
     LogresBattleHudCallbacks
 
   private readonly weaponSlots:
-    Phaser.GameObjects.Rectangle[] = []
+    Phaser.GameObjects.Image[] = []
 
   private readonly weaponLabels:
     Phaser.GameObjects.Text[] = []
 
   private readonly commandButtons:
-    Phaser.GameObjects.Arc[] = []
+    Phaser.GameObjects.Image[] = []
 
   private readonly commandCooldowns:
     Phaser.GameObjects.Text[] = []
@@ -64,6 +68,7 @@ export class LogresBattleHud {
       callbacks
 
     this.createWeaponStrip()
+
     this.createCommandSkills(
       commandSkills,
     )
@@ -77,40 +82,43 @@ export class LogresBattleHud {
         .getSnapshot()
 
     for (
-      let i = 0;
-      i < this.weaponSlots.length;
-      i += 1
+      let index = 0;
+      index <
+        this.weaponSlots.length;
+      index += 1
     ) {
       const selected =
-        i ===
+        index ===
         snapshot.activeWeaponIndex
 
-      this.weaponSlots[i]
-        .setFillStyle(
+      const slot =
+        this.weaponSlots[index]
+
+      slot
+        .setDisplaySize(
           selected
-            ? 0xb98b37
-            : 0x171c27,
+            ? 72
+            : 62,
           selected
-            ? 0.96
-            : 0.9,
+            ? 72
+            : 62,
         )
-        .setStrokeStyle(
-          selected
-            ? 4
-            : 2,
-          selected
-            ? 0xffe099
-            : 0x7b8493,
+        .setAlpha(
           selected
             ? 1
-            : 0.8,
+            : 0.68,
         )
 
-      this.weaponLabels[i]
+      this.weaponLabels[index]
         .setColor(
           selected
-            ? '#fff3c4'
-            : '#c1c8d3',
+            ? '#fff4c2'
+            : '#d4d4d4',
+        )
+        .setScale(
+          selected
+            ? 1.12
+            : 1,
         )
     }
   }
@@ -137,7 +145,7 @@ export class LogresBattleHud {
 
     button.setAlpha(
       cooling
-        ? 0.42
+        ? 0.38
         : 1,
     )
 
@@ -161,7 +169,7 @@ export class LogresBattleHud {
     const count =
       snapshot.weapons.length
 
-    const spacing = 70
+    const spacing = 72
 
     const totalWidth =
       count * spacing
@@ -174,7 +182,7 @@ export class LogresBattleHud {
 
     const y =
       this.scene.scale.height -
-      235
+      238
 
     for (
       let index = 0;
@@ -186,26 +194,30 @@ export class LogresBattleHud {
         spacing * index +
         spacing / 2
 
-      const slot =
+      const frameKey =
+        LOGRES_UI_ASSETS
+          .weaponFrames[
+            index %
+            LOGRES_UI_ASSETS
+              .weaponFrames.length
+          ]
+
+      const frame =
         this.scene.add
-          .rectangle(
+          .image(
             x,
             y,
-            58,
-            66,
-            0x171c27,
-            0.9,
+            frameKey,
           )
-          .setStrokeStyle(
-            2,
-            0x7b8493,
-            0.8,
+          .setDisplaySize(
+            62,
+            62,
           )
           .setScrollFactor(0)
           .setDepth(230)
 
       this.weaponSlots.push(
-        slot,
+        frame,
       )
 
       const label =
@@ -219,18 +231,24 @@ export class LogresBattleHud {
                 'Arial, sans-serif',
 
               fontSize:
-                '20px',
+                '18px',
 
               fontStyle:
                 'bold',
 
               color:
-                '#c1c8d3',
+                '#d4d4d4',
+
+              stroke:
+                '#16110b',
+
+              strokeThickness:
+                3,
             },
           )
           .setOrigin(0.5)
           .setScrollFactor(0)
-          .setDepth(231)
+          .setDepth(232)
 
       this.weaponLabels.push(
         label,
@@ -240,8 +258,8 @@ export class LogresBattleHud {
     this.scene.add
       .text(
         this.scene.scale.width / 2,
-        y - 48,
-        'WEAPONS  •  SLIDE TO SWITCH',
+        y - 52,
+        'WEAPONS',
         {
           fontFamily:
             'Arial, sans-serif',
@@ -253,7 +271,7 @@ export class LogresBattleHud {
             'bold',
 
           color:
-            '#d3c08b',
+            '#f0dda2',
 
           stroke:
             '#11141c',
@@ -264,7 +282,7 @@ export class LogresBattleHud {
       )
       .setOrigin(0.5)
       .setScrollFactor(0)
-      .setDepth(231)
+      .setDepth(232)
 
     const gestureArea =
       this.scene.add
@@ -272,7 +290,7 @@ export class LogresBattleHud {
           this.scene.scale.width / 2,
           y,
           totalWidth,
-          82,
+          86,
         )
         .setScrollFactor(0)
         .setDepth(235)
@@ -331,9 +349,7 @@ export class LogresBattleHud {
             spacing,
           )
 
-        this.switchTo(
-          index,
-        )
+        this.switchTo(index)
       },
     )
 
@@ -363,19 +379,18 @@ export class LogresBattleHud {
 
     const x =
       this.scene.scale.width -
-      88
+      90
 
     const startY =
       this.scene.scale.height -
-      510
+      520
 
-    const spacing =
-      102
+    const spacing = 105
 
     this.scene.add
       .text(
         x,
-        startY - 67,
+        startY - 65,
         'COMMAND',
         {
           fontFamily:
@@ -388,7 +403,7 @@ export class LogresBattleHud {
             'bold',
 
           color:
-            '#e0c98d',
+            '#f1dda5',
 
           stroke:
             '#11141c',
@@ -399,7 +414,7 @@ export class LogresBattleHud {
       )
       .setOrigin(0.5)
       .setScrollFactor(0)
-      .setDepth(231)
+      .setDepth(232)
 
     for (
       let index = 0;
@@ -411,22 +426,19 @@ export class LogresBattleHud {
 
       const y =
         startY +
-        index *
-          spacing
+        index * spacing
 
       const button =
         this.scene.add
-          .circle(
+          .image(
             x,
             y,
-            43,
-            0x25364d,
-            0.96,
+            LOGRES_UI_ASSETS
+              .skillBase,
           )
-          .setStrokeStyle(
-            3,
-            0xc4d8ef,
-            0.9,
+          .setDisplaySize(
+            82,
+            82,
           )
           .setScrollFactor(0)
           .setDepth(230)
@@ -437,9 +449,24 @@ export class LogresBattleHud {
       )
 
       this.scene.add
+        .image(
+          x,
+          y + 34,
+          LOGRES_UI_ASSETS
+            .equipmentSkillBase,
+        )
+        .setDisplaySize(
+          72,
+          32,
+        )
+        .setScrollFactor(0)
+        .setDepth(231)
+        .setAlpha(0.9)
+
+      this.scene.add
         .text(
           x,
-          y - 7,
+          y - 9,
           skill?.label ??
             `SLOT ${index + 1}`,
           {
@@ -453,7 +480,13 @@ export class LogresBattleHud {
               'bold',
 
             color:
-              '#ffffff',
+              '#31220d',
+
+            stroke:
+              '#fff5d8',
+
+            strokeThickness:
+              2,
 
             align:
               'center',
@@ -461,12 +494,12 @@ export class LogresBattleHud {
         )
         .setOrigin(0.5)
         .setScrollFactor(0)
-        .setDepth(231)
+        .setDepth(233)
 
       this.scene.add
         .text(
           x,
-          y + 16,
+          y + 25,
           skill?.detail ??
             'UNMAPPED',
           {
@@ -476,8 +509,17 @@ export class LogresBattleHud {
             fontSize:
               '9px',
 
+            fontStyle:
+              'bold',
+
             color:
-              '#cbd7e5',
+              '#f5e4aa',
+
+            stroke:
+              '#21160b',
+
+            strokeThickness:
+              2,
 
             align:
               'center',
@@ -485,7 +527,7 @@ export class LogresBattleHud {
         )
         .setOrigin(0.5)
         .setScrollFactor(0)
-        .setDepth(231)
+        .setDepth(233)
 
       const cooldown =
         this.scene.add
@@ -498,7 +540,7 @@ export class LogresBattleHud {
                 'Arial, sans-serif',
 
               fontSize:
-                '21px',
+                '22px',
 
               fontStyle:
                 'bold',
@@ -507,15 +549,15 @@ export class LogresBattleHud {
                 '#ffffff',
 
               stroke:
-                '#111722',
+                '#111111',
 
               strokeThickness:
-                5,
+                6,
             },
           )
           .setOrigin(0.5)
           .setScrollFactor(0)
-          .setDepth(234)
+          .setDepth(235)
           .setVisible(false)
 
       this.commandCooldowns.push(
