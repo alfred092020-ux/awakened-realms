@@ -1,74 +1,61 @@
 import Phaser from 'phaser'
 
-const BASE =
-  '/__logres_ref/japanese/gui/common_base/'
+export const LOGRES_ASSETS = {
+  background: {
+    key: 'logres-bg-rogo',
+    url:
+      '/__logres_ref/japanese/gui/bg/rogo.dds.png',
+  },
 
-export const LOGRES_UI_ASSETS = {
-  skillBase:
-    'logres-ui-skill-base',
+  titleBase: {
+    key: 'logres-title-base',
+    url:
+      '/__logres_ref/japanese/gui/title/title_base01.dds.png',
+  },
 
-  equipmentSkillBase:
-    'logres-ui-equipment-skill-base',
+  titleNext: {
+    key: 'logres-title-next',
+    url:
+      '/__logres_ref/japanese/gui/title/title_next.dds.png',
+  },
 
-  weaponFrames: [
-    'logres-ui-weapon-frame-1',
-    'logres-ui-weapon-frame-2',
-    'logres-ui-weapon-frame-3',
-    'logres-ui-weapon-frame-4',
-    'logres-ui-weapon-frame-5',
-  ],
+  worldSelect: {
+    key: 'logres-world-select',
+    url:
+      '/__logres_ref/japanese/gui/title/world_select01.dds.png',
+  },
+
+  skillBase: {
+    key: 'logres-skill-base',
+    url:
+      '/__logres_ref/japanese/gui/common_base/skill_base.png',
+  },
+
+  equipmentSkillBase: {
+    key: 'logres-equipment-skill-base',
+    url:
+      '/__logres_ref/japanese/gui/common_base/soubi01_02_skillbase.png',
+  },
 } as const
 
-const ASSETS = [
-  [
-    LOGRES_UI_ASSETS.skillBase,
-    'skill_base.png',
-  ],
-  [
-    LOGRES_UI_ASSETS
-      .equipmentSkillBase,
-    'soubi01_02_skillbase.png',
-  ],
-  [
-    LOGRES_UI_ASSETS
-      .weaponFrames[0],
-    'system_base02.png',
-  ],
-  [
-    LOGRES_UI_ASSETS
-      .weaponFrames[1],
-    'system_base07.png',
-  ],
-  [
-    LOGRES_UI_ASSETS
-      .weaponFrames[2],
-    'system_base10.png',
-  ],
-  [
-    LOGRES_UI_ASSETS
-      .weaponFrames[3],
-    'system_base13.png',
-  ],
-  [
-    LOGRES_UI_ASSETS
-      .weaponFrames[4],
-    'system_base16.png',
-  ],
-] as const
-
-export function preloadLogresRuntimeAssets(
+export function preloadLogresAssets(
   scene: Phaser.Scene,
 ) {
-  for (const [key, file] of ASSETS) {
+  for (
+    const asset of
+    Object.values(LOGRES_ASSETS)
+  ) {
     if (
-      scene.textures.exists(key)
+      scene.textures.exists(
+        asset.key,
+      )
     ) {
       continue
     }
 
     scene.load.image(
-      key,
-      `${BASE}${file}`,
+      asset.key,
+      asset.url,
     )
   }
 }

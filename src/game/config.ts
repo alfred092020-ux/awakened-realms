@@ -9,41 +9,12 @@ import {
 } from './scenes/LoadingScene'
 
 import {
-  MainMenuScene,
-} from './scenes/MainMenuScene'
+  LogresTitleScene,
+} from './scenes/LogresTitleScene'
 
 import {
-  AccountScene,
-} from './scenes/AccountScene'
-
-import {
-  HubScene,
-} from './scenes/HubScene'
-
-import {
-  LeaderboardScene,
-} from './scenes/LeaderboardScene'
-
-import {
-  FriendsScene,
-} from './scenes/FriendsScene'
-
-import {
-  PlayerProfileScene,
-} from './scenes/PlayerProfileScene'
-
-import {
-  MultiplayerScene,
-} from './scenes/MultiplayerScene'
-
-import {
-  CoopLobbyScene,
-} from './scenes/CoopLobbyScene'
-
-
-import {
-  RoguelikeBattleScene,
-} from './scenes/RoguelikeBattleScene'
+  LogresFieldScene,
+} from './scenes/LogresFieldScene'
 
 export const GAME_WIDTH =
   720
@@ -65,20 +36,14 @@ export const gameConfig:
   height:
     GAME_HEIGHT,
 
-  backgroundColor:
-    '#080b16',
-
   physics: {
     default:
       'arcade',
 
     arcade: {
       gravity: {
-        x:
-          0,
-
-        y:
-          0,
+        x: 0,
+        y: 0,
       },
 
       debug:
@@ -89,15 +54,8 @@ export const gameConfig:
   scene: [
     BootScene,
     LoadingScene,
-    MainMenuScene,
-    AccountScene,
-    HubScene,
-    LeaderboardScene,
-    FriendsScene,
-    PlayerProfileScene,
-    MultiplayerScene,
-    CoopLobbyScene,
-    RoguelikeBattleScene,
+    LogresTitleScene,
+    LogresFieldScene,
   ],
 
   scale: {

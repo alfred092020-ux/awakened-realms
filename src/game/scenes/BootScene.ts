@@ -1,11 +1,14 @@
 import Phaser from 'phaser'
 
-export class BootScene extends Phaser.Scene {
+export class BootScene
+  extends Phaser.Scene {
   constructor() {
     super('BootScene')
   }
 
   create() {
-    this.scene.start('LoadingScene')
+    this.scene.start(
+      'LoadingScene',
+    )
   }
 }
