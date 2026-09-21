@@ -56,6 +56,38 @@ export const LOGRES_ASSETS = {
     url:
       '/__logres_ref/global/gui/common_base/soubi01_02_skillbase.png',
   },
+
+  characterMan: {
+    key:
+      'logres-global-character-man',
+
+    url:
+      '/__logres_ref/global/gui/characreate/charaselect_man.dds.png',
+  },
+
+  characterWoman: {
+    key:
+      'logres-global-character-woman',
+
+    url:
+      '/__logres_ref/global/gui/characreate/charaselect_woman.dds.png',
+  },
+
+  characterChangeMan: {
+    key:
+      'logres-global-character-change-man',
+
+    url:
+      '/__logres_ref/global/gui/characreate/charaselect_change01.dds.png',
+  },
+
+  characterChangeWoman: {
+    key:
+      'logres-global-character-change-woman',
+
+    url:
+      '/__logres_ref/global/gui/characreate/charaselect_change02.dds.png',
+  },
 } as const
 
 export function preloadLogresAssets(

@@ -13,6 +13,10 @@ import {
 } from './scenes/LogresTitleScene'
 
 import {
+  LogresCharacterCreateScene,
+} from './scenes/LogresCharacterCreateScene'
+
+import {
   LogresFieldScene,
 } from './scenes/LogresFieldScene'
 
@@ -55,6 +59,7 @@ export const gameConfig:
     BootScene,
     LoadingScene,
     LogresTitleScene,
+    LogresCharacterCreateScene,
     LogresFieldScene,
   ],
 

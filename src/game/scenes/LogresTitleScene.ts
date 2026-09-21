@@ -107,7 +107,7 @@ export class LogresTitleScene
       'pointerdown',
       () => {
         this.scene.start(
-          'LogresFieldScene',
+          'LogresCharacterCreateScene',
         )
       },
     )
