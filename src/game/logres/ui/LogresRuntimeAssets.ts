@@ -88,6 +88,30 @@ export const LOGRES_ASSETS = {
     url:
       '/__logres_ref/global/gui/characreate/charaselect_change02.dds.png',
   },
+
+  characterTitleBase: {
+    key:
+      'logres-global-character-title-base',
+
+    url:
+      '/__logres_ref/global/gui/characreate/slice/charaselect_titlebase.dds.png',
+  },
+
+  characterTitle: {
+    key:
+      'logres-global-character-title',
+
+    url:
+      '/__logres_ref/global/gui/characreate/charaselect_title01.png',
+  },
+
+  characterOk: {
+    key:
+      'logres-global-character-ok',
+
+    url:
+      '/__logres_ref/global/gui/characreate/charaselect_ok.png',
+  },
 } as const
 
 export function preloadLogresAssets(
