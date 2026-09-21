@@ -1,0 +1,7 @@
+{
+  "error": "VERIFY_FAILED: \n> awakened-realms@0.0.0 build\n> tsc && vite build\n\nsh: 1: tsc: not found\n",
+  "job_id": "patch-runner-smoke-001",
+  "job_type": "PATCH",
+  "status": "VERIFY_FAILED",
+  "written_at": "2026-09-21T20:10:24.282174+00:00"
+}
