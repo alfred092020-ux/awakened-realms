@@ -20,6 +20,10 @@ import {
   LogresFieldScene,
 } from './scenes/LogresFieldScene'
 
+import {
+  LogresBattleScene,
+} from './scenes/LogresBattleScene'
+
 export const GAME_WIDTH =
   720
 
@@ -61,6 +65,7 @@ export const gameConfig:
     LogresTitleScene,
     LogresCharacterCreateScene,
     LogresFieldScene,
+    LogresBattleScene,
   ],
 
   scale: {

@@ -5,21 +5,6 @@ import {
   preloadLogresAssets,
 } from '../logres/ui/LogresRuntimeAssets'
 
-interface EquipmentUiSettings {
-  skill_equip_max_normal?:
-    number
-
-  skill_equip_group_gap?:
-    number
-}
-
-interface BattleTexts {
-  skill_view?: {
-    default_offset?:
-      [number, number]
-  }
-}
-
 interface FieldSettings {
   initial_view_scale?:
     number
@@ -32,21 +17,16 @@ interface FieldSettings {
 
 export class LogresFieldScene
   extends Phaser.Scene {
+  private player?:
+    Phaser.GameObjects.Image
+
   constructor() {
     super('LogresFieldScene')
   }
 
   preload() {
-    preloadLogresAssets(this)
-
-    this.load.json(
-      'logres-equipment-settings',
-      '/__logres_ref/config/japanese/equipment_ui_settings.json',
-    )
-
-    this.load.json(
-      'logres-battle-settings',
-      '/__logres_ref/config/japanese/battle_texts.json',
+    preloadLogresAssets(
+      this,
     )
 
     this.load.json(
@@ -55,20 +35,9 @@ export class LogresFieldScene
     )
 
     /*
-     * Player-facing language always comes
-     * from the translated Global client
-     * when an equivalent file exists.
+     * Player-facing language remains sourced
+     * from the translated Global client.
      */
-    this.load.json(
-      'logres-equip-tutorial-en',
-      '/__logres_ref/config/global/equip_tutorial_texts.json',
-    )
-
-    this.load.json(
-      'logres-equipment-text-en',
-      '/__logres_ref/config/global/equipment_texts.json',
-    )
-
     this.load.json(
       'logres-quest-text-en',
       '/__logres_ref/config/global/quest_texts.json',
@@ -77,11 +46,6 @@ export class LogresFieldScene
     this.load.json(
       'logres-chat-text-en',
       '/__logres_ref/config/global/chat_text.json',
-    )
-
-    this.load.json(
-      'logres-inventory-text-en',
-      '/__logres_ref/config/global/inventory_text.json',
     )
   }
 
@@ -92,41 +56,26 @@ export class LogresFieldScene
     } = this.scale
 
     /*
-     * The default field background specified by
-     * field_settings.json was not present inside
-     * the captured package.
+     * Extracted Global client field artwork.
      *
-     * Strict mode therefore does NOT fabricate
-     * a replacement field asset.
-     *
-     * This backdrop is an actual extracted
-     * Logres client texture used only so the
-     * reconstruction screen is visible.
+     * The exact historical map background
+     * referenced by field_settings.json is
+     * not present in the captured package,
+     * so this is explicitly a reconstruction
+     * test field rather than a fabricated map.
      */
     this.add
-      .tileSprite(
+      .image(
         width / 2,
         height / 2,
-        width,
-        height,
         LOGRES_ASSETS
-          .titleBackground
+          .fieldBackdrop
           .key,
       )
-
-    const equipment =
-      this.cache.json.get(
-        'logres-equipment-settings',
-      ) as
-        EquipmentUiSettings |
-        undefined
-
-    const battle =
-      this.cache.json.get(
-        'logres-battle-settings',
-      ) as
-        BattleTexts |
-        undefined
+      .setDisplaySize(
+        1810,
+        1280,
+      )
 
     const field =
       this.cache.json.get(
@@ -135,92 +84,10 @@ export class LogresFieldScene
         FieldSettings |
         undefined
 
-    /*
-     * All values below come directly from
-     * extracted Logres JSON.
-     */
-    const skillCount =
-      equipment
-        ?.skill_equip_max_normal ??
-      0
-
-    const gap =
-      equipment
-        ?.skill_equip_group_gap ??
-      0
-
-    const offset =
-      battle
-        ?.skill_view
-        ?.default_offset ??
-      [0, 0]
-
-    const source =
-      this.textures
-        .get(
-          LOGRES_ASSETS
-            .skillBase
-            .key,
-        )
-        .getSourceImage() as
-        HTMLImageElement
-
-    const iconWidth =
-      source.width
-
-    const totalWidth =
-      skillCount > 0
-        ? (
-            skillCount *
-              iconWidth +
-            (
-              skillCount -
-              1
-            ) *
-              gap
-          )
-        : 0
-
-    const startX =
-      width / 2 -
-      totalWidth / 2 +
-      iconWidth / 2 +
-      offset[0]
-
-    const y =
-      height / 2 +
-      offset[1]
-
-    for (
-      let index = 0;
-      index < skillCount;
-      index += 1
-    ) {
-      this.add
-        .image(
-          startX +
-            index *
-              (
-                iconWidth +
-                gap
-              ),
-          y,
-          LOGRES_ASSETS
-            .skillBase
-            .key,
-        )
-    }
-
     const initialViewScale =
       field
         ?.initial_view_scale
 
-    /*
-     * field_settings.json supplies the
-     * original client's initial field view
-     * scale. Apply it directly when present
-     * rather than inventing a fallback value.
-     */
     if (
       typeof initialViewScale ===
         'number' &&
@@ -234,10 +101,6 @@ export class LogresFieldScene
       )
     }
 
-    /*
-     * Read and retain actual field values.
-     * We do not invent missing world data.
-     */
     this.registry.set(
       'logres.field.initialViewScale',
       initialViewScale,
@@ -249,5 +112,126 @@ export class LogresFieldScene
         ?.resource_path
         ?.default_background_image,
     )
+
+    this.registry.set(
+      'logres.reconstruction.field',
+      'RECONSTRUCTED_TEST_FIELD',
+    )
+
+    this.player =
+      this.add
+        .image(
+          width * 0.30,
+          height * 0.66,
+          LOGRES_ASSETS
+            .fieldPlayer
+            .key,
+        )
+        .setDisplaySize(
+          126,
+          180,
+        )
+        .setDepth(10)
+
+    const enemy =
+      this.add
+        .image(
+          width * 0.75,
+          height * 0.40,
+          LOGRES_ASSETS
+            .fieldEnemyMandora
+            .key,
+        )
+        .setScale(1.35)
+        .setDepth(10)
+        .setInteractive({
+          useHandCursor:
+            true,
+        })
+
+    enemy.on(
+      'pointerdown',
+      () => {
+        this.registry.set(
+          'logres.reconstruction.encounter',
+          'RECONSTRUCTED',
+        )
+
+        this.scene.start(
+          'LogresBattleScene',
+        )
+      },
+    )
+
+    /*
+     * RECONSTRUCTED CLIENT GLUE
+     *
+     * Exact historical movement tuning is
+     * not present in the extracted evidence.
+     * For this testable slice, a tap directly
+     * places the reconstructed player marker
+     * at the tapped field coordinate. No fake
+     * movement speed or server movement value
+     * is introduced.
+     */
+    this.input.on(
+      'pointerdown',
+      (
+        pointer:
+          Phaser.Input.Pointer,
+      ) => {
+        if (
+          !this.player ||
+          !this.scene.isActive()
+        ) {
+          return
+        }
+
+        this.player.setPosition(
+          Phaser.Math.Clamp(
+            pointer.worldX,
+            90,
+            width - 90,
+          ),
+          Phaser.Math.Clamp(
+            pointer.worldY,
+            140,
+            height - 160,
+          ),
+        )
+
+        this.registry.set(
+          'logres.reconstruction.fieldMovement',
+          'RECONSTRUCTED_DIRECT_TAP',
+        )
+      },
+    )
+
+    this.add
+      .text(
+        18,
+        18,
+        'RECONSTRUCTED FIELD TEST',
+        {
+          fontFamily:
+            'sans-serif',
+
+          fontSize:
+            '16px',
+
+          color:
+            '#ffffff',
+
+          backgroundColor:
+            '#00000099',
+
+          padding: {
+            x: 8,
+            y: 5,
+          },
+        },
+      )
+      .setScrollFactor(0)
+      .setDepth(100)
   }
 }

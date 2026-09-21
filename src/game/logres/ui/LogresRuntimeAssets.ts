@@ -57,6 +57,38 @@ export const LOGRES_ASSETS = {
       '/__logres_ref/global/gui/common_base/soubi01_02_skillbase.png',
   },
 
+  fieldBackdrop: {
+    key:
+      'logres-global-field-backdrop',
+
+    url:
+      '/__logres_ref/global/gui/title/effect/png/field00.dds.png',
+  },
+
+  fieldPlayer: {
+    key:
+      'logres-global-field-player',
+
+    url:
+      '/__logres_ref/global/gui/title/effect/png/player00.dds.png',
+  },
+
+  fieldEnemyMandora: {
+    key:
+      'logres-global-field-enemy-mandora',
+
+    url:
+      '/__logres_ref/global/gui/title/patchCharacter/png/mandora_01_01.dds.png',
+  },
+
+  backButton: {
+    key:
+      'logres-global-back-button',
+
+    url:
+      '/__logres_ref/global/gui/common_base/button_back01.png',
+  },
+
   characterMan: {
     key:
       'logres-global-character-man',

@@ -296,6 +296,38 @@ export class LogresCharacterCreateScene
       'C_GMCL_CHAR_CREATE_REQ',
       request,
     )
+
+    /*
+     * RECONSTRUCTED SERVER BRIDGE
+     *
+     * The captured clients contain the
+     * outgoing character-create request,
+     * but not the historical production
+     * server response.
+     *
+     * For the playable reconstruction
+     * vertical slice, preserve the exact
+     * outgoing request above and explicitly
+     * mark this transition as reconstructed.
+     */
+    this.registry.set(
+      'logres.reconstruction.serverBridge',
+      'RECONSTRUCTED',
+    )
+
+    this.registry.set(
+      'logres.character.selection',
+      this.selection,
+    )
+
+    this.time.delayedCall(
+      logresDevMs(500),
+      () => {
+        this.scene.start(
+          'LogresFieldScene',
+        )
+      },
+    )
   }
 
   private renderSelection() {
