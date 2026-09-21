@@ -1,0 +1,8 @@
+{
+  "commit": "a82a416fbaacd267873fc13e6e20b310255dcaad",
+  "job_id": "merge-logres-verify-all-baseline-001",
+  "job_type": "MERGE",
+  "status": "SUCCESS",
+  "target_branch": "feat/logres-reconstruction",
+  "written_at": "2026-09-21T20:42:00.202716+00:00"
+}
