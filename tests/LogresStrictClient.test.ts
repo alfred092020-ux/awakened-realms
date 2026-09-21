@@ -71,7 +71,7 @@ describe(
           expect(
             asset.url,
           ).toContain(
-            '/__logres_ref/japanese/',
+            '/__logres_ref/global/',
           )
         }
       },
