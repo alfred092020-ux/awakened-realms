@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "job_id": "oracle-public-field-native-001",
+  "source_sha": "ee7120ae4398b666df09e05ae89abd021ad64096",
+  "kind": "python",
+  "script": "scripts/logres/inspect_public_field_native.py",
+  "args": [
+    "--url",
+    "https://d.apkpure.net/b/XAPK/jp.MarvelousAQL.logres?version=latest",
+    "--output",
+    "@OUTPUT@/public-field-native.json"
+  ],
+  "timeout_seconds": 1800
+}
