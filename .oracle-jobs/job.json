@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "job_id": "oracle-live-patch-mbn-catalog-001",
+  "source_sha": "cdb9091239c247b033e25cc9f5e7ba438b97065b",
+  "kind": "python",
+  "script": "scripts/logres/catalog_live_patch_mbn.py",
+  "args": [
+    "--anchor",
+    "@PRIVATE_ARCHIVE@",
+    "--output",
+    "@OUTPUT@/live-patch-mbn-catalog.json"
+  ],
+  "timeout_seconds": 1800
+}
