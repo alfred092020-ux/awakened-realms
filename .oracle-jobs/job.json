@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "job_id": "oracle-public-patch-cdn-probe-001",
+  "source_sha": "b24e8d7c7302c734ed33d6cacf9195bf553a325e",
+  "kind": "python",
+  "script": "scripts/logres/inspect_public_patch_cdn.py",
+  "args": [
+    "--base",
+    "https://prd-cdn.mmo-logres.com/patch/1789742711/android/",
+    "--output",
+    "@OUTPUT@/patch-cdn.json"
+  ],
+  "timeout_seconds": 600
+}
