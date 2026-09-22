@@ -1,0 +1,8 @@
+{
+  "commit": "4ef5bea009b507b2749390aa78186c17700adb9e",
+  "job_id": "merge-logres-map-terminal-record-inspector-001",
+  "job_type": "MERGE",
+  "status": "SUCCESS",
+  "target_branch": "feat/logres-reconstruction",
+  "written_at": "2026-09-22T04:32:28.099391+00:00"
+}
