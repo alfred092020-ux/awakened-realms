@@ -1,0 +1,10 @@
+{
+  "duration_seconds": 3.51,
+  "error": null,
+  "exit_code": 0,
+  "job_id": "oracle-live-confirmed-map-refs-001",
+  "kind": "python",
+  "schema": 1,
+  "source_sha": "39ed1de0167a31dc26aff4d8e3d77f211b5cc565",
+  "status": "success"
+}

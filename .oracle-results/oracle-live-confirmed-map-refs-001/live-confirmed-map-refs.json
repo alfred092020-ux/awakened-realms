@@ -1,0 +1,2934 @@
+{
+  "confirmed_map_id_count": 738,
+  "errors": [],
+  "policy": "Exact recovered map IDs only. No source text, dialogue, geometry or textures are exported. Context proximity does not by itself prove tutorial selection.",
+  "provenance": "PUBLIC_LIVE_JP_CONFIRMED_MAP_REFERENCE_METADATA",
+  "ranked_summary": [
+    {
+      "contexts": [
+        {
+          "count": 2,
+          "name": "battle"
+        },
+        {
+          "count": 2,
+          "name": "quest"
+        },
+        {
+          "count": 1,
+          "name": "start"
+        }
+      ],
+      "map_id": "100_001_00001",
+      "reference_count": 3,
+      "source_count": 2
+    },
+    {
+      "contexts": [
+        {
+          "count": 6,
+          "name": "battle"
+        },
+        {
+          "count": 2,
+          "name": "quest"
+        },
+        {
+          "count": 1,
+          "name": "field"
+        }
+      ],
+      "map_id": "001_000_00001",
+      "reference_count": 4,
+      "source_count": 4
+    },
+    {
+      "contexts": [
+        {
+          "count": 3,
+          "name": "position"
+        },
+        {
+          "count": 2,
+          "name": "battle"
+        },
+        {
+          "count": 2,
+          "name": "quest"
+        }
+      ],
+      "map_id": "001_002_00001",
+      "reference_count": 4,
+      "source_count": 4
+    },
+    {
+      "contexts": [
+        {
+          "count": 2,
+          "name": "tutorial"
+        }
+      ],
+      "map_id": "100_001_00002",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "contexts": [
+        {
+          "count": 1,
+          "name": "start"
+        }
+      ],
+      "map_id": "100_000_00001",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "contexts": [
+        {
+          "count": 1,
+          "name": "battle"
+        },
+        {
+          "count": 1,
+          "name": "quest"
+        }
+      ],
+      "map_id": "100_001_00000",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "contexts": [],
+      "map_id": "100_001_00003",
+      "reference_count": 3,
+      "source_count": 3
+    },
+    {
+      "contexts": [
+        {
+          "count": 4,
+          "name": "battle"
+        }
+      ],
+      "map_id": "001_000_00002",
+      "reference_count": 2,
+      "source_count": 2
+    },
+    {
+      "contexts": [
+        {
+          "count": 4,
+          "name": "battle"
+        }
+      ],
+      "map_id": "001_000_00003",
+      "reference_count": 2,
+      "source_count": 2
+    },
+    {
+      "contexts": [
+        {
+          "count": 4,
+          "name": "battle"
+        }
+      ],
+      "map_id": "200_002_00001",
+      "reference_count": 2,
+      "source_count": 1
+    },
+    {
+      "contexts": [
+        {
+          "count": 2,
+          "name": "battle"
+        }
+      ],
+      "map_id": "001_000_00007",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "contexts": [
+        {
+          "count": 2,
+          "name": "battle"
+        }
+      ],
+      "map_id": "001_000_00010",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "contexts": [
+        {
+          "count": 2,
+          "name": "battle"
+        }
+      ],
+      "map_id": "001_000_00011",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "contexts": [
+        {
+          "count": 2,
+          "name": "battle"
+        }
+      ],
+      "map_id": "001_000_00012",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "contexts": [
+        {
+          "count": 2,
+          "name": "battle"
+        }
+      ],
+      "map_id": "001_000_00013",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "contexts": [
+        {
+          "count": 2,
+          "name": "battle"
+        }
+      ],
+      "map_id": "001_000_00014",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "contexts": [
+        {
+          "count": 2,
+          "name": "battle"
+        }
+      ],
+      "map_id": "001_000_00015",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "contexts": [
+        {
+          "count": 2,
+          "name": "battle"
+        }
+      ],
+      "map_id": "001_000_00016",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "contexts": [
+        {
+          "count": 2,
+          "name": "battle"
+        }
+      ],
+      "map_id": "001_000_00019",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "contexts": [
+        {
+          "count": 2,
+          "name": "battle"
+        }
+      ],
+      "map_id": "001_000_00021",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "contexts": [
+        {
+          "count": 2,
+          "name": "battle"
+        }
+      ],
+      "map_id": "001_000_00022",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "contexts": [
+        {
+          "count": 2,
+          "name": "battle"
+        }
+      ],
+      "map_id": "001_000_00025",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "contexts": [
+        {
+          "count": 2,
+          "name": "battle"
+        }
+      ],
+      "map_id": "001_000_00026",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "contexts": [
+        {
+          "count": 2,
+          "name": "battle"
+        }
+      ],
+      "map_id": "001_000_00027",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "contexts": [
+        {
+          "count": 2,
+          "name": "battle"
+        }
+      ],
+      "map_id": "001_000_00028",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "contexts": [
+        {
+          "count": 2,
+          "name": "battle"
+        }
+      ],
+      "map_id": "001_000_00029",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "contexts": [
+        {
+          "count": 2,
+          "name": "battle"
+        }
+      ],
+      "map_id": "001_000_00030",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "contexts": [
+        {
+          "count": 2,
+          "name": "battle"
+        }
+      ],
+      "map_id": "001_002_00002",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "contexts": [
+        {
+          "count": 2,
+          "name": "battle"
+        }
+      ],
+      "map_id": "001_002_00026",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "contexts": [
+        {
+          "count": 2,
+          "name": "battle"
+        }
+      ],
+      "map_id": "001_002_00028",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "contexts": [
+        {
+          "count": 2,
+          "name": "battle"
+        }
+      ],
+      "map_id": "002_000_00001",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "contexts": [
+        {
+          "count": 2,
+          "name": "battle"
+        }
+      ],
+      "map_id": "002_000_00002",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "contexts": [
+        {
+          "count": 2,
+          "name": "battle"
+        }
+      ],
+      "map_id": "002_000_00003",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "contexts": [
+        {
+          "count": 2,
+          "name": "battle"
+        }
+      ],
+      "map_id": "002_000_00004",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "contexts": [
+        {
+          "count": 2,
+          "name": "battle"
+        }
+      ],
+      "map_id": "002_000_00005",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "contexts": [
+        {
+          "count": 2,
+          "name": "battle"
+        }
+      ],
+      "map_id": "002_000_00006",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "contexts": [
+        {
+          "count": 2,
+          "name": "battle"
+        }
+      ],
+      "map_id": "002_000_00007",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "contexts": [
+        {
+          "count": 2,
+          "name": "battle"
+        }
+      ],
+      "map_id": "002_000_00008",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "contexts": [
+        {
+          "count": 2,
+          "name": "battle"
+        }
+      ],
+      "map_id": "002_000_00009",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "contexts": [
+        {
+          "count": 2,
+          "name": "battle"
+        }
+      ],
+      "map_id": "002_000_00010",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "contexts": [
+        {
+          "count": 2,
+          "name": "battle"
+        }
+      ],
+      "map_id": "002_000_00011",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "contexts": [
+        {
+          "count": 2,
+          "name": "battle"
+        }
+      ],
+      "map_id": "002_000_00012",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "contexts": [
+        {
+          "count": 2,
+          "name": "battle"
+        }
+      ],
+      "map_id": "002_000_00014",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "contexts": [
+        {
+          "count": 2,
+          "name": "battle"
+        }
+      ],
+      "map_id": "002_000_00015",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "contexts": [
+        {
+          "count": 2,
+          "name": "battle"
+        }
+      ],
+      "map_id": "002_000_00016",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "contexts": [
+        {
+          "count": 2,
+          "name": "battle"
+        }
+      ],
+      "map_id": "002_000_00017",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "contexts": [
+        {
+          "count": 2,
+          "name": "battle"
+        }
+      ],
+      "map_id": "002_000_00018",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "contexts": [
+        {
+          "count": 2,
+          "name": "battle"
+        }
+      ],
+      "map_id": "002_000_00019",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "contexts": [
+        {
+          "count": 2,
+          "name": "battle"
+        }
+      ],
+      "map_id": "002_000_00020",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "contexts": [
+        {
+          "count": 2,
+          "name": "battle"
+        }
+      ],
+      "map_id": "002_001_00001",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "contexts": [
+        {
+          "count": 2,
+          "name": "battle"
+        }
+      ],
+      "map_id": "002_002_00001",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "contexts": [
+        {
+          "count": 2,
+          "name": "battle"
+        }
+      ],
+      "map_id": "002_002_00002",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "contexts": [
+        {
+          "count": 2,
+          "name": "battle"
+        }
+      ],
+      "map_id": "002_002_00003",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "contexts": [
+        {
+          "count": 2,
+          "name": "battle"
+        }
+      ],
+      "map_id": "004_000_00001",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "contexts": [
+        {
+          "count": 2,
+          "name": "battle"
+        }
+      ],
+      "map_id": "004_000_00002",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "contexts": [
+        {
+          "count": 2,
+          "name": "battle"
+        }
+      ],
+      "map_id": "004_000_00003",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "contexts": [
+        {
+          "count": 2,
+          "name": "battle"
+        }
+      ],
+      "map_id": "004_000_00004",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "contexts": [
+        {
+          "count": 2,
+          "name": "battle"
+        }
+      ],
+      "map_id": "004_000_00005",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "contexts": [
+        {
+          "count": 2,
+          "name": "battle"
+        }
+      ],
+      "map_id": "004_000_00006",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "contexts": [
+        {
+          "count": 2,
+          "name": "battle"
+        }
+      ],
+      "map_id": "004_002_00001",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "contexts": [
+        {
+          "count": 2,
+          "name": "battle"
+        }
+      ],
+      "map_id": "004_002_00005",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "contexts": [
+        {
+          "count": 2,
+          "name": "battle"
+        }
+      ],
+      "map_id": "005_000_00002",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "contexts": [
+        {
+          "count": 2,
+          "name": "battle"
+        }
+      ],
+      "map_id": "005_000_00003",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "contexts": [
+        {
+          "count": 2,
+          "name": "battle"
+        }
+      ],
+      "map_id": "005_000_00004",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "contexts": [
+        {
+          "count": 2,
+          "name": "battle"
+        }
+      ],
+      "map_id": "006_000_00001",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "contexts": [
+        {
+          "count": 2,
+          "name": "battle"
+        }
+      ],
+      "map_id": "006_000_00002",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "contexts": [
+        {
+          "count": 2,
+          "name": "battle"
+        }
+      ],
+      "map_id": "006_000_00003",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "contexts": [
+        {
+          "count": 2,
+          "name": "battle"
+        }
+      ],
+      "map_id": "006_000_00005",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "contexts": [
+        {
+          "count": 2,
+          "name": "battle"
+        }
+      ],
+      "map_id": "006_000_00006",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "contexts": [
+        {
+          "count": 2,
+          "name": "battle"
+        }
+      ],
+      "map_id": "006_001_00001",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "contexts": [
+        {
+          "count": 2,
+          "name": "battle"
+        }
+      ],
+      "map_id": "006_001_00002",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "contexts": [
+        {
+          "count": 2,
+          "name": "battle"
+        }
+      ],
+      "map_id": "006_001_00003",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "contexts": [
+        {
+          "count": 2,
+          "name": "battle"
+        }
+      ],
+      "map_id": "007_000_00001",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "contexts": [
+        {
+          "count": 2,
+          "name": "battle"
+        }
+      ],
+      "map_id": "007_000_00002",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "contexts": [
+        {
+          "count": 2,
+          "name": "battle"
+        }
+      ],
+      "map_id": "007_000_00003",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "contexts": [
+        {
+          "count": 2,
+          "name": "battle"
+        }
+      ],
+      "map_id": "007_000_00004",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "contexts": [
+        {
+          "count": 2,
+          "name": "battle"
+        }
+      ],
+      "map_id": "007_000_00005",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "contexts": [
+        {
+          "count": 2,
+          "name": "battle"
+        }
+      ],
+      "map_id": "007_000_00006",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "contexts": [
+        {
+          "count": 2,
+          "name": "battle"
+        }
+      ],
+      "map_id": "007_002_00002",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "contexts": [
+        {
+          "count": 2,
+          "name": "battle"
+        }
+      ],
+      "map_id": "007_002_00004",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "contexts": [
+        {
+          "count": 2,
+          "name": "battle"
+        }
+      ],
+      "map_id": "007_003_00004",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "contexts": [
+        {
+          "count": 2,
+          "name": "battle"
+        }
+      ],
+      "map_id": "007_003_00006",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "contexts": [],
+      "map_id": "009_007_00000",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "contexts": [
+        {
+          "count": 2,
+          "name": "battle"
+        }
+      ],
+      "map_id": "009_010_00001",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "contexts": [
+        {
+          "count": 2,
+          "name": "battle"
+        }
+      ],
+      "map_id": "009_010_00002",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "contexts": [
+        {
+          "count": 2,
+          "name": "battle"
+        }
+      ],
+      "map_id": "009_010_00003",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "contexts": [
+        {
+          "count": 2,
+          "name": "battle"
+        }
+      ],
+      "map_id": "009_010_00004",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "contexts": [
+        {
+          "count": 2,
+          "name": "battle"
+        }
+      ],
+      "map_id": "009_010_00005",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "contexts": [
+        {
+          "count": 2,
+          "name": "battle"
+        }
+      ],
+      "map_id": "009_010_00006",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "contexts": [
+        {
+          "count": 2,
+          "name": "battle"
+        }
+      ],
+      "map_id": "009_013_00001",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "contexts": [
+        {
+          "count": 2,
+          "name": "battle"
+        }
+      ],
+      "map_id": "009_013_00002",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "contexts": [
+        {
+          "count": 2,
+          "name": "battle"
+        }
+      ],
+      "map_id": "009_015_00001",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "contexts": [
+        {
+          "count": 2,
+          "name": "battle"
+        }
+      ],
+      "map_id": "009_015_00002",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "contexts": [
+        {
+          "count": 2,
+          "name": "battle"
+        }
+      ],
+      "map_id": "009_015_00003",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "contexts": [],
+      "map_id": "012_003_00010",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "contexts": [],
+      "map_id": "012_004_00000",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "contexts": [],
+      "map_id": "012_004_00002",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "contexts": [],
+      "map_id": "012_005_00001",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "contexts": [
+        {
+          "count": 1,
+          "name": "battle"
+        }
+      ],
+      "map_id": "014_000_00000",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "contexts": [],
+      "map_id": "250_000_00002",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "contexts": [],
+      "map_id": "250_001_00000",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "contexts": [],
+      "map_id": "250_001_00002",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "contexts": [],
+      "map_id": "250_001_00003",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "contexts": [],
+      "map_id": "250_001_00004",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "contexts": [],
+      "map_id": "250_001_00006",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "contexts": [],
+      "map_id": "250_002_00000",
+      "reference_count": 1,
+      "source_count": 1
+    }
+  ],
+  "reference_count": 119,
+  "references": [
+    {
+      "container": "gui/Battle/additional_skill.mbn",
+      "entry": "additional_skill_icon_setting.json",
+      "format": "json",
+      "map_id": "005_000_00002",
+      "name_contexts": [
+        "battle"
+      ],
+      "nearest_keyword": {
+        "distance": 50,
+        "keyword": "battle",
+        "keyword_offset": 1079
+      },
+      "offset": 1029,
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "container": "gui/Battle/additional_skill.mbn",
+      "entry": "additional_skill_icon_setting.json",
+      "format": "json",
+      "map_id": "005_000_00003",
+      "name_contexts": [
+        "battle"
+      ],
+      "nearest_keyword": {
+        "distance": 50,
+        "keyword": "battle",
+        "keyword_offset": 1420
+      },
+      "offset": 1370,
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "container": "gui/Battle/additional_skill.mbn",
+      "entry": "additional_skill_icon_setting.json",
+      "format": "json",
+      "map_id": "005_000_00004",
+      "name_contexts": [
+        "battle"
+      ],
+      "nearest_keyword": {
+        "distance": 50,
+        "keyword": "battle",
+        "keyword_offset": 1761
+      },
+      "offset": 1711,
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "container": "gui/Battle/additional_skill.mbn",
+      "entry": "additional_skill_icon_setting.json",
+      "format": "json",
+      "map_id": "001_000_00001",
+      "name_contexts": [
+        "battle"
+      ],
+      "nearest_keyword": {
+        "distance": 50,
+        "keyword": "battle",
+        "keyword_offset": 2515
+      },
+      "offset": 2465,
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "container": "gui/Battle/additional_skill.mbn",
+      "entry": "additional_skill_icon_setting.json",
+      "format": "json",
+      "map_id": "001_000_00002",
+      "name_contexts": [
+        "battle"
+      ],
+      "nearest_keyword": {
+        "distance": 50,
+        "keyword": "battle",
+        "keyword_offset": 2955
+      },
+      "offset": 2905,
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "container": "gui/Battle/additional_skill.mbn",
+      "entry": "additional_skill_icon_setting.json",
+      "format": "json",
+      "map_id": "001_000_00003",
+      "name_contexts": [
+        "battle"
+      ],
+      "nearest_keyword": {
+        "distance": 50,
+        "keyword": "battle",
+        "keyword_offset": 3395
+      },
+      "offset": 3345,
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "container": "gui/Battle/additional_skill.mbn",
+      "entry": "additional_skill_icon_setting.json",
+      "format": "json",
+      "map_id": "001_000_00007",
+      "name_contexts": [
+        "battle"
+      ],
+      "nearest_keyword": {
+        "distance": 50,
+        "keyword": "battle",
+        "keyword_offset": 5155
+      },
+      "offset": 5105,
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "container": "gui/Battle/additional_skill.mbn",
+      "entry": "additional_skill_icon_setting.json",
+      "format": "json",
+      "map_id": "001_000_00010",
+      "name_contexts": [
+        "battle"
+      ],
+      "nearest_keyword": {
+        "distance": 50,
+        "keyword": "battle",
+        "keyword_offset": 6475
+      },
+      "offset": 6425,
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "container": "gui/Battle/additional_skill.mbn",
+      "entry": "additional_skill_icon_setting.json",
+      "format": "json",
+      "map_id": "001_000_00011",
+      "name_contexts": [
+        "battle"
+      ],
+      "nearest_keyword": {
+        "distance": 50,
+        "keyword": "battle",
+        "keyword_offset": 6915
+      },
+      "offset": 6865,
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "container": "gui/Battle/additional_skill.mbn",
+      "entry": "additional_skill_icon_setting.json",
+      "format": "json",
+      "map_id": "001_000_00012",
+      "name_contexts": [
+        "battle"
+      ],
+      "nearest_keyword": {
+        "distance": 50,
+        "keyword": "battle",
+        "keyword_offset": 7355
+      },
+      "offset": 7305,
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "container": "gui/Battle/additional_skill.mbn",
+      "entry": "additional_skill_icon_setting.json",
+      "format": "json",
+      "map_id": "001_000_00013",
+      "name_contexts": [
+        "battle"
+      ],
+      "nearest_keyword": {
+        "distance": 50,
+        "keyword": "battle",
+        "keyword_offset": 7795
+      },
+      "offset": 7745,
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "container": "gui/Battle/additional_skill.mbn",
+      "entry": "additional_skill_icon_setting.json",
+      "format": "json",
+      "map_id": "001_000_00014",
+      "name_contexts": [
+        "battle"
+      ],
+      "nearest_keyword": {
+        "distance": 50,
+        "keyword": "battle",
+        "keyword_offset": 8235
+      },
+      "offset": 8185,
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "container": "gui/Battle/additional_skill.mbn",
+      "entry": "additional_skill_icon_setting.json",
+      "format": "json",
+      "map_id": "001_000_00015",
+      "name_contexts": [
+        "battle"
+      ],
+      "nearest_keyword": {
+        "distance": 50,
+        "keyword": "battle",
+        "keyword_offset": 8675
+      },
+      "offset": 8625,
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "container": "gui/Battle/additional_skill.mbn",
+      "entry": "additional_skill_icon_setting.json",
+      "format": "json",
+      "map_id": "001_000_00016",
+      "name_contexts": [
+        "battle"
+      ],
+      "nearest_keyword": {
+        "distance": 50,
+        "keyword": "battle",
+        "keyword_offset": 9115
+      },
+      "offset": 9065,
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "container": "gui/Battle/additional_skill.mbn",
+      "entry": "additional_skill_icon_setting.json",
+      "format": "json",
+      "map_id": "001_000_00019",
+      "name_contexts": [
+        "battle"
+      ],
+      "nearest_keyword": {
+        "distance": 50,
+        "keyword": "battle",
+        "keyword_offset": 10435
+      },
+      "offset": 10385,
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "container": "gui/Battle/additional_skill.mbn",
+      "entry": "additional_skill_icon_setting.json",
+      "format": "json",
+      "map_id": "001_000_00021",
+      "name_contexts": [
+        "battle"
+      ],
+      "nearest_keyword": {
+        "distance": 50,
+        "keyword": "battle",
+        "keyword_offset": 11315
+      },
+      "offset": 11265,
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "container": "gui/Battle/additional_skill.mbn",
+      "entry": "additional_skill_icon_setting.json",
+      "format": "json",
+      "map_id": "001_000_00022",
+      "name_contexts": [
+        "battle"
+      ],
+      "nearest_keyword": {
+        "distance": 50,
+        "keyword": "battle",
+        "keyword_offset": 11755
+      },
+      "offset": 11705,
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "container": "gui/Battle/additional_skill.mbn",
+      "entry": "additional_skill_icon_setting.json",
+      "format": "json",
+      "map_id": "001_000_00025",
+      "name_contexts": [
+        "battle"
+      ],
+      "nearest_keyword": {
+        "distance": 50,
+        "keyword": "battle",
+        "keyword_offset": 13075
+      },
+      "offset": 13025,
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "container": "gui/Battle/additional_skill.mbn",
+      "entry": "additional_skill_icon_setting.json",
+      "format": "json",
+      "map_id": "001_000_00026",
+      "name_contexts": [
+        "battle"
+      ],
+      "nearest_keyword": {
+        "distance": 50,
+        "keyword": "battle",
+        "keyword_offset": 13515
+      },
+      "offset": 13465,
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "container": "gui/Battle/additional_skill.mbn",
+      "entry": "additional_skill_icon_setting.json",
+      "format": "json",
+      "map_id": "001_000_00027",
+      "name_contexts": [
+        "battle"
+      ],
+      "nearest_keyword": {
+        "distance": 50,
+        "keyword": "battle",
+        "keyword_offset": 13955
+      },
+      "offset": 13905,
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "container": "gui/Battle/additional_skill.mbn",
+      "entry": "additional_skill_icon_setting.json",
+      "format": "json",
+      "map_id": "001_000_00028",
+      "name_contexts": [
+        "battle"
+      ],
+      "nearest_keyword": {
+        "distance": 50,
+        "keyword": "battle",
+        "keyword_offset": 14395
+      },
+      "offset": 14345,
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "container": "gui/Battle/additional_skill.mbn",
+      "entry": "additional_skill_icon_setting.json",
+      "format": "json",
+      "map_id": "001_000_00029",
+      "name_contexts": [
+        "battle"
+      ],
+      "nearest_keyword": {
+        "distance": 50,
+        "keyword": "battle",
+        "keyword_offset": 14835
+      },
+      "offset": 14785,
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "container": "gui/Battle/additional_skill.mbn",
+      "entry": "additional_skill_icon_setting.json",
+      "format": "json",
+      "map_id": "001_000_00030",
+      "name_contexts": [
+        "battle"
+      ],
+      "nearest_keyword": {
+        "distance": 50,
+        "keyword": "battle",
+        "keyword_offset": 15275
+      },
+      "offset": 15225,
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "container": "gui/Battle/additional_skill.mbn",
+      "entry": "additional_skill_icon_setting.json",
+      "format": "json",
+      "map_id": "001_002_00001",
+      "name_contexts": [
+        "battle"
+      ],
+      "nearest_keyword": {
+        "distance": 50,
+        "keyword": "battle",
+        "keyword_offset": 29792
+      },
+      "offset": 29742,
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "container": "gui/Battle/additional_skill.mbn",
+      "entry": "additional_skill_icon_setting.json",
+      "format": "json",
+      "map_id": "001_002_00002",
+      "name_contexts": [
+        "battle"
+      ],
+      "nearest_keyword": {
+        "distance": 50,
+        "keyword": "battle",
+        "keyword_offset": 30231
+      },
+      "offset": 30181,
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "container": "gui/Battle/additional_skill.mbn",
+      "entry": "additional_skill_icon_setting.json",
+      "format": "json",
+      "map_id": "001_002_00026",
+      "name_contexts": [
+        "battle"
+      ],
+      "nearest_keyword": {
+        "distance": 50,
+        "keyword": "battle",
+        "keyword_offset": 40788
+      },
+      "offset": 40738,
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "container": "gui/Battle/additional_skill.mbn",
+      "entry": "additional_skill_icon_setting.json",
+      "format": "json",
+      "map_id": "001_002_00028",
+      "name_contexts": [
+        "battle"
+      ],
+      "nearest_keyword": {
+        "distance": 50,
+        "keyword": "battle",
+        "keyword_offset": 41668
+      },
+      "offset": 41618,
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "container": "gui/Battle/additional_skill.mbn",
+      "entry": "additional_skill_icon_setting.json",
+      "format": "json",
+      "map_id": "002_000_00001",
+      "name_contexts": [
+        "battle"
+      ],
+      "nearest_keyword": {
+        "distance": 50,
+        "keyword": "battle",
+        "keyword_offset": 70226
+      },
+      "offset": 70176,
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "container": "gui/Battle/additional_skill.mbn",
+      "entry": "additional_skill_icon_setting.json",
+      "format": "json",
+      "map_id": "002_000_00002",
+      "name_contexts": [
+        "battle"
+      ],
+      "nearest_keyword": {
+        "distance": 50,
+        "keyword": "battle",
+        "keyword_offset": 70639
+      },
+      "offset": 70589,
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "container": "gui/Battle/additional_skill.mbn",
+      "entry": "additional_skill_icon_setting.json",
+      "format": "json",
+      "map_id": "002_000_00003",
+      "name_contexts": [
+        "battle"
+      ],
+      "nearest_keyword": {
+        "distance": 50,
+        "keyword": "battle",
+        "keyword_offset": 71052
+      },
+      "offset": 71002,
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "container": "gui/Battle/additional_skill.mbn",
+      "entry": "additional_skill_icon_setting.json",
+      "format": "json",
+      "map_id": "002_000_00004",
+      "name_contexts": [
+        "battle"
+      ],
+      "nearest_keyword": {
+        "distance": 50,
+        "keyword": "battle",
+        "keyword_offset": 71465
+      },
+      "offset": 71415,
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "container": "gui/Battle/additional_skill.mbn",
+      "entry": "additional_skill_icon_setting.json",
+      "format": "json",
+      "map_id": "002_000_00005",
+      "name_contexts": [
+        "battle"
+      ],
+      "nearest_keyword": {
+        "distance": 50,
+        "keyword": "battle",
+        "keyword_offset": 71905
+      },
+      "offset": 71855,
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "container": "gui/Battle/additional_skill.mbn",
+      "entry": "additional_skill_icon_setting.json",
+      "format": "json",
+      "map_id": "002_000_00006",
+      "name_contexts": [
+        "battle"
+      ],
+      "nearest_keyword": {
+        "distance": 50,
+        "keyword": "battle",
+        "keyword_offset": 72318
+      },
+      "offset": 72268,
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "container": "gui/Battle/additional_skill.mbn",
+      "entry": "additional_skill_icon_setting.json",
+      "format": "json",
+      "map_id": "002_000_00007",
+      "name_contexts": [
+        "battle"
+      ],
+      "nearest_keyword": {
+        "distance": 50,
+        "keyword": "battle",
+        "keyword_offset": 72758
+      },
+      "offset": 72708,
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "container": "gui/Battle/additional_skill.mbn",
+      "entry": "additional_skill_icon_setting.json",
+      "format": "json",
+      "map_id": "002_000_00008",
+      "name_contexts": [
+        "battle"
+      ],
+      "nearest_keyword": {
+        "distance": 50,
+        "keyword": "battle",
+        "keyword_offset": 73198
+      },
+      "offset": 73148,
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "container": "gui/Battle/additional_skill.mbn",
+      "entry": "additional_skill_icon_setting.json",
+      "format": "json",
+      "map_id": "002_000_00009",
+      "name_contexts": [
+        "battle"
+      ],
+      "nearest_keyword": {
+        "distance": 50,
+        "keyword": "battle",
+        "keyword_offset": 73638
+      },
+      "offset": 73588,
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "container": "gui/Battle/additional_skill.mbn",
+      "entry": "additional_skill_icon_setting.json",
+      "format": "json",
+      "map_id": "002_000_00010",
+      "name_contexts": [
+        "battle"
+      ],
+      "nearest_keyword": {
+        "distance": 50,
+        "keyword": "battle",
+        "keyword_offset": 74078
+      },
+      "offset": 74028,
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "container": "gui/Battle/additional_skill.mbn",
+      "entry": "additional_skill_icon_setting.json",
+      "format": "json",
+      "map_id": "002_000_00011",
+      "name_contexts": [
+        "battle"
+      ],
+      "nearest_keyword": {
+        "distance": 50,
+        "keyword": "battle",
+        "keyword_offset": 74518
+      },
+      "offset": 74468,
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "container": "gui/Battle/additional_skill.mbn",
+      "entry": "additional_skill_icon_setting.json",
+      "format": "json",
+      "map_id": "002_000_00012",
+      "name_contexts": [
+        "battle"
+      ],
+      "nearest_keyword": {
+        "distance": 50,
+        "keyword": "battle",
+        "keyword_offset": 74958
+      },
+      "offset": 74908,
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "container": "gui/Battle/additional_skill.mbn",
+      "entry": "additional_skill_icon_setting.json",
+      "format": "json",
+      "map_id": "002_000_00014",
+      "name_contexts": [
+        "battle"
+      ],
+      "nearest_keyword": {
+        "distance": 50,
+        "keyword": "battle",
+        "keyword_offset": 75398
+      },
+      "offset": 75348,
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "container": "gui/Battle/additional_skill.mbn",
+      "entry": "additional_skill_icon_setting.json",
+      "format": "json",
+      "map_id": "002_000_00015",
+      "name_contexts": [
+        "battle"
+      ],
+      "nearest_keyword": {
+        "distance": 50,
+        "keyword": "battle",
+        "keyword_offset": 75838
+      },
+      "offset": 75788,
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "container": "gui/Battle/additional_skill.mbn",
+      "entry": "additional_skill_icon_setting.json",
+      "format": "json",
+      "map_id": "002_000_00016",
+      "name_contexts": [
+        "battle"
+      ],
+      "nearest_keyword": {
+        "distance": 50,
+        "keyword": "battle",
+        "keyword_offset": 76278
+      },
+      "offset": 76228,
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "container": "gui/Battle/additional_skill.mbn",
+      "entry": "additional_skill_icon_setting.json",
+      "format": "json",
+      "map_id": "002_000_00017",
+      "name_contexts": [
+        "battle"
+      ],
+      "nearest_keyword": {
+        "distance": 50,
+        "keyword": "battle",
+        "keyword_offset": 76718
+      },
+      "offset": 76668,
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "container": "gui/Battle/additional_skill.mbn",
+      "entry": "additional_skill_icon_setting.json",
+      "format": "json",
+      "map_id": "002_000_00018",
+      "name_contexts": [
+        "battle"
+      ],
+      "nearest_keyword": {
+        "distance": 50,
+        "keyword": "battle",
+        "keyword_offset": 77158
+      },
+      "offset": 77108,
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "container": "gui/Battle/additional_skill.mbn",
+      "entry": "additional_skill_icon_setting.json",
+      "format": "json",
+      "map_id": "002_000_00019",
+      "name_contexts": [
+        "battle"
+      ],
+      "nearest_keyword": {
+        "distance": 50,
+        "keyword": "battle",
+        "keyword_offset": 77598
+      },
+      "offset": 77548,
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "container": "gui/Battle/additional_skill.mbn",
+      "entry": "additional_skill_icon_setting.json",
+      "format": "json",
+      "map_id": "002_000_00020",
+      "name_contexts": [
+        "battle"
+      ],
+      "nearest_keyword": {
+        "distance": 50,
+        "keyword": "battle",
+        "keyword_offset": 78038
+      },
+      "offset": 77988,
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "container": "gui/Battle/additional_skill.mbn",
+      "entry": "additional_skill_icon_setting.json",
+      "format": "json",
+      "map_id": "002_001_00001",
+      "name_contexts": [
+        "battle"
+      ],
+      "nearest_keyword": {
+        "distance": 50,
+        "keyword": "battle",
+        "keyword_offset": 78478
+      },
+      "offset": 78428,
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "container": "gui/Battle/additional_skill.mbn",
+      "entry": "additional_skill_icon_setting.json",
+      "format": "json",
+      "map_id": "002_002_00001",
+      "name_contexts": [
+        "battle"
+      ],
+      "nearest_keyword": {
+        "distance": 50,
+        "keyword": "battle",
+        "keyword_offset": 86786
+      },
+      "offset": 86736,
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "container": "gui/Battle/additional_skill.mbn",
+      "entry": "additional_skill_icon_setting.json",
+      "format": "json",
+      "map_id": "002_002_00002",
+      "name_contexts": [
+        "battle"
+      ],
+      "nearest_keyword": {
+        "distance": 50,
+        "keyword": "battle",
+        "keyword_offset": 87225
+      },
+      "offset": 87175,
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "container": "gui/Battle/additional_skill.mbn",
+      "entry": "additional_skill_icon_setting.json",
+      "format": "json",
+      "map_id": "002_002_00003",
+      "name_contexts": [
+        "battle"
+      ],
+      "nearest_keyword": {
+        "distance": 50,
+        "keyword": "battle",
+        "keyword_offset": 87664
+      },
+      "offset": 87614,
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "container": "gui/Battle/additional_skill.mbn",
+      "entry": "additional_skill_icon_setting.json",
+      "format": "json",
+      "map_id": "004_000_00001",
+      "name_contexts": [
+        "battle"
+      ],
+      "nearest_keyword": {
+        "distance": 50,
+        "keyword": "battle",
+        "keyword_offset": 98073
+      },
+      "offset": 98023,
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "container": "gui/Battle/additional_skill.mbn",
+      "entry": "additional_skill_icon_setting.json",
+      "format": "json",
+      "map_id": "004_000_00002",
+      "name_contexts": [
+        "battle"
+      ],
+      "nearest_keyword": {
+        "distance": 50,
+        "keyword": "battle",
+        "keyword_offset": 98487
+      },
+      "offset": 98437,
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "container": "gui/Battle/additional_skill.mbn",
+      "entry": "additional_skill_icon_setting.json",
+      "format": "json",
+      "map_id": "004_000_00003",
+      "name_contexts": [
+        "battle"
+      ],
+      "nearest_keyword": {
+        "distance": 50,
+        "keyword": "battle",
+        "keyword_offset": 98901
+      },
+      "offset": 98851,
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "container": "gui/Battle/additional_skill.mbn",
+      "entry": "additional_skill_icon_setting.json",
+      "format": "json",
+      "map_id": "004_000_00004",
+      "name_contexts": [
+        "battle"
+      ],
+      "nearest_keyword": {
+        "distance": 50,
+        "keyword": "battle",
+        "keyword_offset": 99315
+      },
+      "offset": 99265,
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "container": "gui/Battle/additional_skill.mbn",
+      "entry": "additional_skill_icon_setting.json",
+      "format": "json",
+      "map_id": "004_000_00005",
+      "name_contexts": [
+        "battle"
+      ],
+      "nearest_keyword": {
+        "distance": 50,
+        "keyword": "battle",
+        "keyword_offset": 99729
+      },
+      "offset": 99679,
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "container": "gui/Battle/additional_skill.mbn",
+      "entry": "additional_skill_icon_setting.json",
+      "format": "json",
+      "map_id": "004_000_00006",
+      "name_contexts": [
+        "battle"
+      ],
+      "nearest_keyword": {
+        "distance": 50,
+        "keyword": "battle",
+        "keyword_offset": 100143
+      },
+      "offset": 100093,
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "container": "gui/Battle/additional_skill.mbn",
+      "entry": "additional_skill_icon_setting.json",
+      "format": "json",
+      "map_id": "004_002_00001",
+      "name_contexts": [
+        "battle"
+      ],
+      "nearest_keyword": {
+        "distance": 50,
+        "keyword": "battle",
+        "keyword_offset": 103041
+      },
+      "offset": 102991,
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "container": "gui/Battle/additional_skill.mbn",
+      "entry": "additional_skill_icon_setting.json",
+      "format": "json",
+      "map_id": "004_002_00005",
+      "name_contexts": [
+        "battle"
+      ],
+      "nearest_keyword": {
+        "distance": 50,
+        "keyword": "battle",
+        "keyword_offset": 104697
+      },
+      "offset": 104647,
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "container": "gui/Battle/additional_skill.mbn",
+      "entry": "additional_skill_icon_setting.json",
+      "format": "json",
+      "map_id": "006_000_00001",
+      "name_contexts": [
+        "battle"
+      ],
+      "nearest_keyword": {
+        "distance": 50,
+        "keyword": "battle",
+        "keyword_offset": 114047
+      },
+      "offset": 113997,
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "container": "gui/Battle/additional_skill.mbn",
+      "entry": "additional_skill_icon_setting.json",
+      "format": "json",
+      "map_id": "006_000_00002",
+      "name_contexts": [
+        "battle"
+      ],
+      "nearest_keyword": {
+        "distance": 50,
+        "keyword": "battle",
+        "keyword_offset": 114467
+      },
+      "offset": 114417,
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "container": "gui/Battle/additional_skill.mbn",
+      "entry": "additional_skill_icon_setting.json",
+      "format": "json",
+      "map_id": "006_000_00003",
+      "name_contexts": [
+        "battle"
+      ],
+      "nearest_keyword": {
+        "distance": 50,
+        "keyword": "battle",
+        "keyword_offset": 114887
+      },
+      "offset": 114837,
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "container": "gui/Battle/additional_skill.mbn",
+      "entry": "additional_skill_icon_setting.json",
+      "format": "json",
+      "map_id": "006_000_00005",
+      "name_contexts": [
+        "battle"
+      ],
+      "nearest_keyword": {
+        "distance": 50,
+        "keyword": "battle",
+        "keyword_offset": 115727
+      },
+      "offset": 115677,
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "container": "gui/Battle/additional_skill.mbn",
+      "entry": "additional_skill_icon_setting.json",
+      "format": "json",
+      "map_id": "006_000_00006",
+      "name_contexts": [
+        "battle"
+      ],
+      "nearest_keyword": {
+        "distance": 50,
+        "keyword": "battle",
+        "keyword_offset": 116147
+      },
+      "offset": 116097,
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "container": "gui/Battle/additional_skill.mbn",
+      "entry": "additional_skill_icon_setting.json",
+      "format": "json",
+      "map_id": "006_001_00001",
+      "name_contexts": [
+        "battle"
+      ],
+      "nearest_keyword": {
+        "distance": 50,
+        "keyword": "battle",
+        "keyword_offset": 116567
+      },
+      "offset": 116517,
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "container": "gui/Battle/additional_skill.mbn",
+      "entry": "additional_skill_icon_setting.json",
+      "format": "json",
+      "map_id": "006_001_00002",
+      "name_contexts": [
+        "battle"
+      ],
+      "nearest_keyword": {
+        "distance": 50,
+        "keyword": "battle",
+        "keyword_offset": 116987
+      },
+      "offset": 116937,
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "container": "gui/Battle/additional_skill.mbn",
+      "entry": "additional_skill_icon_setting.json",
+      "format": "json",
+      "map_id": "006_001_00003",
+      "name_contexts": [
+        "battle"
+      ],
+      "nearest_keyword": {
+        "distance": 50,
+        "keyword": "battle",
+        "keyword_offset": 117407
+      },
+      "offset": 117357,
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "container": "gui/Battle/additional_skill.mbn",
+      "entry": "additional_skill_icon_setting.json",
+      "format": "json",
+      "map_id": "007_000_00001",
+      "name_contexts": [
+        "battle"
+      ],
+      "nearest_keyword": {
+        "distance": 50,
+        "keyword": "battle",
+        "keyword_offset": 159497
+      },
+      "offset": 159447,
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "container": "gui/Battle/additional_skill.mbn",
+      "entry": "additional_skill_icon_setting.json",
+      "format": "json",
+      "map_id": "007_000_00002",
+      "name_contexts": [
+        "battle"
+      ],
+      "nearest_keyword": {
+        "distance": 50,
+        "keyword": "battle",
+        "keyword_offset": 159910
+      },
+      "offset": 159860,
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "container": "gui/Battle/additional_skill.mbn",
+      "entry": "additional_skill_icon_setting.json",
+      "format": "json",
+      "map_id": "007_000_00003",
+      "name_contexts": [
+        "battle"
+      ],
+      "nearest_keyword": {
+        "distance": 50,
+        "keyword": "battle",
+        "keyword_offset": 160323
+      },
+      "offset": 160273,
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "container": "gui/Battle/additional_skill.mbn",
+      "entry": "additional_skill_icon_setting.json",
+      "format": "json",
+      "map_id": "007_000_00004",
+      "name_contexts": [
+        "battle"
+      ],
+      "nearest_keyword": {
+        "distance": 50,
+        "keyword": "battle",
+        "keyword_offset": 160736
+      },
+      "offset": 160686,
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "container": "gui/Battle/additional_skill.mbn",
+      "entry": "additional_skill_icon_setting.json",
+      "format": "json",
+      "map_id": "007_000_00005",
+      "name_contexts": [
+        "battle"
+      ],
+      "nearest_keyword": {
+        "distance": 50,
+        "keyword": "battle",
+        "keyword_offset": 161149
+      },
+      "offset": 161099,
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "container": "gui/Battle/additional_skill.mbn",
+      "entry": "additional_skill_icon_setting.json",
+      "format": "json",
+      "map_id": "007_000_00006",
+      "name_contexts": [
+        "battle"
+      ],
+      "nearest_keyword": {
+        "distance": 50,
+        "keyword": "battle",
+        "keyword_offset": 161562
+      },
+      "offset": 161512,
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "container": "gui/Battle/additional_skill.mbn",
+      "entry": "additional_skill_icon_setting.json",
+      "format": "json",
+      "map_id": "007_002_00002",
+      "name_contexts": [
+        "battle"
+      ],
+      "nearest_keyword": {
+        "distance": 50,
+        "keyword": "battle",
+        "keyword_offset": 169848
+      },
+      "offset": 169798,
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "container": "gui/Battle/additional_skill.mbn",
+      "entry": "additional_skill_icon_setting.json",
+      "format": "json",
+      "map_id": "007_002_00004",
+      "name_contexts": [
+        "battle"
+      ],
+      "nearest_keyword": {
+        "distance": 50,
+        "keyword": "battle",
+        "keyword_offset": 170678
+      },
+      "offset": 170628,
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "container": "gui/Battle/additional_skill.mbn",
+      "entry": "additional_skill_icon_setting.json",
+      "format": "json",
+      "map_id": "007_003_00004",
+      "name_contexts": [
+        "battle"
+      ],
+      "nearest_keyword": {
+        "distance": 50,
+        "keyword": "battle",
+        "keyword_offset": 175658
+      },
+      "offset": 175608,
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "container": "gui/Battle/additional_skill.mbn",
+      "entry": "additional_skill_icon_setting.json",
+      "format": "json",
+      "map_id": "007_003_00006",
+      "name_contexts": [
+        "battle"
+      ],
+      "nearest_keyword": {
+        "distance": 50,
+        "keyword": "battle",
+        "keyword_offset": 176488
+      },
+      "offset": 176438,
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "container": "gui/Battle/additional_skill.mbn",
+      "entry": "additional_skill_icon_setting.json",
+      "format": "json",
+      "map_id": "009_010_00001",
+      "name_contexts": [
+        "battle"
+      ],
+      "nearest_keyword": {
+        "distance": 50,
+        "keyword": "battle",
+        "keyword_offset": 205035
+      },
+      "offset": 204985,
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "container": "gui/Battle/additional_skill.mbn",
+      "entry": "additional_skill_icon_setting.json",
+      "format": "json",
+      "map_id": "009_010_00002",
+      "name_contexts": [
+        "battle"
+      ],
+      "nearest_keyword": {
+        "distance": 50,
+        "keyword": "battle",
+        "keyword_offset": 205366
+      },
+      "offset": 205316,
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "container": "gui/Battle/additional_skill.mbn",
+      "entry": "additional_skill_icon_setting.json",
+      "format": "json",
+      "map_id": "009_010_00003",
+      "name_contexts": [
+        "battle"
+      ],
+      "nearest_keyword": {
+        "distance": 50,
+        "keyword": "battle",
+        "keyword_offset": 205697
+      },
+      "offset": 205647,
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "container": "gui/Battle/additional_skill.mbn",
+      "entry": "additional_skill_icon_setting.json",
+      "format": "json",
+      "map_id": "009_010_00004",
+      "name_contexts": [
+        "battle"
+      ],
+      "nearest_keyword": {
+        "distance": 50,
+        "keyword": "battle",
+        "keyword_offset": 206028
+      },
+      "offset": 205978,
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "container": "gui/Battle/additional_skill.mbn",
+      "entry": "additional_skill_icon_setting.json",
+      "format": "json",
+      "map_id": "009_010_00005",
+      "name_contexts": [
+        "battle"
+      ],
+      "nearest_keyword": {
+        "distance": 50,
+        "keyword": "battle",
+        "keyword_offset": 206359
+      },
+      "offset": 206309,
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "container": "gui/Battle/additional_skill.mbn",
+      "entry": "additional_skill_icon_setting.json",
+      "format": "json",
+      "map_id": "009_010_00006",
+      "name_contexts": [
+        "battle"
+      ],
+      "nearest_keyword": {
+        "distance": 50,
+        "keyword": "battle",
+        "keyword_offset": 206690
+      },
+      "offset": 206640,
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "container": "gui/Battle/additional_skill.mbn",
+      "entry": "additional_skill_icon_setting.json",
+      "format": "json",
+      "map_id": "009_013_00001",
+      "name_contexts": [
+        "battle"
+      ],
+      "nearest_keyword": {
+        "distance": 50,
+        "keyword": "battle",
+        "keyword_offset": 210993
+      },
+      "offset": 210943,
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "container": "gui/Battle/additional_skill.mbn",
+      "entry": "additional_skill_icon_setting.json",
+      "format": "json",
+      "map_id": "009_013_00002",
+      "name_contexts": [
+        "battle"
+      ],
+      "nearest_keyword": {
+        "distance": 50,
+        "keyword": "battle",
+        "keyword_offset": 211323
+      },
+      "offset": 211273,
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "container": "gui/Battle/additional_skill.mbn",
+      "entry": "additional_skill_icon_setting.json",
+      "format": "json",
+      "map_id": "009_015_00001",
+      "name_contexts": [
+        "battle"
+      ],
+      "nearest_keyword": {
+        "distance": 50,
+        "keyword": "battle",
+        "keyword_offset": 212976
+      },
+      "offset": 212926,
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "container": "gui/Battle/additional_skill.mbn",
+      "entry": "additional_skill_icon_setting.json",
+      "format": "json",
+      "map_id": "009_015_00002",
+      "name_contexts": [
+        "battle"
+      ],
+      "nearest_keyword": {
+        "distance": 50,
+        "keyword": "battle",
+        "keyword_offset": 213306
+      },
+      "offset": 213256,
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "container": "gui/Battle/additional_skill.mbn",
+      "entry": "additional_skill_icon_setting.json",
+      "format": "json",
+      "map_id": "009_015_00003",
+      "name_contexts": [
+        "battle"
+      ],
+      "nearest_keyword": {
+        "distance": 50,
+        "keyword": "battle",
+        "keyword_offset": 213636
+      },
+      "offset": 213586,
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "container": "gui/Battle/buff_icon.mbn",
+      "entry": "buff_icon_setting.json",
+      "format": "json",
+      "map_id": "001_000_00001",
+      "name_contexts": [
+        "battle"
+      ],
+      "nearest_keyword": {
+        "distance": 48,
+        "keyword": "battle",
+        "keyword_offset": 56
+      },
+      "offset": 8,
+      "source_sha256": "0d750a6f0d20985d24727bfd582ceb9371408fd87eabc6e6c451cdffd64a67dc"
+    },
+    {
+      "container": "gui/Battle/buff_icon.mbn",
+      "entry": "buff_icon_setting.json",
+      "format": "json",
+      "map_id": "001_000_00002",
+      "name_contexts": [
+        "battle"
+      ],
+      "nearest_keyword": {
+        "distance": 48,
+        "keyword": "battle",
+        "keyword_offset": 481
+      },
+      "offset": 433,
+      "source_sha256": "0d750a6f0d20985d24727bfd582ceb9371408fd87eabc6e6c451cdffd64a67dc"
+    },
+    {
+      "container": "gui/Battle/buff_icon.mbn",
+      "entry": "buff_icon_setting.json",
+      "format": "json",
+      "map_id": "001_000_00003",
+      "name_contexts": [
+        "battle"
+      ],
+      "nearest_keyword": {
+        "distance": 48,
+        "keyword": "battle",
+        "keyword_offset": 906
+      },
+      "offset": 858,
+      "source_sha256": "0d750a6f0d20985d24727bfd582ceb9371408fd87eabc6e6c451cdffd64a67dc"
+    },
+    {
+      "container": "gui/Battle/rcb/slot.mbn",
+      "entry": "slot_ui.lua",
+      "format": "lua",
+      "map_id": "200_002_00001",
+      "name_contexts": [
+        "battle"
+      ],
+      "nearest_keyword": {
+        "distance": 26,
+        "keyword": "battle",
+        "keyword_offset": 6573
+      },
+      "offset": 6599,
+      "source_sha256": "7885691ee8a3a081bdfea6735d5553180e4c60b6b5584f4c841dd1be255d1f4a"
+    },
+    {
+      "container": "gui/Battle/rcb/slot.mbn",
+      "entry": "slot_ui.lua",
+      "format": "lua",
+      "map_id": "200_002_00001",
+      "name_contexts": [
+        "battle"
+      ],
+      "nearest_keyword": {
+        "distance": 40,
+        "keyword": "battle",
+        "keyword_offset": 6573
+      },
+      "offset": 6613,
+      "source_sha256": "7885691ee8a3a081bdfea6735d5553180e4c60b6b5584f4c841dd1be255d1f4a"
+    },
+    {
+      "container": "gui/HUD/field_gimmick_battle_token.mbn",
+      "entry": "field_gimmick_battle_token_icon.lua",
+      "format": "lua",
+      "map_id": "001_000_00001",
+      "name_contexts": [
+        "field",
+        "battle"
+      ],
+      "nearest_keyword": {
+        "distance": 13,
+        "keyword": "battle",
+        "keyword_offset": 458
+      },
+      "offset": 471,
+      "source_sha256": "4a3248c0a02891500a0172c597fa71026a8a7f5e2573565d594a39799c5ac6e9"
+    },
+    {
+      "container": "gui/activity.mbn",
+      "entry": "mercenaryActivityInfo.lua",
+      "format": "lua",
+      "map_id": "001_002_00001",
+      "name_contexts": [],
+      "nearest_keyword": {
+        "distance": 85,
+        "keyword": "position",
+        "keyword_offset": 2739
+      },
+      "offset": 2654,
+      "source_sha256": "25a2e59acaf6024e0504bee94024d9ec6c60a4f7a6573f9ee7f459a07d16e749"
+    },
+    {
+      "container": "gui/quest/board/event.mbn",
+      "entry": "event_point_reward_icon.lua",
+      "format": "lua",
+      "map_id": "001_002_00001",
+      "name_contexts": [
+        "quest"
+      ],
+      "nearest_keyword": {
+        "distance": 82,
+        "keyword": "position",
+        "keyword_offset": 930
+      },
+      "offset": 848,
+      "source_sha256": "b36bbbc9d065a0f026ef458f7055c9b233528e87f5a009914ce26dc1f0a69089"
+    },
+    {
+      "container": "gui/quest/board/event__ans.mbn",
+      "entry": "event_point_reward_icon.lua",
+      "format": "lua",
+      "map_id": "001_002_00001",
+      "name_contexts": [
+        "quest"
+      ],
+      "nearest_keyword": {
+        "distance": 82,
+        "keyword": "position",
+        "keyword_offset": 930
+      },
+      "offset": 848,
+      "source_sha256": "b36bbbc9d065a0f026ef458f7055c9b233528e87f5a009914ce26dc1f0a69089"
+    },
+    {
+      "container": "json_resource.mbn",
+      "entry": "clan_room_item_icon_setting.json",
+      "format": "json",
+      "map_id": "250_002_00000",
+      "name_contexts": [],
+      "offset": 2026,
+      "source_sha256": "919cf81903d4de8194814298b69be1d7cf104043e5193cdb44395464de5a294d"
+    },
+    {
+      "container": "json_resource.mbn",
+      "entry": "clan_room_item_icon_setting.json",
+      "format": "json",
+      "map_id": "250_001_00000",
+      "name_contexts": [],
+      "offset": 2120,
+      "source_sha256": "919cf81903d4de8194814298b69be1d7cf104043e5193cdb44395464de5a294d"
+    },
+    {
+      "container": "json_resource.mbn",
+      "entry": "clan_room_item_icon_setting.json",
+      "format": "json",
+      "map_id": "250_001_00002",
+      "name_contexts": [],
+      "offset": 3013,
+      "source_sha256": "919cf81903d4de8194814298b69be1d7cf104043e5193cdb44395464de5a294d"
+    },
+    {
+      "container": "json_resource.mbn",
+      "entry": "clan_room_item_icon_setting.json",
+      "format": "json",
+      "map_id": "250_001_00006",
+      "name_contexts": [],
+      "offset": 3201,
+      "source_sha256": "919cf81903d4de8194814298b69be1d7cf104043e5193cdb44395464de5a294d"
+    },
+    {
+      "container": "json_resource.mbn",
+      "entry": "clan_room_item_icon_setting.json",
+      "format": "json",
+      "map_id": "250_001_00003",
+      "name_contexts": [],
+      "offset": 6491,
+      "source_sha256": "919cf81903d4de8194814298b69be1d7cf104043e5193cdb44395464de5a294d"
+    },
+    {
+      "container": "json_resource.mbn",
+      "entry": "clan_room_item_icon_setting.json",
+      "format": "json",
+      "map_id": "012_004_00002",
+      "name_contexts": [],
+      "offset": 7008,
+      "source_sha256": "919cf81903d4de8194814298b69be1d7cf104043e5193cdb44395464de5a294d"
+    },
+    {
+      "container": "json_resource.mbn",
+      "entry": "clan_room_item_icon_setting.json",
+      "format": "json",
+      "map_id": "009_007_00000",
+      "name_contexts": [],
+      "offset": 8277,
+      "source_sha256": "919cf81903d4de8194814298b69be1d7cf104043e5193cdb44395464de5a294d"
+    },
+    {
+      "container": "json_resource.mbn",
+      "entry": "clan_room_item_icon_setting.json",
+      "format": "json",
+      "map_id": "250_000_00002",
+      "name_contexts": [],
+      "offset": 9593,
+      "source_sha256": "919cf81903d4de8194814298b69be1d7cf104043e5193cdb44395464de5a294d"
+    },
+    {
+      "container": "json_resource.mbn",
+      "entry": "clan_room_item_icon_setting.json",
+      "format": "json",
+      "map_id": "250_001_00004",
+      "name_contexts": [],
+      "offset": 10157,
+      "source_sha256": "919cf81903d4de8194814298b69be1d7cf104043e5193cdb44395464de5a294d"
+    },
+    {
+      "container": "json_resource.mbn",
+      "entry": "clan_room_item_icon_setting.json",
+      "format": "json",
+      "map_id": "012_003_00010",
+      "name_contexts": [],
+      "offset": 10909,
+      "source_sha256": "919cf81903d4de8194814298b69be1d7cf104043e5193cdb44395464de5a294d"
+    },
+    {
+      "container": "json_resource.mbn",
+      "entry": "clan_room_item_icon_setting.json",
+      "format": "json",
+      "map_id": "012_005_00001",
+      "name_contexts": [],
+      "offset": 10956,
+      "source_sha256": "919cf81903d4de8194814298b69be1d7cf104043e5193cdb44395464de5a294d"
+    },
+    {
+      "container": "json_resource.mbn",
+      "entry": "clan_room_item_icon_setting.json",
+      "format": "json",
+      "map_id": "012_004_00000",
+      "name_contexts": [],
+      "offset": 11003,
+      "source_sha256": "919cf81903d4de8194814298b69be1d7cf104043e5193cdb44395464de5a294d"
+    },
+    {
+      "container": "json_resource.mbn",
+      "entry": "popUp_tutorial_texts.json",
+      "format": "json",
+      "map_id": "100_001_00002",
+      "name_contexts": [
+        "tutorial"
+      ],
+      "nearest_keyword": {
+        "distance": 36,
+        "keyword": "tutorial",
+        "keyword_offset": 12
+      },
+      "offset": 48,
+      "source_sha256": "ffce0b850ca119e2f2f6a6d7891b2d64d5ef1d5bb45f184e151cf603ba93dc70"
+    },
+    {
+      "container": "json_resource.mbn",
+      "entry": "quest_texts.json",
+      "format": "json",
+      "map_id": "001_000_00001",
+      "name_contexts": [
+        "quest"
+      ],
+      "nearest_keyword": {
+        "distance": 25,
+        "keyword": "quest",
+        "keyword_offset": 3691
+      },
+      "offset": 3666,
+      "source_sha256": "21d25bc3a4be7890abf14c58b93dcd1fc650717f5d3e767b70dfd0c1ec2e490a"
+    },
+    {
+      "container": "json_resource.mbn",
+      "entry": "raid_battle_texts.json",
+      "format": "json",
+      "map_id": "100_001_00000",
+      "name_contexts": [
+        "battle"
+      ],
+      "nearest_keyword": {
+        "distance": 142,
+        "keyword": "quest",
+        "keyword_offset": 185
+      },
+      "offset": 43,
+      "source_sha256": "d0aec6cac679fdd0af99be8d2c6164a225d142cf21f6535d21f541f23df7c4c1"
+    },
+    {
+      "container": "json_resource.mbn",
+      "entry": "raid_battle_texts.json",
+      "format": "json",
+      "map_id": "100_001_00001",
+      "name_contexts": [
+        "battle"
+      ],
+      "nearest_keyword": {
+        "distance": 103,
+        "keyword": "quest",
+        "keyword_offset": 185
+      },
+      "offset": 82,
+      "source_sha256": "d0aec6cac679fdd0af99be8d2c6164a225d142cf21f6535d21f541f23df7c4c1"
+    },
+    {
+      "container": "json_resource.mbn",
+      "entry": "raid_battle_texts.json",
+      "format": "json",
+      "map_id": "100_001_00001",
+      "name_contexts": [
+        "battle"
+      ],
+      "nearest_keyword": {
+        "distance": 68,
+        "keyword": "quest",
+        "keyword_offset": 185
+      },
+      "offset": 117,
+      "source_sha256": "d0aec6cac679fdd0af99be8d2c6164a225d142cf21f6535d21f541f23df7c4c1"
+    },
+    {
+      "container": "json_resource.mbn",
+      "entry": "slot_gacha_setting.json",
+      "format": "json",
+      "map_id": "100_000_00001",
+      "name_contexts": [],
+      "nearest_keyword": {
+        "distance": 194,
+        "keyword": "start",
+        "keyword_offset": 1649
+      },
+      "offset": 1455,
+      "source_sha256": "440201e5fc1421316837532aa271df307123c61a3b4c14690608467f9ff88f56"
+    },
+    {
+      "container": "json_resource.mbn",
+      "entry": "slot_gacha_setting.json",
+      "format": "json",
+      "map_id": "100_001_00001",
+      "name_contexts": [],
+      "nearest_keyword": {
+        "distance": 151,
+        "keyword": "start",
+        "keyword_offset": 1649
+      },
+      "offset": 1498,
+      "source_sha256": "440201e5fc1421316837532aa271df307123c61a3b4c14690608467f9ff88f56"
+    },
+    {
+      "container": "json_resource.mbn",
+      "entry": "weather_settings.json",
+      "format": "json",
+      "map_id": "014_000_00000",
+      "name_contexts": [],
+      "nearest_keyword": {
+        "distance": 54,
+        "keyword": "battle",
+        "keyword_offset": 16174
+      },
+      "offset": 16228,
+      "source_sha256": "84c038e98608a537b06c4a3368e91a77915735ba3fc070237fa45ef433c1fedc"
+    },
+    {
+      "container": "skitevent/C.mbn",
+      "entry": "../C_23_01_01/C_23_01_01_r.txt",
+      "format": "txt",
+      "map_id": "100_001_00003",
+      "name_contexts": [],
+      "offset": 2417,
+      "source_sha256": "83d4784d95ade072447f2f64733dda949558f61b8234fc02a4f2718bf0f7bbff"
+    },
+    {
+      "container": "skitevent/EV.mbn",
+      "entry": "../EV_27_01_00/EV_27_01_00_r.txt",
+      "format": "txt",
+      "map_id": "100_001_00003",
+      "name_contexts": [],
+      "offset": 1643,
+      "source_sha256": "91f1bf59f7e160f575a550ba7fd566abe2f5e91f98fe66debe32ceeff93b9d58"
+    },
+    {
+      "container": "skitevent/N.mbn",
+      "entry": "../N_14_10_01/N_14_10_01_r.txt",
+      "format": "txt",
+      "map_id": "100_001_00003",
+      "name_contexts": [],
+      "offset": 2365,
+      "source_sha256": "acd64d3582f48cd0604a7aae920a4e9e9aca95eaf01e2ee1825509eb2d3feacd"
+    }
+  ],
+  "scanned_mbn_count": 1896,
+  "scanned_source_count": 7319
+}
