@@ -1,0 +1,1643 @@
+{
+  "base": "https://capi-sp.mmo-logres.com:8443/cusapi/hostentry",
+  "probes": [
+    {
+      "content_type": "application/json",
+      "final_url": "https://capi-sp.mmo-logres.com:8443/cusapi/hostentry/and/12101",
+      "json": {},
+      "platform": "and",
+      "request_url": "https://capi-sp.mmo-logres.com:8443/cusapi/hostentry/and/12101",
+      "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "size": 2,
+      "status": 404
+    },
+    {
+      "content_type": "application/json",
+      "final_url": "https://capi-sp.mmo-logres.com:8443/cusapi/hostentry/android/12101",
+      "json": {
+        "cusapi_state": "running",
+        "provider_environment": {
+          "andapp": {
+            "env": [
+              {
+                "platform_name": "windows"
+              },
+              {
+                "platform_short_name": "andapp"
+              },
+              {
+                "provider_name": "andapp"
+              },
+              {
+                "patch_base_url": "https://prd-cdn.mmo-logres.com/patch"
+              },
+              {
+                "app_review_url": ""
+              }
+            ]
+          },
+          "android": {
+            "env": [
+              {
+                "platform_name": "android"
+              },
+              {
+                "platform_short_name": "and"
+              },
+              {
+                "provider_name": "android"
+              },
+              {
+                "patch_base_url": "https://prd-cdn.mmo-logres.com/patch"
+              },
+              {
+                "app_review_url": "market://details?id=jp.MarvelousAQL.logres"
+              }
+            ]
+          },
+          "ios": {
+            "env": [
+              {
+                "platform_name": "ios"
+              },
+              {
+                "platform_short_name": "ios"
+              },
+              {
+                "provider_name": "ios"
+              },
+              {
+                "patch_base_url": "https://prd-cdn.mmo-logres.com/patch"
+              },
+              {
+                "app_review_url": "https://itunes.apple.com/us/app/itunes-u/id700626925"
+              }
+            ]
+          },
+          "kddi": {
+            "env": [
+              {
+                "platform_name": "android"
+              },
+              {
+                "platform_short_name": "and"
+              },
+              {
+                "provider_name": "kddi"
+              },
+              {
+                "patch_base_url": "https://prd-cdn.mmo-logres.com/patch"
+              },
+              {
+                "app_review_url": "https://pass.auone.jp/app/detail"
+              }
+            ]
+          },
+          "windows": {
+            "env": [
+              {
+                "platform_name": "windows"
+              },
+              {
+                "platform_short_name": "win"
+              },
+              {
+                "provider_name": "windows"
+              },
+              {
+                "patch_base_url": "https://prd-cdn.mmo-logres.com/patch"
+              },
+              {
+                "app_review_url": "https://sp.mmo-logres.com/"
+              }
+            ]
+          }
+        },
+        "version_information": {
+          "allow_connect_gmsv": true,
+          "app_review_url": "${app_review_url}",
+          "href": "https://play.google.com/store/apps/details",
+          "prelaunch": false,
+          "server": "1",
+          "update": false
+        },
+        "world": [
+          {
+            "apiserver": [
+              {
+                "api": "account",
+                "url": "${api_base_url}/account/"
+              },
+              {
+                "api": "character",
+                "url": "${api_base_url}/char/"
+              },
+              {
+                "api": "chat",
+                "url": "${api_base_url}/chat/"
+              },
+              {
+                "api": "clan",
+                "url": "${api_base_url}/clan/"
+              },
+              {
+                "api": "community",
+                "url": "${api_base_url}/community/"
+              },
+              {
+                "api": "friend",
+                "url": "${api_base_url}/friend/"
+              },
+              {
+                "api": "item",
+                "url": "${api_base_url}/item/"
+              },
+              {
+                "api": "job",
+                "url": "${api_base_url}/job/"
+              },
+              {
+                "api": "mercenary",
+                "url": "${api_base_url}/mercenary/"
+              },
+              {
+                "api": "party",
+                "url": "${api_base_url}/party/"
+              },
+              {
+                "api": "ranking",
+                "url": "${api_base_url}/rankings/"
+              },
+              {
+                "api": "campaign",
+                "url": "${api_base_url}/campaign/"
+              },
+              {
+                "api": "authentication",
+                "url": "${auth_api_base_url}/auth/"
+              },
+              {
+                "api": "in_app_purchase",
+                "url": "${auth_api_base_url}/shop/"
+              },
+              {
+                "api": "in_app_purchase2",
+                "url": "${auth_api_base_url}/shop2/"
+              },
+              {
+                "api": "revcode2",
+                "url": "${auth_api_base_url}/revcode/"
+              },
+              {
+                "api": "avacolle",
+                "url": "${api_base_url}/avacolle/"
+              },
+              {
+                "api": "battleboost",
+                "url": "${api_base_url}/battleboost/"
+              },
+              {
+                "api": "ad",
+                "url": "${ad_api_base_url}/"
+              },
+              {
+                "api": "location",
+                "url": "${cus_api_base_url}/location/"
+              },
+              {
+                "api": "push_notification",
+                "url": "${cus_api_base_url}/push_notification/"
+              },
+              {
+                "api": "emblem",
+                "url": "${api_base_url}/emblem/"
+              },
+              {
+                "api": "raid",
+                "url": "${api_base_url}/raid/"
+              },
+              {
+                "api": "service_state",
+                "url": "${api_base_url}/service/${provider_name}/"
+              }
+            ],
+            "authentication": "<redacted>",
+            "caption": "<text>",
+            "create_time": "2013/12/17",
+            "env": [
+              {
+                "auth_api_base_ip": "<redacted>"
+              },
+              {
+                "auth_api_base_port": "<redacted>"
+              },
+              {
+                "auth_api_base_url": "<redacted>"
+              },
+              {
+                "cus_api_base_ip": "capi-sp.mmo-logres.com"
+              },
+              {
+                "cus_api_base_port": "8443"
+              },
+              {
+                "cus_api_base_url": "https://${cus_api_base_ip}/cusapi"
+              },
+              {
+                "ad_api_base_ip": "ad-sp.mmo-logres.com"
+              },
+              {
+                "ad_api_base_port": "8443"
+              },
+              {
+                "ad_api_base_url": "https://${ad_api_base_ip}/cusapi/ad"
+              },
+              {
+                "api_base_url": "https://${api_base_ip}/lfsapi"
+              },
+              {
+                "api_base_port": "8443"
+              },
+              {
+                "webview_base_url": "https://webview.mmo-logres.com/"
+              }
+            ],
+            "gameserver": [],
+            "is_rcb": false,
+            "name": "default",
+            "patchserver": {
+              "url": "${patch_base_url}/1789742711/${platform_name}/"
+            },
+            "title": "<text>",
+            "webview": [
+              {
+                "name": "help",
+                "url": "${webview_base_url}/"
+              },
+              {
+                "name": "info",
+                "url": "${webview_base_url}/news/"
+              },
+              {
+                "name": "law",
+                "url": "${webview_base_url}/tokusyo/"
+              },
+              {
+                "name": "news",
+                "url": "${webview_base_url}/news/?view=op"
+              },
+              {
+                "name": "support",
+                "url": "${webview_base_url}/"
+              },
+              {
+                "name": "terms",
+                "url": "${webview_base_url}/use/"
+              },
+              {
+                "name": "inquiry",
+                "url": "https://sp.mmo-logres.com/contact-form/"
+              },
+              {
+                "name": "warning",
+                "url": "https://sp.mmo-logres.com/news/p6186/"
+              },
+              {
+                "name": "rcb_help",
+                "url": "${webview_base_url}/bs-top/"
+              },
+              {
+                "name": "gemshop_caution",
+                "url": "${webview_base_url}/shopnotes/"
+              },
+              {
+                "name": "gemshop_inapppurchase_caution",
+                "url": "${webview_base_url}/tokusyo/"
+              },
+              {
+                "name": "shop_menu",
+                "url": "${webview_base_url}/news/p76759/?decoration=none"
+              }
+            ],
+            "worldnumber": [
+              -1
+            ]
+          },
+          {
+            "authentication": "<redacted>",
+            "caption": "<text>",
+            "create_time": "2013/12/17",
+            "env": [
+              {
+                "api_base_ip": "api9-sp.mmo-logres.com"
+              }
+            ],
+            "gameserver": [
+              {
+                "ip": "game901-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game902-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game903-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game904-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game905-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game906-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game907-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game908-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game909-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game910-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game911-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game912-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game913-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game914-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game915-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game916-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game917-sp.mmo-logres.com",
+                "port": 8800
+              }
+            ],
+            "name": "release-${platform_short_name}",
+            "title": "<text>",
+            "worldgroup": "<text>",
+            "worldnumber": [
+              1
+            ]
+          },
+          {
+            "authentication": "<redacted>",
+            "caption": "<text>",
+            "create_time": "2013/12/30",
+            "env": [
+              {
+                "api_base_ip": "api9-sp.mmo-logres.com"
+              }
+            ],
+            "gameserver": [
+              {
+                "ip": "game901-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game902-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game903-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game904-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game905-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game906-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game907-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game908-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game909-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game910-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game911-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game912-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game913-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game914-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game915-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game916-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game917-sp.mmo-logres.com",
+                "port": 8800
+              }
+            ],
+            "name": "release-${platform_short_name}2",
+            "title": "<text>",
+            "worldgroup": "<text>",
+            "worldnumber": [
+              2
+            ]
+          },
+          {
+            "authentication": "<redacted>",
+            "caption": "<text>",
+            "create_time": "2014/02/27",
+            "env": [
+              {
+                "api_base_ip": "api9-sp.mmo-logres.com"
+              }
+            ],
+            "gameserver": [
+              {
+                "ip": "game901-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game902-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game903-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game904-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game905-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game906-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game907-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game908-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game909-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game910-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game911-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game912-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game913-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game914-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game915-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game916-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game917-sp.mmo-logres.com",
+                "port": 8800
+              }
+            ],
+            "name": "release-${platform_short_name}3",
+            "title": "<text>",
+            "worldgroup": "<text>",
+            "worldnumber": [
+              3
+            ]
+          },
+          {
+            "authentication": "<redacted>",
+            "caption": "<text>",
+            "create_time": "2014/03/15",
+            "env": [
+              {
+                "api_base_ip": "api14-sp.mmo-logres.com"
+              }
+            ],
+            "gameserver": [
+              {
+                "ip": "game1401-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game1402-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game1403-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game1404-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game1405-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game1406-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game1407-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game1408-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game1409-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game1410-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game1411-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game1412-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game1413-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game1414-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game1415-sp.mmo-logres.com",
+                "port": 8800
+              }
+            ],
+            "name": "release-${platform_short_name}4",
+            "title": "<text>",
+            "worldgroup": "<text>",
+            "worldnumber": [
+              4
+            ]
+          },
+          {
+            "authentication": "<redacted>",
+            "caption": "<text>",
+            "create_time": "2014/04/16",
+            "env": [
+              {
+                "api_base_ip": "api14-sp.mmo-logres.com"
+              }
+            ],
+            "gameserver": [
+              {
+                "ip": "game1401-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game1402-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game1403-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game1404-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game1405-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game1406-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game1407-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game1408-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game1409-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game1410-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game1411-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game1412-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game1413-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game1414-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game1415-sp.mmo-logres.com",
+                "port": 8800
+              }
+            ],
+            "name": "release-${platform_short_name}5",
+            "title": "<text>",
+            "worldgroup": "<text>",
+            "worldnumber": [
+              5
+            ]
+          },
+          {
+            "authentication": "<redacted>",
+            "caption": "<text>",
+            "create_time": "2014/06/17",
+            "env": [
+              {
+                "api_base_ip": "api9-sp.mmo-logres.com"
+              }
+            ],
+            "gameserver": [
+              {
+                "ip": "game901-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game902-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game903-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game904-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game905-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game906-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game907-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game908-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game909-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game910-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game911-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game912-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game913-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game914-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game915-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game916-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game917-sp.mmo-logres.com",
+                "port": 8800
+              }
+            ],
+            "name": "release-${platform_short_name}6",
+            "title": "<text>",
+            "worldgroup": "<text>",
+            "worldnumber": [
+              6
+            ]
+          },
+          {
+            "authentication": "<redacted>",
+            "caption": "<text>",
+            "create_time": "2014/09/08",
+            "env": [
+              {
+                "api_base_ip": "api9-sp.mmo-logres.com"
+              }
+            ],
+            "gameserver": [
+              {
+                "ip": "game901-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game902-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game903-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game904-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game905-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game906-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game907-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game908-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game909-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game910-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game911-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game912-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game913-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game914-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game915-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game916-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game917-sp.mmo-logres.com",
+                "port": 8800
+              }
+            ],
+            "name": "release-${platform_short_name}7",
+            "title": "<text>",
+            "worldgroup": "<text>",
+            "worldnumber": [
+              7
+            ]
+          },
+          {
+            "authentication": "<redacted>",
+            "caption": "<text>",
+            "create_time": "2014/09/19",
+            "env": [
+              {
+                "api_base_ip": "api9-sp.mmo-logres.com"
+              }
+            ],
+            "gameserver": [
+              {
+                "ip": "game901-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game902-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game903-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game904-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game905-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game906-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game907-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game908-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game909-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game910-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game911-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game912-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game913-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game914-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game915-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game916-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game917-sp.mmo-logres.com",
+                "port": 8800
+              }
+            ],
+            "name": "release-${platform_short_name}8",
+            "title": "<text>",
+            "worldgroup": "<text>",
+            "worldnumber": [
+              8
+            ]
+          },
+          {
+            "authentication": "<redacted>",
+            "can_create_new_account": true,
+            "caption": "<text>",
+            "create_time": "2014/11/18",
+            "env": [
+              {
+                "api_base_ip": "api9-sp.mmo-logres.com"
+              }
+            ],
+            "gameserver": [
+              {
+                "ip": "game901-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game902-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game903-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game904-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game905-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game906-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game907-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game908-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game909-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game910-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game911-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game912-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game913-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game914-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game915-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game916-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game917-sp.mmo-logres.com",
+                "port": 8800
+              }
+            ],
+            "name": "release-${platform_short_name}9",
+            "sort_priority": 1,
+            "title": "<text>",
+            "worldgroup": "<text>",
+            "worldnumber": [
+              9
+            ]
+          },
+          {
+            "authentication": "<redacted>",
+            "can_create_new_account": true,
+            "caption": "<text>",
+            "create_time": "2014/12/16",
+            "env": [
+              {
+                "api_base_ip": "api14-sp.mmo-logres.com"
+              }
+            ],
+            "gameserver": [
+              {
+                "ip": "game1401-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game1402-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game1403-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game1404-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game1405-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game1406-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game1407-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game1408-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game1409-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game1410-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game1411-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game1412-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game1413-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game1414-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game1415-sp.mmo-logres.com",
+                "port": 8800
+              }
+            ],
+            "name": "release-${platform_short_name}10",
+            "sort_priority": 1,
+            "title": "<text>",
+            "worldgroup": "<text>",
+            "worldnumber": [
+              10
+            ]
+          },
+          {
+            "authentication": "<redacted>",
+            "can_create_new_account": true,
+            "caption": "<text>",
+            "create_time": "2015/01/01",
+            "env": [
+              {
+                "api_base_ip": "api9-sp.mmo-logres.com"
+              }
+            ],
+            "gameserver": [
+              {
+                "ip": "game901-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game902-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game903-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game904-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game905-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game906-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game907-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game908-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game909-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game910-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game911-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game912-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game913-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game914-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game915-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game916-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game917-sp.mmo-logres.com",
+                "port": 8800
+              }
+            ],
+            "name": "release-${platform_short_name}11",
+            "sort_priority": 1,
+            "title": "<text>",
+            "worldgroup": "<text>",
+            "worldnumber": [
+              11
+            ]
+          },
+          {
+            "authentication": "<redacted>",
+            "can_create_new_account": true,
+            "caption": "<text>",
+            "create_time": "2015/09/03",
+            "env": [
+              {
+                "api_base_ip": "api14-sp.mmo-logres.com"
+              }
+            ],
+            "gameserver": [
+              {
+                "ip": "game1401-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game1402-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game1403-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game1404-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game1405-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game1406-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game1407-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game1408-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game1409-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game1410-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game1411-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game1412-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game1413-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game1414-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game1415-sp.mmo-logres.com",
+                "port": 8800
+              }
+            ],
+            "name": "release-${platform_short_name}12",
+            "sort_priority": 1,
+            "title": "<text>",
+            "worldgroup": "<text>",
+            "worldnumber": [
+              12
+            ]
+          },
+          {
+            "authentication": "<redacted>",
+            "can_create_new_account": true,
+            "caption": "<text>",
+            "create_time": "2015/10/14",
+            "env": [
+              {
+                "api_base_ip": "api9-sp.mmo-logres.com"
+              }
+            ],
+            "gameserver": [
+              {
+                "ip": "game901-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game902-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game903-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game904-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game905-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game906-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game907-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game908-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game909-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game910-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game911-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game912-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game913-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game914-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game915-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game916-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game917-sp.mmo-logres.com",
+                "port": 8800
+              }
+            ],
+            "name": "release-${platform_short_name}13",
+            "sort_priority": 1,
+            "title": "<text>",
+            "worldgroup": "<text>",
+            "worldnumber": [
+              13
+            ]
+          },
+          {
+            "authentication": "<redacted>",
+            "can_create_new_account": true,
+            "caption": "<text>",
+            "create_time": "2015/11/25",
+            "env": [
+              {
+                "api_base_ip": "api14-sp.mmo-logres.com"
+              }
+            ],
+            "gameserver": [
+              {
+                "ip": "game1401-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game1402-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game1403-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game1404-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game1405-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game1406-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game1407-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game1408-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game1409-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game1410-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game1411-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game1412-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game1413-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game1414-sp.mmo-logres.com",
+                "port": 8800
+              },
+              {
+                "ip": "game1415-sp.mmo-logres.com",
+                "port": 8800
+              }
+            ],
+            "name": "release-${platform_short_name}14",
+            "sort_priority": 1,
+            "title": "<text>",
+            "worldgroup": "<text>",
+            "worldnumber": [
+              14
+            ]
+          }
+        ],
+        "world_layout": [
+          {
+            "can_create_new_account": true,
+            "caption": "<text>",
+            "name": "release-and13",
+            "sort_priority": 100,
+            "title": "<text>"
+          },
+          {
+            "can_create_new_account": true,
+            "caption": "<text>",
+            "name": "release-and12",
+            "sort_priority": 99,
+            "title": "<text>"
+          },
+          {
+            "can_create_new_account": true,
+            "caption": "<text>",
+            "name": "release-and11",
+            "sort_priority": 98,
+            "title": "<text>"
+          },
+          {
+            "can_create_new_account": true,
+            "caption": "<text>",
+            "name": "release-and14",
+            "sort_priority": 97,
+            "title": "<text>"
+          },
+          {
+            "can_create_new_account": true,
+            "caption": "<text>",
+            "name": "release-and10",
+            "sort_priority": 96,
+            "title": "<text>"
+          },
+          {
+            "can_create_new_account": true,
+            "caption": "<text>",
+            "name": "release-and9",
+            "sort_priority": 95,
+            "title": "<text>"
+          },
+          {
+            "can_create_new_account": true,
+            "caption": "<text>",
+            "name": "release-and8",
+            "sort_priority": 94,
+            "title": "<text>"
+          },
+          {
+            "can_create_new_account": true,
+            "caption": "<text>",
+            "name": "release-and7",
+            "sort_priority": 93,
+            "title": "<text>"
+          },
+          {
+            "can_create_new_account": true,
+            "caption": "<text>",
+            "name": "release-and6",
+            "sort_priority": 92,
+            "title": "<text>"
+          },
+          {
+            "can_create_new_account": true,
+            "caption": "<text>",
+            "name": "release-and5",
+            "sort_priority": 91,
+            "title": "<text>"
+          },
+          {
+            "can_create_new_account": true,
+            "caption": "<text>",
+            "name": "release-and4",
+            "sort_priority": 90,
+            "title": "<text>"
+          },
+          {
+            "can_create_new_account": true,
+            "caption": "<text>",
+            "name": "release-and3",
+            "sort_priority": 89,
+            "title": "<text>"
+          },
+          {
+            "can_create_new_account": true,
+            "caption": "<text>",
+            "name": "release-and2",
+            "sort_priority": 88,
+            "title": "<text>"
+          },
+          {
+            "can_create_new_account": true,
+            "caption": "<text>",
+            "name": "release-and",
+            "sort_priority": 87,
+            "title": "<text>"
+          }
+        ]
+      },
+      "platform": "android",
+      "request_url": "https://capi-sp.mmo-logres.com:8443/cusapi/hostentry/android/12101",
+      "sha256": "27882579d2fe730a88dbb27f1221d732bfd36cfcfc4f025f294e7593723c5cfd",
+      "size": 21282,
+      "status": 200
+    },
+    {
+      "content_type": "application/json",
+      "final_url": "https://capi-sp.mmo-logres.com:8443/cusapi/hostentry/release-and/12101",
+      "json": {},
+      "platform": "release-and",
+      "request_url": "https://capi-sp.mmo-logres.com:8443/cusapi/hostentry/release-and/12101",
+      "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "size": 2,
+      "status": 404
+    },
+    {
+      "content_type": "application/json",
+      "final_url": "https://capi-sp.mmo-logres.com:8443/cusapi/hostentry/gp/12101",
+      "json": {},
+      "platform": "gp",
+      "request_url": "https://capi-sp.mmo-logres.com:8443/cusapi/hostentry/gp/12101",
+      "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "size": 2,
+      "status": 404
+    },
+    {
+      "content_type": "application/json",
+      "final_url": "https://capi-sp.mmo-logres.com:8443/cusapi/hostentry/googleplay/12101",
+      "json": {},
+      "platform": "googleplay",
+      "request_url": "https://capi-sp.mmo-logres.com:8443/cusapi/hostentry/googleplay/12101",
+      "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "size": 2,
+      "status": 404
+    }
+  ],
+  "provenance": "PUBLIC_LOGRES_HOSTENTRY_METADATA",
+  "version": "12101"
+}

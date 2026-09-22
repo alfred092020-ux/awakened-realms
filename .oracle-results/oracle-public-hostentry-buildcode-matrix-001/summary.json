@@ -1,0 +1,10 @@
+{
+  "duration_seconds": 2.751,
+  "error": null,
+  "exit_code": 0,
+  "job_id": "oracle-public-hostentry-buildcode-matrix-001",
+  "kind": "python",
+  "schema": 1,
+  "source_sha": "4a965e783a4cc313d7522f2b5d65f292d250cb00",
+  "status": "success"
+}
