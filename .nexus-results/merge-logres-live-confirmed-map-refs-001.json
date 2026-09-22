@@ -1,0 +1,8 @@
+{
+  "commit": "39ed1de0167a31dc26aff4d8e3d77f211b5cc565",
+  "job_id": "merge-logres-live-confirmed-map-refs-001",
+  "job_type": "MERGE",
+  "status": "SUCCESS",
+  "target_branch": "feat/logres-reconstruction",
+  "written_at": "2026-09-22T06:59:57.260973+00:00"
+}
