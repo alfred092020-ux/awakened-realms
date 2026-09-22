@@ -1,0 +1,7 @@
+{
+  "error": "PATCH_INVALID: malformed diff header: diff --git a/scripts/logres/inspect_public_terrain_z.py b/scripts/logres/inspect_public_terrain_z.py\\nnew file mode 100644\\n--- /dev/null\\n+++ b/scripts/logres/inspect_public_terrain_z.py\\n@@ -0,0 +1,6 @@\\n+#!/usr/bin/env python3",
+  "job_id": "logres-public-terrain-z-001",
+  "job_type": "PATCH",
+  "status": "PATCH_INVALID",
+  "written_at": "2026-09-22T09:33:56.896116+00:00"
+}
