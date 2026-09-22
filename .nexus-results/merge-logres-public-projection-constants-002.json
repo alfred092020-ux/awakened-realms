@@ -1,0 +1,8 @@
+{
+  "commit": "2904363299957aaee71f10d6e729af122325c06d",
+  "job_id": "merge-logres-public-projection-constants-002",
+  "job_type": "MERGE",
+  "status": "SUCCESS",
+  "target_branch": "feat/logres-reconstruction",
+  "written_at": "2026-09-22T09:34:31.915842+00:00"
+}
