@@ -1,0 +1,159 @@
+{
+  "confirmed_map_package_ids": [
+    "001_000_00002",
+    "001_000_00200",
+    "001_000_00700",
+    "002_000_00001",
+    "002_000_00003",
+    "250_000_00000",
+    "250_000_00001",
+    "250_000_00002",
+    "250_000_00003"
+  ],
+  "errors": [
+    {
+      "member": "files/cache/patch/avacolle/bg/bg_020_302_102_001.mbn",
+      "reason": "ValueError"
+    },
+    {
+      "member": "files/cache/patch/avacolle/bg/bg_030_001_000_000.mbn",
+      "reason": "ValueError"
+    }
+  ],
+  "provenance": "PRIVATE_CACHE_CONFIRMED_MAP_REFERENCE_METADATA",
+  "semantic_policy": "Only IDs independently confirmed by files/cache/patch/map/<id>.mbn are searched. A source occurrence proves a reference to that recovered map package ID but does not by itself prove tutorial selection.",
+  "source_reference_count": 3,
+  "sources": [
+    {
+      "container": "files/cache/patch/gui/Battle/additional_skill.mbn",
+      "entry": "additional_skill_icon_setting.json",
+      "format": "json",
+      "json_refs": [
+        {
+          "contexts": [],
+          "kind": "key",
+          "map_id": "001_000_00002",
+          "pointer": "/001_000_00002"
+        },
+        {
+          "contexts": [],
+          "kind": "key",
+          "map_id": "002_000_00001",
+          "pointer": "/002_000_00001"
+        },
+        {
+          "contexts": [],
+          "kind": "key",
+          "map_id": "002_000_00003",
+          "pointer": "/002_000_00003"
+        }
+      ],
+      "sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525",
+      "size": 214535
+    },
+    {
+      "container": "files/cache/patch/gui/Battle/buff_icon.mbn",
+      "entry": "buff_icon_setting.json",
+      "format": "json",
+      "json_refs": [
+        {
+          "contexts": [],
+          "kind": "key",
+          "map_id": "001_000_00002",
+          "pointer": "/001_000_00002"
+        }
+      ],
+      "sha256": "0d750a6f0d20985d24727bfd582ceb9371408fd87eabc6e6c451cdffd64a67dc",
+      "size": 1694
+    },
+    {
+      "container": "files/cache/patch/json_resource.mbn",
+      "entry": "clan_room_item_icon_setting.json",
+      "format": "json",
+      "json_refs": [
+        {
+          "contexts": [],
+          "kind": "key",
+          "map_id": "250_000_00002",
+          "pointer": "/250_000_00002"
+        }
+      ],
+      "sha256": "919cf81903d4de8194814298b69be1d7cf104043e5193cdb44395464de5a294d",
+      "size": 11238
+    }
+  ],
+  "summary": {
+    "001_000_00002": {
+      "byte_ref_count": 0,
+      "contexts": [],
+      "json_key_count": 2,
+      "json_value_count": 0,
+      "manifest_ref_count": 0,
+      "source_count": 2
+    },
+    "001_000_00200": {
+      "byte_ref_count": 0,
+      "contexts": [],
+      "json_key_count": 0,
+      "json_value_count": 0,
+      "manifest_ref_count": 0,
+      "source_count": 0
+    },
+    "001_000_00700": {
+      "byte_ref_count": 0,
+      "contexts": [],
+      "json_key_count": 0,
+      "json_value_count": 0,
+      "manifest_ref_count": 0,
+      "source_count": 0
+    },
+    "002_000_00001": {
+      "byte_ref_count": 0,
+      "contexts": [],
+      "json_key_count": 1,
+      "json_value_count": 0,
+      "manifest_ref_count": 0,
+      "source_count": 1
+    },
+    "002_000_00003": {
+      "byte_ref_count": 0,
+      "contexts": [],
+      "json_key_count": 1,
+      "json_value_count": 0,
+      "manifest_ref_count": 0,
+      "source_count": 1
+    },
+    "250_000_00000": {
+      "byte_ref_count": 0,
+      "contexts": [],
+      "json_key_count": 0,
+      "json_value_count": 0,
+      "manifest_ref_count": 0,
+      "source_count": 0
+    },
+    "250_000_00001": {
+      "byte_ref_count": 0,
+      "contexts": [],
+      "json_key_count": 0,
+      "json_value_count": 0,
+      "manifest_ref_count": 0,
+      "source_count": 0
+    },
+    "250_000_00002": {
+      "byte_ref_count": 0,
+      "contexts": [],
+      "json_key_count": 1,
+      "json_value_count": 0,
+      "manifest_ref_count": 0,
+      "source_count": 1
+    },
+    "250_000_00003": {
+      "byte_ref_count": 0,
+      "contexts": [],
+      "json_key_count": 0,
+      "json_value_count": 0,
+      "manifest_ref_count": 0,
+      "source_count": 0
+    }
+  }
+}

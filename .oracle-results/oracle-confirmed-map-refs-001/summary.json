@@ -1,0 +1,10 @@
+{
+  "duration_seconds": 1.214,
+  "error": null,
+  "exit_code": 0,
+  "job_id": "oracle-confirmed-map-refs-001",
+  "kind": "python",
+  "schema": 1,
+  "source_sha": "a6d223f7cad892d4e447b7245a7900b054133f89",
+  "status": "success"
+}
