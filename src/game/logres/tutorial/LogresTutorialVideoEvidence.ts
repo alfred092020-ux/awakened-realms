@@ -15,6 +15,12 @@ export interface LogresTutorialStageEvidence {
   label: LogresEvidenceLabel
 }
 
+export interface LogresTutorialMapCandidateEvidence {
+  mapId: string
+  label: LogresEvidenceLabel
+  reason: string
+}
+
 export const LOGRES_TUTORIAL_VIDEO_EVIDENCE =
   Object.freeze({
     provenance:
@@ -24,16 +30,37 @@ export const LOGRES_TUTORIAL_VIDEO_EVIDENCE =
       label:
         'UNRESOLVED' as const,
     },
-    candidatePriority: [
-      {
-        mapId:
-          '001_000_00001',
-        label:
-          'SUPPORTED INFERENCE' as const,
-        reason:
-          'Live semantic map-reference evidence links this recovered map id to quest workflow context. Visual match is still required.',
-      },
-    ],
+    /*
+     * No active internal map-id candidate currently satisfies both the
+     * recovered map evidence and the original tutorial recording.
+     *
+     * Research-only area-name clues belong in the evidence backlog until a
+     * concrete recovered map is tied to them.
+     */
+    candidatePriority:
+      Object.freeze(
+        [] as
+          LogresTutorialMapCandidateEvidence[],
+      ),
+    /*
+     * SUPPORTED INFERENCE:
+     * 001_000_00001 was previously prioritized by semantic quest-reference
+     * evidence. Authentic rendering shows a dense settlement/castle field that
+     * does not match the confirmed tutorial recording's grassy cliff/water
+     * topology, so it is no longer an active tutorial-map candidate.
+     */
+    rejectedCandidates:
+      Object.freeze([
+        {
+          mapId:
+            '001_000_00001',
+          label:
+            'SUPPORTED INFERENCE' as const,
+          reason:
+            'Authentic recovered-map render does not match the original tutorial video terrain topology.',
+        },
+      ] satisfies
+        readonly LogresTutorialMapCandidateEvidence[]),
     landmarks: [
       {
         id:
