@@ -1,0 +1,8 @@
+{
+  "commit": "aeba2a8dcec1c143e262b6f7ec34afa4a18d5284",
+  "job_id": "merge-logres-live-semantic-map-refs-001",
+  "job_type": "MERGE",
+  "status": "SUCCESS",
+  "target_branch": "feat/logres-reconstruction",
+  "written_at": "2026-09-22T07:57:31.174713+00:00"
+}
