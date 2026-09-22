@@ -1,0 +1,8 @@
+{
+  "commit": "6c2525995b1c6b5cf4e906f16357cdeda49f26ce",
+  "job_id": "merge-logres-map-package-inspector-003",
+  "job_type": "MERGE",
+  "status": "SUCCESS",
+  "target_branch": "feat/logres-reconstruction",
+  "written_at": "2026-09-22T00:56:15.352357+00:00"
+}
