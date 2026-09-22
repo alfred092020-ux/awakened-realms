@@ -1,0 +1,18 @@
+{
+  "schema": 1,
+  "job_id": "oracle-public-patch-object-proof-001",
+  "source_sha": "b24e8d7c7302c734ed33d6cacf9195bf553a325e",
+  "kind": "python",
+  "script": "scripts/logres/inspect_public_patch_cdn.py",
+  "args": [
+    "--base",
+    "https://prd-cdn.mmo-logres.com/patch/1789742711/android/",
+    "--path",
+    "avacolle/bg/bg_010_001_001_000.mbn",
+    "--path",
+    "gui/up_date/banner/menu_banner52.mbn",
+    "--output",
+    "@OUTPUT@/patch-object-proof.json"
+  ],
+  "timeout_seconds": 600
+}
