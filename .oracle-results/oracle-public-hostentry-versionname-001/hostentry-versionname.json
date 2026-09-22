@@ -1,0 +1,57 @@
+{
+  "base": "https://capi-sp.mmo-logres.com:8443/cusapi/hostentry",
+  "probes": [
+    {
+      "content_type": "application/json",
+      "final_url": "https://capi-sp.mmo-logres.com:8443/cusapi/hostentry/and/12.8.1",
+      "json": {},
+      "platform": "and",
+      "request_url": "https://capi-sp.mmo-logres.com:8443/cusapi/hostentry/and/12.8.1",
+      "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "size": 2,
+      "status": 404
+    },
+    {
+      "content_type": "application/json",
+      "final_url": "https://capi-sp.mmo-logres.com:8443/cusapi/hostentry/android/12.8.1",
+      "json": {},
+      "platform": "android",
+      "request_url": "https://capi-sp.mmo-logres.com:8443/cusapi/hostentry/android/12.8.1",
+      "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "size": 2,
+      "status": 404
+    },
+    {
+      "content_type": "application/json",
+      "final_url": "https://capi-sp.mmo-logres.com:8443/cusapi/hostentry/release-and/12.8.1",
+      "json": {},
+      "platform": "release-and",
+      "request_url": "https://capi-sp.mmo-logres.com:8443/cusapi/hostentry/release-and/12.8.1",
+      "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "size": 2,
+      "status": 404
+    },
+    {
+      "content_type": "application/json",
+      "final_url": "https://capi-sp.mmo-logres.com:8443/cusapi/hostentry/gp/12.8.1",
+      "json": {},
+      "platform": "gp",
+      "request_url": "https://capi-sp.mmo-logres.com:8443/cusapi/hostentry/gp/12.8.1",
+      "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "size": 2,
+      "status": 404
+    },
+    {
+      "content_type": "application/json",
+      "final_url": "https://capi-sp.mmo-logres.com:8443/cusapi/hostentry/googleplay/12.8.1",
+      "json": {},
+      "platform": "googleplay",
+      "request_url": "https://capi-sp.mmo-logres.com:8443/cusapi/hostentry/googleplay/12.8.1",
+      "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "size": 2,
+      "status": 404
+    }
+  ],
+  "provenance": "PUBLIC_LOGRES_HOSTENTRY_METADATA",
+  "version": "12.8.1"
+}

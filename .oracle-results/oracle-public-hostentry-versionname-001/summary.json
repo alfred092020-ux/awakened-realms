@@ -1,0 +1,10 @@
+{
+  "duration_seconds": 2.797,
+  "error": null,
+  "exit_code": 0,
+  "job_id": "oracle-public-hostentry-versionname-001",
+  "kind": "python",
+  "schema": 1,
+  "source_sha": "a60fdb17188df7027a95d3234ea62462cc3370e3",
+  "status": "success"
+}
