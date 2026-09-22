@@ -1,0 +1,2756 @@
+{
+  "apk": "config.arm64_v8a.apk",
+  "download": {
+    "sha256": "7803989f3a02d2662f83cefe25e648e04e7d529f650a70ca7911d7b98972c76c",
+    "size": 125559968
+  },
+  "libgame": {
+    "sha256": "1564f02b23c9909adc0d26636adfc8e72a7ed9363655af0d1ae22635e55acbeb",
+    "size": 91934656
+  },
+  "nm": {
+    "available": true,
+    "exit_code": 0,
+    "rows": [
+      "0000000004e21c8c T lua_cocos2dx_Application_getTargetPlatform(lua_State*)",
+      "0000000004e3f7d0 T lua_cocos2dx_extension_AssetsManager_getVersion(lua_State*)",
+      "0000000004e3f8b0 T lua_cocos2dx_extension_AssetsManager_getVersionFileUrl(lua_State*)",
+      "0000000004016bbc T lfs::ServiceHost::initialize(lfs::Json11Resource const&)",
+      "0000000004016ad0 T lfs::ServiceHost::initialize(std::__ndk1::basic_string<char, std::__ndk1::char_traits<char>, std::__ndk1::allocator<char> > const&)",
+      "00000000040173b8 T lfs::ServiceHost::switchHost(std::__ndk1::basic_string<char, std::__ndk1::char_traits<char>, std::__ndk1::allocator<char> > const&)",
+      "00000000040179fc T lfs::ServiceHost::getCurrentHostUrl()",
+      "00000000057c8db0 B lfs::ServiceHost::s_currentHostName",
+      "0000000004017b50 T lfs::ServiceHost::callHostentryWebApi(std::__ndk1::basic_string<char, std::__ndk1::char_traits<char>, std::__ndk1::allocator<char> > const&, cocos2d::Ref*, void (cocos2d::Ref::*)(int, std::__ndk1::basic_string<char, std::__ndk1::char_traits<char>, std::__ndk1::allocator<char> > const&))",
+      "0000000004016bf8 T lfs::ServiceHost::parse(json11::Json const&)",
+      "00000000040174ac T lfs::ServiceHost::getHost(std::__ndk1::basic_string<char, std::__ndk1::char_traits<char>, std::__ndk1::allocator<char> > const&)",
+      "00000000057c8d98 B lfs::ServiceHost::s_hosts",
+      "0000000004017664 T lfs::ServiceHost::getHosts()",
+      "0000000004017330 T lfs::ServiceHost::terminate()",
+      "00000000046dc334 T lfs::client_version::getVersionCheckResult(lfs::HostEntry::VersionInfo const&)",
+      "0000000004019b8c W lfs::CCCallbackProxy<void (int, std::__ndk1::basic_string<char, std::__ndk1::char_traits<char>, std::__ndk1::allocator<char> > const&)>* lfs::CCCallbackProxy<void (int, std::__ndk1::basic_string<char, std::__ndk1::char_traits<char>, std::__ndk1::allocator<char> > const&)>::create<std::__ndk1::__bind<void (lfs::login::GetHostentryBehavior::*)(int, std::__ndk1::basic_string<char, std::__ndk1::char_traits<char>, std::__ndk1::allocator<char> > const&), std::__ndk1::shared_ptr<lfs::login::GetHostentryBehavior>, std::__ndk1::placeholders::__ph<1> const&, std::__ndk1::placeholders::__ph<2> const&> >(std::__ndk1::__bind<void (lfs::login::GetHostentryBehavior::*)(int, std::__ndk1::",
+      "00000000057d12b0 B lfs::CommandLineOption::DebugResourcePatch",
+      "000000000456beac T lfs::ReleaseScene_GetHostEntry::onInitializeEnd(std::__ndk1::shared_ptr<lfs::Scene>&)",
+      "000000000456bf50 T lfs::ReleaseScene_GetHostEntry::onKeypadClicked(lfs::KeypadEventDispatcher::EventInfo*)",
+      "000000000456bf8c T lfs::ReleaseScene_GetHostEntry::callbackHostentry(int, std::__ndk1::basic_string<char, std::__ndk1::char_traits<char>, std::__ndk1::allocator<char> > const&)",
+      "000000000456bf04 T lfs::ReleaseScene_GetHostEntry::callHostentryWebApi()",
+      "000000000456bdd0 T lfs::ReleaseScene_GetHostEntry::create()",
+      "000000000456be18 T lfs::ReleaseScene_GetHostEntry::ReleaseScene_GetHostEntry()",
+      "000000000456be18 T lfs::ReleaseScene_GetHostEntry::ReleaseScene_GetHostEntry()",
+      "000000000456be60 T lfs::ReleaseScene_GetHostEntry::~ReleaseScene_GetHostEntry()",
+      "000000000456be54 T lfs::ReleaseScene_GetHostEntry::~ReleaseScene_GetHostEntry()",
+      "000000000456be54 T lfs::ReleaseScene_GetHostEntry::~ReleaseScene_GetHostEntry()",
+      "0000000004019ca4 T lfs::login::GetHostentryBehavior::onReceiveHostentry(int, std::__ndk1::basic_string<char, std::__ndk1::char_traits<char>, std::__ndk1::allocator<char> > const&)",
+      "000000000401a234 T lfs::login::GetHostentryBehavior::onExit(std::__ndk1::shared_ptr<lfs::login::Context> const&)",
+      "00000000040199f4 T lfs::login::GetHostentryBehavior::onEnter(std::__ndk1::shared_ptr<lfs::login::Context> const&)",
+      "000000000401aac0 T lfs::login::GetHostentryBehavior::terminate()",
+      "0000000004021c8c W lfs::login::GetHostentryBehavior::~GetHostentryBehavior()",
+      "0000000004021c10 W lfs::login::GetHostentryBehavior::~GetHostentryBehavior()",
+      "0000000004018da0 W bool lfs::login::Executor::changeBehavior<lfs::login::GetHostentryBehavior>()",
+      "000000000452847c T lfs::patcher::FuturePatchUpdateController::refreshHostEntry()",
+      "00000000045284ac T lfs::patcher::FuturePatchUpdateController::callbackHostentry(int, std::__ndk1::basic_string<char, std::__ndk1::char_traits<char>, std::__ndk1::allocator<char> > const&)",
+      "0000000004528454 T lfs::patcher::FuturePatchUpdateController::updateHostentryFetchTime()",
+      "0000000004537964 W lfs::CCCapsule<lfs::ServiceHost::HostInfo>::CCCapsule(lfs::ServiceHost::HostInfo const&)",
+      "000000000453791c W lfs::CCCapsule<lfs::ServiceHost::HostInfo>::~CCCapsule()",
+      "00000000045378dc W lfs::CCCapsule<lfs::ServiceHost::HostInfo>::~CCCapsule()",
+      "00000000040125cc W lfs::HostEntry::ServerInfo::ServerInfo(lfs::HostEntry::ServerInfo&&)",
+      "0000000004012950 W lfs::HostEntry::ServerInfo::ServerInfo(lfs::HostEntry::ServerInfo const&)",
+      "000000000379f0ac W lfs::HostEntry::ServerInfo::~ServerInfo()",
+      "0000000004013ee8 W lfs::HostEntry::ServerInfo::operator=(lfs::HostEntry::ServerInfo&&)",
+      "000000000400964c T lfs::HostEntry::getURL_Job()",
+      "000000000400e234 T lfs::HostEntry::switchHost(std::__ndk1::basic_string<char, std::__ndk1::char_traits<char>, std::__ndk1::allocator<char> > const&)",
+      "000000000400e1a0 T lfs::HostEntry::switchHost(int)",
+      "000000000400e7a0 W lfs::HostEntry::VersionInfo::VersionInfo(lfs::HostEntry::VersionInfo const&)",
+      "0000000003cdfa18 W lfs::HostEntry::VersionInfo::~VersionInfo()",
+      "0000000004012d60 W lfs::HostEntry::WebViewURLs::WebViewURLs(lfs::HostEntry::WebViewURLs const&)",
+      "000000000379f21c W lfs::HostEntry::WebViewURLs::~WebViewURLs()",
+      "000000000401430c W lfs::HostEntry::WebViewURLs::operator=(lfs::HostEntry::WebViewURLs&&)",
+      "000000000400d8d4 T lfs::HostEntry::getAllHosts()",
+      "0000000004008d68 T lfs::HostEntry::getInstance()",
+      "00000000040092a0 T lfs::HostEntry::getURL_Chat()",
+      "000000000400a510 T lfs::HostEntry::getURL_Clan()",
+      "000000000400902c T lfs::HostEntry::getURL_Item()",
+      "000000000400ac78 T lfs::HostEntry::getURL_Raid()",
+      "000000000400c3b4 T lfs::HostEntry::setupCusapi(json11::Json const&)",
+      "000000000400a644 T lfs::HostEntry::getURL_Event()",
+      "0000000004008ef4 T lfs::HostEntry::getURL_Party()",
+      "000000000400adac T lfs::HostEntry::getURL_Patch()",
+      "000000000400ab3c T lfs::HostEntry::getURL_Emblem()",
+      "0000000004008c2c T lfs::HostEntry::getURL_Friend()",
+      "000000000400b948 T lfs::HostEntry::loadHostEntry(std::__ndk1::basic_string<char, std::__ndk1::char_traits<char>, std::__ndk1::allocator<char> > const&, std::__ndk1::basic_string<char, std::__ndk1::char_traits<char>, std::__ndk1::allocator<char> > const&)",
+      "000000000400eb80 T lfs::HostEntry::parseHostInfo(std::__ndk1::basic_string<char, std::__ndk1::char_traits<char>, std::__ndk1::allocator<char> > const&, json11::Json const&, lfs::HostEntry::ServerInfo const*, std::__ndk1::vector<lfs::replacer::Pattern, std::__ndk1::allocator<lfs::replacer::Pattern> > const&)",
+      "000000000400e89c T lfs::HostEntry::getCusapiState()",
+      "000000000400b2ac T lfs::HostEntry::getGameServers()",
+      "0000000004009eec T lfs::HostEntry::getURL_Account()",
+      "0000000004009160 T lfs::HostEntry::getURL_Ranking()",
+      "0000000004009db0 T lfs::HostEntry::getURL_RevCode()",
+      "000000000400b0a0 T lfs::HostEntry::getWebViewURLs()",
+      "000000000400c808 T lfs::HostEntry::setupHostsInfo(json11::Json const&)",
+      "000000000400a8bc T lfs::HostEntry::getURL_Avacolle()",
+      "000000000400a3d4 T lfs::HostEntry::getURL_Campaign()",
+      "000000000400e978 T lfs::HostEntry::isCusapiWarning()",
+      "00000000040099fc T lfs::HostEntry::getURL_Character()",
+      "00000000040093d4 T lfs::HostEntry::getURL_Community()",
+      "0000000004009510 T lfs::HostEntry::getURL_Mercenary()",
+      "00000000057c8a48 B lfs::HostEntry::kDefaultHostName",
+      "0000000004012438 T lfs::HostEntry::setupCusapiState(json11::Json const&)",
+      "000000000400d23c T lfs::HostEntry::setupWorldLayout(json11::Json const&)",
+      "000000000400e540 T lfs::HostEntry::isTargetHostExist(std::__ndk1::basic_string<char, std::__ndk1::char_traits<char>, std::__ndk1::allocator<char> > const&)",
+      "000000000400d970 T lfs::HostEntry::getCurrentHostName()",
+      "000000000400b4a8 T lfs::HostEntry::getGameServerInfos(std::__ndk1::basic_string<char, std::__ndk1::char_traits<char>, std::__ndk1::allocator<char> > const&)",
+      "000000000400a9f8 T lfs::HostEntry::getURL_BattleBoost()",
+      "000000000401252c T lfs::HostEntry::setupCusapiWarning(json11::Json const&)",
+      "000000000400d744 T lfs::HostEntry::switchHostInternal(std::__ndk1::basic_string<char, std::__ndk1::char_traits<char>, std::__ndk1::allocator<char> > const&)",
+      "000000000400a77c T lfs::HostEntry::getURL_EventSrcData()",
+      "000000000400977c T lfs::HostEntry::getURL_ServiceState()",
+      "000000000400dffc T lfs::HostEntry::editRCBWorldHostInfo()",
+      "0000000004009b38 T lfs::HostEntry::getURL_InAppPurchase()",
+      "000000000400e6a0 T lfs::HostEntry::getVersionInfomation()",
+      "000000000400dcac T lfs::HostEntry::isTargetHostRcbWorld(std::__ndk1::basic_string<char, std::__ndk1::char_traits<char>, std::__ndk1::allocator<char> > const&)",
+      "000000000400dc44 T lfs::HostEntry::isTargetHostRcbWorld(int)",
+      "00000000040098bc T lfs::HostEntry::getURL_Authentication()",
+      "0000000004009c78 T lfs::HostEntry::getURL_InAppPurchase2()",
+      "000000000400ba44 T lfs::HostEntry::loadHostEntryFromJson(json11::Json const&, std::__ndk1::basic_string<char, std::__ndk1::char_traits<char>, std::__ndk1::allocator<char> > const&)",
+      "000000000400c038 T lfs::HostEntry::loadHostEntryFromText(std::__ndk1::basic_string<char, std::__ndk1::char_traits<char>, std::__ndk1::allocator<char> > const&, std::__ndk1::basic_string<char, std::__ndk1::char_traits<char>, std::__ndk1::allocator<char> > const&)",
+      "00000000040112e0 T lfs::HostEntry::parseEnvironmentValues(std::__ndk1::basic_string<char, std::__ndk1::char_traits<char>, std::__ndk1::allocator<char> > const&, json11::Json const&, std::__ndk1::vector<lfs::replacer::Pattern, std::__ndk1::allocator<lfs::replacer::Pattern> > const&)",
+      "000000000400c560 T lfs::HostEntry::setupVersionInfomation(json11::Json const&)",
+      "000000000400da0c T lfs::HostEntry::equalCurrentWorldNumber(int)",
+      "000000000400a298 T lfs::HostEntry::getURL_PushNotification()",
+      "000000000400b144 T lfs::HostEntry::isAuthenticationEnabled()",
+      "000000000400c280 T lfs::HostEntry::setupProviderEnvironment(json11::Json const&)",
+      "000000000400affc T lfs::HostEntry::getURL_DebugResourcePatch()",
+      "000000000400de24 T lfs::HostEntry::getHostNameFromWorldNumber(int)",
+      "000000000400a15c T lfs::HostEntry::getURL_UseMockLocationCheck()",
+      "000000000400b208 T lfs::HostEntry::isDebugResourcePatchUserForced()",
+      "000000000400c188 W lfs::HostEntry::clear()",
+      "000000000400a02c T lfs::HostEntry::getURL_Ad()",
+      "000000000400ea58 W lfs::HostEntry::~HostEntry()",
+      "0000000004d21724 T cocos2d::Application::getTargetPlatform()",
+      "0000000004db5a80 T cocos2d::extension::AssetsManager::getVersion()",
+      "000000000459a4ec T lfs::GemShopProduct::getPlatformProduct() const",
+      "0000000004007594 T lfs::HostEntry::ServerInfo::toString() const",
+      "0000000004008e04 T lfs::HostEntry::getApiServerURL(std::__ndk1::basic_string<char, std::__ndk1::char_traits<char>, std::__ndk1::allocator<char> > const&) const",
+      "000000000400ae50 T lfs::HostEntry::getCurrentHostInfo() const",
+      "000000000400b45c T lfs::HostEntry::isLoaded() const",
+      "0000000004db5a60 T cocos2d::extension::AssetsManager::getVersionFileUrl() const",
+      "00000000040263fc W std::__ndk1::__function::__func<std::__ndk1::__bind<void (lfs::login::GetHostentryBehavior::*)(int, std::__ndk1::basic_string<char, std::__ndk1::char_traits<char>, std::__ndk1::allocator<char> > const&), std::__ndk1::shared_ptr<lfs::login::GetHostentryBehavior>, std::__ndk1::placeholders::__ph<1> const&, std::__ndk1::placeholders::__ph<2> const&>, std::__ndk1::allocator<std::__ndk1::__bind<void (lfs::login::GetHostentryBehavior::*)(int, std::__ndk1::basic_string<char, std::__ndk1::char_traits<char>, std::__ndk1::allocator<char> > const&), std::__ndk1::shared_ptr<lfs::login::GetHostentryBehavior>, std::__ndk1::placeholders::__ph<1> const&, std::__ndk1::placeholders::__ph<2>",
+      "000000000402639c W std::__ndk1::__function::__func<std::__ndk1::__bind<void (lfs::login::GetHostentryBehavior::*)(int, std::__ndk1::basic_string<char, std::__ndk1::char_traits<char>, std::__ndk1::allocator<char> > const&), std::__ndk1::shared_ptr<lfs::login::GetHostentryBehavior>, std::__ndk1::placeholders::__ph<1> const&, std::__ndk1::placeholders::__ph<2> const&>, std::__ndk1::allocator<std::__ndk1::__bind<void (lfs::login::GetHostentryBehavior::*)(int, std::__ndk1::basic_string<char, std::__ndk1::char_traits<char>, std::__ndk1::allocator<char> > const&), std::__ndk1::shared_ptr<lfs::login::GetHostentryBehavior>, std::__ndk1::placeholders::__ph<1> const&, std::__ndk1::placeholders::__ph<2>",
+      "00000000040140e4 W void std::__ndk1::__split_buffer<lfs::HostEntry::ServerInfo, std::__ndk1::allocator<lfs::HostEntry::ServerInfo>&>::emplace_back<lfs::HostEntry::ServerInfo>(lfs::HostEntry::ServerInfo&&)",
+      "0000000004025b74 W std::__ndk1::__shared_ptr_emplace<lfs::login::GetHostentryBehavior, std::__ndk1::allocator<lfs::login::GetHostentryBehavior> >::~__shared_ptr_emplace()",
+      "0000000004025b60 W std::__ndk1::__shared_ptr_emplace<lfs::login::GetHostentryBehavior, std::__ndk1::allocator<lfs::login::GetHostentryBehavior> >::~__shared_ptr_emplace()",
+      "00000000040139d8 W std::__ndk1::__shared_ptr_emplace<lfs::HostEntry::ServerInfo, std::__ndk1::allocator<lfs::HostEntry::ServerInfo> >::~__shared_ptr_emplace()",
+      "00000000040139c4 W std::__ndk1::__shared_ptr_emplace<lfs::HostEntry::ServerInfo, std::__ndk1::allocator<lfs::HostEntry::ServerInfo> >::~__shared_ptr_emplace()",
+      "0000000004536f30 W std::__ndk1::pair<lfs::ServiceHost::HostInfo, bool>::~pair()",
+      "000000000401a194 W std::__ndk1::__bind<void (lfs::login::GetHostentryBehavior::*)(int, std::__ndk1::basic_string<char, std::__ndk1::char_traits<char>, std::__ndk1::allocator<char> > const&), std::__ndk1::shared_ptr<lfs::login::GetHostentryBehavior>, std::__ndk1::placeholders::__ph<1> const&, std::__ndk1::placeholders::__ph<2> const&>::~__bind()",
+      "0000000004017d4c W lfs::ServiceHost::HostInfo* std::__ndk1::vector<lfs::ServiceHost::HostInfo, std::__ndk1::allocator<lfs::ServiceHost::HostInfo> >::__emplace_back_slow_path<std::__ndk1::basic_string<char, std::__ndk1::char_traits<char>, std::__ndk1::allocator<char> >, std::__ndk1::basic_string<char, std::__ndk1::char_traits<char>, std::__ndk1::allocator<char> > >(std::__ndk1::basic_string<char, std::__ndk1::char_traits<char>, std::__ndk1::allocator<char> >&&, std::__ndk1::basic_string<char, std::__ndk1::char_traits<char>, std::__ndk1::allocator<char> >&&)",
+      "0000000004011974 W std::__ndk1::__wrap_iter<lfs::HostEntry::ServerInfo*> std::__ndk1::vector<lfs::HostEntry::ServerInfo, std::__ndk1::allocator<lfs::HostEntry::ServerInfo> >::emplace<lfs::HostEntry::ServerInfo>(std::__ndk1::__wrap_iter<lfs::HostEntry::ServerInfo const*>, lfs::HostEntry::ServerInfo&&)",
+      "000000000401319c W void std::__ndk1::vector<lfs::HostEntry::GameServerInfo, std::__ndk1::allocator<lfs::HostEntry::GameServerInfo> >::__init_with_size[abi:ne180000]<lfs::HostEntry::GameServerInfo*, lfs::HostEntry::GameServerInfo*>(lfs::HostEntry::GameServerInfo*, lfs::HostEntry::GameServerInfo*, unsigned long)",
+      "00000000040148dc W void std::__ndk1::vector<lfs::HostEntry::GameServerInfo, std::__ndk1::allocator<lfs::HostEntry::GameServerInfo> >::__assign_with_size[abi:ne180000]<lfs::HostEntry::GameServerInfo*, lfs::HostEntry::GameServerInfo*>(lfs::HostEntry::GameServerInfo*, lfs::HostEntry::GameServerInfo*, long)",
+      "00000000040146d0 W lfs::HostEntry::GameServerInfo* std::__ndk1::vector<lfs::HostEntry::GameServerInfo, std::__ndk1::allocator<lfs::HostEntry::GameServerInfo> >::__push_back_slow_path<lfs::HostEntry::GameServerInfo const&>(lfs::HostEntry::GameServerInfo const&)",
+      "00000000040180f4 W std::__ndk1::pair<lfs::ServiceHost::HostInfo, bool>* std::__ndk1::vector<std::__ndk1::pair<lfs::ServiceHost::HostInfo, bool>, std::__ndk1::allocator<std::__ndk1::pair<lfs::ServiceHost::HostInfo, bool> > >::__emplace_back_slow_path<lfs::ServiceHost::HostInfo&, bool>(lfs::ServiceHost::HostInfo&, bool&&)",
+      "00000000056443b0 D typeinfo for lfs::ReleaseScene_GetHostEntry",
+      "0000000005586670 D typeinfo for lfs::login::GetHostentryBehavior",
+      "00000000056355e0 V typeinfo for lfs::CCCapsule<lfs::ServiceHost::HostInfo>",
+      "00000000055872b8 V typeinfo for std::__ndk1::__function::__func<std::__ndk1::__bind<void (lfs::login::GetHostentryBehavior::*)(int, std::__ndk1::basic_string<char, std::__ndk1::char_traits<char>, std::__ndk1::allocator<char> > const&), std::__ndk1::shared_ptr<lfs::login::GetHostentryBehavior>, std::__ndk1::placeholders::__ph<1> const&, std::__ndk1::placeholders::__ph<2> const&>, std::__ndk1::allocator<std::__ndk1::__bind<void (lfs::login::GetHostentryBehavior::*)(int, std::__ndk1::basic_string<char, std::__ndk1::char_traits<char>, std::__ndk1::allocator<char> > const&), std::__ndk1::shared_ptr<lfs::login::GetHostentryBehavior>, std::__ndk1::placeholders::__ph<1> const&, std::__ndk1::placehol",
+      "00000000055872d0 V typeinfo for std::__ndk1::__weak_result_type<void (lfs::login::GetHostentryBehavior::*)(int, std::__ndk1::basic_string<char, std::__ndk1::char_traits<char>, std::__ndk1::allocator<char> > const&)>",
+      "00000000055870f8 V typeinfo for std::__ndk1::__shared_ptr_emplace<lfs::login::GetHostentryBehavior, std::__ndk1::allocator<lfs::login::GetHostentryBehavior> >",
+      "00000000055864b8 V typeinfo for std::__ndk1::__shared_ptr_emplace<lfs::HostEntry::ServerInfo, std::__ndk1::allocator<lfs::HostEntry::ServerInfo> >",
+      "0000000005586660 V typeinfo for std::__ndk1::enable_shared_from_this<lfs::login::GetHostentryBehavior>",
+      "00000000055872e0 V typeinfo for std::__ndk1::__bind<void (lfs::login::GetHostentryBehavior::*)(int, std::__ndk1::basic_string<char, std::__ndk1::char_traits<char>, std::__ndk1::allocator<char> > const&), std::__ndk1::shared_ptr<lfs::login::GetHostentryBehavior>, std::__ndk1::placeholders::__ph<1> const&, std::__ndk1::placeholders::__ph<2> const&>",
+      "000000000240b8c9 R typeinfo name for lfs::ReleaseScene_GetHostEntry",
+      "0000000002380f24 R typeinfo name for lfs::login::GetHostentryBehavior",
+      "000000000240526f V typeinfo name for lfs::CCCapsule<lfs::ServiceHost::HostInfo>",
+      "00000000023828f6 V typeinfo name for std::__ndk1::__function::__func<std::__ndk1::__bind<void (lfs::login::GetHostentryBehavior::*)(int, std::__ndk1::basic_string<char, std::__ndk1::char_traits<char>, std::__ndk1::allocator<char> > const&), std::__ndk1::shared_ptr<lfs::login::GetHostentryBehavior>, std::__ndk1::placeholders::__ph<1> const&, std::__ndk1::placeholders::__ph<2> const&>, std::__ndk1::allocator<std::__ndk1::__bind<void (lfs::login::GetHostentryBehavior::*)(int, std::__ndk1::basic_string<char, std::__ndk1::char_traits<char>, std::__ndk1::allocator<char> > const&), std::__ndk1::shared_ptr<lfs::login::GetHostentryBehavior>, std::__ndk1::placeholders::__ph<1> const&, std::__ndk1::pla",
+      "0000000002382a96 V typeinfo name for std::__ndk1::__weak_result_type<void (lfs::login::GetHostentryBehavior::*)(int, std::__ndk1::basic_string<char, std::__ndk1::char_traits<char>, std::__ndk1::allocator<char> > const&)>",
+      "00000000023825f4 V typeinfo name for std::__ndk1::__shared_ptr_emplace<lfs::login::GetHostentryBehavior, std::__ndk1::allocator<lfs::login::GetHostentryBehavior> >",
+      "0000000002380d7c V typeinfo name for std::__ndk1::__shared_ptr_emplace<lfs::HostEntry::ServerInfo, std::__ndk1::allocator<lfs::HostEntry::ServerInfo> >",
+      "0000000002380f47 V typeinfo name for std::__ndk1::enable_shared_from_this<lfs::login::GetHostentryBehavior>",
+      "00000000023829db V typeinfo name for std::__ndk1::__bind<void (lfs::login::GetHostentryBehavior::*)(int, std::__ndk1::basic_string<char, std::__ndk1::char_traits<char>, std::__ndk1::allocator<char> > const&), std::__ndk1::shared_ptr<lfs::login::GetHostentryBehavior>, std::__ndk1::placeholders::__ph<1> const&, std::__ndk1::placeholders::__ph<2> const&>",
+      "0000000005643b20 D vtable for lfs::ReleaseScene_GetHostEntry",
+      "0000000005586628 D vtable for lfs::login::GetHostentryBehavior",
+      "00000000056355a8 V vtable for lfs::CCCapsule<lfs::ServiceHost::HostInfo>",
+      "0000000005587260 V vtable for std::__ndk1::__function::__func<std::__ndk1::__bind<void (lfs::login::GetHostentryBehavior::*)(int, std::__ndk1::basic_string<char, std::__ndk1::char_traits<char>, std::__ndk1::allocator<char> > const&), std::__ndk1::shared_ptr<lfs::login::GetHostentryBehavior>, std::__ndk1::placeholders::__ph<1> const&, std::__ndk1::placeholders::__ph<2> const&>, std::__ndk1::allocator<std::__ndk1::__bind<void (lfs::login::GetHostentryBehavior::*)(int, std::__ndk1::basic_string<char, std::__ndk1::char_traits<char>, std::__ndk1::allocator<char> > const&), std::__ndk1::shared_ptr<lfs::login::GetHostentryBehavior>, std::__ndk1::placeholders::__ph<1> const&, std::__ndk1::placeholde",
+      "00000000055870c0 V vtable for std::__ndk1::__shared_ptr_emplace<lfs::login::GetHostentryBehavior, std::__ndk1::allocator<lfs::login::GetHostentryBehavior> >",
+      "0000000005586480 V vtable for std::__ndk1::__shared_ptr_emplace<lfs::HostEntry::ServerInfo, std::__ndk1::allocator<lfs::HostEntry::ServerInfo> >",
+      "000000000456be84 T non-virtual thunk to lfs::ReleaseScene_GetHostEntry::~ReleaseScene_GetHostEntry()",
+      "000000000456be58 T non-virtual thunk to lfs::ReleaseScene_GetHostEntry::~ReleaseScene_GetHostEntry()"
+    ]
+  },
+  "provenance": "PUBLIC_CURRENT_JP_HOSTENTRY_NATIVE_METADATA",
+  "readelf": {
+    "available": true,
+    "exit_code": 0,
+    "rows": [
+      "  3493: 0000000004016bf8  1848 FUNC    GLOBAL DEFAULT   14 _ZN3lfs11ServiceHost5parseERKN6json114JsonE",
+      "  4755: 000000000401319c   348 FUNC    WEAK   DEFAULT   14 _ZNSt6__ndk16vectorIN3lfs9HostEntry14GameServerInfoENS_9allocatorIS3_EEE16__init_with_sizeB8ne180000IPS3_S8_EEvT_T0_m",
+      "  4867: 000000000400d970   156 FUNC    GLOBAL DEFAULT   14 _ZN3lfs9HostEntry18getCurrentHostNameEv",
+      "  5156: 0000000004017330   136 FUNC    GLOBAL DEFAULT   14 _ZN3lfs11ServiceHost9terminateEv",
+      "  6115: 0000000004d21724     8 FUNC    GLOBAL DEFAULT   14 _ZN7cocos2d11Application17getTargetPlatformEv",
+      "  6243: 00000000040179fc   340 FUNC    GLOBAL DEFAULT   14 _ZN3lfs11ServiceHost17getCurrentHostUrlEv",
+      "  6848: 000000000400c3b4   428 FUNC    GLOBAL DEFAULT   14 _ZN3lfs9HostEntry11setupCusapiERKN6json114JsonE",
+      "  7203: 000000000400b4a8  1184 FUNC    GLOBAL DEFAULT   14 _ZN3lfs9HostEntry18getGameServerInfosERKNSt6__ndk112basic_stringIcNS1_11char_traitsIcEENS1_9allocatorIcEEEE",
+      "  9451: 0000000004537964   192 FUNC    WEAK   DEFAULT   14 _ZN3lfs9CCCapsuleINS_11ServiceHost8HostInfoEEC2ERKS2_",
+      "  9719: 000000000400a77c   320 FUNC    GLOBAL DEFAULT   14 _ZN3lfs9HostEntry19getURL_EventSrcDataEv",
+      " 10191: 0000000004009c78   312 FUNC    GLOBAL DEFAULT   14 _ZN3lfs9HostEntry21getURL_InAppPurchase2Ev",
+      " 11682: 000000000400977c   320 FUNC    GLOBAL DEFAULT   14 _ZN3lfs9HostEntry19getURL_ServiceStateEv",
+      " 14421: 000000000400e7a0   252 FUNC    WEAK   DEFAULT   14 _ZN3lfs9HostEntry11VersionInfoC2ERKS1_",
+      " 14683: 000000000400ae50   428 FUNC    GLOBAL DEFAULT   14 _ZNK3lfs9HostEntry18getCurrentHostInfoEv",
+      " 15391: 00000000040146d0   524 FUNC    WEAK   DEFAULT   14 _ZNSt6__ndk16vectorIN3lfs9HostEntry14GameServerInfoENS_9allocatorIS3_EEE21__push_back_slow_pathIRKS3_EEPS3_OT_",
+      " 16478: 0000000005587260    88 OBJECT  WEAK   DEFAULT   16 _ZTVNSt6__ndk110__function6__funcINS_6__bindIMN3lfs5login20GetHostentryBehaviorEFviRKNS_12basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEEEEJNS_10shared_ptrIS5_EERKNS_12placeholders4__phILi1EEERKNSJ_ILi2EEEEEENS9_ISQ_EEFviSD_EEE",
+      " 18059: 00000000057c8d98    24 OBJECT  GLOBAL DEFAULT   24 _ZN3lfs11ServiceHost7s_hostsE",
+      " 19904: 000000000400eb80 10080 FUNC    GLOBAL DEFAULT   14 _ZN3lfs9HostEntry13parseHostInfoERKNSt6__ndk112basic_stringIcNS1_11char_traitsIcEENS1_9allocatorIcEEEERKN6json114JsonEPKNS0_10ServerInfoERKNS1_6vectorINS_8replacer7PatternENS5_ISJ_EEEE",
+      " 26097: 0000000005586480    56 OBJECT  WEAK   DEFAULT   16 _ZTVNSt6__ndk120__shared_ptr_emplaceIN3lfs9HostEntry10ServerInfoENS_9allocatorIS3_EEEE",
+      " 26828: 000000000400adac   164 FUNC    GLOBAL DEFAULT   14 _ZN3lfs9HostEntry12getURL_PatchEv",
+      " 27852: 0000000004009eec   320 FUNC    GLOBAL DEFAULT   14 _ZN3lfs9HostEntry14getURL_AccountEv",
+      " 29021: 000000000400c560   680 FUNC    GLOBAL DEFAULT   14 _ZN3lfs9HostEntry22setupVersionInfomationERKN6json114JsonE",
+      " 30788: 0000000005586670    56 OBJECT  GLOBAL DEFAULT   16 _ZTIN3lfs5login20GetHostentryBehaviorE",
+      " 31078: 0000000004009160   320 FUNC    GLOBAL DEFAULT   14 _ZN3lfs9HostEntry14getURL_RankingEv",
+      " 31749: 0000000004009510   316 FUNC    GLOBAL DEFAULT   14 _ZN3lfs9HostEntry16getURL_MercenaryEv",
+      " 32834: 000000000453791c    72 FUNC    WEAK   DEFAULT   14 _ZN3lfs9CCCapsuleINS_11ServiceHost8HostInfoEED0Ev",
+      " 32971: 00000000055870f8    24 OBJECT  WEAK   DEFAULT   16 _ZTINSt6__ndk120__shared_ptr_emplaceIN3lfs5login20GetHostentryBehaviorENS_9allocatorIS3_EEEE",
+      " 34163: 000000000400a9f8   324 FUNC    GLOBAL DEFAULT   14 _ZN3lfs9HostEntry18getURL_BattleBoostEv",
+      " 34423: 00000000023825f4    89 OBJECT  WEAK   DEFAULT   10 _ZTSNSt6__ndk120__shared_ptr_emplaceIN3lfs5login20GetHostentryBehaviorENS_9allocatorIS3_EEEE",
+      " 35392: 0000000002380f24    35 OBJECT  GLOBAL DEFAULT   10 _ZTSN3lfs5login20GetHostentryBehaviorE",
+      " 35510: 00000000040099fc   316 FUNC    GLOBAL DEFAULT   14 _ZN3lfs9HostEntry16getURL_CharacterEv",
+      " 35639: 0000000004007594  5684 FUNC    GLOBAL DEFAULT   14 _ZNK3lfs9HostEntry10ServerInfo8toStringEv",
+      " 35983: 0000000004536f30    68 FUNC    WEAK   DEFAULT   14 _ZNSt6__ndk14pairIN3lfs11ServiceHost8HostInfoEbED2Ev",
+      " 36151: 0000000004009b38   320 FUNC    GLOBAL DEFAULT   14 _ZN3lfs9HostEntry20getURL_InAppPurchaseEv",
+      " 36429: 000000000452847c    48 FUNC    GLOBAL DEFAULT   14 _ZN3lfs7patcher27FuturePatchUpdateController16refreshHostEntryEv",
+      " 37079: 000000000456be60    36 FUNC    GLOBAL DEFAULT   14 _ZN3lfs25ReleaseScene_GetHostEntryD0Ev",
+      " 38151: 00000000023828f6   229 OBJECT  WEAK   DEFAULT   10 _ZTSNSt6__ndk110__function6__funcINS_6__bindIMN3lfs5login20GetHostentryBehaviorEFviRKNS_12basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEEEEJNS_10shared_ptrIS5_EERKNS_12placeholders4__phILi1EEERKNSJ_ILi2EEEEEENS9_ISQ_EEFviSD_EEE",
+      " 38938: 000000000456be84    40 FUNC    GLOBAL DEFAULT   14 _ZThn936_N3lfs25ReleaseScene_GetHostEntryD0Ev",
+      " 40184: 000000000400dffc   420 FUNC    GLOBAL DEFAULT   14 _ZN3lfs9HostEntry20editRCBWorldHostInfoEv",
+      " 40315: 00000000040092a0   308 FUNC    GLOBAL DEFAULT   14 _ZN3lfs9HostEntry11getURL_ChatEv",
+      " 41477: 000000000456be54     4 FUNC    GLOBAL DEFAULT   14 _ZN3lfs25ReleaseScene_GetHostEntryD1Ev",
+      " 41609: 00000000045378dc    64 FUNC    WEAK   DEFAULT   14 _ZN3lfs9CCCapsuleINS_11ServiceHost8HostInfoEED2Ev",
+      " 43354: 000000000456be58     8 FUNC    GLOBAL DEFAULT   14 _ZThn936_N3lfs25ReleaseScene_GetHostEntryD1Ev",
+      " 44725: 0000000004018da0   596 FUNC    WEAK   DEFAULT   14 _ZN3lfs5login8Executor14changeBehaviorINS0_20GetHostentryBehaviorEEEbv",
+      " 45796: 000000000456be54     4 FUNC    GLOBAL DEFAULT   14 _ZN3lfs25ReleaseScene_GetHostEntryD2Ev",
+      " 46284: 00000000055870c0    56 OBJECT  WEAK   DEFAULT   16 _ZTVNSt6__ndk120__shared_ptr_emplaceIN3lfs5login20GetHostentryBehaviorENS_9allocatorIS3_EEEE",
+      " 49324: 000000000400ac78   308 FUNC    GLOBAL DEFAULT   14 _ZN3lfs9HostEntry11getURL_RaidEv",
+      " 49333: 00000000057c8db0    24 OBJECT  GLOBAL DEFAULT   24 _ZN3lfs11ServiceHost17s_currentHostNameE",
+      " 49495: 00000000040098bc   320 FUNC    GLOBAL DEFAULT   14 _ZN3lfs9HostEntry21getURL_AuthenticationEv",
+      " 49616: 00000000056443b0    24 OBJECT  GLOBAL DEFAULT   16 _ZTIN3lfs25ReleaseScene_GetHostEntryE",
+      " 49638: 0000000004009db0   316 FUNC    GLOBAL DEFAULT   14 _ZN3lfs9HostEntry14getURL_RevCodeEv",
+      " 49699: 0000000004019b8c   280 FUNC    WEAK   DEFAULT   14 _ZN3lfs15CCCallbackProxyIFviRKNSt6__ndk112basic_stringIcNS1_11char_traitsIcEENS1_9allocatorIcEEEEEE6createINS1_6__bindIMNS_5login20GetHostentryBehaviorEFviS9_EJNS1_10shared_ptrISF_EERKNS1_12placeholders4__phILi1EEERKNSL_ILi2EEEEEEEEPSB_T_",
+      " 49791: 000000000456bf04    76 FUNC    GLOBAL DEFAULT   14 _ZN3lfs25ReleaseScene_GetHostEntry19callHostentryWebApiEv",
+      " 50825: 000000000400e6a0   256 FUNC    GLOBAL DEFAULT   14 _ZN3lfs9HostEntry20getVersionInfomationEv",
+      " 51925: 0000000002380d7c    83 OBJECT  WEAK   DEFAULT   10 _ZTSNSt6__ndk120__shared_ptr_emplaceIN3lfs9HostEntry10ServerInfoENS_9allocatorIS3_EEEE",
+      " 52190: 0000000004528454    40 FUNC    GLOBAL DEFAULT   14 _ZN3lfs7patcher27FuturePatchUpdateController24updateHostentryFetchTimeEv",
+      " 53447: 0000000004011974  1404 FUNC    WEAK   DEFAULT   14 _ZNSt6__ndk16vectorIN3lfs9HostEntry10ServerInfoENS_9allocatorIS3_EEE7emplaceIJS3_EEENS_11__wrap_iterIPS3_EENS8_IPKS3_EEDpOT_",
+      " 53451: 000000000400e978   224 FUNC    GLOBAL DEFAULT   14 _ZN3lfs9HostEntry15isCusapiWarningEv",
+      " 56394: 000000000400dcac   376 FUNC    GLOBAL DEFAULT   14 _ZN3lfs9HostEntry20isTargetHostRcbWorldERKNSt6__ndk112basic_stringIcNS1_11char_traitsIcEENS1_9allocatorIcEEEE",
+      " 57705: 000000000456be18    60 FUNC    GLOBAL DEFAULT   14 _ZN3lfs25ReleaseScene_GetHostEntryC1Ev",
+      " 57766: 0000000004016ad0   236 FUNC    GLOBAL DEFAULT   14 _ZN3lfs11ServiceHost10initializeERKNSt6__ndk112basic_stringIcNS1_11char_traitsIcEENS1_9allocatorIcEEEE",
+      " 59939: 000000000401252c   160 FUNC    GLOBAL DEFAULT   14 _ZN3lfs9HostEntry18setupCusapiWarningERKN6json114JsonE",
+      " 60043: 000000000400e540   352 FUNC    GLOBAL DEFAULT   14 _ZN3lfs9HostEntry17isTargetHostExistERKNSt6__ndk112basic_stringIcNS1_11char_traitsIcEENS1_9allocatorIcEEEE",
+      " 61904: 000000000456be18    60 FUNC    GLOBAL DEFAULT   14 _ZN3lfs25ReleaseScene_GetHostEntryC2Ev",
+      " 63318: 000000000400b144   196 FUNC    GLOBAL DEFAULT   14 _ZN3lfs9HostEntry23isAuthenticationEnabledEv",
+      " 64089: 0000000004019ca4  1264 FUNC    GLOBAL DEFAULT   14 _ZN3lfs5login20GetHostentryBehavior18onReceiveHostentryEiRKNSt6__ndk112basic_stringIcNS2_11char_traitsIcEENS2_9allocatorIcEEEE",
+      " 64528: 00000000057d12b0    24 OBJECT  GLOBAL DEFAULT   24 _ZN3lfs17CommandLineOption18DebugResourcePatchE",
+      " 64926: 0000000004025b74    52 FUNC    WEAK   DEFAULT   14 _ZNSt6__ndk120__shared_ptr_emplaceIN3lfs5login20GetHostentryBehaviorENS_9allocatorIS3_EEED0Ev",
+      " 66241: 000000000401a234   408 FUNC    GLOBAL DEFAULT   14 _ZN3lfs5login20GetHostentryBehavior6onExitERKNSt6__ndk110shared_ptrINS0_7ContextEEE",
+      " 66250: 00000000040093d4   316 FUNC    GLOBAL DEFAULT   14 _ZN3lfs9HostEntry16getURL_CommunityEv",
+      " 68593: 000000000400dc44   104 FUNC    GLOBAL DEFAULT   14 _ZN3lfs9HostEntry20isTargetHostRcbWorldEi",
+      " 68980: 00000000040125cc   680 FUNC    WEAK   DEFAULT   14 _ZN3lfs9HostEntry10ServerInfoC2EOS1_",
+      " 69203: 000000000400d8d4   156 FUNC    GLOBAL DEFAULT   14 _ZN3lfs9HostEntry11getAllHostsEv",
+      " 69207: 00000000045284ac   436 FUNC    GLOBAL DEFAULT   14 _ZN3lfs7patcher27FuturePatchUpdateController17callbackHostentryEiRKNSt6__ndk112basic_stringIcNS2_11char_traitsIcEENS2_9allocatorIcEEEE",
+      " 73464: 0000000004025b60    20 FUNC    WEAK   DEFAULT   14 _ZNSt6__ndk120__shared_ptr_emplaceIN3lfs5login20GetHostentryBehaviorENS_9allocatorIS3_EEED2Ev",
+      " 74692: 000000000400b0a0   164 FUNC    GLOBAL DEFAULT   14 _ZN3lfs9HostEntry14getWebViewURLsEv",
+      " 76006: 00000000040180f4   692 FUNC    WEAK   DEFAULT   14 _ZNSt6__ndk16vectorINS_4pairIN3lfs11ServiceHost8HostInfoEbEENS_9allocatorIS5_EEE24__emplace_back_slow_pathIJRS4_bEEEPS5_DpOT_",
+      " 76236: 000000000401aac0     4 FUNC    GLOBAL DEFAULT   14 _ZN3lfs5login20GetHostentryBehavior9terminateEv",
+      " 76720: 000000000400a298   316 FUNC    GLOBAL DEFAULT   14 _ZN3lfs9HostEntry23getURL_PushNotificationEv",
+      " 76737: 000000000400ab3c   316 FUNC    GLOBAL DEFAULT   14 _ZN3lfs9HostEntry13getURL_EmblemEv",
+      " 77063: 000000000400affc   164 FUNC    GLOBAL DEFAULT   14 _ZN3lfs9HostEntry25getURL_DebugResourcePatchEv",
+      " 77572: 0000000005643b20  2192 OBJECT  GLOBAL DEFAULT   16 _ZTVN3lfs25ReleaseScene_GetHostEntryE",
+      " 78134: 00000000040199f4   408 FUNC    GLOBAL DEFAULT   14 _ZN3lfs5login20GetHostentryBehavior7onEnterERKNSt6__ndk110shared_ptrINS0_7ContextEEE",
+      " 78148: 00000000040263fc    96 FUNC    WEAK   DEFAULT   14 _ZNSt6__ndk110__function6__funcINS_6__bindIMN3lfs5login20GetHostentryBehaviorEFviRKNS_12basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEEEEJNS_10shared_ptrIS5_EERKNS_12placeholders4__phILi1EEERKNSJ_ILi2EEEEEENS9_ISQ_EEFviSD_EED0Ev",
+      " 78525: 0000000004017d4c   648 FUNC    WEAK   DEFAULT   14 _ZNSt6__ndk16vectorIN3lfs11ServiceHost8HostInfoENS_9allocatorIS3_EEE24__emplace_back_slow_pathIJNS_12basic_stringIcNS_11char_traitsIcEENS4_IcEEEESC_EEEPS3_DpOT_",
+      " 78730: 00000000057c8a48    24 OBJECT  GLOBAL DEFAULT   24 _ZN3lfs9HostEntry16kDefaultHostNameE",
+      " 79300: 0000000004012950   740 FUNC    WEAK   DEFAULT   14 _ZN3lfs9HostEntry10ServerInfoC2ERKS1_",
+      " 79435: 000000000456bf50    60 FUNC    GLOBAL DEFAULT   14 _ZN3lfs25ReleaseScene_GetHostEntry15onKeypadClickedEPNS_21KeypadEventDispatcher9EventInfoE",
+      " 80260: 000000000400e1a0   148 FUNC    GLOBAL DEFAULT   14 _ZN3lfs9HostEntry10switchHostEi",
+      " 81394: 0000000004017b50   508 FUNC    GLOBAL DEFAULT   14 _ZN3lfs11ServiceHost19callHostentryWebApiERKNSt6__ndk112basic_stringIcNS1_11char_traitsIcEENS1_9allocatorIcEEEEPN7cocos2d3RefEMSB_FviS9_E",
+      " 81672: 0000000004021c8c   120 FUNC    WEAK   DEFAULT   14 _ZN3lfs5login20GetHostentryBehaviorD0Ev",
+      " 81733: 000000000400da0c   568 FUNC    GLOBAL DEFAULT   14 _ZN3lfs9HostEntry23equalCurrentWorldNumberEi",
+      " 81743: 0000000005586660    16 OBJECT  WEAK   DEFAULT   16 _ZTINSt6__ndk123enable_shared_from_thisIN3lfs5login20GetHostentryBehaviorEEE",
+      " 82995: 00000000056355a8    32 OBJECT  WEAK   DEFAULT   16 _ZTVN3lfs9CCCapsuleINS_11ServiceHost8HostInfoEEE",
+      " 84529: 00000000040174ac   440 FUNC    GLOBAL DEFAULT   14 _ZN3lfs11ServiceHost7getHostERKNSt6__ndk112basic_stringIcNS1_11char_traitsIcEENS1_9allocatorIcEEEE",
+      " 84921: 0000000004012d60  1084 FUNC    WEAK   DEFAULT   14 _ZN3lfs9HostEntry11WebViewURLsC2ERKS1_",
+      " 85719: 00000000056355e0    24 OBJECT  WEAK   DEFAULT   16 _ZTIN3lfs9CCCapsuleINS_11ServiceHost8HostInfoEEE",
+      " 86989: 000000000402639c    96 FUNC    WEAK   DEFAULT   14 _ZNSt6__ndk110__function6__funcINS_6__bindIMN3lfs5login20GetHostentryBehaviorEFviRKNS_12basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEEEEJNS_10shared_ptrIS5_EERKNS_12placeholders4__phILi1EEERKNSJ_ILi2EEEEEENS9_ISQ_EEFviSD_EED2Ev",
+      " 87384: 0000000005586628    56 OBJECT  GLOBAL DEFAULT   16 _ZTVN3lfs5login20GetHostentryBehaviorE",
+      " 90144: 0000000003cdfa18   100 FUNC    WEAK   DEFAULT   14 _ZN3lfs9HostEntry11VersionInfoD2Ev",
+      " 90523: 000000000400ba44  1524 FUNC    GLOBAL DEFAULT   14 _ZN3lfs9HostEntry21loadHostEntryFromJsonERKN6json114JsonERKNSt6__ndk112basic_stringIcNS5_11char_traitsIcEENS5_9allocatorIcEEEE",
+      " 90567: 0000000004021c10   124 FUNC    WEAK   DEFAULT   14 _ZN3lfs5login20GetHostentryBehaviorD2Ev",
+      " 90659: 00000000040139d8    52 FUNC    WEAK   DEFAULT   14 _ZNSt6__ndk120__shared_ptr_emplaceIN3lfs9HostEntry10ServerInfoENS_9allocatorIS3_EEED0Ev",
+      " 92596: 0000000004008ef4   312 FUNC    GLOBAL DEFAULT   14 _ZN3lfs9HostEntry12getURL_PartyEv",
+      " 94970: 00000000055872e0    24 OBJECT  WEAK   DEFAULT   16 _ZTINSt6__ndk16__bindIMN3lfs5login20GetHostentryBehaviorEFviRKNS_12basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEEEEJNS_10shared_ptrIS3_EERKNS_12placeholders4__phILi1EEERKNSH_ILi2EEEEEE",
+      " 96433: 0000000004017664   436 FUNC    GLOBAL DEFAULT   14 _ZN3lfs11ServiceHost8getHostsEv",
+      " 97081: 0000000002382a96   133 OBJECT  WEAK   DEFAULT   10 _ZTSNSt6__ndk118__weak_result_typeIMN3lfs5login20GetHostentryBehaviorEFviRKNS_12basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEEEEEE",
+      " 97786: 000000000400c808  2612 FUNC    GLOBAL DEFAULT   14 _ZN3lfs9HostEntry14setupHostsInfoERKN6json114JsonE",
+      " 97921: 0000000004016bbc    60 FUNC    GLOBAL DEFAULT   14 _ZN3lfs11ServiceHost10initializeERKNS_14Json11ResourceE",
+      " 99361: 00000000040139c4    20 FUNC    WEAK   DEFAULT   14 _ZNSt6__ndk120__shared_ptr_emplaceIN3lfs9HostEntry10ServerInfoENS_9allocatorIS3_EEED2Ev",
+      " 99943: 000000000400a02c   304 FUNC    GLOBAL DEFAULT   14 _ZN3lfs9HostEntry9getURL_AdEv",
+      "100018: 00000000055864b8    24 OBJECT  WEAK   DEFAULT   16 _ZTINSt6__ndk120__shared_ptr_emplaceIN3lfs9HostEntry10ServerInfoENS_9allocatorIS3_EEEE",
+      "100891: 000000000400a3d4   316 FUNC    GLOBAL DEFAULT   14 _ZN3lfs9HostEntry15getURL_CampaignEv",
+      "101638: 0000000004008e04   240 FUNC    GLOBAL DEFAULT   14 _ZNK3lfs9HostEntry15getApiServerURLERKNSt6__ndk112basic_stringIcNS1_11char_traitsIcEENS1_9allocatorIcEEEE",
+      "106647: 000000000401a194    80 FUNC    WEAK   DEFAULT   14 _ZNSt6__ndk16__bindIMN3lfs5login20GetHostentryBehaviorEFviRKNS_12basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEEEEJNS_10shared_ptrIS3_EERKNS_12placeholders4__phILi1EEERKNSH_ILi2EEEEED2Ev",
+      "107157: 00000000023829db   187 OBJECT  WEAK   DEFAULT   10 _ZTSNSt6__ndk16__bindIMN3lfs5login20GetHostentryBehaviorEFviRKNS_12basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEEEEJNS_10shared_ptrIS3_EERKNS_12placeholders4__phILi1EEERKNSH_ILi2EEEEEE",
+      "108228: 00000000040112e0  1284 FUNC    GLOBAL DEFAULT   14 _ZN3lfs9HostEntry22parseEnvironmentValuesERKNSt6__ndk112basic_stringIcNS1_11char_traitsIcEENS1_9allocatorIcEEEERKN6json114JsonERKNS1_6vectorINS_8replacer7PatternENS5_ISG_EEEE",
+      "109286: 000000000400d23c  1288 FUNC    GLOBAL DEFAULT   14 _ZN3lfs9HostEntry16setupWorldLayoutERKN6json114JsonE",
+      "109782: 000000000459a4ec     8 FUNC    GLOBAL DEFAULT   14 _ZNK3lfs14GemShopProduct18getPlatformProductEv",
+      "111735: 000000000400e89c   220 FUNC    GLOBAL DEFAULT   14 _ZN3lfs9HostEntry14getCusapiStateEv",
+      "114303: 000000000400b45c    76 FUNC    GLOBAL DEFAULT   14 _ZNK3lfs9HostEntry8isLoadedEv",
+      "116040: 000000000400e234   780 FUNC    GLOBAL DEFAULT   14 _ZN3lfs9HostEntry10switchHostERKNSt6__ndk112basic_stringIcNS1_11char_traitsIcEENS1_9allocatorIcEEEE",
+      "117454: 000000000456bdd0    72 FUNC    GLOBAL DEFAULT   14 _ZN3lfs25ReleaseScene_GetHostEntry6createEv",
+      "119377: 000000000379f21c   340 FUNC    WEAK   DEFAULT   14 _ZN3lfs9HostEntry11WebViewURLsD2Ev",
+      "119789: 0000000004008c2c   316 FUNC    GLOBAL DEFAULT   14 _ZN3lfs9HostEntry13getURL_FriendEv",
+      "120939: 000000000456beac    88 FUNC    GLOBAL DEFAULT   14 _ZN3lfs25ReleaseScene_GetHostEntry15onInitializeEndERNSt6__ndk110shared_ptrINS_5SceneEEE",
+      "121976: 000000000400a510   308 FUNC    GLOBAL DEFAULT   14 _ZN3lfs9HostEntry11getURL_ClanEv",
+      "124845: 000000000401430c   560 FUNC    WEAK   DEFAULT   14 _ZN3lfs9HostEntry11WebViewURLsaSEOS1_",
+      "125550: 000000000400a8bc   316 FUNC    GLOBAL DEFAULT   14 _ZN3lfs9HostEntry15getURL_AvacolleEv",
+      "125561: 0000000004013ee8   508 FUNC    WEAK   DEFAULT   14 _ZN3lfs9HostEntry10ServerInfoaSEOS1_",
+      "128727: 000000000400d744   400 FUNC    GLOBAL DEFAULT   14 _ZN3lfs9HostEntry18switchHostInternalERKNSt6__ndk112basic_stringIcNS1_11char_traitsIcEENS1_9allocatorIcEEEE",
+      "130543: 000000000400de24   472 FUNC    GLOBAL DEFAULT   14 _ZN3lfs9HostEntry26getHostNameFromWorldNumberEi",
+      "131257: 00000000040148dc   804 FUNC    WEAK   DEFAULT   14 _ZNSt6__ndk16vectorIN3lfs9HostEntry14GameServerInfoENS_9allocatorIS3_EEE18__assign_with_sizeB8ne180000IPS3_S8_EEvT_T0_l",
+      "132374: 00000000040173b8   244 FUNC    GLOBAL DEFAULT   14 _ZN3lfs11ServiceHost10switchHostERKNSt6__ndk112basic_stringIcNS1_11char_traitsIcEENS1_9allocatorIcEEEE",
+      "132530: 000000000400ea58   296 FUNC    WEAK   DEFAULT   14 _ZN3lfs9HostEntryD2Ev",
+      "134151: 000000000400b2ac   308 FUNC    GLOBAL DEFAULT   14 _ZN3lfs9HostEntry14getGameServersEv",
+      "134311: 0000000002380f47    73 OBJECT  WEAK   DEFAULT   10 _ZTSNSt6__ndk123enable_shared_from_thisIN3lfs5login20GetHostentryBehaviorEEE",
+      "136066: 0000000004e3f8b0    92 FUNC    GLOBAL DEFAULT   14 _Z54lua_cocos2dx_extension_AssetsManager_getVersionFileUrlP9lua_State",
+      "136676: 0000000004e21c8c   100 FUNC    GLOBAL DEFAULT   14 _Z42lua_cocos2dx_Application_getTargetPlatformP9lua_State",
+      "136694: 0000000004008d68   156 FUNC    GLOBAL DEFAULT   14 _ZN3lfs9HostEntry11getInstanceEv",
+      "138958: 0000000004db5a60    24 FUNC    GLOBAL DEFAULT   14 _ZNK7cocos2d9extension13AssetsManager17getVersionFileUrlEv",
+      "139126: 000000000400a644   312 FUNC    GLOBAL DEFAULT   14 _ZN3lfs9HostEntry12getURL_EventEv",
+      "141474: 000000000400c188   248 FUNC    WEAK   DEFAULT   14 _ZN3lfs9HostEntry5clearEv",
+      "141627: 00000000055872b8    24 OBJECT  WEAK   DEFAULT   16 _ZTINSt6__ndk110__function6__funcINS_6__bindIMN3lfs5login20GetHostentryBehaviorEFviRKNS_12basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEEEEJNS_10shared_ptrIS5_EERKNS_12placeholders4__phILi1EEERKNSJ_ILi2EEEEEENS9_ISQ_EEFviSD_EEE",
+      "142358: 000000000400c038   336 FUNC    GLOBAL DEFAULT   14 _ZN3lfs9HostEntry21loadHostEntryFromTextERKNSt6__ndk112basic_stringIcNS1_11char_traitsIcEENS1_9allocatorIcEEEES9_",
+      "142507: 000000000400b208   164 FUNC    GLOBAL DEFAULT   14 _ZN3lfs9HostEntry30isDebugResourcePatchUserForcedEv",
+      "143178: 0000000004db5a80   204 FUNC    GLOBAL DEFAULT   14 _ZN7cocos2d9extension13AssetsManager10getVersionEv",
+      "143373: 000000000240b8c9    34 OBJECT  GLOBAL DEFAULT   10 _ZTSN3lfs25ReleaseScene_GetHostEntryE",
+      "144032: 0000000004e3f7d0   224 FUNC    GLOBAL DEFAULT   14 _Z47lua_cocos2dx_extension_AssetsManager_getVersionP9lua_State",
+      "145019: 000000000379f0ac   368 FUNC    WEAK   DEFAULT   14 _ZN3lfs9HostEntry10ServerInfoD2Ev",
+      "145443: 000000000400b948   252 FUNC    GLOBAL DEFAULT   14 _ZN3lfs9HostEntry13loadHostEntryERKNSt6__ndk112basic_stringIcNS1_11char_traitsIcEENS1_9allocatorIcEEEES9_",
+      "145873: 00000000046dc334    48 FUNC    GLOBAL DEFAULT   14 _ZN3lfs14client_version21getVersionCheckResultERKNS_9HostEntry11VersionInfoE",
+      "148886: 000000000400c280   308 FUNC    GLOBAL DEFAULT   14 _ZN3lfs9HostEntry24setupProviderEnvironmentERKN6json114JsonE",
+      "149052: 000000000240526f    45 OBJECT  WEAK   DEFAULT   10 _ZTSN3lfs9CCCapsuleINS_11ServiceHost8HostInfoEEE",
+      "149241: 00000000055872d0    16 OBJECT  WEAK   DEFAULT   16 _ZTINSt6__ndk118__weak_result_typeIMN3lfs5login20GetHostentryBehaviorEFviRKNS_12basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEEEEEE",
+      "149557: 0000000004012438   244 FUNC    GLOBAL DEFAULT   14 _ZN3lfs9HostEntry16setupCusapiStateERKN6json114JsonE",
+      "151131: 000000000400964c   304 FUNC    GLOBAL DEFAULT   14 _ZN3lfs9HostEntry10getURL_JobEv",
+      "151799: 000000000400902c   308 FUNC    GLOBAL DEFAULT   14 _ZN3lfs9HostEntry11getURL_ItemEv",
+      "152658: 000000000456bf8c  1648 FUNC    GLOBAL DEFAULT   14 _ZN3lfs25ReleaseScene_GetHostEntry17callbackHostentryEiRKNSt6__ndk112basic_stringIcNS1_11char_traitsIcEENS1_9allocatorIcEEEE",
+      "154556: 000000000400a15c   316 FUNC    GLOBAL DEFAULT   14 _ZN3lfs9HostEntry27getURL_UseMockLocationCheckEv",
+      "155665: 00000000040140e4   468 FUNC    WEAK   DEFAULT   14 _ZNSt6__ndk114__split_bufferIN3lfs9HostEntry10ServerInfoERNS_9allocatorIS3_EEE12emplace_backIJS3_EEEvDpOT_"
+    ]
+  },
+  "string_hits": [
+    {
+      "encoding": "ascii",
+      "offset": 5238023,
+      "string": "_ZN6google8protobuf8internal13VerifyVersionEiiPKc",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 5248076,
+      "string": "_ZN9motionTbl4data4Root19kVersionFieldNumberE",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 5255178,
+      "string": "_ZN4lfla5table5Table19kVersionFieldNumberE",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 5290390,
+      "string": "_ZN16battleProduction4data4Root19kVersionFieldNumberE",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 5797565,
+      "string": "_ZN3lfs9HostEntry20getVersionInfomationEv",
+      "terms": [
+        "hostentry",
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 5798007,
+      "string": "_ZN7cocos2d11Application17getTargetPlatformEv",
+      "terms": [
+        "platform"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 10348233,
+      "string": "_ZN3lfs9HostEntry26getHostNameFromWorldNumberEi",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 10348281,
+      "string": "_ZN3lfs9HostEntry18getGameServerInfosERKNSt6__ndk112basic_stringIcNS1_11char_traitsIcEENS1_9allocatorIcEEEE",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 10348389,
+      "string": "_ZN3lfs9HostEntry10ServerInfoD2Ev",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 10348723,
+      "string": "_ZN3lfs9HostEntry11WebViewURLsD2Ev",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 10391290,
+      "string": "_ZN3lfs23CharacterDetailMainPage16EventHandlerImpl31onUpdateInformationEventVersionEPN7cocos2d3RefE",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 10393373,
+      "string": "_ZN3lfs23CharacterDetailMainPage31onUpdateInformationEventVersionEPN7cocos2d3RefE",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 10417452,
+      "string": "_ZN3lfs9HostEntry18getCurrentHostNameEv",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 10779587,
+      "string": "_ZN3lfs9HostEntry14getWebViewURLsEv",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 12933327,
+      "string": "_ZN3lfs11application20GetServiceVersionIntEv",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 12933372,
+      "string": "_ZN3lfs9HostEntry11VersionInfoD2Ev",
+      "terms": [
+        "hostentry",
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 12933956,
+      "string": "_ZN3lfs9HostEntry10switchHostERKNSt6__ndk112basic_stringIcNS1_11char_traitsIcEENS1_9allocatorIcEEEE",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 13371979,
+      "string": "_ZNK3lfs20InformationEventInfo31getSavedInformationEventVersionEv",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 13372085,
+      "string": "_ZNK3lfs20InformationEventInfo22getSavedTopNewsVersionEv",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14330583,
+      "string": "_ZN3lfs9HostEntry23equalCurrentWorldNumberEi",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14330628,
+      "string": "_ZN3lfs9HostEntry10switchHostEi",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14331520,
+      "string": "_ZN3lfs9HostEntry14getGameServersEv",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14332494,
+      "string": "_ZN3lfs17systeminformation12GetOSVersionEv",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14350849,
+      "string": "_ZNK3lfs9HostEntry10ServerInfo8toStringEv",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14350978,
+      "string": "_ZN3lfs9HostEntry13getURL_FriendEv",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14351013,
+      "string": "_ZNK3lfs9HostEntry15getApiServerURLERKNSt6__ndk112basic_stringIcNS1_11char_traitsIcEENS1_9allocatorIcEEEE",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14351119,
+      "string": "_ZN3lfs9HostEntryD2Ev",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14351141,
+      "string": "_ZN3lfs9HostEntry11getInstanceEv",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14351174,
+      "string": "_ZNK3lfs9HostEntry18getCurrentHostInfoEv",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14351215,
+      "string": "_ZN3lfs9HostEntry12getURL_PartyEv",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14351249,
+      "string": "_ZN3lfs9HostEntry11getURL_ItemEv",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14351282,
+      "string": "_ZN3lfs9HostEntry14getURL_RankingEv",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14351318,
+      "string": "_ZN3lfs9HostEntry11getURL_ChatEv",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14351351,
+      "string": "_ZN3lfs9HostEntry16getURL_CommunityEv",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14351389,
+      "string": "_ZN3lfs9HostEntry16getURL_MercenaryEv",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14351427,
+      "string": "_ZN3lfs9HostEntry10getURL_JobEv",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14351459,
+      "string": "_ZN3lfs9HostEntry19getURL_ServiceStateEv",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14351500,
+      "string": "_ZN3lfs9HostEntry21getURL_AuthenticationEv",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14351543,
+      "string": "_ZN3lfs9HostEntry16getURL_CharacterEv",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14351581,
+      "string": "_ZN3lfs9HostEntry20getURL_InAppPurchaseEv",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14351623,
+      "string": "_ZN3lfs9HostEntry21getURL_InAppPurchase2Ev",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14351666,
+      "string": "_ZN3lfs9HostEntry14getURL_RevCodeEv",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14351702,
+      "string": "_ZN3lfs9HostEntry14getURL_AccountEv",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14351738,
+      "string": "_ZN3lfs9HostEntry9getURL_AdEv",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14351768,
+      "string": "_ZN3lfs9HostEntry27getURL_UseMockLocationCheckEv",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14351817,
+      "string": "_ZN3lfs9HostEntry23getURL_PushNotificationEv",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14351862,
+      "string": "_ZN3lfs9HostEntry15getURL_CampaignEv",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14351899,
+      "string": "_ZN3lfs9HostEntry11getURL_ClanEv",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14351932,
+      "string": "_ZN3lfs9HostEntry12getURL_EventEv",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14351966,
+      "string": "_ZN3lfs9HostEntry19getURL_EventSrcDataEv",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14352007,
+      "string": "_ZN3lfs9HostEntry15getURL_AvacolleEv",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14352044,
+      "string": "_ZN3lfs9HostEntry18getURL_BattleBoostEv",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14352084,
+      "string": "_ZN3lfs9HostEntry13getURL_EmblemEv",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14352119,
+      "string": "_ZN3lfs9HostEntry11getURL_RaidEv",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14352152,
+      "string": "_ZN3lfs9HostEntry12getURL_PatchEv",
+      "terms": [
+        "hostentry",
+        "url_patch"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14352186,
+      "string": "_ZN3lfs9HostEntry25getURL_DebugResourcePatchEv",
+      "terms": [
+        "hostentry",
+        "url_debugresourcepatch"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14352233,
+      "string": "_ZN3lfs9HostEntry23isAuthenticationEnabledEv",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14352278,
+      "string": "_ZN3lfs9HostEntry30isDebugResourcePatchUserForcedEv",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14352330,
+      "string": "_ZNK3lfs9HostEntry8isLoadedEv",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14352360,
+      "string": "_ZN3lfs9HostEntry10ServerInfoC2ERKS1_",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14352398,
+      "string": "_ZN3lfs9HostEntry13loadHostEntryERKNSt6__ndk112basic_stringIcNS1_11char_traitsIcEENS1_9allocatorIcEEEES9_",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14352504,
+      "string": "_ZN3lfs9HostEntry21loadHostEntryFromJsonERKN6json114JsonERKNSt6__ndk112basic_stringIcNS5_11char_traitsIcEENS5_9allocatorIcEEEE",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14352631,
+      "string": "_ZN3lfs9HostEntry5clearEv",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14352657,
+      "string": "_ZN3lfs9HostEntry24setupProviderEnvironmentERKN6json114JsonE",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14352718,
+      "string": "_ZN3lfs9HostEntry11setupCusapiERKN6json114JsonE",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14352766,
+      "string": "_ZN3lfs9HostEntry22setupVersionInfomationERKN6json114JsonE",
+      "terms": [
+        "hostentry",
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14352825,
+      "string": "_ZN3lfs9HostEntry14setupHostsInfoERKN6json114JsonE",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14352876,
+      "string": "_ZN3lfs9HostEntry16setupWorldLayoutERKN6json114JsonE",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14352929,
+      "string": "_ZN3lfs9HostEntry18switchHostInternalERKNSt6__ndk112basic_stringIcNS1_11char_traitsIcEENS1_9allocatorIcEEEE",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14353037,
+      "string": "_ZN3lfs9HostEntry21loadHostEntryFromTextERKNSt6__ndk112basic_stringIcNS1_11char_traitsIcEENS1_9allocatorIcEEEES9_",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14353151,
+      "string": "_ZN3lfs9HostEntry22parseEnvironmentValuesERKNSt6__ndk112basic_stringIcNS1_11char_traitsIcEENS1_9allocatorIcEEEERKN6json114JsonERKNS1_6vectorINS_8replacer7PatternENS5_ISG_EEEE",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14353326,
+      "string": "_ZN3lfs9HostEntry16setupCusapiStateERKN6json114JsonE",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14353410,
+      "string": "_ZN3lfs9HostEntry16kDefaultHostNameE",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14353447,
+      "string": "_ZTVNSt6__ndk120__shared_ptr_emplaceIN3lfs9HostEntry10ServerInfoENS_9allocatorIS3_EEEE",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14353534,
+      "string": "_ZN3lfs9HostEntry13parseHostInfoERKNSt6__ndk112basic_stringIcNS1_11char_traitsIcEENS1_9allocatorIcEEEERKN6json114JsonEPKNS0_10ServerInfoERKNS1_6vectorINS_8replacer7PatternENS5_ISJ_EEEE",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14353910,
+      "string": "_ZN3lfs9HostEntry20editRCBWorldHostInfoEv",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14353952,
+      "string": "_ZN3lfs9HostEntry11getAllHostsEv",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14353985,
+      "string": "_ZN3lfs9HostEntry20isTargetHostRcbWorldEi",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14354027,
+      "string": "_ZN3lfs9HostEntry20isTargetHostRcbWorldERKNSt6__ndk112basic_stringIcNS1_11char_traitsIcEENS1_9allocatorIcEEEE",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14354137,
+      "string": "_ZN3lfs9HostEntry17isTargetHostExistERKNSt6__ndk112basic_stringIcNS1_11char_traitsIcEENS1_9allocatorIcEEEE",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14354244,
+      "string": "_ZN3lfs9HostEntry11VersionInfoC2ERKS1_",
+      "terms": [
+        "hostentry",
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14354283,
+      "string": "_ZN3lfs9HostEntry14getCusapiStateEv",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14354319,
+      "string": "_ZN3lfs9HostEntry15isCusapiWarningEv",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14354356,
+      "string": "_ZNSt6__ndk16vectorIN3lfs9HostEntry10ServerInfoENS_9allocatorIS3_EEE7emplaceIJS3_EEENS_11__wrap_iterIPS3_EENS8_IPKS3_EEDpOT_",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14354481,
+      "string": "_ZNSt6__ndk16vectorIN3lfs9HostEntry14GameServerInfoENS_9allocatorIS3_EEE21__push_back_slow_pathIRKS3_EEPS3_OT_",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14354592,
+      "string": "_ZNSt6__ndk16vectorIN3lfs9HostEntry14GameServerInfoENS_9allocatorIS3_EEE18__assign_with_sizeB8ne180000IPS3_S8_EEvT_T0_l",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14355596,
+      "string": "_ZN3lfs9HostEntry10ServerInfoC2EOS1_",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14355633,
+      "string": "_ZNSt6__ndk114__split_bufferIN3lfs9HostEntry10ServerInfoERNS_9allocatorIS3_EEE12emplace_backIJS3_EEEvDpOT_",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14355740,
+      "string": "_ZN3lfs9HostEntry10ServerInfoaSEOS1_",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14355777,
+      "string": "_ZN3lfs9HostEntry18setupCusapiWarningERKN6json114JsonE",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14355832,
+      "string": "_ZNSt6__ndk16vectorIN3lfs9HostEntry14GameServerInfoENS_9allocatorIS3_EEE16__init_with_sizeB8ne180000IPS3_S8_EEvT_T0_m",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14355950,
+      "string": "_ZN3lfs9HostEntry11WebViewURLsC2ERKS1_",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14356734,
+      "string": "_ZNSt6__ndk120__shared_ptr_emplaceIN3lfs9HostEntry10ServerInfoENS_9allocatorIS3_EEED2Ev",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14356822,
+      "string": "_ZNSt6__ndk120__shared_ptr_emplaceIN3lfs9HostEntry10ServerInfoENS_9allocatorIS3_EEED0Ev",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14356910,
+      "string": "_ZN3lfs9HostEntry11WebViewURLsaSEOS1_",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14357584,
+      "string": "_ZTINSt6__ndk120__shared_ptr_emplaceIN3lfs9HostEntry10ServerInfoENS_9allocatorIS3_EEEE",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14357671,
+      "string": "_ZTSNSt6__ndk120__shared_ptr_emplaceIN3lfs9HostEntry10ServerInfoENS_9allocatorIS3_EEEE",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14357758,
+      "string": "_ZN3lfs11ServiceHost10initializeERKNSt6__ndk112basic_stringIcNS1_11char_traitsIcEENS1_9allocatorIcEEEE",
+      "terms": [
+        "servicehost"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14357861,
+      "string": "_ZN3lfs11ServiceHost5parseERKN6json114JsonE",
+      "terms": [
+        "servicehost"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14357905,
+      "string": "_ZN3lfs11ServiceHost10initializeERKNS_14Json11ResourceE",
+      "terms": [
+        "servicehost"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14357961,
+      "string": "_ZN3lfs11application17GetServiceVersionEv",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14358003,
+      "string": "_ZN3lfs11ServiceHost17s_currentHostNameE",
+      "terms": [
+        "servicehost"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14358044,
+      "string": "_ZN3lfs11ServiceHost7s_hostsE",
+      "terms": [
+        "servicehost"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14358074,
+      "string": "_ZNSt6__ndk16vectorIN3lfs11ServiceHost8HostInfoENS_9allocatorIS3_EEE24__emplace_back_slow_pathIJNS_12basic_stringIcNS_11char_traitsIcEENS4_IcEEEESC_EEEPS3_DpOT_",
+      "terms": [
+        "servicehost"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14358235,
+      "string": "_ZN3lfs11ServiceHost9terminateEv",
+      "terms": [
+        "servicehost"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14358268,
+      "string": "_ZN3lfs11ServiceHost10switchHostERKNSt6__ndk112basic_stringIcNS1_11char_traitsIcEENS1_9allocatorIcEEEE",
+      "terms": [
+        "servicehost"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14358371,
+      "string": "_ZN3lfs11ServiceHost7getHostERKNSt6__ndk112basic_stringIcNS1_11char_traitsIcEENS1_9allocatorIcEEEE",
+      "terms": [
+        "servicehost"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14358470,
+      "string": "_ZN3lfs11ServiceHost8getHostsEv",
+      "terms": [
+        "servicehost"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14358502,
+      "string": "_ZNSt6__ndk16vectorINS_4pairIN3lfs11ServiceHost8HostInfoEbEENS_9allocatorIS5_EEE24__emplace_back_slow_pathIJRS4_bEEEPS5_DpOT_",
+      "terms": [
+        "servicehost"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14358628,
+      "string": "_ZN3lfs11ServiceHost17getCurrentHostUrlEv",
+      "terms": [
+        "servicehost"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14358670,
+      "string": "_ZN3lfs11ServiceHost19callHostentryWebApiERKNSt6__ndk112basic_stringIcNS1_11char_traitsIcEENS1_9allocatorIcEEEEPN7cocos2d3RefEMSB_FviS9_E",
+      "terms": [
+        "servicehost",
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14363236,
+      "string": "_ZN3lfs5login8Executor14changeBehaviorINS0_20GetHostentryBehaviorEEEbv",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14363578,
+      "string": "_ZTVNSt6__ndk120__shared_ptr_emplaceIN3lfs5login20GetHostentryBehaviorENS_9allocatorIS3_EEEE",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14363671,
+      "string": "_ZTVN3lfs5login20GetHostentryBehaviorE",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14363710,
+      "string": "_ZTSN3lfs5login20GetHostentryBehaviorE",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14364351,
+      "string": "_ZN3lfs5login20GetHostentryBehavior7onEnterERKNSt6__ndk110shared_ptrINS0_7ContextEEE",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14364436,
+      "string": "_ZN3lfs5login20GetHostentryBehavior18onReceiveHostentryEiRKNSt6__ndk112basic_stringIcNS2_11char_traitsIcEENS2_9allocatorIcEEEE",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14364563,
+      "string": "_ZN3lfs15CCCallbackProxyIFviRKNSt6__ndk112basic_stringIcNS1_11char_traitsIcEENS1_9allocatorIcEEEEEE6createINS1_6__bindIMNS_5login20GetHostentryBehaviorEFviS9_EJNS1_10shared_ptrISF_EERKNS1_12placeholders4__phILi1EEERKNSL_ILi2EEEEEEEEPSB_T_",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14364802,
+      "string": "_ZNSt6__ndk16__bindIMN3lfs5login20GetHostentryBehaviorEFviRKNS_12basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEEEEJNS_10shared_ptrIS3_EERKNS_12placeholders4__phILi1EEERKNSH_ILi2EEEEED2Ev",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14364994,
+      "string": "_ZTVNSt6__ndk110__function6__funcINS_6__bindIMN3lfs5login20GetHostentryBehaviorEFviRKNS_12basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEEEEJNS_10shared_ptrIS5_EERKNS_12placeholders4__phILi1EEERKNSJ_ILi2EEEEEENS9_ISQ_EEFviSD_EEE",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14365227,
+      "string": "_ZN3lfs5login20GetHostentryBehavior6onExitERKNSt6__ndk110shared_ptrINS0_7ContextEEE",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14365311,
+      "string": "_ZN3lfs5login8Executor14changeBehaviorINS0_32VerifyApplicationVersionBehaviorEEEbv",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14365556,
+      "string": "_ZTVNSt6__ndk120__shared_ptr_emplaceIN3lfs5login32VerifyApplicationVersionBehaviorENS_9allocatorIS3_EEEE",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14365661,
+      "string": "_ZTVN3lfs5login32VerifyApplicationVersionBehaviorE",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14365712,
+      "string": "_ZTSN3lfs5login32VerifyApplicationVersionBehaviorE",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14366165,
+      "string": "_ZN3lfs5login20GetHostentryBehavior9terminateEv",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14366213,
+      "string": "_ZN3lfs5login32VerifyApplicationVersionBehavior7onEnterERKNSt6__ndk110shared_ptrINS0_7ContextEEE",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14366310,
+      "string": "_ZN3lfs14client_version19CheckServiceVersionEv",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14366357,
+      "string": "_ZN3lfs14client_version12Notification13notifyMessageENS0_18VersionCheckResultENSt6__ndk18functionIFvvEEE",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14366462,
+      "string": "_ZN3lfs5login32VerifyApplicationVersionBehavior6onExitERKNSt6__ndk110shared_ptrINS0_7ContextEEE",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14366812,
+      "string": "_ZN3lfs5login32VerifyApplicationVersionBehavior9terminateEv",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14376382,
+      "string": "_ZN3lfs5login20GetHostentryBehaviorD2Ev",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14376422,
+      "string": "_ZN3lfs5login20GetHostentryBehaviorD0Ev",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14376462,
+      "string": "_ZN3lfs5login32VerifyApplicationVersionBehaviorD2Ev",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14376514,
+      "string": "_ZN3lfs5login32VerifyApplicationVersionBehaviorD0Ev",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14404089,
+      "string": "_ZNSt6__ndk120__shared_ptr_emplaceIN3lfs5login20GetHostentryBehaviorENS_9allocatorIS3_EEED2Ev",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14404183,
+      "string": "_ZNSt6__ndk120__shared_ptr_emplaceIN3lfs5login20GetHostentryBehaviorENS_9allocatorIS3_EEED0Ev",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14404602,
+      "string": "_ZNSt6__ndk110__function6__funcINS_6__bindIMN3lfs5login20GetHostentryBehaviorEFviRKNS_12basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEEEEJNS_10shared_ptrIS5_EERKNS_12placeholders4__phILi1EEERKNSJ_ILi2EEEEEENS9_ISQ_EEFviSD_EED2Ev",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14404836,
+      "string": "_ZNSt6__ndk110__function6__funcINS_6__bindIMN3lfs5login20GetHostentryBehaviorEFviRKNS_12basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEEEEJNS_10shared_ptrIS5_EERKNS_12placeholders4__phILi1EEERKNSJ_ILi2EEEEEENS9_ISQ_EEFviSD_EED0Ev",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14405070,
+      "string": "_ZTSNSt6__ndk16__bindIMN3lfs5login20GetHostentryBehaviorEFviRKNS_12basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEEEEJNS_10shared_ptrIS3_EERKNS_12placeholders4__phILi1EEERKNSH_ILi2EEEEEE",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14405261,
+      "string": "_ZTINSt6__ndk16__bindIMN3lfs5login20GetHostentryBehaviorEFviRKNS_12basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEEEEJNS_10shared_ptrIS3_EERKNS_12placeholders4__phILi1EEERKNSH_ILi2EEEEEE",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14405452,
+      "string": "_ZNSt6__ndk120__shared_ptr_emplaceIN3lfs5login32VerifyApplicationVersionBehaviorENS_9allocatorIS3_EEED2Ev",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14405558,
+      "string": "_ZNSt6__ndk120__shared_ptr_emplaceIN3lfs5login32VerifyApplicationVersionBehaviorENS_9allocatorIS3_EEED0Ev",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14422382,
+      "string": "_ZTIN3lfs5login20GetHostentryBehaviorE",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14422421,
+      "string": "_ZTSNSt6__ndk123enable_shared_from_thisIN3lfs5login20GetHostentryBehaviorEEE",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14422498,
+      "string": "_ZTINSt6__ndk123enable_shared_from_thisIN3lfs5login20GetHostentryBehaviorEEE",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14422575,
+      "string": "_ZTIN3lfs5login32VerifyApplicationVersionBehaviorE",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14422626,
+      "string": "_ZTSNSt6__ndk123enable_shared_from_thisIN3lfs5login32VerifyApplicationVersionBehaviorEEE",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14422715,
+      "string": "_ZTINSt6__ndk123enable_shared_from_thisIN3lfs5login32VerifyApplicationVersionBehaviorEEE",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14432304,
+      "string": "_ZTINSt6__ndk120__shared_ptr_emplaceIN3lfs5login20GetHostentryBehaviorENS_9allocatorIS3_EEEE",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14432397,
+      "string": "_ZTSNSt6__ndk120__shared_ptr_emplaceIN3lfs5login20GetHostentryBehaviorENS_9allocatorIS3_EEEE",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14432674,
+      "string": "_ZTINSt6__ndk110__function6__funcINS_6__bindIMN3lfs5login20GetHostentryBehaviorEFviRKNS_12basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEEEEJNS_10shared_ptrIS5_EERKNS_12placeholders4__phILi1EEERKNSJ_ILi2EEEEEENS9_ISQ_EEFviSD_EEE",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14432907,
+      "string": "_ZTSNSt6__ndk110__function6__funcINS_6__bindIMN3lfs5login20GetHostentryBehaviorEFviRKNS_12basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEEEEJNS_10shared_ptrIS5_EERKNS_12placeholders4__phILi1EEERKNSJ_ILi2EEEEEENS9_ISQ_EEFviSD_EEE",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14433140,
+      "string": "_ZTSNSt6__ndk118__weak_result_typeIMN3lfs5login20GetHostentryBehaviorEFviRKNS_12basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEEEEEE",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14433277,
+      "string": "_ZTINSt6__ndk118__weak_result_typeIMN3lfs5login20GetHostentryBehaviorEFviRKNS_12basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEEEEEE",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14433414,
+      "string": "_ZTINSt6__ndk120__shared_ptr_emplaceIN3lfs5login32VerifyApplicationVersionBehaviorENS_9allocatorIS3_EEEE",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14433519,
+      "string": "_ZTSNSt6__ndk120__shared_ptr_emplaceIN3lfs5login32VerifyApplicationVersionBehaviorENS_9allocatorIS3_EEEE",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14444919,
+      "string": "_ZN3lfs27requestProtocolVersionCheckEPN9GmClProto23ClientGmClProtoContractINS_14NetworkSessionENS0_21ClientGmClProtoSenderINS0_39ClientGmClProtoProcedureBinaryGeneratorEEENS0_36ClientGmClProtoProcedureBinaryParserEEEiiRKNSt6__ndk112basic_stringIcNS9_11char_traitsIcEENS9_9allocatorIcEEEE",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14445405,
+      "string": "_ZN3lfs11application15GetStoreVersionEv",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14480521,
+      "string": "_ZN3lfs14NetworkSession57C_GMCL_SHOW_LOGIN_LOCK_DIFFER_PROTO_VERSION_HASH_ResponseEjb",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14480607,
+      "string": "_ZTVN3lfs30DifferProtocolVersion_ResponseE",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14480650,
+      "string": "_ZN3lfs15EventDispatcherINS_16ReceiveEventTypeENSt6__ndk18functionIFvPNS_13NetworkObjectEEEEE5Event8dispatchIPNS_30DifferProtocolVersion_ResponseEEEvRKT_",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14648191,
+      "string": "_ZN3lfs30DifferProtocolVersion_ResponseD0Ev",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14683303,
+      "string": "_ZTIN3lfs30DifferProtocolVersion_ResponseE",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 14683346,
+      "string": "_ZTSN3lfs30DifferProtocolVersion_ResponseE",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 16820174,
+      "string": "_ZN3map4data4Root19kVersionFieldNumberE",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 16830571,
+      "string": "_ZN14texture_binary4Meta19kVersionFieldNumberE",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 16838743,
+      "string": "_ZN14palette_binary4Meta19kVersionFieldNumberE",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 16967305,
+      "string": "_ZNK5boost7numeric9converterIihNS0_17conversion_traitsIhiEENS_9xpressive6detail21char_overflow_handlerENS0_5TruncIiEENS0_13raw_converterIS3_EENS0_23UseInternalRangeCheckerEEclEi",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 17084321,
+      "string": "_ZN3lfs7patcher27FuturePatchUpdateController24updateHostentryFetchTimeEv",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 17084394,
+      "string": "_ZN3lfs7patcher27FuturePatchUpdateController16refreshHostEntryEv",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 17084459,
+      "string": "_ZN3lfs7patcher27FuturePatchUpdateController17callbackHostentryEiRKNSt6__ndk112basic_stringIcNS2_11char_traitsIcEENS2_9allocatorIcEEEE",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 17122073,
+      "string": "_ZN3lfs25ReleaseScene_GetHostEntry6createEv",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 17122210,
+      "string": "_ZN3lfs9CCCapsuleINS_11ServiceHost8HostInfoEEC2ERKS2_",
+      "terms": [
+        "servicehost"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 17122544,
+      "string": "_ZNSt6__ndk14pairIN3lfs11ServiceHost8HostInfoEbED2Ev",
+      "terms": [
+        "servicehost"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 17122773,
+      "string": "_ZTVN3lfs9CCCapsuleINS_11ServiceHost8HostInfoEEE",
+      "terms": [
+        "servicehost"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 17123637,
+      "string": "_ZN3lfs9CCCapsuleINS_11ServiceHost8HostInfoEED2Ev",
+      "terms": [
+        "servicehost"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 17123687,
+      "string": "_ZN3lfs9CCCapsuleINS_11ServiceHost8HostInfoEED0Ev",
+      "terms": [
+        "servicehost"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 17123775,
+      "string": "_ZTIN3lfs9CCCapsuleINS_11ServiceHost8HostInfoEEE",
+      "terms": [
+        "servicehost"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 17123862,
+      "string": "_ZTSN3lfs9CCCapsuleINS_11ServiceHost8HostInfoEEE",
+      "terms": [
+        "servicehost"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 17135114,
+      "string": "_ZN3lfs15download_option43BackgroundPatchModeConversionMapInitializerEv",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 17139910,
+      "string": "_ZN3lfs15download_option31SerializableBackgroundPatchMode19s_modeConversionMapE",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 17245040,
+      "string": "_ZN3lfs25ReleaseScene_GetHostEntryC1Ev",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 17245079,
+      "string": "_ZN3lfs25ReleaseScene_GetHostEntryC2Ev",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 17245118,
+      "string": "_ZTVN3lfs25ReleaseScene_GetHostEntryE",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 17245156,
+      "string": "_ZN3lfs25ReleaseScene_GetHostEntryD2Ev",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 17245195,
+      "string": "_ZThn936_N3lfs25ReleaseScene_GetHostEntryD1Ev",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 17245241,
+      "string": "_ZN3lfs25ReleaseScene_GetHostEntryD1Ev",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 17245280,
+      "string": "_ZN3lfs25ReleaseScene_GetHostEntryD0Ev",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 17245319,
+      "string": "_ZThn936_N3lfs25ReleaseScene_GetHostEntryD0Ev",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 17245365,
+      "string": "_ZN3lfs25ReleaseScene_GetHostEntry15onInitializeEndERNSt6__ndk110shared_ptrINS_5SceneEEE",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 17245454,
+      "string": "_ZN3lfs25ReleaseScene_GetHostEntry17callbackHostentryEiRKNSt6__ndk112basic_stringIcNS1_11char_traitsIcEENS1_9allocatorIcEEEE",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 17245579,
+      "string": "_ZN3lfs25ReleaseScene_GetHostEntry19callHostentryWebApiEv",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 17245637,
+      "string": "_ZN3lfs25ReleaseScene_GetHostEntry15onKeypadClickedEPNS_21KeypadEventDispatcher9EventInfoE",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 17245728,
+      "string": "_ZTIN3lfs25ReleaseScene_GetHostEntryE",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 17245766,
+      "string": "_ZTSN3lfs25ReleaseScene_GetHostEntryE",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 17333177,
+      "string": "_ZN3lfs7billing14InAppPurchase236requestBuyProductByPlatformProductIDERKNSt6__ndk112basic_stringIcNS2_11char_traitsIcEENS2_9allocatorIcEEEERKNS0_11ProductTypeERKNS2_8functionIFvRKNS0_9BuyResultEEEE",
+      "terms": [
+        "platform"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 17336238,
+      "string": "_ZN3lfs14GemShopProduct18setPlatformProductERKNS_7billing7ProductE",
+      "terms": [
+        "platform"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 17336305,
+      "string": "_ZNK3lfs14GemShopProduct18getPlatformProductEv",
+      "terms": [
+        "platform"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 17336352,
+      "string": "_ZNK3lfs14GemShopProduct27toPlatformProductForRequestEv",
+      "terms": [
+        "platform"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 17791458,
+      "string": "_ZN3lfs17CommandLineOption14ServiceVersionE",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 17855226,
+      "string": "_ZN9GmClProto23ClientGmClProtoContractIN3lfs14NetworkSessionENS_21ClientGmClProtoSenderINS_39ClientGmClProtoProcedureBinaryGeneratorEEENS_36ClientGmClProtoProcedureBinaryParserEE48C_GMCL_SHOW_LOGIN_LOCK_DIFFER_PROTO_VERSION_HASHEjNSt6__ndk112basic_stringIcNS8_11char_traitsIcEENS8_9allocatorIcEEEEiiSE_",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 17855529,
+      "string": "_ZN9GmClProto21ClientGmClProtoSenderINS_39ClientGmClProtoProcedureBinaryGeneratorEE48C_GMCL_SHOW_LOGIN_LOCK_DIFFER_PROTO_VERSION_HASHEPN5oneup10ConnectionERKNSt6__ndk13setIiNS6_4lessIiEENS6_9allocatorIiEEEEjRKNS6_12basic_stringIcNS6_11char_traitsIcEENSA_IcEEEEiiSL_",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 17855795,
+      "string": "_ZN9GmClProto39ClientGmClProtoProcedureBinaryGenerator57generate_C_GMCL_SHOW_LOGIN_LOCK_DIFFER_PROTO_VERSION_HASHERN5oneup6BufferEjRKNSt6__ndk112basic_stringIcNS4_11char_traitsIcEENS4_9allocatorIcEEEEiiSC_",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 17875611,
+      "string": "_ZN3lfs14client_version24GetCurrentServiceVersionEv",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 17881764,
+      "string": "_ZN3lfs7billing26platformJsonValueToProductERKN6json114JsonE",
+      "terms": [
+        "platform"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 17891772,
+      "string": "_ZN3lfs7billing26productToPlatformJsonValueERKNS0_7ProductE",
+      "terms": [
+        "platform"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 17892632,
+      "string": "_ZN3lfs7billing27productsToPlatformJsonValueERKNSt6__ndk16vectorINS0_7ProductENS1_9allocatorIS3_EEEE",
+      "terms": [
+        "platform"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 17894998,
+      "string": "_ZNK3lfs7billing24InAppPurchaseTransaction17platformProductIDEv",
+      "terms": [
+        "platform"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 17940087,
+      "string": "_ZN3lfs14client_version21getVersionCheckResultERKNS_9HostEntry11VersionInfoE",
+      "terms": [
+        "hostentry",
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 17940164,
+      "string": "_ZN3lfs14client_version23GetLatestApplicationURLEv",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 17940215,
+      "string": "_ZN3lfs14client_version14OpenUpdatePageEv",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 17940257,
+      "string": "_ZN3lfs14client_version12Notification15callNotifyPopupENS0_18VersionCheckResultENSt6__ndk18functionIFvvEEE",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 17940364,
+      "string": "_ZN3lfs14client_version15GetPopUpMessageENS0_18VersionCheckResultE",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 17953708,
+      "string": "_ZN3lfs17push_notification16PushNotification16RegistrationInfo17kClientVersionKeyE",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 18418036,
+      "string": "_ZN3lfs11application16GetStoreVersion_Ev",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 18418077,
+      "string": "_ZN3lfs11application18GetServiceVersion_Ev",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 18418120,
+      "string": "_ZN3lfs11application21GetServiceVersionInt_Ev",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 18419359,
+      "string": "_ZN3lfs7billing20GetPaymentAPIVersionEv",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 18513913,
+      "string": "_ZN9GmClProto39ClientGmClProtoProcedureBinaryGenerator60FUNCTION_ID_C_GMCL_SHOW_LOGIN_LOCK_DIFFER_PROTO_VERSION_HASHE",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 18585360,
+      "string": "_ZN9GmClProto39ClientGmClProtoProcedureBinaryGenerator69FUNCTION_ID_C_GMCL_SHOW_LOGIN_LOCK_DIFFER_PROTO_VERSION_HASH_ResponseE",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 18807339,
+      "string": "_ZN9GmClProto28e_GmClAccountLoginResultCode36E_GMCL_ACCLOGIN_CLIENT_VERSION_ERRORE",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 19876770,
+      "string": "_ZN6google8protobuf8internal13VersionStringEi",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 19897091,
+      "string": "SSL_CIPHER_get_version",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 19897824,
+      "string": "SSL_CTX_set_ssl_version",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 19900677,
+      "string": "SSL_get_version",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 19901102,
+      "string": "SSL_version",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 19901114,
+      "string": "SSL_client_version",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 19902762,
+      "string": "SSL_version_str",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 19903880,
+      "string": "SSL_SESSION_get_protocol_version",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 19906320,
+      "string": "ssl_version_supported",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 19906342,
+      "string": "ssl_check_version_downgrade",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 19906370,
+      "string": "ssl_set_version_bound",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 19906392,
+      "string": "ssl_choose_server_version",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 19906418,
+      "string": "ssl_choose_client_version",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 19906444,
+      "string": "ssl_get_client_min_max_version",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 19906475,
+      "string": "ssl_set_client_hello_version",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 19930004,
+      "string": "SCT_set_version",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 19930193,
+      "string": "SCT_get_version",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 19930592,
+      "string": "OpenSSL_version_num",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 19930612,
+      "string": "OpenSSL_version",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 19936216,
+      "string": "EC_GROUP_set_point_conversion_form",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 19936251,
+      "string": "EC_GROUP_get_point_conversion_form",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 19973154,
+      "string": "X509_REQ_get_version",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 19973272,
+      "string": "X509_set_version",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 19973436,
+      "string": "X509_get_version",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 19976708,
+      "string": "X509_CRL_set_version",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 19976834,
+      "string": "X509_CRL_get_version",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 19977731,
+      "string": "X509_REQ_set_version",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 19988168,
+      "string": "_ZN7cocos2d14cocos2dVersionEv",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 20046790,
+      "string": "_ZN7cocos2d14AnimationCache13parseVersion1ERKNSt6__ndk113unordered_mapINS1_12basic_stringIcNS1_11char_traitsIcEENS1_9allocatorIcEEEENS_5ValueENS1_4hashIS8_EENS1_8equal_toIS8_EENS6_INS1_4pairIKS8_S9_EEEEEE",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 20047853,
+      "string": "_ZN7cocos2d14AnimationCache13parseVersion2ERKNSt6__ndk113unordered_mapINS1_12basic_stringIcNS1_11char_traitsIcEENS1_9allocatorIcEEEENS_5ValueENS1_4hashIS8_EENS1_8equal_toIS8_EENS6_INS1_4pairIKS8_S9_EEEEEE",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 20306359,
+      "string": "_ZN7cocos2d11StringUtils10utfConvertIcDsNS0_12ConvertTraitIcEENS2_IDsEEEEbRKNSt6__ndk112basic_stringIT_NS5_11char_traitsIS7_EENS5_9allocatorIS7_EEEERNS6_IT0_NS8_ISF_EENSA_ISF_EEEEPF16ConversionResultPPKNT1_7ArgTypeESO_PPNT2_7ArgTypeESS_15ConversionFlagsE",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 20306714,
+      "string": "_ZN7cocos2d11StringUtils10utfConvertIcDiNS0_12ConvertTraitIcEENS2_IDiEEEEbRKNSt6__ndk112basic_stringIT_NS5_11char_traitsIS7_EENS5_9allocatorIS7_EEEERNS6_IT0_NS8_ISF_EENSA_ISF_EEEEPF16ConversionResultPPKNT1_7ArgTypeESO_PPNT2_7ArgTypeESS_15ConversionFlagsE",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 20307069,
+      "string": "_ZN7cocos2d11StringUtils10utfConvertIDscNS0_12ConvertTraitIDsEENS2_IcEEEEbRKNSt6__ndk112basic_stringIT_NS5_11char_traitsIS7_EENS5_9allocatorIS7_EEEERNS6_IT0_NS8_ISF_EENSA_ISF_EEEEPF16ConversionResultPPKNT1_7ArgTypeESO_PPNT2_7ArgTypeESS_15ConversionFlagsE",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 20307484,
+      "string": "_ZN7cocos2d11StringUtils10utfConvertIDsDiNS0_12ConvertTraitIDsEENS2_IDiEEEEbRKNSt6__ndk112basic_stringIT_NS5_11char_traitsIS7_EENS5_9allocatorIS7_EEEERNS6_IT0_NS8_ISF_EENSA_ISF_EEEEPF16ConversionResultPPKNT1_7ArgTypeESO_PPNT2_7ArgTypeESS_15ConversionFlagsE",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 20307896,
+      "string": "_ZN7cocos2d11StringUtils10utfConvertIDicNS0_12ConvertTraitIDiEENS2_IcEEEEbRKNSt6__ndk112basic_stringIT_NS5_11char_traitsIS7_EENS5_9allocatorIS7_EEEERNS6_IT0_NS8_ISF_EENSA_ISF_EEEEPF16ConversionResultPPKNT1_7ArgTypeESO_PPNT2_7ArgTypeESS_15ConversionFlagsE",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 20308311,
+      "string": "_ZN7cocos2d11StringUtils10utfConvertIDiDsNS0_12ConvertTraitIDiEENS2_IDsEEEEbRKNSt6__ndk112basic_stringIT_NS5_11char_traitsIS7_EENS5_9allocatorIS7_EEEERNS6_IT0_NS8_ISF_EENSA_ISF_EEEEPF16ConversionResultPPKNT1_7ArgTypeESO_PPNT2_7ArgTypeESS_15ConversionFlagsE",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 20359804,
+      "string": "_ZN7cocos2d2ui15CocosGUIVersionEv",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 20442166,
+      "string": "_ZNK7cocos2d9extension13AssetsManager12keyOfVersionEv",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 20442220,
+      "string": "_ZNK7cocos2d9extension13AssetsManager22keyOfDownloadedVersionEv",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 20443036,
+      "string": "_ZNK7cocos2d9extension13AssetsManager17getVersionFileUrlEv",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 20443095,
+      "string": "_ZN7cocos2d9extension13AssetsManager17setVersionFileUrlEPKc",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 20443155,
+      "string": "_ZN7cocos2d9extension13AssetsManager10getVersionEv",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 20443206,
+      "string": "_ZN7cocos2d9extension13AssetsManager13deleteVersionEv",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 20566203,
+      "string": "_Z42lua_cocos2dx_Application_getTargetPlatformP9lua_State",
+      "terms": [
+        "platform"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 20598727,
+      "string": "_Z54lua_cocos2dx_extension_AssetsManager_setVersionFileUrlP9lua_State",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 20598936,
+      "string": "_Z47lua_cocos2dx_extension_AssetsManager_getVersionP9lua_State",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 20598999,
+      "string": "_Z54lua_cocos2dx_extension_AssetsManager_getVersionFileUrlP9lua_State",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 20599069,
+      "string": "_Z50lua_cocos2dx_extension_AssetsManager_deleteVersionP9lua_State",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 20672368,
+      "string": "_ZN5boost3log12v2s_mt_posix16conversion_error6throw_EPKcmS4_",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 20685582,
+      "string": "_ZN5boost3log12v2s_mt_posix16conversion_errorC2Ev",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 20685632,
+      "string": "_ZTVN5boost3log12v2s_mt_posix16conversion_errorE",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 20685681,
+      "string": "_ZN5boost3log12v2s_mt_posix16conversion_errorC2ERKNSt6__ndk112basic_stringIcNS3_11char_traitsIcEENS3_9allocatorIcEEEE",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 20685799,
+      "string": "_ZN5boost3log12v2s_mt_posix16conversion_errorD0Ev",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 20685849,
+      "string": "_ZN5boost3log12v2s_mt_posix16conversion_errorD1Ev",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 20685899,
+      "string": "_ZN5boost3log12v2s_mt_posix16conversion_error6throw_EPKcm",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 20685957,
+      "string": "_ZN5boost3log12v2s_mt_posix16conversion_errorC1Ev",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 20686007,
+      "string": "_ZTIN5boost10wrapexceptINS_16exception_detail19error_info_injectorINS_3log12v2s_mt_posix16conversion_errorEEEEE",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 20686119,
+      "string": "_ZN5boost3log12v2s_mt_posix16conversion_errorD2Ev",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 20686169,
+      "string": "_ZN5boost3log12v2s_mt_posix16conversion_errorC1ERKNSt6__ndk112basic_stringIcNS3_11char_traitsIcEENS3_9allocatorIcEEEE",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 20686287,
+      "string": "_ZN5boost3log12v2s_mt_posix16conversion_error6throw_EPKcmRKNSt6__ndk112basic_stringIcNS5_11char_traitsIcEENS5_9allocatorIcEEEE",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 20692250,
+      "string": "_ZTVN5boost16exception_detail19error_info_injectorINS_3log12v2s_mt_posix16conversion_errorEEE",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 20692344,
+      "string": "_ZTVN5boost10wrapexceptINS_16exception_detail19error_info_injectorINS_3log12v2s_mt_posix16conversion_errorEEEEE",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 20693999,
+      "string": "_ZTIN5boost3log12v2s_mt_posix16conversion_errorE",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 20694598,
+      "string": "_ZTSN5boost3log12v2s_mt_posix16conversion_errorE",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 20696672,
+      "string": "_ZTIN5boost16exception_detail19error_info_injectorINS_3log12v2s_mt_posix16conversion_errorEEE",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 20696766,
+      "string": "_ZTSN5boost16exception_detail19error_info_injectorINS_3log12v2s_mt_posix16conversion_errorEEE",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 20696860,
+      "string": "_ZTSN5boost10wrapexceptINS_16exception_detail19error_info_injectorINS_3log12v2s_mt_posix16conversion_errorEEEEE",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 20701098,
+      "string": "_ZN5boost6thread26do_try_join_until_noexceptERKNS_6detail23mono_platform_timepointERb",
+      "terms": [
+        "platform"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 20701239,
+      "string": "_ZN5boost11this_thread21no_interruption_point6hidden18sleep_for_internalERKNS_6detail17platform_durationE",
+      "terms": [
+        "platform"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 20764446,
+      "string": "zlibVersion",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 20764896,
+      "string": "WebPGetDecoderVersion",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 20767705,
+      "string": "FT_Library_Version",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 20774985,
+      "string": "png_user_version_check",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 20775314,
+      "string": "png_get_header_version",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 20775432,
+      "string": "png_access_version_number",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 34257064,
+      "string": "lfs::HostEntry",
+      "terms": [
+        "hostentry"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 34258263,
+      "string": "#ferror in function 'getVersionInfomation'.",
+      "terms": [
+        "version"
+      ]
+    },
+    {
+      "encoding": "ascii",
+      "offset": 34267119,
+      "string": "This program was compiled against version",
+      "terms": [
+        "version"
+      ]
+    }
+  ]
+}
