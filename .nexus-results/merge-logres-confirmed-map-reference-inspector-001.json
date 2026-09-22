@@ -1,0 +1,8 @@
+{
+  "commit": "a6d223f7cad892d4e447b7245a7900b054133f89",
+  "job_id": "merge-logres-confirmed-map-reference-inspector-001",
+  "job_type": "MERGE",
+  "status": "SUCCESS",
+  "target_branch": "feat/logres-reconstruction",
+  "written_at": "2026-09-22T05:19:32.205134+00:00"
+}
