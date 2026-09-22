@@ -1,0 +1,38 @@
+{
+  "errors": [
+    {
+      "member": "files/cache/patch/avacolle/bg/bg_020_302_102_001.mbn",
+      "reason": "ValueError"
+    },
+    {
+      "member": "files/cache/patch/avacolle/bg/bg_030_001_000_000.mbn",
+      "reason": "ValueError"
+    }
+  ],
+  "manifest_name_hit_count": 0,
+  "manifest_name_hits": [],
+  "provenance": "PRIVATE_CACHE_FIELD_RENDER_SYMBOL_METADATA",
+  "semantic_policy": "Allowlisted string occurrences and offsets are search evidence only. They do not establish call semantics, timing values, camera layering, or renderer behavior without further corroboration.",
+  "source_hit_count": 0,
+  "sources": [],
+  "term_summary": {},
+  "terms": [
+    "FieldAnimator",
+    "addAnimationData",
+    "FieldTerrain",
+    "FieldTerrainNode",
+    "FieldVertex",
+    "setCameraMask",
+    "CameraFlag",
+    "cameraMask",
+    "fieldCamera",
+    "field_camera",
+    "animationInterval",
+    "animation_interval",
+    "frameInterval",
+    "frame_interval",
+    "UvPos",
+    "uvPos",
+    "uv_pose"
+  ]
+}
