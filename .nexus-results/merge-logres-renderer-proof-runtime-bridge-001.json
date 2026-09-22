@@ -1,0 +1,8 @@
+{
+  "commit": "91f9a75f1973b344d765768f145f892ec0420060",
+  "job_id": "merge-logres-renderer-proof-runtime-bridge-001",
+  "job_type": "MERGE",
+  "status": "SUCCESS",
+  "target_branch": "feat/logres-reconstruction",
+  "written_at": "2026-09-22T09:05:23.285611+00:00"
+}
