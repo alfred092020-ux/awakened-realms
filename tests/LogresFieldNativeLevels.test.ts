@@ -298,7 +298,7 @@ describe(
     )
 
     it(
-      'builds a complete navigation model from addressed unique grids with complete metadata',
+      'marks chip metadata complete without claiming the final movement surface is complete',
       () => {
         const model =
           createLogresFieldNavigationModel(
@@ -368,6 +368,18 @@ describe(
           model.metadataComplete,
         ).toBe(
           true,
+        )
+
+        expect(
+          model.structureOverlayResolved,
+        ).toBe(
+          false,
+        )
+
+        expect(
+          model.movementSurfaceComplete,
+        ).toBe(
+          false,
         )
 
         expect(

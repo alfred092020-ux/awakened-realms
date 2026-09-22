@@ -65,8 +65,28 @@ export interface LogresFieldNavigationModel {
   unaddressedGridCount:
     number
 
+  /**
+   * True only when the pre-structure chip/block inputs are complete.
+   *
+   * This does NOT mean the final movement surface is complete.
+   */
   metadataComplete:
     boolean
+
+  /**
+   * Native FieldStructure::applyStructureHeightToTiles can overwrite tile
+   * levels after block-derived levels are installed. That pass is not yet
+   * reconstructed here.
+   */
+  structureOverlayResolved:
+    false
+
+  /**
+   * Explicit merge/runtime guard. It must remain false until structure
+   * propagation is implemented and validated.
+   */
+  movementSurfaceComplete:
+    false
 }
 
 function safeUint32(
@@ -219,11 +239,13 @@ function coordKey(
 }
 
 /**
- * Builds a pathfinding-ready tile lookup while retaining evidence gaps.
+ * Builds a pre-structure navigation lookup while retaining evidence gaps.
  *
- * No caller should treat metadataComplete=false as an authentic movement
- * surface. The model still exposes derived tiles so diagnostics can show
- * exactly where evidence is missing.
+ * metadataComplete describes only the chip/block metadata phase. Native
+ * FieldStructure::applyStructureHeightToTiles runs afterward and can overwrite
+ * tile levels, so movementSurfaceComplete remains false until that pass is
+ * reconstructed. The model exposes derived tiles for diagnostics and further
+ * evidence work only.
  */
 export function createLogresFieldNavigationModel(
   root: LogresMapRoot,
@@ -390,5 +412,11 @@ export function createLogresFieldNavigationModel(
         0 &&
       unaddressedGridCount ===
         0,
+
+    structureOverlayResolved:
+      false,
+
+    movementSurfaceComplete:
+      false,
   }
 }
