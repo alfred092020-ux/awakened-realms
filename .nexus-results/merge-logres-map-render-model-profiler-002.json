@@ -1,0 +1,8 @@
+{
+  "commit": "da200b5d1353a83f8cde76284f260cb0611d9e05",
+  "job_id": "merge-logres-map-render-model-profiler-002",
+  "job_type": "MERGE",
+  "status": "SUCCESS",
+  "target_branch": "feat/logres-reconstruction",
+  "written_at": "2026-09-22T05:03:00.285737+00:00"
+}
