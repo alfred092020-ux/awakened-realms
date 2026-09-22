@@ -1,0 +1,10 @@
+{
+  "duration_seconds": 1299.297,
+  "error": null,
+  "exit_code": 0,
+  "job_id": "oracle-public-patch-download-full-001",
+  "kind": "python",
+  "schema": 1,
+  "source_sha": "f90ca841379de6cfb60d2bf1d3bb171a6aebe85a",
+  "status": "success"
+}
