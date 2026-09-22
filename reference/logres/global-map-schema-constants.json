@@ -1,0 +1,258 @@
+{
+  "provenance": "EXTRACTED_GLOBAL_3.0.24_ARM64_ELF_CONSTANTS",
+  "sha256": "bf777cfa413b95627152246e9048af5c5fbc9c53e3c49141421360d6e86c814f",
+  "fields": [
+    {
+      "symbol": "map::data::BoundingBox::kOriginXFieldNumber",
+      "number": 1,
+      "address": "0x2b1a8a8",
+      "file_offset": "0x2b1a8a8"
+    },
+    {
+      "symbol": "map::data::BoundingBox::kOriginYFieldNumber",
+      "number": 2,
+      "address": "0x2b1a8ac",
+      "file_offset": "0x2b1a8ac"
+    },
+    {
+      "symbol": "map::data::BoundingBox::kSizeXFieldNumber",
+      "number": 3,
+      "address": "0x2b1a8b0",
+      "file_offset": "0x2b1a8b0"
+    },
+    {
+      "symbol": "map::data::BoundingBox::kSizeYFieldNumber",
+      "number": 4,
+      "address": "0x2b1a8b4",
+      "file_offset": "0x2b1a8b4"
+    },
+    {
+      "symbol": "map::data::Chip::kIdFieldNumber",
+      "number": 1,
+      "address": "0x2b1a8c8",
+      "file_offset": "0x2b1a8c8"
+    },
+    {
+      "symbol": "map::data::Chip::kHeightFieldNumber",
+      "number": 2,
+      "address": "0x2b1a8cc",
+      "file_offset": "0x2b1a8cc"
+    },
+    {
+      "symbol": "map::data::Chip::kShadowIDFieldNumber",
+      "number": 3,
+      "address": "0x2b1a8d0",
+      "file_offset": "0x2b1a8d0"
+    },
+    {
+      "symbol": "map::data::Chip::kShadowAlphaFieldNumber",
+      "number": 4,
+      "address": "0x2b1a8d4",
+      "file_offset": "0x2b1a8d4"
+    },
+    {
+      "symbol": "map::data::Chip::kVerticesFieldNumber",
+      "number": 5,
+      "address": "0x2b1a8d8",
+      "file_offset": "0x2b1a8d8"
+    },
+    {
+      "symbol": "map::data::Grid::kColFieldNumber",
+      "number": 1,
+      "address": "0x2b1a8f0",
+      "file_offset": "0x2b1a8f0"
+    },
+    {
+      "symbol": "map::data::Grid::kRowFieldNumber",
+      "number": 2,
+      "address": "0x2b1a8f4",
+      "file_offset": "0x2b1a8f4"
+    },
+    {
+      "symbol": "map::data::Grid::kDepthOrderFieldNumber",
+      "number": 3,
+      "address": "0x2b1a8f8",
+      "file_offset": "0x2b1a8f8"
+    },
+    {
+      "symbol": "map::data::Grid::kProhibitionFieldNumber",
+      "number": 4,
+      "address": "0x2b1a8fc",
+      "file_offset": "0x2b1a8fc"
+    },
+    {
+      "symbol": "map::data::Grid::kAttributeFieldNumber",
+      "number": 5,
+      "address": "0x2b1a900",
+      "file_offset": "0x2b1a900"
+    },
+    {
+      "symbol": "map::data::Grid::kPathwayIndexFieldNumber",
+      "number": 6,
+      "address": "0x2b1a904",
+      "file_offset": "0x2b1a904"
+    },
+    {
+      "symbol": "map::data::Grid::kBorderIDFieldNumber",
+      "number": 7,
+      "address": "0x2b1a908",
+      "file_offset": "0x2b1a908"
+    },
+    {
+      "symbol": "map::data::Grid::kBlendAdjacenceFieldNumber",
+      "number": 8,
+      "address": "0x2b1a90c",
+      "file_offset": "0x2b1a90c"
+    },
+    {
+      "symbol": "map::data::Grid::kColorIndexFieldNumber",
+      "number": 9,
+      "address": "0x2b1a910",
+      "file_offset": "0x2b1a910"
+    },
+    {
+      "symbol": "map::data::Grid::kChipsFieldNumber",
+      "number": 10,
+      "address": "0x2b1a914",
+      "file_offset": "0x2b1a914"
+    },
+    {
+      "symbol": "map::data::Grid::kObjFieldNumber",
+      "number": 11,
+      "address": "0x2b1a918",
+      "file_offset": "0x2b1a918"
+    },
+    {
+      "symbol": "map::data::Grid::kObjAnimatedFieldNumber",
+      "number": 12,
+      "address": "0x2b1a91c",
+      "file_offset": "0x2b1a91c"
+    },
+    {
+      "symbol": "map::data::Object::kIdFieldNumber",
+      "number": 1,
+      "address": "0x2b1a8dc",
+      "file_offset": "0x2b1a8dc"
+    },
+    {
+      "symbol": "map::data::Object::kDepthOrderFieldNumber",
+      "number": 2,
+      "address": "0x2b1a8e0",
+      "file_offset": "0x2b1a8e0"
+    },
+    {
+      "symbol": "map::data::Object::kVerticesFieldNumber",
+      "number": 3,
+      "address": "0x2b1a8e4",
+      "file_offset": "0x2b1a8e4"
+    },
+    {
+      "symbol": "map::data::ObjectAnimated::kIdFieldNumber",
+      "number": 1,
+      "address": "0x2b1a8e8",
+      "file_offset": "0x2b1a8e8"
+    },
+    {
+      "symbol": "map::data::ObjectAnimated::kDepthOrderFieldNumber",
+      "number": 2,
+      "address": "0x2b1a8ec",
+      "file_offset": "0x2b1a8ec"
+    },
+    {
+      "symbol": "map::data::QuadTree::kGridsFieldNumber",
+      "number": 1,
+      "address": "0x2b1a920",
+      "file_offset": "0x2b1a920"
+    },
+    {
+      "symbol": "map::data::QuadTree::kQuadTreesFieldNumber",
+      "number": 2,
+      "address": "0x2b1a924",
+      "file_offset": "0x2b1a924"
+    },
+    {
+      "symbol": "map::data::QuadTree::kBoundingBoxFieldNumber",
+      "number": 3,
+      "address": "0x2b1a928",
+      "file_offset": "0x2b1a928"
+    },
+    {
+      "symbol": "map::data::Root::kVersionFieldNumber",
+      "number": 1,
+      "address": "0x2b1a92c",
+      "file_offset": "0x2b1a92c"
+    },
+    {
+      "symbol": "map::data::Root::kUpdateDateFieldNumber",
+      "number": 2,
+      "address": "0x2b1a930",
+      "file_offset": "0x2b1a930"
+    },
+    {
+      "symbol": "map::data::Root::kWidthFieldNumber",
+      "number": 3,
+      "address": "0x2b1a934",
+      "file_offset": "0x2b1a934"
+    },
+    {
+      "symbol": "map::data::Root::kHeightFieldNumber",
+      "number": 4,
+      "address": "0x2b1a938",
+      "file_offset": "0x2b1a938"
+    },
+    {
+      "symbol": "map::data::Root::kQuadTreeRootFieldNumber",
+      "number": 5,
+      "address": "0x2b1a93c",
+      "file_offset": "0x2b1a93c"
+    },
+    {
+      "symbol": "map::data::Root::kFieldQuadUnitRowFieldNumber",
+      "number": 6,
+      "address": "0x2b1a940",
+      "file_offset": "0x2b1a940"
+    },
+    {
+      "symbol": "map::data::Root::kFieldQuadUnitColFieldNumber",
+      "number": 7,
+      "address": "0x2b1a944",
+      "file_offset": "0x2b1a944"
+    },
+    {
+      "symbol": "map::data::UVPos::kUvXFieldNumber",
+      "number": 1,
+      "address": "0x2b1a8b8",
+      "file_offset": "0x2b1a8b8"
+    },
+    {
+      "symbol": "map::data::UVPos::kUvYFieldNumber",
+      "number": 2,
+      "address": "0x2b1a8bc",
+      "file_offset": "0x2b1a8bc"
+    },
+    {
+      "symbol": "map::data::Vertex::kVertexPosFieldNumber",
+      "number": 1,
+      "address": "0x2b1a8c0",
+      "file_offset": "0x2b1a8c0"
+    },
+    {
+      "symbol": "map::data::Vertex::kUvPosesFieldNumber",
+      "number": 2,
+      "address": "0x2b1a8c4",
+      "file_offset": "0x2b1a8c4"
+    },
+    {
+      "symbol": "map::data::VertexPos::kPosXFieldNumber",
+      "number": 1,
+      "address": "0x2b1a8a0",
+      "file_offset": "0x2b1a8a0"
+    },
+    {
+      "symbol": "map::data::VertexPos::kPosYFieldNumber",
+      "number": 2,
+      "address": "0x2b1a8a4",
+      "file_offset": "0x2b1a8a4"
+    }
+  ]
+}

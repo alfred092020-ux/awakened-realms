@@ -13,7 +13,7 @@ from hydrate_private_assets import parse_mbn
 from inspect_private_map_nested import scan_blob
 
 SOURCE_SUFFIXES = {'.lua', '.luac', '.json', '.proto', '.so', '.dex', '.xml', '.txt', '.bin'}
-MAP_ID = re.compile(r'\d{3}_\d{3}_\d{5}\Z')
+RESOURCE_ID = re.compile(r'\d{3}_\d{3}_\d{5}\Z')
 SETTING_KEYS = {'initial_view_scale', 'default_background_image'}
 
 
@@ -29,13 +29,14 @@ def json_evidence(value):
         elif isinstance(item, list):
             for i, v in enumerate(item):
                 walk(v, pointer + '/' + str(i), key)
-        elif isinstance(item, str) and MAP_ID.fullmatch(item):
-            refs.append({'pointer': pointer, 'map_id': item})
+        elif isinstance(item, str) and RESOURCE_ID.fullmatch(item):
+            refs.append({'pointer': pointer, 'resource_id': item})
         elif key in SETTING_KEYS and isinstance(item, (str, int, float)):
             settings.append({'pointer': pointer, 'value': item})
 
     walk(value, '', '')
-    return {'map_references': refs[:200], 'map_reference_count': len(refs),
+    return {'resource_id_candidates': refs[:200], 'resource_id_candidate_count': len(refs),
+            'semantic_policy': 'The same ID syntax is used for maps, audio, effects and other resources. Context must establish the type.',
             'settings': settings[:50]}
 
 

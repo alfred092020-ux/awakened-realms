@@ -29,7 +29,9 @@ class SourceInventoryTests(unittest.TestCase):
 
     def test_map_references_are_exact_and_provenance_kept(self):
         evidence = json_evidence({'a/b': ['001_000_00002'], 'text': 'visit 001_000_00700 now'})
-        self.assertEqual(evidence['map_references'], [{'pointer': '/a~1b/0', 'map_id': '001_000_00002'}])
+        self.assertEqual(evidence['resource_id_candidates'], [{'pointer': '/a~1b/0', 'resource_id': '001_000_00002'}])
+        evidence = json_evidence({'sound_id': '100_002_00065'})
+        self.assertNotIn('map_references', evidence)
 
 
 if __name__ == '__main__':
