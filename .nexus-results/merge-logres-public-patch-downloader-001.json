@@ -1,0 +1,8 @@
+{
+  "commit": "f8451915b21bfa16a4a9d4d5d72c1485fab9d062",
+  "job_id": "merge-logres-public-patch-downloader-001",
+  "job_type": "MERGE",
+  "status": "SUCCESS",
+  "target_branch": "feat/logres-reconstruction",
+  "written_at": "2026-09-22T06:19:20.675646+00:00"
+}
