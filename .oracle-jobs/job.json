@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "job_id": "oracle-public-projection-constants-001",
+  "source_sha": "2904363299957aaee71f10d6e729af122325c06d",
+  "kind": "python",
+  "script": "scripts/logres/inspect_public_projection_constants.py",
+  "args": [
+    "--url",
+    "https://d.apkpure.net/b/XAPK/jp.MarvelousAQL.logres?version=latest",
+    "--output",
+    "@OUTPUT@/public-projection-constants.json"
+  ],
+  "timeout_seconds": 1800
+}
