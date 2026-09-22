@@ -1,0 +1,8 @@
+{
+  "commit": "6d56e5735645820733930f729d6f47342aea893e",
+  "job_id": "merge-logres-quest-instance-authority-001",
+  "job_type": "MERGE",
+  "status": "SUCCESS",
+  "target_branch": "feat/logres-reconstruction",
+  "written_at": "2026-09-22T14:19:07.800889+00:00"
+}
