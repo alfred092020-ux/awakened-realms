@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "job_id": "oracle-patch-system-inspector-001",
+  "source_sha": "6b950f8e0f85c70bbc04df2682682ad95fa4adbb",
+  "kind": "python",
+  "script": "scripts/logres/inspect_private_patch_system.py",
+  "args": [
+    "@PRIVATE_ARCHIVE@",
+    "--output",
+    "@OUTPUT@/patch-system.json"
+  ],
+  "timeout_seconds": 1800
+}
