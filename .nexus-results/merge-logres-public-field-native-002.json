@@ -1,0 +1,8 @@
+{
+  "commit": "ee7120ae4398b666df09e05ae89abd021ad64096",
+  "job_id": "merge-logres-public-field-native-002",
+  "job_type": "MERGE",
+  "status": "SUCCESS",
+  "target_branch": "feat/logres-reconstruction",
+  "written_at": "2026-09-22T08:32:57.979674+00:00"
+}
