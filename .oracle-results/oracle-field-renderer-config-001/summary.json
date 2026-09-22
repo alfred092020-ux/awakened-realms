@@ -1,0 +1,10 @@
+{
+  "duration_seconds": 0.786,
+  "error": null,
+  "exit_code": 0,
+  "job_id": "oracle-field-renderer-config-001",
+  "kind": "python",
+  "schema": 1,
+  "source_sha": "cfc2b62e0e711e61b6793a37599edff6158b52ed",
+  "status": "success"
+}

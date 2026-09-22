@@ -1,0 +1,2485 @@
+{
+  "errors": [
+    {
+      "member": "files/cache/patch/avacolle/bg/bg_020_302_102_001.mbn",
+      "reason": "ValueError"
+    },
+    {
+      "member": "files/cache/patch/avacolle/bg/bg_030_001_000_000.mbn",
+      "reason": "ValueError"
+    }
+  ],
+  "key_summary": [
+    {
+      "key": "showLayers",
+      "numeric_or_bool_count": 0,
+      "occurrence_count": 118
+    },
+    {
+      "key": "spine_animation_name",
+      "numeric_or_bool_count": 0,
+      "occurrence_count": 69
+    },
+    {
+      "key": "comment_frame_image_path",
+      "numeric_or_bool_count": 0,
+      "occurrence_count": 34
+    },
+    {
+      "key": "frame_image",
+      "numeric_or_bool_count": 0,
+      "occurrence_count": 16
+    },
+    {
+      "key": "hold_interval_time",
+      "numeric_or_bool_count": 8,
+      "occurrence_count": 8
+    },
+    {
+      "key": "interval",
+      "numeric_or_bool_count": 7,
+      "occurrence_count": 7
+    },
+    {
+      "key": "using_gauge_frame_effect_list",
+      "numeric_or_bool_count": 0,
+      "occurrence_count": 6
+    },
+    {
+      "key": "inner_frame_margin",
+      "numeric_or_bool_count": 6,
+      "occurrence_count": 6
+    },
+    {
+      "key": "frame_image_path",
+      "numeric_or_bool_count": 0,
+      "occurrence_count": 4
+    },
+    {
+      "key": "frame",
+      "numeric_or_bool_count": 1,
+      "occurrence_count": 4
+    },
+    {
+      "key": "time_out_interval",
+      "numeric_or_bool_count": 3,
+      "occurrence_count": 3
+    },
+    {
+      "key": "max_frame_size",
+      "numeric_or_bool_count": 0,
+      "occurrence_count": 3
+    },
+    {
+      "key": "middle_frame_size",
+      "numeric_or_bool_count": 0,
+      "occurrence_count": 3
+    },
+    {
+      "key": "item_ui_mask_begin_effect",
+      "numeric_or_bool_count": 0,
+      "occurrence_count": 2
+    },
+    {
+      "key": "animations",
+      "numeric_or_bool_count": 0,
+      "occurrence_count": 2
+    },
+    {
+      "key": "update_interval",
+      "numeric_or_bool_count": 2,
+      "occurrence_count": 2
+    },
+    {
+      "key": "contents_mask_message",
+      "numeric_or_bool_count": 0,
+      "occurrence_count": 2
+    },
+    {
+      "key": "content_mask",
+      "numeric_or_bool_count": 0,
+      "occurrence_count": 2
+    },
+    {
+      "key": "default_frame_size",
+      "numeric_or_bool_count": 0,
+      "occurrence_count": 2
+    },
+    {
+      "key": "frame_offset_x",
+      "numeric_or_bool_count": 1,
+      "occurrence_count": 1
+    },
+    {
+      "key": "frame_offset_y",
+      "numeric_or_bool_count": 1,
+      "occurrence_count": 1
+    },
+    {
+      "key": "icon_not_usable_mask_image",
+      "numeric_or_bool_count": 0,
+      "occurrence_count": 1
+    },
+    {
+      "key": "icon_usable_mask_image",
+      "numeric_or_bool_count": 0,
+      "occurrence_count": 1
+    },
+    {
+      "key": "item_ui_mask_end_effect",
+      "numeric_or_bool_count": 0,
+      "occurrence_count": 1
+    },
+    {
+      "key": "icon_mask_image",
+      "numeric_or_bool_count": 0,
+      "occurrence_count": 1
+    },
+    {
+      "key": "animation",
+      "numeric_or_bool_count": 0,
+      "occurrence_count": 1
+    },
+    {
+      "key": "uvs",
+      "numeric_or_bool_count": 0,
+      "occurrence_count": 1
+    },
+    {
+      "key": "notify_mask",
+      "numeric_or_bool_count": 0,
+      "occurrence_count": 1
+    },
+    {
+      "key": "masked_message",
+      "numeric_or_bool_count": 0,
+      "occurrence_count": 1
+    },
+    {
+      "key": "new_notify_animation_component_name",
+      "numeric_or_bool_count": 0,
+      "occurrence_count": 1
+    },
+    {
+      "key": "next_slidein_interval",
+      "numeric_or_bool_count": 1,
+      "occurrence_count": 1
+    },
+    {
+      "key": "ep_animation_flag",
+      "numeric_or_bool_count": 1,
+      "occurrence_count": 1
+    },
+    {
+      "key": "player",
+      "numeric_or_bool_count": 0,
+      "occurrence_count": 1
+    },
+    {
+      "key": "char_talk_limit_time_interval",
+      "numeric_or_bool_count": 1,
+      "occurrence_count": 1
+    },
+    {
+      "key": "char_talk_time_interval",
+      "numeric_or_bool_count": 1,
+      "occurrence_count": 1
+    },
+    {
+      "key": "request_interval",
+      "numeric_or_bool_count": 1,
+      "occurrence_count": 1
+    },
+    {
+      "key": "scroll_count",
+      "numeric_or_bool_count": 1,
+      "occurrence_count": 1
+    },
+    {
+      "key": "talk_limit_time_interval",
+      "numeric_or_bool_count": 1,
+      "occurrence_count": 1
+    },
+    {
+      "key": "talk_time_interval",
+      "numeric_or_bool_count": 1,
+      "occurrence_count": 1
+    },
+    {
+      "key": "mask_image",
+      "numeric_or_bool_count": 0,
+      "occurrence_count": 1
+    },
+    {
+      "key": "masked",
+      "numeric_or_bool_count": 0,
+      "occurrence_count": 1
+    },
+    {
+      "key": "equip_detail_ui_scrollareaheight",
+      "numeric_or_bool_count": 0,
+      "occurrence_count": 1
+    },
+    {
+      "key": "contents_mask",
+      "numeric_or_bool_count": 0,
+      "occurrence_count": 1
+    },
+    {
+      "key": "scroller_model",
+      "numeric_or_bool_count": 0,
+      "occurrence_count": 1
+    },
+    {
+      "key": "initial_view_scale",
+      "numeric_or_bool_count": 1,
+      "occurrence_count": 1
+    },
+    {
+      "key": "fusion_contents_mask",
+      "numeric_or_bool_count": 0,
+      "occurrence_count": 1
+    },
+    {
+      "key": "animationicon_anchor_rect",
+      "numeric_or_bool_count": 0,
+      "occurrence_count": 1
+    },
+    {
+      "key": "default_inside_frame_size",
+      "numeric_or_bool_count": 0,
+      "occurrence_count": 1
+    },
+    {
+      "key": "max_inside_frame_size",
+      "numeric_or_bool_count": 0,
+      "occurrence_count": 1
+    },
+    {
+      "key": "middle_inside_frame_size",
+      "numeric_or_bool_count": 0,
+      "occurrence_count": 1
+    },
+    {
+      "key": "job_background_frame_image_default_resource",
+      "numeric_or_bool_count": 0,
+      "occurrence_count": 1
+    },
+    {
+      "key": "job_background_frame_image_resource",
+      "numeric_or_bool_count": 0,
+      "occurrence_count": 1
+    },
+    {
+      "key": "appearpoint_update_interval",
+      "numeric_or_bool_count": 1,
+      "occurrence_count": 1
+    },
+    {
+      "key": "bosshp_update_interval",
+      "numeric_or_bool_count": 1,
+      "occurrence_count": 1
+    },
+    {
+      "key": "missingjob_update_interval",
+      "numeric_or_bool_count": 1,
+      "occurrence_count": 1
+    },
+    {
+      "key": "own_member_frame",
+      "numeric_or_bool_count": 0,
+      "occurrence_count": 1
+    },
+    {
+      "key": "animation_settings",
+      "numeric_or_bool_count": 0,
+      "occurrence_count": 1
+    }
+  ],
+  "provenance": "PRIVATE_CACHE_FIELD_RENDER_CONFIG_METADATA",
+  "semantic_policy": "Key names and numeric/bool values are evidence only. String values and source text are not exported.",
+  "source_count": 42,
+  "sources": [
+    {
+      "container": "files/cache/patch/avatar.mbn",
+      "entry": "parts_order.json",
+      "hits": [
+        {
+          "key": "showLayers",
+          "pointer": "/bod_140_f/showLayers",
+          "size": 0,
+          "value_type": "array"
+        },
+        {
+          "key": "showLayers",
+          "pointer": "/bod_140_m/showLayers",
+          "size": 0,
+          "value_type": "array"
+        },
+        {
+          "key": "showLayers",
+          "pointer": "/bod_145_f/showLayers",
+          "size": 0,
+          "value_type": "array"
+        },
+        {
+          "key": "showLayers",
+          "pointer": "/bod_145_m/showLayers",
+          "size": 0,
+          "value_type": "array"
+        },
+        {
+          "key": "showLayers",
+          "pointer": "/bod_147_f/showLayers",
+          "size": 0,
+          "value_type": "array"
+        },
+        {
+          "key": "showLayers",
+          "pointer": "/bod_147_m/showLayers",
+          "size": 0,
+          "value_type": "array"
+        },
+        {
+          "key": "showLayers",
+          "pointer": "/bod_152_f/showLayers",
+          "size": 0,
+          "value_type": "array"
+        },
+        {
+          "key": "showLayers",
+          "pointer": "/bod_152_m/showLayers",
+          "size": 0,
+          "value_type": "array"
+        },
+        {
+          "key": "showLayers",
+          "pointer": "/bod_155_f/showLayers",
+          "size": 0,
+          "value_type": "array"
+        },
+        {
+          "key": "showLayers",
+          "pointer": "/bod_155_m/showLayers",
+          "size": 0,
+          "value_type": "array"
+        },
+        {
+          "key": "showLayers",
+          "pointer": "/bod_164_f/showLayers",
+          "size": 0,
+          "value_type": "array"
+        },
+        {
+          "key": "showLayers",
+          "pointer": "/bod_164_m/showLayers",
+          "size": 0,
+          "value_type": "array"
+        },
+        {
+          "key": "showLayers",
+          "pointer": "/bod_167_f/showLayers",
+          "size": 0,
+          "value_type": "array"
+        },
+        {
+          "key": "showLayers",
+          "pointer": "/bod_167_m/showLayers",
+          "size": 0,
+          "value_type": "array"
+        },
+        {
+          "key": "showLayers",
+          "pointer": "/bod_168_f/showLayers",
+          "size": 0,
+          "value_type": "array"
+        },
+        {
+          "key": "showLayers",
+          "pointer": "/bod_168_m/showLayers",
+          "size": 0,
+          "value_type": "array"
+        },
+        {
+          "key": "showLayers",
+          "pointer": "/bod_170_f/showLayers",
+          "size": 0,
+          "value_type": "array"
+        },
+        {
+          "key": "showLayers",
+          "pointer": "/bod_170_m/showLayers",
+          "size": 0,
+          "value_type": "array"
+        },
+        {
+          "key": "showLayers",
+          "pointer": "/bod_171_f/showLayers",
+          "size": 0,
+          "value_type": "array"
+        },
+        {
+          "key": "showLayers",
+          "pointer": "/bod_171_m/showLayers",
+          "size": 0,
+          "value_type": "array"
+        },
+        {
+          "key": "showLayers",
+          "pointer": "/bod_188_f/showLayers",
+          "size": 0,
+          "value_type": "array"
+        },
+        {
+          "key": "showLayers",
+          "pointer": "/bod_188_m/showLayers",
+          "size": 0,
+          "value_type": "array"
+        },
+        {
+          "key": "showLayers",
+          "pointer": "/bod_192_f/showLayers",
+          "size": 0,
+          "value_type": "array"
+        },
+        {
+          "key": "showLayers",
+          "pointer": "/bod_192_m/showLayers",
+          "size": 0,
+          "value_type": "array"
+        },
+        {
+          "key": "showLayers",
+          "pointer": "/bod_193_f/showLayers",
+          "size": 0,
+          "value_type": "array"
+        },
+        {
+          "key": "showLayers",
+          "pointer": "/bod_193_m/showLayers",
+          "size": 0,
+          "value_type": "array"
+        },
+        {
+          "key": "showLayers",
+          "pointer": "/bod_194_f/showLayers",
+          "size": 0,
+          "value_type": "array"
+        },
+        {
+          "key": "showLayers",
+          "pointer": "/bod_194_m/showLayers",
+          "size": 0,
+          "value_type": "array"
+        },
+        {
+          "key": "showLayers",
+          "pointer": "/bod_195_f/showLayers",
+          "size": 0,
+          "value_type": "array"
+        },
+        {
+          "key": "showLayers",
+          "pointer": "/bod_195_m/showLayers",
+          "size": 0,
+          "value_type": "array"
+        },
+        {
+          "key": "showLayers",
+          "pointer": "/bod_196_f/showLayers",
+          "size": 0,
+          "value_type": "array"
+        },
+        {
+          "key": "showLayers",
+          "pointer": "/bod_196_m/showLayers",
+          "size": 0,
+          "value_type": "array"
+        },
+        {
+          "key": "showLayers",
+          "pointer": "/bod_197_f/showLayers",
+          "size": 0,
+          "value_type": "array"
+        },
+        {
+          "key": "showLayers",
+          "pointer": "/bod_197_m/showLayers",
+          "size": 0,
+          "value_type": "array"
+        },
+        {
+          "key": "showLayers",
+          "pointer": "/bod_198_f/showLayers",
+          "size": 0,
+          "value_type": "array"
+        },
+        {
+          "key": "showLayers",
+          "pointer": "/bod_198_m/showLayers",
+          "size": 0,
+          "value_type": "array"
+        },
+        {
+          "key": "showLayers",
+          "pointer": "/bod_202_f/showLayers",
+          "size": 0,
+          "value_type": "array"
+        },
+        {
+          "key": "showLayers",
+          "pointer": "/bod_202_m/showLayers",
+          "size": 0,
+          "value_type": "array"
+        },
+        {
+          "key": "showLayers",
+          "pointer": "/bod_203_f/showLayers",
+          "size": 0,
+          "value_type": "array"
+        },
+        {
+          "key": "showLayers",
+          "pointer": "/bod_203_m/showLayers",
+          "size": 0,
+          "value_type": "array"
+        },
+        {
+          "key": "showLayers",
+          "pointer": "/bod_204_f/showLayers",
+          "size": 0,
+          "value_type": "array"
+        },
+        {
+          "key": "showLayers",
+          "pointer": "/bod_204_m/showLayers",
+          "size": 0,
+          "value_type": "array"
+        },
+        {
+          "key": "showLayers",
+          "pointer": "/bod_205_f/showLayers",
+          "size": 0,
+          "value_type": "array"
+        },
+        {
+          "key": "showLayers",
+          "pointer": "/bod_205_m/showLayers",
+          "size": 0,
+          "value_type": "array"
+        },
+        {
+          "key": "showLayers",
+          "pointer": "/bod_206_f/showLayers",
+          "size": 0,
+          "value_type": "array"
+        },
+        {
+          "key": "showLayers",
+          "pointer": "/bod_206_m/showLayers",
+          "size": 0,
+          "value_type": "array"
+        },
+        {
+          "key": "showLayers",
+          "pointer": "/bod_207_f/showLayers",
+          "size": 0,
+          "value_type": "array"
+        },
+        {
+          "key": "showLayers",
+          "pointer": "/bod_207_m/showLayers",
+          "size": 0,
+          "value_type": "array"
+        },
+        {
+          "key": "showLayers",
+          "pointer": "/bod_208_f/showLayers",
+          "size": 0,
+          "value_type": "array"
+        },
+        {
+          "key": "showLayers",
+          "pointer": "/bod_208_m/showLayers",
+          "size": 0,
+          "value_type": "array"
+        },
+        {
+          "key": "showLayers",
+          "pointer": "/bod_209_f/showLayers",
+          "size": 0,
+          "value_type": "array"
+        },
+        {
+          "key": "showLayers",
+          "pointer": "/bod_209_m/showLayers",
+          "size": 0,
+          "value_type": "array"
+        },
+        {
+          "key": "showLayers",
+          "pointer": "/bod_210_f/showLayers",
+          "size": 0,
+          "value_type": "array"
+        },
+        {
+          "key": "showLayers",
+          "pointer": "/bod_210_m/showLayers",
+          "size": 0,
+          "value_type": "array"
+        },
+        {
+          "key": "showLayers",
+          "pointer": "/bod_211_f/showLayers",
+          "size": 0,
+          "value_type": "array"
+        },
+        {
+          "key": "showLayers",
+          "pointer": "/bod_211_m/showLayers",
+          "size": 0,
+          "value_type": "array"
+        },
+        {
+          "key": "showLayers",
+          "pointer": "/bod_212_f/showLayers",
+          "size": 0,
+          "value_type": "array"
+        },
+        {
+          "key": "showLayers",
+          "pointer": "/bod_212_m/showLayers",
+          "size": 0,
+          "value_type": "array"
+        },
+        {
+          "key": "showLayers",
+          "pointer": "/bod_213_f/showLayers",
+          "size": 0,
+          "value_type": "array"
+        },
+        {
+          "key": "showLayers",
+          "pointer": "/bod_213_m/showLayers",
+          "size": 0,
+          "value_type": "array"
+        },
+        {
+          "key": "showLayers",
+          "pointer": "/bod_217_f/showLayers",
+          "size": 0,
+          "value_type": "array"
+        },
+        {
+          "key": "showLayers",
+          "pointer": "/bod_217_m/showLayers",
+          "size": 0,
+          "value_type": "array"
+        },
+        {
+          "key": "showLayers",
+          "pointer": "/bod_218_f/showLayers",
+          "size": 0,
+          "value_type": "array"
+        },
+        {
+          "key": "showLayers",
+          "pointer": "/bod_218_m/showLayers",
+          "size": 0,
+          "value_type": "array"
+        },
+        {
+          "key": "showLayers",
+          "pointer": "/bod_220_f/showLayers",
+          "size": 0,
+          "value_type": "array"
+        },
+        {
+          "key": "showLayers",
+          "pointer": "/bod_220_m/showLayers",
+          "size": 0,
+          "value_type": "array"
+        },
+        {
+          "key": "showLayers",
+          "pointer": "/bod_221_f/showLayers",
+          "size": 0,
+          "value_type": "array"
+        },
+        {
+          "key": "showLayers",
+          "pointer": "/bod_221_m/showLayers",
+          "size": 0,
+          "value_type": "array"
+        },
+        {
+          "key": "showLayers",
+          "pointer": "/bod_222_f/showLayers",
+          "size": 0,
+          "value_type": "array"
+        },
+        {
+          "key": "showLayers",
+          "pointer": "/bod_222_m/showLayers",
+          "size": 0,
+          "value_type": "array"
+        },
+        {
+          "key": "showLayers",
+          "pointer": "/bod_229_f/showLayers",
+          "size": 0,
+          "value_type": "array"
+        },
+        {
+          "key": "showLayers",
+          "pointer": "/bod_229_m/showLayers",
+          "size": 0,
+          "value_type": "array"
+        },
+        {
+          "key": "showLayers",
+          "pointer": "/bod_230_f/showLayers",
+          "size": 0,
+          "value_type": "array"
+        },
+        {
+          "key": "showLayers",
+          "pointer": "/bod_230_m/showLayers",
+          "size": 0,
+          "value_type": "array"
+        },
+        {
+          "key": "showLayers",
+          "pointer": "/bod_234_f/showLayers",
+          "size": 0,
+          "value_type": "array"
+        },
+        {
+          "key": "showLayers",
+          "pointer": "/bod_234_m/showLayers",
+          "size": 0,
+          "value_type": "array"
+        },
+        {
+          "key": "showLayers",
+          "pointer": "/bod_236_f/showLayers",
+          "size": 0,
+          "value_type": "array"
+        },
+        {
+          "key": "showLayers",
+          "pointer": "/bod_236_m/showLayers",
+          "size": 0,
+          "value_type": "array"
+        },
+        {
+          "key": "showLayers",
+          "pointer": "/bod_238_f/showLayers",
+          "size": 0,
+          "value_type": "array"
+        },
+        {
+          "key": "showLayers",
+          "pointer": "/bod_238_m/showLayers",
+          "size": 0,
+          "value_type": "array"
+        },
+        {
+          "key": "showLayers",
+          "pointer": "/bod_239_f/showLayers",
+          "size": 0,
+          "value_type": "array"
+        },
+        {
+          "key": "showLayers",
+          "pointer": "/bod_239_m/showLayers",
+          "size": 0,
+          "value_type": "array"
+        },
+        {
+          "key": "showLayers",
+          "pointer": "/bod_240_f/showLayers",
+          "size": 0,
+          "value_type": "array"
+        },
+        {
+          "key": "showLayers",
+          "pointer": "/bod_240_m/showLayers",
+          "size": 0,
+          "value_type": "array"
+        },
+        {
+          "key": "showLayers",
+          "pointer": "/bod_241_f/showLayers",
+          "size": 0,
+          "value_type": "array"
+        },
+        {
+          "key": "showLayers",
+          "pointer": "/bod_241_m/showLayers",
+          "size": 0,
+          "value_type": "array"
+        },
+        {
+          "key": "showLayers",
+          "pointer": "/bod_242_f/showLayers",
+          "size": 0,
+          "value_type": "array"
+        },
+        {
+          "key": "showLayers",
+          "pointer": "/bod_242_m/showLayers",
+          "size": 0,
+          "value_type": "array"
+        },
+        {
+          "key": "showLayers",
+          "pointer": "/bod_243_f/showLayers",
+          "size": 0,
+          "value_type": "array"
+        },
+        {
+          "key": "showLayers",
+          "pointer": "/bod_243_m/showLayers",
+          "size": 0,
+          "value_type": "array"
+        },
+        {
+          "key": "showLayers",
+          "pointer": "/bod_244_f/showLayers",
+          "size": 0,
+          "value_type": "array"
+        },
+        {
+          "key": "showLayers",
+          "pointer": "/bod_244_m/showLayers",
+          "size": 0,
+          "value_type": "array"
+        },
+        {
+          "key": "showLayers",
+          "pointer": "/bod_245_f/showLayers",
+          "size": 0,
+          "value_type": "array"
+        },
+        {
+          "key": "showLayers",
+          "pointer": "/bod_245_m/showLayers",
+          "size": 0,
+          "value_type": "array"
+        },
+        {
+          "key": "showLayers",
+          "pointer": "/bod_246_f/showLayers",
+          "size": 0,
+          "value_type": "array"
+        },
+        {
+          "key": "showLayers",
+          "pointer": "/bod_246_m/showLayers",
+          "size": 0,
+          "value_type": "array"
+        },
+        {
+          "key": "showLayers",
+          "pointer": "/bod_247_f/showLayers",
+          "size": 0,
+          "value_type": "array"
+        },
+        {
+          "key": "showLayers",
+          "pointer": "/bod_247_m/showLayers",
+          "size": 0,
+          "value_type": "array"
+        },
+        {
+          "key": "showLayers",
+          "pointer": "/bod_248_f/showLayers",
+          "size": 0,
+          "value_type": "array"
+        },
+        {
+          "key": "showLayers",
+          "pointer": "/bod_248_m/showLayers",
+          "size": 0,
+          "value_type": "array"
+        },
+        {
+          "key": "showLayers",
+          "pointer": "/bod_249_f/showLayers",
+          "size": 0,
+          "value_type": "array"
+        },
+        {
+          "key": "showLayers",
+          "pointer": "/bod_249_m/showLayers",
+          "size": 0,
+          "value_type": "array"
+        },
+        {
+          "key": "showLayers",
+          "pointer": "/bod_256_f/showLayers",
+          "size": 0,
+          "value_type": "array"
+        },
+        {
+          "key": "showLayers",
+          "pointer": "/bod_256_m/showLayers",
+          "size": 0,
+          "value_type": "array"
+        },
+        {
+          "key": "showLayers",
+          "pointer": "/bod_257_f/showLayers",
+          "size": 0,
+          "value_type": "array"
+        },
+        {
+          "key": "showLayers",
+          "pointer": "/bod_257_m/showLayers",
+          "size": 0,
+          "value_type": "array"
+        },
+        {
+          "key": "showLayers",
+          "pointer": "/bod_258_f/showLayers",
+          "size": 0,
+          "value_type": "array"
+        },
+        {
+          "key": "showLayers",
+          "pointer": "/bod_258_m/showLayers",
+          "size": 0,
+          "value_type": "array"
+        },
+        {
+          "key": "showLayers",
+          "pointer": "/bod_259_f/showLayers",
+          "size": 0,
+          "value_type": "array"
+        },
+        {
+          "key": "showLayers",
+          "pointer": "/bod_259_m/showLayers",
+          "size": 0,
+          "value_type": "array"
+        },
+        {
+          "key": "showLayers",
+          "pointer": "/bod_260_f/showLayers",
+          "size": 0,
+          "value_type": "array"
+        },
+        {
+          "key": "showLayers",
+          "pointer": "/bod_260_m/showLayers",
+          "size": 0,
+          "value_type": "array"
+        },
+        {
+          "key": "showLayers",
+          "pointer": "/bod_261_f/showLayers",
+          "size": 0,
+          "value_type": "array"
+        },
+        {
+          "key": "showLayers",
+          "pointer": "/bod_261_m/showLayers",
+          "size": 0,
+          "value_type": "array"
+        },
+        {
+          "key": "showLayers",
+          "pointer": "/bod_263_f/showLayers",
+          "size": 0,
+          "value_type": "array"
+        },
+        {
+          "key": "showLayers",
+          "pointer": "/bod_263_m/showLayers",
+          "size": 0,
+          "value_type": "array"
+        },
+        {
+          "key": "showLayers",
+          "pointer": "/bod_264_f/showLayers",
+          "size": 0,
+          "value_type": "array"
+        },
+        {
+          "key": "showLayers",
+          "pointer": "/bod_264_m/showLayers",
+          "size": 0,
+          "value_type": "array"
+        }
+      ],
+      "sha256": "ab99d42cf6dcd5d05eaa179a0458ea34407421284039182255b4afe7f3b18e16",
+      "size": 18291
+    },
+    {
+      "container": "files/cache/patch/gui/Battle/damage_hit_record.mbn",
+      "entry": "gui_battle_score_parameter.json",
+      "hits": [
+        {
+          "key": "spine_animation_name",
+          "pointer": "/display_score_ui/slidein_current_score_effect/spine_animation_name",
+          "value_type": "string"
+        },
+        {
+          "key": "spine_animation_name",
+          "pointer": "/display_score_ui/update_best_ever_score_effect/spine_animation_name",
+          "value_type": "string"
+        },
+        {
+          "key": "spine_animation_name",
+          "pointer": "/display_score_ui/update_current_best_score_effect/spine_animation_name",
+          "value_type": "string"
+        }
+      ],
+      "sha256": "9a384e4513b8f8a1442ef79581f7920abd3d5780ca177d452a37ecaaee3da948",
+      "size": 1844
+    },
+    {
+      "container": "files/cache/patch/gui/Battle/gauge/ancient_gauge.mbn",
+      "entry": "ancient_gauge_param_setting.json",
+      "hits": [
+        {
+          "key": "spine_animation_name",
+          "pointer": "/appearance_effect/spine_animation_name",
+          "value_type": "string"
+        },
+        {
+          "key": "spine_animation_name",
+          "pointer": "/gauge_accumulate_effect_list/0/spine_animation_name",
+          "value_type": "string"
+        },
+        {
+          "key": "spine_animation_name",
+          "pointer": "/skill_reserving_effect/spine_animation_name",
+          "value_type": "string"
+        },
+        {
+          "key": "spine_animation_name",
+          "pointer": "/skill_select_effect/spine_animation_name",
+          "value_type": "string"
+        },
+        {
+          "key": "spine_animation_name",
+          "pointer": "/usable_gauge_effect_list/0/spine_animation_name",
+          "value_type": "string"
+        },
+        {
+          "key": "using_gauge_frame_effect_list",
+          "pointer": "/using_gauge_frame_effect_list",
+          "size": 1,
+          "value_type": "array"
+        },
+        {
+          "key": "spine_animation_name",
+          "pointer": "/using_gauge_frame_effect_list/0/spine_animation_name",
+          "value_type": "string"
+        }
+      ],
+      "sha256": "fcbaa98663c57fdba34a9052abd70037a56b09398b213da01b9d6180f017ab51",
+      "size": 2338
+    },
+    {
+      "container": "files/cache/patch/gui/Battle/gauge/burst_gauge_lump.mbn",
+      "entry": "burst_gauge_param_setting.json",
+      "hits": [
+        {
+          "key": "spine_animation_name",
+          "pointer": "/appearance_effect/spine_animation_name",
+          "value_type": "string"
+        },
+        {
+          "key": "spine_animation_name",
+          "pointer": "/gauge_accumulate_effect_list/0/spine_animation_name",
+          "value_type": "string"
+        },
+        {
+          "key": "spine_animation_name",
+          "pointer": "/gauge_accumulate_effect_list/1/spine_animation_name",
+          "value_type": "string"
+        },
+        {
+          "key": "spine_animation_name",
+          "pointer": "/gauge_accumulate_effect_list/2/spine_animation_name",
+          "value_type": "string"
+        },
+        {
+          "key": "spine_animation_name",
+          "pointer": "/skill_reserving_effect/spine_animation_name",
+          "value_type": "string"
+        },
+        {
+          "key": "spine_animation_name",
+          "pointer": "/skill_select_effect/spine_animation_name",
+          "value_type": "string"
+        },
+        {
+          "key": "spine_animation_name",
+          "pointer": "/usable_gauge_effect_list/0/spine_animation_name",
+          "value_type": "string"
+        },
+        {
+          "key": "spine_animation_name",
+          "pointer": "/usable_gauge_effect_list/1/spine_animation_name",
+          "value_type": "string"
+        },
+        {
+          "key": "spine_animation_name",
+          "pointer": "/usable_gauge_effect_list/2/spine_animation_name",
+          "value_type": "string"
+        },
+        {
+          "key": "using_gauge_frame_effect_list",
+          "pointer": "/using_gauge_frame_effect_list",
+          "size": 3,
+          "value_type": "array"
+        },
+        {
+          "key": "spine_animation_name",
+          "pointer": "/using_gauge_frame_effect_list/0/spine_animation_name",
+          "value_type": "string"
+        },
+        {
+          "key": "spine_animation_name",
+          "pointer": "/using_gauge_frame_effect_list/1/spine_animation_name",
+          "value_type": "string"
+        },
+        {
+          "key": "spine_animation_name",
+          "pointer": "/using_gauge_frame_effect_list/2/spine_animation_name",
+          "value_type": "string"
+        }
+      ],
+      "sha256": "0c609daaee415fdac3f0b4633166b1010127eadd65885c7bd156263f4c3ded01",
+      "size": 3604
+    },
+    {
+      "container": "files/cache/patch/gui/Battle/gauge/crusader_gauge.mbn",
+      "entry": "crusader_gauge_param_setting.json",
+      "hits": [
+        {
+          "key": "spine_animation_name",
+          "pointer": "/appearance_effect/spine_animation_name",
+          "value_type": "string"
+        },
+        {
+          "key": "spine_animation_name",
+          "pointer": "/gauge_accumulate_effect_list/0/spine_animation_name",
+          "value_type": "string"
+        },
+        {
+          "key": "spine_animation_name",
+          "pointer": "/gauge_accumulate_effect_list/1/spine_animation_name",
+          "value_type": "string"
+        },
+        {
+          "key": "spine_animation_name",
+          "pointer": "/gauge_accumulate_effect_list/2/spine_animation_name",
+          "value_type": "string"
+        },
+        {
+          "key": "spine_animation_name",
+          "pointer": "/skill_reserving_effect/spine_animation_name",
+          "value_type": "string"
+        },
+        {
+          "key": "spine_animation_name",
+          "pointer": "/skill_select_effect/spine_animation_name",
+          "value_type": "string"
+        },
+        {
+          "key": "spine_animation_name",
+          "pointer": "/usable_gauge_effect_list/0/spine_animation_name",
+          "value_type": "string"
+        },
+        {
+          "key": "spine_animation_name",
+          "pointer": "/usable_gauge_effect_list/1/spine_animation_name",
+          "value_type": "string"
+        },
+        {
+          "key": "spine_animation_name",
+          "pointer": "/usable_gauge_effect_list/2/spine_animation_name",
+          "value_type": "string"
+        },
+        {
+          "key": "using_gauge_frame_effect_list",
+          "pointer": "/using_gauge_frame_effect_list",
+          "size": 3,
+          "value_type": "array"
+        },
+        {
+          "key": "spine_animation_name",
+          "pointer": "/using_gauge_frame_effect_list/0/spine_animation_name",
+          "value_type": "string"
+        },
+        {
+          "key": "spine_animation_name",
+          "pointer": "/using_gauge_frame_effect_list/1/spine_animation_name",
+          "value_type": "string"
+        },
+        {
+          "key": "spine_animation_name",
+          "pointer": "/using_gauge_frame_effect_list/2/spine_animation_name",
+          "value_type": "string"
+        }
+      ],
+      "sha256": "8e251300bfce1bc0bbc27799fe78034e8184cfc2918a617166a34ddf3a0ce53c",
+      "size": 3614
+    },
+    {
+      "container": "files/cache/patch/gui/Battle/gauge/kenki_gauge.mbn",
+      "entry": "kenki_gauge_param_setting.json",
+      "hits": [
+        {
+          "key": "spine_animation_name",
+          "pointer": "/appearance_effect/spine_animation_name",
+          "value_type": "string"
+        },
+        {
+          "key": "spine_animation_name",
+          "pointer": "/gauge_accumulate_effect_list/0/spine_animation_name",
+          "value_type": "string"
+        },
+        {
+          "key": "spine_animation_name",
+          "pointer": "/gauge_accumulate_effect_list/1/spine_animation_name",
+          "value_type": "string"
+        },
+        {
+          "key": "spine_animation_name",
+          "pointer": "/gauge_accumulate_effect_list/2/spine_animation_name",
+          "value_type": "string"
+        },
+        {
+          "key": "spine_animation_name",
+          "pointer": "/skill_reserving_effect/spine_animation_name",
+          "value_type": "string"
+        },
+        {
+          "key": "spine_animation_name",
+          "pointer": "/skill_select_effect/spine_animation_name",
+          "value_type": "string"
+        },
+        {
+          "key": "spine_animation_name",
+          "pointer": "/usable_gauge_effect_list/0/spine_animation_name",
+          "value_type": "string"
+        },
+        {
+          "key": "spine_animation_name",
+          "pointer": "/usable_gauge_effect_list/1/spine_animation_name",
+          "value_type": "string"
+        },
+        {
+          "key": "spine_animation_name",
+          "pointer": "/usable_gauge_effect_list/2/spine_animation_name",
+          "value_type": "string"
+        },
+        {
+          "key": "using_gauge_frame_effect_list",
+          "pointer": "/using_gauge_frame_effect_list",
+          "size": 3,
+          "value_type": "array"
+        },
+        {
+          "key": "spine_animation_name",
+          "pointer": "/using_gauge_frame_effect_list/0/spine_animation_name",
+          "value_type": "string"
+        },
+        {
+          "key": "spine_animation_name",
+          "pointer": "/using_gauge_frame_effect_list/1/spine_animation_name",
+          "value_type": "string"
+        },
+        {
+          "key": "spine_animation_name",
+          "pointer": "/using_gauge_frame_effect_list/2/spine_animation_name",
+          "value_type": "string"
+        }
+      ],
+      "sha256": "b6c76383331e4676aa6d7de3d686b718393e74901ac0fb02a12ee28be68ed172",
+      "size": 3531
+    },
+    {
+      "container": "files/cache/patch/gui/Battle/gauge/rebellion_gauge.mbn",
+      "entry": "rebellion_gauge_param_setting.json",
+      "hits": [
+        {
+          "key": "spine_animation_name",
+          "pointer": "/appearance_effect/spine_animation_name",
+          "value_type": "string"
+        },
+        {
+          "key": "spine_animation_name",
+          "pointer": "/gauge_accumulate_effect_list/0/spine_animation_name",
+          "value_type": "string"
+        },
+        {
+          "key": "spine_animation_name",
+          "pointer": "/gauge_accumulate_effect_list/1/spine_animation_name",
+          "value_type": "string"
+        },
+        {
+          "key": "spine_animation_name",
+          "pointer": "/gauge_accumulate_effect_list/2/spine_animation_name",
+          "value_type": "string"
+        },
+        {
+          "key": "spine_animation_name",
+          "pointer": "/skill_reserving_effect/spine_animation_name",
+          "value_type": "string"
+        },
+        {
+          "key": "spine_animation_name",
+          "pointer": "/skill_select_effect/spine_animation_name",
+          "value_type": "string"
+        },
+        {
+          "key": "spine_animation_name",
+          "pointer": "/usable_gauge_effect_list/0/spine_animation_name",
+          "value_type": "string"
+        },
+        {
+          "key": "spine_animation_name",
+          "pointer": "/usable_gauge_effect_list/1/spine_animation_name",
+          "value_type": "string"
+        },
+        {
+          "key": "spine_animation_name",
+          "pointer": "/usable_gauge_effect_list/2/spine_animation_name",
+          "value_type": "string"
+        },
+        {
+          "key": "using_gauge_frame_effect_list",
+          "pointer": "/using_gauge_frame_effect_list",
+          "size": 3,
+          "value_type": "array"
+        },
+        {
+          "key": "spine_animation_name",
+          "pointer": "/using_gauge_frame_effect_list/0/spine_animation_name",
+          "value_type": "string"
+        },
+        {
+          "key": "spine_animation_name",
+          "pointer": "/using_gauge_frame_effect_list/1/spine_animation_name",
+          "value_type": "string"
+        },
+        {
+          "key": "spine_animation_name",
+          "pointer": "/using_gauge_frame_effect_list/2/spine_animation_name",
+          "value_type": "string"
+        }
+      ],
+      "sha256": "14e9067e355a2215a09e4f323551b059c8dd6d0293d5d1533f5bff930f48b642",
+      "size": 3716
+    },
+    {
+      "container": "files/cache/patch/gui/Battle/gauge/reiatsu_gauge.mbn",
+      "entry": "reiatsu_gauge_param_setting.json",
+      "hits": [
+        {
+          "key": "spine_animation_name",
+          "pointer": "/appearance_effect/spine_animation_name",
+          "value_type": "string"
+        },
+        {
+          "key": "spine_animation_name",
+          "pointer": "/gauge_accumulate_effect_list/0/spine_animation_name",
+          "value_type": "string"
+        },
+        {
+          "key": "spine_animation_name",
+          "pointer": "/gauge_accumulate_effect_list/1/spine_animation_name",
+          "value_type": "string"
+        },
+        {
+          "key": "spine_animation_name",
+          "pointer": "/gauge_accumulate_effect_list/2/spine_animation_name",
+          "value_type": "string"
+        },
+        {
+          "key": "spine_animation_name",
+          "pointer": "/skill_reserving_effect/spine_animation_name",
+          "value_type": "string"
+        },
+        {
+          "key": "spine_animation_name",
+          "pointer": "/skill_select_effect/spine_animation_name",
+          "value_type": "string"
+        },
+        {
+          "key": "spine_animation_name",
+          "pointer": "/usable_gauge_effect_list/0/spine_animation_name",
+          "value_type": "string"
+        },
+        {
+          "key": "spine_animation_name",
+          "pointer": "/usable_gauge_effect_list/1/spine_animation_name",
+          "value_type": "string"
+        },
+        {
+          "key": "spine_animation_name",
+          "pointer": "/usable_gauge_effect_list/2/spine_animation_name",
+          "value_type": "string"
+        },
+        {
+          "key": "using_gauge_frame_effect_list",
+          "pointer": "/using_gauge_frame_effect_list",
+          "size": 3,
+          "value_type": "array"
+        },
+        {
+          "key": "spine_animation_name",
+          "pointer": "/using_gauge_frame_effect_list/0/spine_animation_name",
+          "value_type": "string"
+        },
+        {
+          "key": "spine_animation_name",
+          "pointer": "/using_gauge_frame_effect_list/1/spine_animation_name",
+          "value_type": "string"
+        },
+        {
+          "key": "spine_animation_name",
+          "pointer": "/using_gauge_frame_effect_list/2/spine_animation_name",
+          "value_type": "string"
+        }
+      ],
+      "sha256": "73695887253191991a00cda5a9a4ced372c304feaf33a4a59b9fd15a91cf4a25",
+      "size": 3583
+    },
+    {
+      "container": "files/cache/patch/gui/Battle/shift_special_skill.mbn",
+      "entry": "setting.json",
+      "hits": [
+        {
+          "key": "frame_offset_x",
+          "pointer": "/frame_offset_x",
+          "value": 1.0,
+          "value_type": "float"
+        },
+        {
+          "key": "frame_offset_y",
+          "pointer": "/frame_offset_y",
+          "value": 7.0,
+          "value_type": "float"
+        }
+      ],
+      "sha256": "ff481929769d15094582d1e56708742376f3a72bb778a67e4c1c41936343504e",
+      "size": 61
+    },
+    {
+      "container": "files/cache/patch/gui/Battle/shuffle.mbn",
+      "entry": "battle_shuffle_ui_setting.json",
+      "hits": [
+        {
+          "key": "icon_not_usable_mask_image",
+          "pointer": "/000_000_00001/icon_not_usable_mask_image",
+          "value_type": "string"
+        },
+        {
+          "key": "icon_usable_mask_image",
+          "pointer": "/000_000_00001/icon_usable_mask_image",
+          "value_type": "string"
+        },
+        {
+          "key": "item_ui_mask_begin_effect",
+          "pointer": "/000_000_00001/item_ui_mask_begin_effect",
+          "value_type": "string"
+        },
+        {
+          "key": "item_ui_mask_end_effect",
+          "pointer": "/000_000_00001/item_ui_mask_end_effect",
+          "value_type": "string"
+        },
+        {
+          "key": "icon_mask_image",
+          "pointer": "/000_000_00002/icon_mask_image",
+          "value_type": "string"
+        },
+        {
+          "key": "item_ui_mask_begin_effect",
+          "pointer": "/000_000_00002/item_ui_mask_begin_effect",
+          "value_type": "string"
+        }
+      ],
+      "sha256": "c2a5c10603d1acdcbb2000c78b0ade6469501dafbc1aa713588fa2362c77574c",
+      "size": 703
+    },
+    {
+      "container": "files/cache/patch/gui/Equipment/avatar_collection/ui.mbn",
+      "entry": "character_word_setting.json",
+      "hits": [
+        {
+          "key": "comment_frame_image_path",
+          "pointer": "/0/comment_frame_image_path",
+          "value_type": "string"
+        },
+        {
+          "key": "comment_frame_image_path",
+          "pointer": "/1/comment_frame_image_path",
+          "value_type": "string"
+        },
+        {
+          "key": "comment_frame_image_path",
+          "pointer": "/2/comment_frame_image_path",
+          "value_type": "string"
+        },
+        {
+          "key": "comment_frame_image_path",
+          "pointer": "/3/comment_frame_image_path",
+          "value_type": "string"
+        },
+        {
+          "key": "comment_frame_image_path",
+          "pointer": "/4/comment_frame_image_path",
+          "value_type": "string"
+        },
+        {
+          "key": "comment_frame_image_path",
+          "pointer": "/5/comment_frame_image_path",
+          "value_type": "string"
+        },
+        {
+          "key": "comment_frame_image_path",
+          "pointer": "/6/comment_frame_image_path",
+          "value_type": "string"
+        },
+        {
+          "key": "comment_frame_image_path",
+          "pointer": "/7/comment_frame_image_path",
+          "value_type": "string"
+        },
+        {
+          "key": "comment_frame_image_path",
+          "pointer": "/8/comment_frame_image_path",
+          "value_type": "string"
+        },
+        {
+          "key": "comment_frame_image_path",
+          "pointer": "/9/comment_frame_image_path",
+          "value_type": "string"
+        },
+        {
+          "key": "comment_frame_image_path",
+          "pointer": "/10/comment_frame_image_path",
+          "value_type": "string"
+        },
+        {
+          "key": "comment_frame_image_path",
+          "pointer": "/11/comment_frame_image_path",
+          "value_type": "string"
+        },
+        {
+          "key": "comment_frame_image_path",
+          "pointer": "/12/comment_frame_image_path",
+          "value_type": "string"
+        },
+        {
+          "key": "comment_frame_image_path",
+          "pointer": "/13/comment_frame_image_path",
+          "value_type": "string"
+        },
+        {
+          "key": "comment_frame_image_path",
+          "pointer": "/14/comment_frame_image_path",
+          "value_type": "string"
+        },
+        {
+          "key": "comment_frame_image_path",
+          "pointer": "/15/comment_frame_image_path",
+          "value_type": "string"
+        },
+        {
+          "key": "comment_frame_image_path",
+          "pointer": "/16/comment_frame_image_path",
+          "value_type": "string"
+        },
+        {
+          "key": "comment_frame_image_path",
+          "pointer": "/17/comment_frame_image_path",
+          "value_type": "string"
+        },
+        {
+          "key": "comment_frame_image_path",
+          "pointer": "/18/comment_frame_image_path",
+          "value_type": "string"
+        },
+        {
+          "key": "comment_frame_image_path",
+          "pointer": "/19/comment_frame_image_path",
+          "value_type": "string"
+        },
+        {
+          "key": "comment_frame_image_path",
+          "pointer": "/20/comment_frame_image_path",
+          "value_type": "string"
+        },
+        {
+          "key": "comment_frame_image_path",
+          "pointer": "/21/comment_frame_image_path",
+          "value_type": "string"
+        },
+        {
+          "key": "comment_frame_image_path",
+          "pointer": "/22/comment_frame_image_path",
+          "value_type": "string"
+        },
+        {
+          "key": "comment_frame_image_path",
+          "pointer": "/23/comment_frame_image_path",
+          "value_type": "string"
+        },
+        {
+          "key": "comment_frame_image_path",
+          "pointer": "/24/comment_frame_image_path",
+          "value_type": "string"
+        },
+        {
+          "key": "comment_frame_image_path",
+          "pointer": "/25/comment_frame_image_path",
+          "value_type": "string"
+        },
+        {
+          "key": "comment_frame_image_path",
+          "pointer": "/26/comment_frame_image_path",
+          "value_type": "string"
+        },
+        {
+          "key": "comment_frame_image_path",
+          "pointer": "/27/comment_frame_image_path",
+          "value_type": "string"
+        },
+        {
+          "key": "comment_frame_image_path",
+          "pointer": "/28/comment_frame_image_path",
+          "value_type": "string"
+        },
+        {
+          "key": "comment_frame_image_path",
+          "pointer": "/29/comment_frame_image_path",
+          "value_type": "string"
+        },
+        {
+          "key": "comment_frame_image_path",
+          "pointer": "/30/comment_frame_image_path",
+          "value_type": "string"
+        },
+        {
+          "key": "comment_frame_image_path",
+          "pointer": "/31/comment_frame_image_path",
+          "value_type": "string"
+        },
+        {
+          "key": "comment_frame_image_path",
+          "pointer": "/32/comment_frame_image_path",
+          "value_type": "string"
+        },
+        {
+          "key": "comment_frame_image_path",
+          "pointer": "/33/comment_frame_image_path",
+          "value_type": "string"
+        }
+      ],
+      "sha256": "a3c61fb54f9bcd5745cdb49726fb242f57ee4cbc46731d77ca2a8180e35b9fea",
+      "size": 10511
+    },
+    {
+      "container": "files/cache/patch/gui/Equipment/icon/efc.mbn",
+      "entry": "effect_settings.json",
+      "hits": [
+        {
+          "key": "interval",
+          "pointer": "/header/interval",
+          "value": 0.35,
+          "value_type": "float"
+        }
+      ],
+      "sha256": "a863923fb7d096c949f64c7149fda4b5fd253cad7b932d6e4f2de8dd61419766",
+      "size": 13960
+    },
+    {
+      "container": "files/cache/patch/gui/Equipment/icon/efc/auxiliary.mbn",
+      "entry": "effect_settings.json",
+      "hits": [
+        {
+          "key": "interval",
+          "pointer": "/settings/0/interval",
+          "value": 0.0,
+          "value_type": "float"
+        },
+        {
+          "key": "interval",
+          "pointer": "/settings/1/interval",
+          "value": 0.0,
+          "value_type": "float"
+        },
+        {
+          "key": "interval",
+          "pointer": "/settings/2/interval",
+          "value": 0.0,
+          "value_type": "float"
+        },
+        {
+          "key": "interval",
+          "pointer": "/settings/3/interval",
+          "value": 0.0,
+          "value_type": "float"
+        },
+        {
+          "key": "interval",
+          "pointer": "/settings/4/interval",
+          "value": 0.5,
+          "value_type": "float"
+        }
+      ],
+      "sha256": "0fbdf8c263d7d54f7767fe99538fa4b1fc3be0f271f8c345056f7f82db690c44",
+      "size": 2256
+    },
+    {
+      "container": "files/cache/patch/gui/common_base/icon/icon_soubi.mbn",
+      "entry": "item_rarity.json",
+      "hits": [
+        {
+          "key": "frame_image",
+          "pointer": "/version_1/0/icon/frame_image",
+          "value_type": "string"
+        },
+        {
+          "key": "frame_image",
+          "pointer": "/version_1/1/icon/frame_image",
+          "value_type": "string"
+        },
+        {
+          "key": "frame_image",
+          "pointer": "/version_1/2/icon/frame_image",
+          "value_type": "string"
+        },
+        {
+          "key": "frame_image",
+          "pointer": "/version_1/3/icon/frame_image",
+          "value_type": "string"
+        },
+        {
+          "key": "frame_image",
+          "pointer": "/version_1/4/icon/frame_image",
+          "value_type": "string"
+        },
+        {
+          "key": "frame_image",
+          "pointer": "/version_1/5/icon/frame_image",
+          "value_type": "string"
+        },
+        {
+          "key": "frame_image",
+          "pointer": "/version_1/6/icon/frame_image",
+          "value_type": "string"
+        },
+        {
+          "key": "frame_image",
+          "pointer": "/version_1/7/icon/frame_image",
+          "value_type": "string"
+        },
+        {
+          "key": "frame_image",
+          "pointer": "/version_1/8/icon/frame_image",
+          "value_type": "string"
+        },
+        {
+          "key": "frame_image",
+          "pointer": "/version_1/9/icon/frame_image",
+          "value_type": "string"
+        },
+        {
+          "key": "frame_image",
+          "pointer": "/version_1/10/icon/frame_image",
+          "value_type": "string"
+        },
+        {
+          "key": "frame_image",
+          "pointer": "/version_1/11/icon/frame_image",
+          "value_type": "string"
+        },
+        {
+          "key": "frame_image",
+          "pointer": "/version_1/12/icon/frame_image",
+          "value_type": "string"
+        },
+        {
+          "key": "frame_image",
+          "pointer": "/version_1/13/icon/frame_image",
+          "value_type": "string"
+        },
+        {
+          "key": "frame_image",
+          "pointer": "/version_1/14/icon/frame_image",
+          "value_type": "string"
+        },
+        {
+          "key": "frame_image",
+          "pointer": "/version_1/15/icon/frame_image",
+          "value_type": "string"
+        }
+      ],
+      "sha256": "726a4aca0cdd76c6930dd4fcbe6641960f7fd5e7073b9386c3cdb4ab806408a6",
+      "size": 10762
+    },
+    {
+      "container": "files/cache/patch/gui/common_base/stone_up.mbn",
+      "entry": "stone_up.json",
+      "hits": [
+        {
+          "key": "animations",
+          "pointer": "/animations",
+          "size": 1,
+          "value_type": "object"
+        },
+        {
+          "key": "animation",
+          "pointer": "/animations/animation",
+          "size": 3,
+          "value_type": "object"
+        },
+        {
+          "key": "uvs",
+          "pointer": "/skins/default/png~1stone_up_001/png~1stone_up_001/uvs",
+          "size": 24,
+          "value_type": "array"
+        }
+      ],
+      "sha256": "0c81aace8121a9db793e9a8f950424b1d3a9a4bc6496bb8957b5e51078dfaf52",
+      "size": 4446
+    },
+    {
+      "container": "files/cache/patch/json_resource.mbn",
+      "entry": "alt_money_text.json",
+      "hits": [
+        {
+          "key": "time_out_interval",
+          "pointer": "/time_out_interval",
+          "value": 5,
+          "value_type": "int"
+        }
+      ],
+      "sha256": "9b80925a2b61f3abb9150269bd2c80af1601338f0a5196804c9ec36860f0492d",
+      "size": 523
+    },
+    {
+      "container": "files/cache/patch/json_resource.mbn",
+      "entry": "artifact_settings.json",
+      "hits": [
+        {
+          "key": "max_frame_size",
+          "pointer": "/fusion/evolve/material_view/max_frame_size",
+          "size": 2,
+          "value_type": "object"
+        },
+        {
+          "key": "middle_frame_size",
+          "pointer": "/fusion/evolve/material_view/middle_frame_size",
+          "size": 2,
+          "value_type": "object"
+        },
+        {
+          "key": "notify_mask",
+          "pointer": "/notify_mask",
+          "size": 1,
+          "value_type": "object"
+        },
+        {
+          "key": "masked_message",
+          "pointer": "/notify_mask/masked_message",
+          "value_type": "string"
+        },
+        {
+          "key": "hold_interval_time",
+          "pointer": "/ui/count_select/hold_interval_time",
+          "value": 0.55,
+          "value_type": "float"
+        }
+      ],
+      "sha256": "ee942d303dca88b07bfcbf37d6a9aa09b58b5ce076c632d5e0bbd29b6c6b51f9",
+      "size": 4436
+    },
+    {
+      "container": "files/cache/patch/json_resource.mbn",
+      "entry": "avatar_collection_settings.json",
+      "hits": [
+        {
+          "key": "frame_image_path",
+          "pointer": "/fashion_show/ranking/image_resource/1/frame_image_path",
+          "value_type": "string"
+        },
+        {
+          "key": "frame_image_path",
+          "pointer": "/fashion_show/ranking/image_resource/2/frame_image_path",
+          "value_type": "string"
+        },
+        {
+          "key": "frame_image_path",
+          "pointer": "/fashion_show/ranking/image_resource/3/frame_image_path",
+          "value_type": "string"
+        },
+        {
+          "key": "frame_image_path",
+          "pointer": "/fashion_show/ranking/image_resource/default/frame_image_path",
+          "value_type": "string"
+        },
+        {
+          "key": "time_out_interval",
+          "pointer": "/item_box/time_out_interval",
+          "value": 5,
+          "value_type": "int"
+        },
+        {
+          "key": "new_notify_animation_component_name",
+          "pointer": "/select_shape_tab/new_notify_animation_component_name",
+          "value_type": "string"
+        }
+      ],
+      "sha256": "fa03b2e31cc373fe574659629526efa8b191adc9a30c1baeeaede0c3bd0d0f58",
+      "size": 5029
+    },
+    {
+      "container": "files/cache/patch/json_resource.mbn",
+      "entry": "battle_board_text.json",
+      "hits": [
+        {
+          "key": "interval",
+          "pointer": "/battle_board_window/interval",
+          "value": 10.0,
+          "value_type": "float"
+        }
+      ],
+      "sha256": "98b45e77e3e896165f275d8062754a418a3a24d51aea3ddadfe2402814496b7e",
+      "size": 1652
+    },
+    {
+      "container": "files/cache/patch/json_resource.mbn",
+      "entry": "battle_texts.json",
+      "hits": [
+        {
+          "key": "next_slidein_interval",
+          "pointer": "/damage_record/next_slidein_interval",
+          "value": 0.05,
+          "value_type": "float"
+        },
+        {
+          "key": "ep_animation_flag",
+          "pointer": "/status_change_event/ep_animation_flag",
+          "value": true,
+          "value_type": "bool"
+        }
+      ],
+      "sha256": "38cc8cf0c0b568b8eb7e8cf1b07f6135176e864f1eb4d07e1286a6732ed6d8b4",
+      "size": 4635
+    },
+    {
+      "container": "files/cache/patch/json_resource.mbn",
+      "entry": "bout_character_view_info_setting.json",
+      "hits": [
+        {
+          "key": "player",
+          "pointer": "/player",
+          "size": 2,
+          "value_type": "object"
+        }
+      ],
+      "sha256": "f1c0e2b11cdb51c415a38831ebaee9d21d2294daa3f8b52042d53f1c9e7f5463",
+      "size": 1128
+    },
+    {
+      "container": "files/cache/patch/json_resource.mbn",
+      "entry": "character_growth_setting.json",
+      "hits": [
+        {
+          "key": "inner_frame_margin",
+          "pointer": "/reward_list/inner_frame_margin",
+          "value": 50,
+          "value_type": "int"
+        }
+      ],
+      "sha256": "7e8950f827e54c08ad5d4c3008e4ae72c236b30cf1c32e7c85f449bd79bd294e",
+      "size": 343
+    },
+    {
+      "container": "files/cache/patch/json_resource.mbn",
+      "entry": "character_text.json",
+      "hits": [
+        {
+          "key": "char_talk_limit_time_interval",
+          "pointer": "/char_talk_limit_time_interval",
+          "value": 5.0,
+          "value_type": "float"
+        },
+        {
+          "key": "char_talk_time_interval",
+          "pointer": "/char_talk_time_interval",
+          "value": 1.0,
+          "value_type": "float"
+        }
+      ],
+      "sha256": "587e5e4507dead2037dbcaf8491920628a17dd0e5c6cd764b7d4ac9106e4d65e",
+      "size": 81
+    },
+    {
+      "container": "files/cache/patch/json_resource.mbn",
+      "entry": "chat_option.json",
+      "hits": [
+        {
+          "key": "request_interval",
+          "pointer": "/chatOption/world_chat/request_interval",
+          "value": 300000,
+          "value_type": "int"
+        },
+        {
+          "key": "update_interval",
+          "pointer": "/chatOption/world_chat/update_interval",
+          "value": 31000,
+          "value_type": "int"
+        }
+      ],
+      "sha256": "d8b44faeecceab4d9cd348724cd1562eea8a6cb17d848e9a33ab4810a38341e5",
+      "size": 1400
+    },
+    {
+      "container": "files/cache/patch/json_resource.mbn",
+      "entry": "clan_text.json",
+      "hits": [
+        {
+          "key": "hold_interval_time",
+          "pointer": "/clan_room/delivery/input/hold_interval_time",
+          "value": 0.55,
+          "value_type": "float"
+        },
+        {
+          "key": "time_out_interval",
+          "pointer": "/clan_room/delivery/reward_record_unified_icon_config/time_out_interval",
+          "value": 5,
+          "value_type": "int"
+        },
+        {
+          "key": "scroll_count",
+          "pointer": "/clan_room/edit/bgm/scroll_count",
+          "value": 11,
+          "value_type": "int"
+        },
+        {
+          "key": "contents_mask_message",
+          "pointer": "/clan_room/edit/contents_mask_message",
+          "value_type": "string"
+        },
+        {
+          "key": "contents_mask_message",
+          "pointer": "/clan_room/menu/contents_mask_message",
+          "value_type": "string"
+        },
+        {
+          "key": "hold_interval_time",
+          "pointer": "/clan_room/shop/input/hold_interval_time",
+          "value": 0.55,
+          "value_type": "float"
+        },
+        {
+          "key": "talk_limit_time_interval",
+          "pointer": "/clan_room/talk_limit_time_interval",
+          "value": 5.0,
+          "value_type": "float"
+        },
+        {
+          "key": "talk_time_interval",
+          "pointer": "/clan_room/talk_time_interval",
+          "value": 1.0,
+          "value_type": "float"
+        }
+      ],
+      "sha256": "1dce8d34572b32a955027daa9393d58a5562d9078ef76e974d18e8e5af2c70d6",
+      "size": 20495
+    },
+    {
+      "container": "files/cache/patch/json_resource.mbn",
+      "entry": "coupon_settings.json",
+      "hits": [
+        {
+          "key": "content_mask",
+          "pointer": "/content_mask",
+          "size": 1,
+          "value_type": "object"
+        }
+      ],
+      "sha256": "2fdb264357ecbd315597cd0d6c03302d153517bb4f0ae48c8cdb237e2866529e",
+      "size": 1740
+    },
+    {
+      "container": "files/cache/patch/json_resource.mbn",
+      "entry": "emblem_setting.json",
+      "hits": [
+        {
+          "key": "content_mask",
+          "pointer": "/content_mask",
+          "size": 1,
+          "value_type": "object"
+        }
+      ],
+      "sha256": "7cf116761795d97057c96ddaf2e9905fdece537b0fbdc63f763687de08a09238",
+      "size": 1839
+    },
+    {
+      "container": "files/cache/patch/json_resource.mbn",
+      "entry": "equipment_ui_settings.json",
+      "hits": [
+        {
+          "key": "mask_image",
+          "pointer": "/equipment_ui_settings/artifact/mask_image",
+          "size": 2,
+          "value_type": "object"
+        },
+        {
+          "key": "masked",
+          "pointer": "/equipment_ui_settings/artifact/mask_image/masked",
+          "value_type": "string"
+        },
+        {
+          "key": "equip_detail_ui_scrollareaheight",
+          "pointer": "/equipment_ui_settings/equip_detail_ui_scrollareaheight",
+          "size": 4,
+          "value_type": "object"
+        }
+      ],
+      "sha256": "78bf03d195b55402a4bc6e752f344c432882ef0a3f084e42a2e75f7c085e4d5c",
+      "size": 4406
+    },
+    {
+      "container": "files/cache/patch/json_resource.mbn",
+      "entry": "event_gauge.json",
+      "hits": [
+        {
+          "key": "inner_frame_margin",
+          "pointer": "/accumulation_reward/reward_list/inner_frame_margin",
+          "value": 50,
+          "value_type": "int"
+        }
+      ],
+      "sha256": "568d0071def9df2a6e62f443283aed377b377b475b942fe9af0623e79383023d",
+      "size": 743
+    },
+    {
+      "container": "files/cache/patch/json_resource.mbn",
+      "entry": "event_point.json",
+      "hits": [
+        {
+          "key": "inner_frame_margin",
+          "pointer": "/accumulation_reward/reward_list/inner_frame_margin",
+          "value": 50,
+          "value_type": "int"
+        },
+        {
+          "key": "contents_mask",
+          "pointer": "/event_point/contents_mask",
+          "size": 1,
+          "value_type": "object"
+        },
+        {
+          "key": "default_frame_size",
+          "pointer": "/event_point/ui/exchange/count_select/default_frame_size",
+          "size": 2,
+          "value_type": "object"
+        },
+        {
+          "key": "hold_interval_time",
+          "pointer": "/event_point/ui/exchange/count_select/hold_interval_time",
+          "value": 0.55,
+          "value_type": "float"
+        },
+        {
+          "key": "max_frame_size",
+          "pointer": "/event_point/ui/exchange/count_select/max_frame_size",
+          "size": 2,
+          "value_type": "object"
+        },
+        {
+          "key": "middle_frame_size",
+          "pointer": "/event_point/ui/exchange/count_select/middle_frame_size",
+          "size": 2,
+          "value_type": "object"
+        },
+        {
+          "key": "scroller_model",
+          "pointer": "/event_point/ui/reward/battle_boost_resource_path/background/scroller_model",
+          "value_type": "string"
+        }
+      ],
+      "sha256": "8a5a6dc941e98c5aeaed7f2e89c792ebb9b7a43bdf056883090700b7b1072938",
+      "size": 5031
+    },
+    {
+      "container": "files/cache/patch/json_resource.mbn",
+      "entry": "field_settings.json",
+      "hits": [
+        {
+          "key": "initial_view_scale",
+          "pointer": "/initial_view_scale",
+          "value": 1.25,
+          "value_type": "float"
+        }
+      ],
+      "sha256": "ffb36e10d6879a7c5758d15f046dffe64dda7112262aa711eee4eed51c7d9089",
+      "size": 1002
+    },
+    {
+      "container": "files/cache/patch/json_resource.mbn",
+      "entry": "fusion_texts.json",
+      "hits": [
+        {
+          "key": "hold_interval_time",
+          "pointer": "/fusion_altitemselect_input/hold_interval_time",
+          "value": 0.55,
+          "value_type": "float"
+        },
+        {
+          "key": "fusion_contents_mask",
+          "pointer": "/fusion_contents_mask",
+          "size": 11,
+          "value_type": "object"
+        }
+      ],
+      "sha256": "5c81db29dd0afebca8a2ce2e86f7fe63a955cfd44a1a9b0c61758b78b8c826c5",
+      "size": 19858
+    },
+    {
+      "container": "files/cache/patch/json_resource.mbn",
+      "entry": "gacha_texts.json",
+      "hits": [
+        {
+          "key": "inner_frame_margin",
+          "pointer": "/accumulation_reward/reward_list/inner_frame_margin",
+          "value": 34,
+          "value_type": "int"
+        },
+        {
+          "key": "inner_frame_margin",
+          "pointer": "/last_one/result/inner_frame_margin",
+          "value": 54,
+          "value_type": "int"
+        },
+        {
+          "key": "inner_frame_margin",
+          "pointer": "/last_one/reward_detail/inner_frame_margin",
+          "value": 34,
+          "value_type": "int"
+        }
+      ],
+      "sha256": "ff9ff83af085ad994f31621bb25a042bf0dbe95178ca77de3b9e2cb8eac19bff",
+      "size": 5484
+    },
+    {
+      "container": "files/cache/patch/json_resource.mbn",
+      "entry": "garage_settings.json",
+      "hits": [
+        {
+          "key": "hold_interval_time",
+          "pointer": "/accomplished_item_garage_settings/takeout/count_select/hold_interval_time",
+          "value": 0.55,
+          "value_type": "float"
+        },
+        {
+          "key": "hold_interval_time",
+          "pointer": "/garage_settings/takeout/count_select/hold_interval_time",
+          "value": 0.55,
+          "value_type": "float"
+        }
+      ],
+      "sha256": "4408209ce1380e92c2765f79b4dc416dbb7bc6aefb8bf5d6dd721787776933b6",
+      "size": 1349
+    },
+    {
+      "container": "files/cache/patch/json_resource.mbn",
+      "entry": "gemshop_text.json",
+      "hits": [
+        {
+          "key": "animationicon_anchor_rect",
+          "pointer": "/animationicon_anchor_rect",
+          "size": 4,
+          "value_type": "object"
+        },
+        {
+          "key": "hold_interval_time",
+          "pointer": "/input/hold_interval_time",
+          "value": 0.55,
+          "value_type": "float"
+        }
+      ],
+      "sha256": "699851f80519ea68badbafa4b077a035e2356e150c7bc799619cfce4d0a55eaf",
+      "size": 8877
+    },
+    {
+      "container": "files/cache/patch/json_resource.mbn",
+      "entry": "hud_settings.json",
+      "hits": [
+        {
+          "key": "frame",
+          "pointer": "/limit_timer/battle/frame",
+          "value_type": "string"
+        },
+        {
+          "key": "frame",
+          "pointer": "/limit_timer/quest/frame",
+          "value_type": "string"
+        },
+        {
+          "key": "frame",
+          "pointer": "/limit_timer/voyage/frame",
+          "value_type": "string"
+        }
+      ],
+      "sha256": "796270940dd18622972aef63a6f407963a11e41df3a70c648c2ed16b1736ca5a",
+      "size": 559
+    },
+    {
+      "container": "files/cache/patch/json_resource.mbn",
+      "entry": "job_text.json",
+      "hits": [
+        {
+          "key": "default_frame_size",
+          "pointer": "/master_level/release_cap/window_setting/default_frame_size",
+          "size": 2,
+          "value_type": "object"
+        },
+        {
+          "key": "default_inside_frame_size",
+          "pointer": "/master_level/release_cap/window_setting/default_inside_frame_size",
+          "size": 2,
+          "value_type": "object"
+        },
+        {
+          "key": "max_frame_size",
+          "pointer": "/master_level/release_cap/window_setting/max_frame_size",
+          "size": 2,
+          "value_type": "object"
+        },
+        {
+          "key": "max_inside_frame_size",
+          "pointer": "/master_level/release_cap/window_setting/max_inside_frame_size",
+          "size": 2,
+          "value_type": "object"
+        },
+        {
+          "key": "middle_frame_size",
+          "pointer": "/master_level/release_cap/window_setting/middle_frame_size",
+          "size": 2,
+          "value_type": "object"
+        },
+        {
+          "key": "middle_inside_frame_size",
+          "pointer": "/master_level/release_cap/window_setting/middle_inside_frame_size",
+          "size": 2,
+          "value_type": "object"
+        },
+        {
+          "key": "job_background_frame_image_default_resource",
+          "pointer": "/resource_path/job_background_frame_image_default_resource",
+          "value_type": "string"
+        },
+        {
+          "key": "job_background_frame_image_resource",
+          "pointer": "/resource_path/job_background_frame_image_resource",
+          "value_type": "string"
+        }
+      ],
+      "sha256": "35fd57b2f4330b943a8910deed476f2643e85d64e56bf436df8731a230bbe32e",
+      "size": 2637
+    },
+    {
+      "container": "files/cache/patch/json_resource.mbn",
+      "entry": "raid_battle_texts.json",
+      "hits": [
+        {
+          "key": "appearpoint_update_interval",
+          "pointer": "/board/appearpoint_update_interval",
+          "value": 5.0,
+          "value_type": "float"
+        },
+        {
+          "key": "bosshp_update_interval",
+          "pointer": "/board/bosshp_update_interval",
+          "value": 5.0,
+          "value_type": "float"
+        },
+        {
+          "key": "missingjob_update_interval",
+          "pointer": "/board/missingjob_update_interval",
+          "value": 10.0,
+          "value_type": "float"
+        },
+        {
+          "key": "update_interval",
+          "pointer": "/open_icon/update_interval",
+          "value": 60,
+          "value_type": "int"
+        }
+      ],
+      "sha256": "d0aec6cac679fdd0af99be8d2c6164a225d142cf21f6535d21f541f23df7c4c1",
+      "size": 10914
+    },
+    {
+      "container": "files/cache/patch/json_resource.mbn",
+      "entry": "rcb_text.json",
+      "hits": [
+        {
+          "key": "own_member_frame",
+          "pointer": "/hud_team_info/own_member_frame",
+          "value_type": "string"
+        }
+      ],
+      "sha256": "910e50f00a4d0d0f3dcc8b8413fa8af8120dc399e603ca586dd3ce1dd67ce7b6",
+      "size": 4445
+    },
+    {
+      "container": "files/cache/patch/json_resource.mbn",
+      "entry": "sixth_sense_ui_settings.json",
+      "hits": [
+        {
+          "key": "animation_settings",
+          "pointer": "/sixth_sense_ui_settings/animation_settings",
+          "size": 2,
+          "value_type": "object"
+        }
+      ],
+      "sha256": "ebf877eb97b8e48c182dd128948e505dec23e43e69b73a0d8c344cd02dfd570f",
+      "size": 10054
+    },
+    {
+      "container": "files/cache/patch/motion.mbn",
+      "entry": "se_setting.json",
+      "hits": [
+        {
+          "key": "frame",
+          "pointer": "/se_setting_list/0/frame",
+          "value": 10,
+          "value_type": "int"
+        }
+      ],
+      "sha256": "01c208616c5efb6e2cc45c27856ae52e0599bd676b8115d00a550f0b5c709ceb",
+      "size": 230
+    },
+    {
+      "container": "files/cache/patch/system/avatar_resource_tbl.mbn",
+      "entry": "avatarresourcetbl.json",
+      "hits": [
+        {
+          "key": "animations",
+          "pointer": "/animations",
+          "size": 1,
+          "value_type": "object"
+        }
+      ],
+      "sha256": "aba8bd6f8086714cc2bdbf2977480c2aaf65a35da3e67f389bb83c1ca87b2440",
+      "size": 2313899
+    }
+  ]
+}
