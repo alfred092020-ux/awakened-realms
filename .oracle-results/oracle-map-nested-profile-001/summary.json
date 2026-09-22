@@ -1,0 +1,10 @@
+{
+  "duration_seconds": 7.709,
+  "error": null,
+  "exit_code": 0,
+  "job_id": "oracle-map-nested-profile-001",
+  "kind": "python",
+  "schema": 1,
+  "source_sha": "c52773a9445660f722128c69bfea39c62df1410f",
+  "status": "success"
+}
