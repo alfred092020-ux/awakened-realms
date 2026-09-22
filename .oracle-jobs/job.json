@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "job_id": "oracle-live-map-variants-001",
+  "source_sha": "e62db8e6d801d554cd1bf769af2b5c2b7cc2f237",
+  "kind": "python",
+  "script": "scripts/logres/inspect_live_map_variants.py",
+  "args": [
+    "--anchor",
+    "@PRIVATE_ARCHIVE@",
+    "--output",
+    "@OUTPUT@/live-map-variants.json"
+  ],
+  "timeout_seconds": 1800
+}
