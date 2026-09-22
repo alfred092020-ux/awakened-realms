@@ -1,0 +1,8 @@
+{
+  "commit": "e27bd879d28d108c8b4eac8f7f2ef10d878791b0",
+  "job_id": "merge-logres-live-map-dds-format-001",
+  "job_type": "MERGE",
+  "status": "SUCCESS",
+  "target_branch": "feat/logres-reconstruction",
+  "written_at": "2026-09-22T08:23:40.486706+00:00"
+}
