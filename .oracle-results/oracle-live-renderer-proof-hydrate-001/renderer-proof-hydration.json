@@ -1,0 +1,35 @@
+{
+  "chip": {
+    "derived_format": "PNG RGBA8 nibble expansion",
+    "derived_sha256": "a1517c0dcc91d14901ab33d4f2fc38b474c32a3064b2aa50b6aab5000cc0ffe7",
+    "height": 1938,
+    "relative_file": "001_000_00002_CHIP.png",
+    "source_format": "DDS A4R4G4B4",
+    "source_sha256": "0a76e94d81d13e07a33d1d83ed9458d2087822a94f7773cd4cba00fde33cd901",
+    "width": 718
+  },
+  "color_policy": "4-bit channel values are expanded exactly by multiplying each nibble by 17. No gamma/color-space conversion or premultiplication is applied.",
+  "evidence_classification": "CONFIRMED ORIGINAL",
+  "map": {
+    "bytes": 2098700,
+    "relative_file": "001_000_00002.map.bin",
+    "sha256": "71f204a84cac4cb11f5e1d40cd31ffc226c1c33bcea8487c596d2930bc5da007"
+  },
+  "map_id": "001_000_00002",
+  "obj": {
+    "derived_format": "PNG RGBA8 nibble expansion",
+    "derived_sha256": "1d20ca22bc544b5fb05170187c568422772c68913a06fd367667b2b7d43e37fa",
+    "height": 1934,
+    "relative_file": "001_000_00002_OBJ.png",
+    "source_format": "DDS A4R4G4B4",
+    "source_sha256": "847b4fa6ad3fca42d9a0535c2e1ce1b49d09ea9474773b000837199cf1690aa6",
+    "width": 2048
+  },
+  "orientation_policy": "DDS row order is preserved exactly. Vertical texture orientation remains UNRESOLVED until renderer/native evidence establishes the sampling transform.",
+  "provenance": "PUBLIC_LIVE_JP_RENDERER_PROOF_PRIVATE_DERIVATIVE",
+  "role": "RENDERER_PROOF_NOT_TUTORIAL_MAP",
+  "source_packages": [
+    "001_000_00002.mbn",
+    "001_000_00002__ans.mbn"
+  ]
+}

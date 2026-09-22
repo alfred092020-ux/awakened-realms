@@ -1,0 +1,10 @@
+{
+  "duration_seconds": 3.242,
+  "error": null,
+  "exit_code": 0,
+  "job_id": "oracle-live-renderer-proof-hydrate-001",
+  "kind": "python",
+  "schema": 1,
+  "source_sha": "19048d48e0b27ccf6982aa2a04856c767f0963b1",
+  "status": "success"
+}
