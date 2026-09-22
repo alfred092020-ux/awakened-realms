@@ -48,6 +48,21 @@ Rendering still requires original batching, depth transforms, shader behavior,
 texture orientation, and animation timing. These calls alone do not prove all
 of those details or the Japanese ASTC color space.
 
+## Convex hull to strip conversion
+
+Global `DataParser::addConvexhullVertices` at `0x192f690` does not submit
+the map's vertex order directly. It emits indices `0, n-1, 1, n-2, ...`.
+The loop at `0x192fb20` alternates the end and start; the even-size final
+middle vertex is handled at `0x192fcb8`. Both odd and even hulls are covered.
+When appending to an existing strip it duplicates its last vertex and the
+next hull's first vertex, creating two degenerate bridge vertices. It starts
+a new batch when `(old_count + incoming_count + 2) >> 16` is nonzero.
+Positions retain X/Y and use the supplied Z. Initial UVs use pose zero and
+colors initialize to RGBA 255. Other poses are registered with FieldAnimator.
+`LogresTerrainGeometry.ts` reconstructs this geometry preparation with synthetic
+tests. It is intentionally not attached to the playable field until the remaining
+texture, depth, shader, camera and tutorial evidence is resolved.
+
 ## Remaining evidence work
 
 - Initial tutorial map, spawn, and encounter remain unproven.
