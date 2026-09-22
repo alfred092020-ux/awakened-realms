@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "job_id": "oracle-public-terrain-z-001",
+  "source_sha": "fd39753a859c18a4e0af5263e05870deaac2d3b4",
+  "kind": "python",
+  "script": "scripts/logres/inspect_public_terrain_z.py",
+  "args": [
+    "--url",
+    "https://d.apkpure.net/b/XAPK/jp.MarvelousAQL.logres?version=latest",
+    "--output",
+    "@OUTPUT@/public-terrain-z.json"
+  ],
+  "timeout_seconds": 1800
+}
