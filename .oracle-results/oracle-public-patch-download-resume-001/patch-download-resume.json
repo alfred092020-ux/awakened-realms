@@ -1,0 +1,77 @@
+{
+  "base": "https://prd-cdn.mmo-logres.com/patch/1789742711/android/",
+  "categories": {
+    "(root)": 13,
+    "avacolle": 2236,
+    "avatar": 3810,
+    "battle": 612,
+    "effect": 1,
+    "graphicSettings": 1,
+    "gui": 2505,
+    "icon": 8427,
+    "lotitem": 644,
+    "map": 2116,
+    "motion": 6878,
+    "palette": 3,
+    "shader": 1,
+    "skitevent": 3362,
+    "sound": 452,
+    "system": 5,
+    "weather": 171
+  },
+  "download": {
+    "bytes_downloaded": 0,
+    "counts": {
+      "verified": 31237
+    },
+    "failure_count": 0,
+    "failures": [],
+    "selected_records": 31237
+  },
+  "extra_count": 1,
+  "main_count": 31236,
+  "metadata": {
+    "binfilelist": {
+      "name": "binfilelist.bin",
+      "sha1": "ad059deb115992428cbcf8301982c32cd2192923",
+      "sha256": "c325a36d6a3814075ccee7c09cab8ee3038ce9a39d79dc108d5bcac43d766ed2",
+      "size": 1190298,
+      "zlib": true
+    },
+    "extra_filelist": {
+      "decompressed_sha256": "aaff07b41c012aa74380a1bbc282c5c7379fa8cf369919261df00a00aecead86",
+      "decompressed_size": 97,
+      "name": "extra_filelist.bin",
+      "record_count": 1,
+      "sha1": "f849e1b7419b93e1a25bf6428a1bf4f3807bcda1",
+      "sha256": "2bc83a91acb435249da893b2c1d3cd9481e2504a4f7ca84fcdf0dd60bf69799d",
+      "size": 91
+    },
+    "extra_filelist_hash": {
+      "name": "extra_filelistbin.hash",
+      "sha1": "e384d8d94cca5509c65bc5027e36575df1f712a8",
+      "sha256": "a3c9cda19813e50b75018fb4fca61efa3b786469dd0921cd50aa02654ddf9f75",
+      "size": 41
+    },
+    "filelist": {
+      "decompressed_sha256": "3134d93f75c3f5e64c799a6115b01786a79a131c15686c80271bb72b18112bb3",
+      "decompressed_size": 3146605,
+      "name": "filelist.bin",
+      "record_count": 31236,
+      "sha1": "050a518792a9c7cb52a256885ca6e6b89906d19d",
+      "sha256": "7299d18e6e85d1caa1012b27b3358d172a2c2e973e64a25cb302d5c304b3a8f6",
+      "size": 1132885
+    },
+    "filelist_hash": {
+      "name": "filelistbin.hash",
+      "sha1": "b3b75116023f97dc8d10bf7d776a8bd9c703dc5d",
+      "sha256": "6c2148b7fb860d8765bd2171cb00fa8c540167c65f322b0b5c0e3209c0b24c0d",
+      "size": 41
+    }
+  },
+  "provenance": "PUBLIC_LOGRES_PATCH_DOWNLOAD_PLAN",
+  "record_count": 31237,
+  "storage": "oracle-private-sibling/jp-live-patch-cache",
+  "total_bytes": 6093432146,
+  "total_gib": 5.675
+}
