@@ -1,0 +1,8 @@
+{
+  "commit": "e9646022fca51dd7b3aff72a9e205cf3bdef3f9b",
+  "job_id": "merge-logres-character-create-authority-001",
+  "job_type": "MERGE",
+  "status": "SUCCESS",
+  "target_branch": "feat/logres-reconstruction",
+  "written_at": "2026-09-22T00:27:19.364966+00:00"
+}
