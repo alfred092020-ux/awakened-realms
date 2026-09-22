@@ -1,0 +1,2508 @@
+{
+  "confirmed_map_id_count": 738,
+  "errors": [],
+  "policy": "Only IDs independently confirmed by live map package filenames are considered. JSON evidence uses key/ancestor structure; byte evidence uses bounded allowlisted symbol proximity. Scores prioritize evidence for review and are not proof of tutorial selection. No source text, dialogue, geometry or textures are exported.",
+  "provenance": "PUBLIC_LIVE_JP_SEMANTIC_MAP_REFERENCE_METADATA",
+  "ranked_summary": [
+    {
+      "classes": {
+        "weak-context": 2,
+        "workflow-context": 1
+      },
+      "evidence_score": 2,
+      "map_id": "001_000_00001",
+      "reference_count": 3,
+      "source_count": 3
+    },
+    {
+      "classes": {
+        "weak-context": 3
+      },
+      "evidence_score": 0,
+      "map_id": "100_001_00001",
+      "reference_count": 3,
+      "source_count": 2
+    },
+    {
+      "classes": {
+        "weak-context": 2
+      },
+      "evidence_score": 0,
+      "map_id": "001_000_00002",
+      "reference_count": 2,
+      "source_count": 2
+    },
+    {
+      "classes": {
+        "weak-context": 2
+      },
+      "evidence_score": 0,
+      "map_id": "001_000_00003",
+      "reference_count": 2,
+      "source_count": 2
+    },
+    {
+      "classes": {
+        "weak-context": 1
+      },
+      "evidence_score": 0,
+      "map_id": "001_000_00007",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "classes": {
+        "weak-context": 1
+      },
+      "evidence_score": 0,
+      "map_id": "001_000_00010",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "classes": {
+        "weak-context": 1
+      },
+      "evidence_score": 0,
+      "map_id": "001_000_00011",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "classes": {
+        "weak-context": 1
+      },
+      "evidence_score": 0,
+      "map_id": "001_000_00012",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "classes": {
+        "weak-context": 1
+      },
+      "evidence_score": 0,
+      "map_id": "001_000_00013",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "classes": {
+        "weak-context": 1
+      },
+      "evidence_score": 0,
+      "map_id": "001_000_00014",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "classes": {
+        "weak-context": 1
+      },
+      "evidence_score": 0,
+      "map_id": "001_000_00015",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "classes": {
+        "weak-context": 1
+      },
+      "evidence_score": 0,
+      "map_id": "001_000_00016",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "classes": {
+        "weak-context": 1
+      },
+      "evidence_score": 0,
+      "map_id": "001_000_00019",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "classes": {
+        "weak-context": 1
+      },
+      "evidence_score": 0,
+      "map_id": "001_000_00021",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "classes": {
+        "weak-context": 1
+      },
+      "evidence_score": 0,
+      "map_id": "001_000_00022",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "classes": {
+        "weak-context": 1
+      },
+      "evidence_score": 0,
+      "map_id": "001_000_00025",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "classes": {
+        "weak-context": 1
+      },
+      "evidence_score": 0,
+      "map_id": "001_000_00026",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "classes": {
+        "weak-context": 1
+      },
+      "evidence_score": 0,
+      "map_id": "001_000_00027",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "classes": {
+        "weak-context": 1
+      },
+      "evidence_score": 0,
+      "map_id": "001_000_00028",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "classes": {
+        "weak-context": 1
+      },
+      "evidence_score": 0,
+      "map_id": "001_000_00029",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "classes": {
+        "weak-context": 1
+      },
+      "evidence_score": 0,
+      "map_id": "001_000_00030",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "classes": {
+        "weak-context": 1
+      },
+      "evidence_score": 0,
+      "map_id": "001_002_00001",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "classes": {
+        "weak-context": 1
+      },
+      "evidence_score": 0,
+      "map_id": "001_002_00002",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "classes": {
+        "weak-context": 1
+      },
+      "evidence_score": 0,
+      "map_id": "001_002_00026",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "classes": {
+        "weak-context": 1
+      },
+      "evidence_score": 0,
+      "map_id": "001_002_00028",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "classes": {
+        "weak-context": 1
+      },
+      "evidence_score": 0,
+      "map_id": "002_000_00001",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "classes": {
+        "weak-context": 1
+      },
+      "evidence_score": 0,
+      "map_id": "002_000_00002",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "classes": {
+        "weak-context": 1
+      },
+      "evidence_score": 0,
+      "map_id": "002_000_00003",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "classes": {
+        "weak-context": 1
+      },
+      "evidence_score": 0,
+      "map_id": "002_000_00004",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "classes": {
+        "weak-context": 1
+      },
+      "evidence_score": 0,
+      "map_id": "002_000_00005",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "classes": {
+        "weak-context": 1
+      },
+      "evidence_score": 0,
+      "map_id": "002_000_00006",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "classes": {
+        "weak-context": 1
+      },
+      "evidence_score": 0,
+      "map_id": "002_000_00007",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "classes": {
+        "weak-context": 1
+      },
+      "evidence_score": 0,
+      "map_id": "002_000_00008",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "classes": {
+        "weak-context": 1
+      },
+      "evidence_score": 0,
+      "map_id": "002_000_00009",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "classes": {
+        "weak-context": 1
+      },
+      "evidence_score": 0,
+      "map_id": "002_000_00010",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "classes": {
+        "weak-context": 1
+      },
+      "evidence_score": 0,
+      "map_id": "002_000_00011",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "classes": {
+        "weak-context": 1
+      },
+      "evidence_score": 0,
+      "map_id": "002_000_00012",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "classes": {
+        "weak-context": 1
+      },
+      "evidence_score": 0,
+      "map_id": "002_000_00014",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "classes": {
+        "weak-context": 1
+      },
+      "evidence_score": 0,
+      "map_id": "002_000_00015",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "classes": {
+        "weak-context": 1
+      },
+      "evidence_score": 0,
+      "map_id": "002_000_00016",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "classes": {
+        "weak-context": 1
+      },
+      "evidence_score": 0,
+      "map_id": "002_000_00017",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "classes": {
+        "weak-context": 1
+      },
+      "evidence_score": 0,
+      "map_id": "002_000_00018",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "classes": {
+        "weak-context": 1
+      },
+      "evidence_score": 0,
+      "map_id": "002_000_00019",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "classes": {
+        "weak-context": 1
+      },
+      "evidence_score": 0,
+      "map_id": "002_000_00020",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "classes": {
+        "weak-context": 1
+      },
+      "evidence_score": 0,
+      "map_id": "002_001_00001",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "classes": {
+        "weak-context": 1
+      },
+      "evidence_score": 0,
+      "map_id": "002_002_00001",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "classes": {
+        "weak-context": 1
+      },
+      "evidence_score": 0,
+      "map_id": "002_002_00002",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "classes": {
+        "weak-context": 1
+      },
+      "evidence_score": 0,
+      "map_id": "002_002_00003",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "classes": {
+        "weak-context": 1
+      },
+      "evidence_score": 0,
+      "map_id": "004_000_00001",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "classes": {
+        "weak-context": 1
+      },
+      "evidence_score": 0,
+      "map_id": "004_000_00002",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "classes": {
+        "weak-context": 1
+      },
+      "evidence_score": 0,
+      "map_id": "004_000_00003",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "classes": {
+        "weak-context": 1
+      },
+      "evidence_score": 0,
+      "map_id": "004_000_00004",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "classes": {
+        "weak-context": 1
+      },
+      "evidence_score": 0,
+      "map_id": "004_000_00005",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "classes": {
+        "weak-context": 1
+      },
+      "evidence_score": 0,
+      "map_id": "004_000_00006",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "classes": {
+        "weak-context": 1
+      },
+      "evidence_score": 0,
+      "map_id": "004_002_00001",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "classes": {
+        "weak-context": 1
+      },
+      "evidence_score": 0,
+      "map_id": "004_002_00005",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "classes": {
+        "weak-context": 1
+      },
+      "evidence_score": 0,
+      "map_id": "005_000_00002",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "classes": {
+        "weak-context": 1
+      },
+      "evidence_score": 0,
+      "map_id": "005_000_00003",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "classes": {
+        "weak-context": 1
+      },
+      "evidence_score": 0,
+      "map_id": "005_000_00004",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "classes": {
+        "weak-context": 1
+      },
+      "evidence_score": 0,
+      "map_id": "006_000_00001",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "classes": {
+        "weak-context": 1
+      },
+      "evidence_score": 0,
+      "map_id": "006_000_00002",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "classes": {
+        "weak-context": 1
+      },
+      "evidence_score": 0,
+      "map_id": "006_000_00003",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "classes": {
+        "weak-context": 1
+      },
+      "evidence_score": 0,
+      "map_id": "006_000_00005",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "classes": {
+        "weak-context": 1
+      },
+      "evidence_score": 0,
+      "map_id": "006_000_00006",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "classes": {
+        "weak-context": 1
+      },
+      "evidence_score": 0,
+      "map_id": "006_001_00001",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "classes": {
+        "weak-context": 1
+      },
+      "evidence_score": 0,
+      "map_id": "006_001_00002",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "classes": {
+        "weak-context": 1
+      },
+      "evidence_score": 0,
+      "map_id": "006_001_00003",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "classes": {
+        "weak-context": 1
+      },
+      "evidence_score": 0,
+      "map_id": "007_000_00001",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "classes": {
+        "weak-context": 1
+      },
+      "evidence_score": 0,
+      "map_id": "007_000_00002",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "classes": {
+        "weak-context": 1
+      },
+      "evidence_score": 0,
+      "map_id": "007_000_00003",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "classes": {
+        "weak-context": 1
+      },
+      "evidence_score": 0,
+      "map_id": "007_000_00004",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "classes": {
+        "weak-context": 1
+      },
+      "evidence_score": 0,
+      "map_id": "007_000_00005",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "classes": {
+        "weak-context": 1
+      },
+      "evidence_score": 0,
+      "map_id": "007_000_00006",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "classes": {
+        "weak-context": 1
+      },
+      "evidence_score": 0,
+      "map_id": "007_002_00002",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "classes": {
+        "weak-context": 1
+      },
+      "evidence_score": 0,
+      "map_id": "007_002_00004",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "classes": {
+        "weak-context": 1
+      },
+      "evidence_score": 0,
+      "map_id": "007_003_00004",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "classes": {
+        "weak-context": 1
+      },
+      "evidence_score": 0,
+      "map_id": "007_003_00006",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "classes": {
+        "weak-context": 1
+      },
+      "evidence_score": 0,
+      "map_id": "009_007_00000",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "classes": {
+        "weak-context": 1
+      },
+      "evidence_score": 0,
+      "map_id": "009_010_00001",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "classes": {
+        "weak-context": 1
+      },
+      "evidence_score": 0,
+      "map_id": "009_010_00002",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "classes": {
+        "weak-context": 1
+      },
+      "evidence_score": 0,
+      "map_id": "009_010_00003",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "classes": {
+        "weak-context": 1
+      },
+      "evidence_score": 0,
+      "map_id": "009_010_00004",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "classes": {
+        "weak-context": 1
+      },
+      "evidence_score": 0,
+      "map_id": "009_010_00005",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "classes": {
+        "weak-context": 1
+      },
+      "evidence_score": 0,
+      "map_id": "009_010_00006",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "classes": {
+        "weak-context": 1
+      },
+      "evidence_score": 0,
+      "map_id": "009_013_00001",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "classes": {
+        "weak-context": 1
+      },
+      "evidence_score": 0,
+      "map_id": "009_013_00002",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "classes": {
+        "weak-context": 1
+      },
+      "evidence_score": 0,
+      "map_id": "009_015_00001",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "classes": {
+        "weak-context": 1
+      },
+      "evidence_score": 0,
+      "map_id": "009_015_00002",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "classes": {
+        "weak-context": 1
+      },
+      "evidence_score": 0,
+      "map_id": "009_015_00003",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "classes": {
+        "weak-context": 1
+      },
+      "evidence_score": 0,
+      "map_id": "012_003_00010",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "classes": {
+        "weak-context": 1
+      },
+      "evidence_score": 0,
+      "map_id": "012_004_00000",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "classes": {
+        "weak-context": 1
+      },
+      "evidence_score": 0,
+      "map_id": "012_004_00002",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "classes": {
+        "weak-context": 1
+      },
+      "evidence_score": 0,
+      "map_id": "012_005_00001",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "classes": {
+        "weak-context": 1
+      },
+      "evidence_score": 0,
+      "map_id": "100_000_00001",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "classes": {
+        "weak-context": 1
+      },
+      "evidence_score": 0,
+      "map_id": "100_001_00000",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "classes": {
+        "weak-context": 1
+      },
+      "evidence_score": 0,
+      "map_id": "250_000_00002",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "classes": {
+        "weak-context": 1
+      },
+      "evidence_score": 0,
+      "map_id": "250_001_00000",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "classes": {
+        "weak-context": 1
+      },
+      "evidence_score": 0,
+      "map_id": "250_001_00002",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "classes": {
+        "weak-context": 1
+      },
+      "evidence_score": 0,
+      "map_id": "250_001_00003",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "classes": {
+        "weak-context": 1
+      },
+      "evidence_score": 0,
+      "map_id": "250_001_00004",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "classes": {
+        "weak-context": 1
+      },
+      "evidence_score": 0,
+      "map_id": "250_001_00006",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "classes": {
+        "weak-context": 1
+      },
+      "evidence_score": 0,
+      "map_id": "250_002_00000",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "classes": {
+        "negative-resource-context": 1
+      },
+      "evidence_score": -4,
+      "map_id": "014_000_00000",
+      "reference_count": 1,
+      "source_count": 1
+    },
+    {
+      "classes": {
+        "negative-resource-context": 1
+      },
+      "evidence_score": -4,
+      "map_id": "100_001_00002",
+      "reference_count": 1,
+      "source_count": 1
+    }
+  ],
+  "reference_count": 110,
+  "references": [
+    {
+      "ancestor_positive_labels": [
+        "quest"
+      ],
+      "container": "json_resource.mbn",
+      "direct_key": "id",
+      "direct_positive_labels": [],
+      "entry": "quest_texts.json",
+      "evidence_class": "workflow-context",
+      "format": "json",
+      "kind": "value",
+      "map_id": "001_000_00001",
+      "negative_labels": [],
+      "pointer": "/quest_skip_mercenary_chapterid/id",
+      "source_sha256": "21d25bc3a4be7890abf14c58b93dcd1fc650717f5d3e767b70dfd0c1ec2e490a"
+    },
+    {
+      "ancestor_positive_labels": [],
+      "container": "gui/Battle/additional_skill.mbn",
+      "direct_key": "001_000_00001",
+      "direct_positive_labels": [],
+      "entry": "additional_skill_icon_setting.json",
+      "evidence_class": "weak-context",
+      "format": "json",
+      "kind": "key",
+      "map_id": "001_000_00001",
+      "negative_labels": [],
+      "pointer": "/001_000_00001",
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "ancestor_positive_labels": [],
+      "container": "gui/Battle/buff_icon.mbn",
+      "direct_key": "001_000_00001",
+      "direct_positive_labels": [],
+      "entry": "buff_icon_setting.json",
+      "evidence_class": "weak-context",
+      "format": "json",
+      "kind": "key",
+      "map_id": "001_000_00001",
+      "negative_labels": [],
+      "pointer": "/001_000_00001",
+      "source_sha256": "0d750a6f0d20985d24727bfd582ceb9371408fd87eabc6e6c451cdffd64a67dc"
+    },
+    {
+      "ancestor_positive_labels": [],
+      "container": "gui/Battle/additional_skill.mbn",
+      "direct_key": "001_000_00002",
+      "direct_positive_labels": [],
+      "entry": "additional_skill_icon_setting.json",
+      "evidence_class": "weak-context",
+      "format": "json",
+      "kind": "key",
+      "map_id": "001_000_00002",
+      "negative_labels": [],
+      "pointer": "/001_000_00002",
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "ancestor_positive_labels": [],
+      "container": "gui/Battle/buff_icon.mbn",
+      "direct_key": "001_000_00002",
+      "direct_positive_labels": [],
+      "entry": "buff_icon_setting.json",
+      "evidence_class": "weak-context",
+      "format": "json",
+      "kind": "key",
+      "map_id": "001_000_00002",
+      "negative_labels": [],
+      "pointer": "/001_000_00002",
+      "source_sha256": "0d750a6f0d20985d24727bfd582ceb9371408fd87eabc6e6c451cdffd64a67dc"
+    },
+    {
+      "ancestor_positive_labels": [],
+      "container": "gui/Battle/additional_skill.mbn",
+      "direct_key": "001_000_00003",
+      "direct_positive_labels": [],
+      "entry": "additional_skill_icon_setting.json",
+      "evidence_class": "weak-context",
+      "format": "json",
+      "kind": "key",
+      "map_id": "001_000_00003",
+      "negative_labels": [],
+      "pointer": "/001_000_00003",
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "ancestor_positive_labels": [],
+      "container": "gui/Battle/buff_icon.mbn",
+      "direct_key": "001_000_00003",
+      "direct_positive_labels": [],
+      "entry": "buff_icon_setting.json",
+      "evidence_class": "weak-context",
+      "format": "json",
+      "kind": "key",
+      "map_id": "001_000_00003",
+      "negative_labels": [],
+      "pointer": "/001_000_00003",
+      "source_sha256": "0d750a6f0d20985d24727bfd582ceb9371408fd87eabc6e6c451cdffd64a67dc"
+    },
+    {
+      "ancestor_positive_labels": [],
+      "container": "gui/Battle/additional_skill.mbn",
+      "direct_key": "001_000_00007",
+      "direct_positive_labels": [],
+      "entry": "additional_skill_icon_setting.json",
+      "evidence_class": "weak-context",
+      "format": "json",
+      "kind": "key",
+      "map_id": "001_000_00007",
+      "negative_labels": [],
+      "pointer": "/001_000_00007",
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "ancestor_positive_labels": [],
+      "container": "gui/Battle/additional_skill.mbn",
+      "direct_key": "001_000_00010",
+      "direct_positive_labels": [],
+      "entry": "additional_skill_icon_setting.json",
+      "evidence_class": "weak-context",
+      "format": "json",
+      "kind": "key",
+      "map_id": "001_000_00010",
+      "negative_labels": [],
+      "pointer": "/001_000_00010",
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "ancestor_positive_labels": [],
+      "container": "gui/Battle/additional_skill.mbn",
+      "direct_key": "001_000_00011",
+      "direct_positive_labels": [],
+      "entry": "additional_skill_icon_setting.json",
+      "evidence_class": "weak-context",
+      "format": "json",
+      "kind": "key",
+      "map_id": "001_000_00011",
+      "negative_labels": [],
+      "pointer": "/001_000_00011",
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "ancestor_positive_labels": [],
+      "container": "gui/Battle/additional_skill.mbn",
+      "direct_key": "001_000_00012",
+      "direct_positive_labels": [],
+      "entry": "additional_skill_icon_setting.json",
+      "evidence_class": "weak-context",
+      "format": "json",
+      "kind": "key",
+      "map_id": "001_000_00012",
+      "negative_labels": [],
+      "pointer": "/001_000_00012",
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "ancestor_positive_labels": [],
+      "container": "gui/Battle/additional_skill.mbn",
+      "direct_key": "001_000_00013",
+      "direct_positive_labels": [],
+      "entry": "additional_skill_icon_setting.json",
+      "evidence_class": "weak-context",
+      "format": "json",
+      "kind": "key",
+      "map_id": "001_000_00013",
+      "negative_labels": [],
+      "pointer": "/001_000_00013",
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "ancestor_positive_labels": [],
+      "container": "gui/Battle/additional_skill.mbn",
+      "direct_key": "001_000_00014",
+      "direct_positive_labels": [],
+      "entry": "additional_skill_icon_setting.json",
+      "evidence_class": "weak-context",
+      "format": "json",
+      "kind": "key",
+      "map_id": "001_000_00014",
+      "negative_labels": [],
+      "pointer": "/001_000_00014",
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "ancestor_positive_labels": [],
+      "container": "gui/Battle/additional_skill.mbn",
+      "direct_key": "001_000_00015",
+      "direct_positive_labels": [],
+      "entry": "additional_skill_icon_setting.json",
+      "evidence_class": "weak-context",
+      "format": "json",
+      "kind": "key",
+      "map_id": "001_000_00015",
+      "negative_labels": [],
+      "pointer": "/001_000_00015",
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "ancestor_positive_labels": [],
+      "container": "gui/Battle/additional_skill.mbn",
+      "direct_key": "001_000_00016",
+      "direct_positive_labels": [],
+      "entry": "additional_skill_icon_setting.json",
+      "evidence_class": "weak-context",
+      "format": "json",
+      "kind": "key",
+      "map_id": "001_000_00016",
+      "negative_labels": [],
+      "pointer": "/001_000_00016",
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "ancestor_positive_labels": [],
+      "container": "gui/Battle/additional_skill.mbn",
+      "direct_key": "001_000_00019",
+      "direct_positive_labels": [],
+      "entry": "additional_skill_icon_setting.json",
+      "evidence_class": "weak-context",
+      "format": "json",
+      "kind": "key",
+      "map_id": "001_000_00019",
+      "negative_labels": [],
+      "pointer": "/001_000_00019",
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "ancestor_positive_labels": [],
+      "container": "gui/Battle/additional_skill.mbn",
+      "direct_key": "001_000_00021",
+      "direct_positive_labels": [],
+      "entry": "additional_skill_icon_setting.json",
+      "evidence_class": "weak-context",
+      "format": "json",
+      "kind": "key",
+      "map_id": "001_000_00021",
+      "negative_labels": [],
+      "pointer": "/001_000_00021",
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "ancestor_positive_labels": [],
+      "container": "gui/Battle/additional_skill.mbn",
+      "direct_key": "001_000_00022",
+      "direct_positive_labels": [],
+      "entry": "additional_skill_icon_setting.json",
+      "evidence_class": "weak-context",
+      "format": "json",
+      "kind": "key",
+      "map_id": "001_000_00022",
+      "negative_labels": [],
+      "pointer": "/001_000_00022",
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "ancestor_positive_labels": [],
+      "container": "gui/Battle/additional_skill.mbn",
+      "direct_key": "001_000_00025",
+      "direct_positive_labels": [],
+      "entry": "additional_skill_icon_setting.json",
+      "evidence_class": "weak-context",
+      "format": "json",
+      "kind": "key",
+      "map_id": "001_000_00025",
+      "negative_labels": [],
+      "pointer": "/001_000_00025",
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "ancestor_positive_labels": [],
+      "container": "gui/Battle/additional_skill.mbn",
+      "direct_key": "001_000_00026",
+      "direct_positive_labels": [],
+      "entry": "additional_skill_icon_setting.json",
+      "evidence_class": "weak-context",
+      "format": "json",
+      "kind": "key",
+      "map_id": "001_000_00026",
+      "negative_labels": [],
+      "pointer": "/001_000_00026",
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "ancestor_positive_labels": [],
+      "container": "gui/Battle/additional_skill.mbn",
+      "direct_key": "001_000_00027",
+      "direct_positive_labels": [],
+      "entry": "additional_skill_icon_setting.json",
+      "evidence_class": "weak-context",
+      "format": "json",
+      "kind": "key",
+      "map_id": "001_000_00027",
+      "negative_labels": [],
+      "pointer": "/001_000_00027",
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "ancestor_positive_labels": [],
+      "container": "gui/Battle/additional_skill.mbn",
+      "direct_key": "001_000_00028",
+      "direct_positive_labels": [],
+      "entry": "additional_skill_icon_setting.json",
+      "evidence_class": "weak-context",
+      "format": "json",
+      "kind": "key",
+      "map_id": "001_000_00028",
+      "negative_labels": [],
+      "pointer": "/001_000_00028",
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "ancestor_positive_labels": [],
+      "container": "gui/Battle/additional_skill.mbn",
+      "direct_key": "001_000_00029",
+      "direct_positive_labels": [],
+      "entry": "additional_skill_icon_setting.json",
+      "evidence_class": "weak-context",
+      "format": "json",
+      "kind": "key",
+      "map_id": "001_000_00029",
+      "negative_labels": [],
+      "pointer": "/001_000_00029",
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "ancestor_positive_labels": [],
+      "container": "gui/Battle/additional_skill.mbn",
+      "direct_key": "001_000_00030",
+      "direct_positive_labels": [],
+      "entry": "additional_skill_icon_setting.json",
+      "evidence_class": "weak-context",
+      "format": "json",
+      "kind": "key",
+      "map_id": "001_000_00030",
+      "negative_labels": [],
+      "pointer": "/001_000_00030",
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "ancestor_positive_labels": [],
+      "container": "gui/Battle/additional_skill.mbn",
+      "direct_key": "001_002_00001",
+      "direct_positive_labels": [],
+      "entry": "additional_skill_icon_setting.json",
+      "evidence_class": "weak-context",
+      "format": "json",
+      "kind": "key",
+      "map_id": "001_002_00001",
+      "negative_labels": [],
+      "pointer": "/001_002_00001",
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "ancestor_positive_labels": [],
+      "container": "gui/Battle/additional_skill.mbn",
+      "direct_key": "001_002_00002",
+      "direct_positive_labels": [],
+      "entry": "additional_skill_icon_setting.json",
+      "evidence_class": "weak-context",
+      "format": "json",
+      "kind": "key",
+      "map_id": "001_002_00002",
+      "negative_labels": [],
+      "pointer": "/001_002_00002",
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "ancestor_positive_labels": [],
+      "container": "gui/Battle/additional_skill.mbn",
+      "direct_key": "001_002_00026",
+      "direct_positive_labels": [],
+      "entry": "additional_skill_icon_setting.json",
+      "evidence_class": "weak-context",
+      "format": "json",
+      "kind": "key",
+      "map_id": "001_002_00026",
+      "negative_labels": [],
+      "pointer": "/001_002_00026",
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "ancestor_positive_labels": [],
+      "container": "gui/Battle/additional_skill.mbn",
+      "direct_key": "001_002_00028",
+      "direct_positive_labels": [],
+      "entry": "additional_skill_icon_setting.json",
+      "evidence_class": "weak-context",
+      "format": "json",
+      "kind": "key",
+      "map_id": "001_002_00028",
+      "negative_labels": [],
+      "pointer": "/001_002_00028",
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "ancestor_positive_labels": [],
+      "container": "gui/Battle/additional_skill.mbn",
+      "direct_key": "002_000_00001",
+      "direct_positive_labels": [],
+      "entry": "additional_skill_icon_setting.json",
+      "evidence_class": "weak-context",
+      "format": "json",
+      "kind": "key",
+      "map_id": "002_000_00001",
+      "negative_labels": [],
+      "pointer": "/002_000_00001",
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "ancestor_positive_labels": [],
+      "container": "gui/Battle/additional_skill.mbn",
+      "direct_key": "002_000_00002",
+      "direct_positive_labels": [],
+      "entry": "additional_skill_icon_setting.json",
+      "evidence_class": "weak-context",
+      "format": "json",
+      "kind": "key",
+      "map_id": "002_000_00002",
+      "negative_labels": [],
+      "pointer": "/002_000_00002",
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "ancestor_positive_labels": [],
+      "container": "gui/Battle/additional_skill.mbn",
+      "direct_key": "002_000_00003",
+      "direct_positive_labels": [],
+      "entry": "additional_skill_icon_setting.json",
+      "evidence_class": "weak-context",
+      "format": "json",
+      "kind": "key",
+      "map_id": "002_000_00003",
+      "negative_labels": [],
+      "pointer": "/002_000_00003",
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "ancestor_positive_labels": [],
+      "container": "gui/Battle/additional_skill.mbn",
+      "direct_key": "002_000_00004",
+      "direct_positive_labels": [],
+      "entry": "additional_skill_icon_setting.json",
+      "evidence_class": "weak-context",
+      "format": "json",
+      "kind": "key",
+      "map_id": "002_000_00004",
+      "negative_labels": [],
+      "pointer": "/002_000_00004",
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "ancestor_positive_labels": [],
+      "container": "gui/Battle/additional_skill.mbn",
+      "direct_key": "002_000_00005",
+      "direct_positive_labels": [],
+      "entry": "additional_skill_icon_setting.json",
+      "evidence_class": "weak-context",
+      "format": "json",
+      "kind": "key",
+      "map_id": "002_000_00005",
+      "negative_labels": [],
+      "pointer": "/002_000_00005",
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "ancestor_positive_labels": [],
+      "container": "gui/Battle/additional_skill.mbn",
+      "direct_key": "002_000_00006",
+      "direct_positive_labels": [],
+      "entry": "additional_skill_icon_setting.json",
+      "evidence_class": "weak-context",
+      "format": "json",
+      "kind": "key",
+      "map_id": "002_000_00006",
+      "negative_labels": [],
+      "pointer": "/002_000_00006",
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "ancestor_positive_labels": [],
+      "container": "gui/Battle/additional_skill.mbn",
+      "direct_key": "002_000_00007",
+      "direct_positive_labels": [],
+      "entry": "additional_skill_icon_setting.json",
+      "evidence_class": "weak-context",
+      "format": "json",
+      "kind": "key",
+      "map_id": "002_000_00007",
+      "negative_labels": [],
+      "pointer": "/002_000_00007",
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "ancestor_positive_labels": [],
+      "container": "gui/Battle/additional_skill.mbn",
+      "direct_key": "002_000_00008",
+      "direct_positive_labels": [],
+      "entry": "additional_skill_icon_setting.json",
+      "evidence_class": "weak-context",
+      "format": "json",
+      "kind": "key",
+      "map_id": "002_000_00008",
+      "negative_labels": [],
+      "pointer": "/002_000_00008",
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "ancestor_positive_labels": [],
+      "container": "gui/Battle/additional_skill.mbn",
+      "direct_key": "002_000_00009",
+      "direct_positive_labels": [],
+      "entry": "additional_skill_icon_setting.json",
+      "evidence_class": "weak-context",
+      "format": "json",
+      "kind": "key",
+      "map_id": "002_000_00009",
+      "negative_labels": [],
+      "pointer": "/002_000_00009",
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "ancestor_positive_labels": [],
+      "container": "gui/Battle/additional_skill.mbn",
+      "direct_key": "002_000_00010",
+      "direct_positive_labels": [],
+      "entry": "additional_skill_icon_setting.json",
+      "evidence_class": "weak-context",
+      "format": "json",
+      "kind": "key",
+      "map_id": "002_000_00010",
+      "negative_labels": [],
+      "pointer": "/002_000_00010",
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "ancestor_positive_labels": [],
+      "container": "gui/Battle/additional_skill.mbn",
+      "direct_key": "002_000_00011",
+      "direct_positive_labels": [],
+      "entry": "additional_skill_icon_setting.json",
+      "evidence_class": "weak-context",
+      "format": "json",
+      "kind": "key",
+      "map_id": "002_000_00011",
+      "negative_labels": [],
+      "pointer": "/002_000_00011",
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "ancestor_positive_labels": [],
+      "container": "gui/Battle/additional_skill.mbn",
+      "direct_key": "002_000_00012",
+      "direct_positive_labels": [],
+      "entry": "additional_skill_icon_setting.json",
+      "evidence_class": "weak-context",
+      "format": "json",
+      "kind": "key",
+      "map_id": "002_000_00012",
+      "negative_labels": [],
+      "pointer": "/002_000_00012",
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "ancestor_positive_labels": [],
+      "container": "gui/Battle/additional_skill.mbn",
+      "direct_key": "002_000_00014",
+      "direct_positive_labels": [],
+      "entry": "additional_skill_icon_setting.json",
+      "evidence_class": "weak-context",
+      "format": "json",
+      "kind": "key",
+      "map_id": "002_000_00014",
+      "negative_labels": [],
+      "pointer": "/002_000_00014",
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "ancestor_positive_labels": [],
+      "container": "gui/Battle/additional_skill.mbn",
+      "direct_key": "002_000_00015",
+      "direct_positive_labels": [],
+      "entry": "additional_skill_icon_setting.json",
+      "evidence_class": "weak-context",
+      "format": "json",
+      "kind": "key",
+      "map_id": "002_000_00015",
+      "negative_labels": [],
+      "pointer": "/002_000_00015",
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "ancestor_positive_labels": [],
+      "container": "gui/Battle/additional_skill.mbn",
+      "direct_key": "002_000_00016",
+      "direct_positive_labels": [],
+      "entry": "additional_skill_icon_setting.json",
+      "evidence_class": "weak-context",
+      "format": "json",
+      "kind": "key",
+      "map_id": "002_000_00016",
+      "negative_labels": [],
+      "pointer": "/002_000_00016",
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "ancestor_positive_labels": [],
+      "container": "gui/Battle/additional_skill.mbn",
+      "direct_key": "002_000_00017",
+      "direct_positive_labels": [],
+      "entry": "additional_skill_icon_setting.json",
+      "evidence_class": "weak-context",
+      "format": "json",
+      "kind": "key",
+      "map_id": "002_000_00017",
+      "negative_labels": [],
+      "pointer": "/002_000_00017",
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "ancestor_positive_labels": [],
+      "container": "gui/Battle/additional_skill.mbn",
+      "direct_key": "002_000_00018",
+      "direct_positive_labels": [],
+      "entry": "additional_skill_icon_setting.json",
+      "evidence_class": "weak-context",
+      "format": "json",
+      "kind": "key",
+      "map_id": "002_000_00018",
+      "negative_labels": [],
+      "pointer": "/002_000_00018",
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "ancestor_positive_labels": [],
+      "container": "gui/Battle/additional_skill.mbn",
+      "direct_key": "002_000_00019",
+      "direct_positive_labels": [],
+      "entry": "additional_skill_icon_setting.json",
+      "evidence_class": "weak-context",
+      "format": "json",
+      "kind": "key",
+      "map_id": "002_000_00019",
+      "negative_labels": [],
+      "pointer": "/002_000_00019",
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "ancestor_positive_labels": [],
+      "container": "gui/Battle/additional_skill.mbn",
+      "direct_key": "002_000_00020",
+      "direct_positive_labels": [],
+      "entry": "additional_skill_icon_setting.json",
+      "evidence_class": "weak-context",
+      "format": "json",
+      "kind": "key",
+      "map_id": "002_000_00020",
+      "negative_labels": [],
+      "pointer": "/002_000_00020",
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "ancestor_positive_labels": [],
+      "container": "gui/Battle/additional_skill.mbn",
+      "direct_key": "002_001_00001",
+      "direct_positive_labels": [],
+      "entry": "additional_skill_icon_setting.json",
+      "evidence_class": "weak-context",
+      "format": "json",
+      "kind": "key",
+      "map_id": "002_001_00001",
+      "negative_labels": [],
+      "pointer": "/002_001_00001",
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "ancestor_positive_labels": [],
+      "container": "gui/Battle/additional_skill.mbn",
+      "direct_key": "002_002_00001",
+      "direct_positive_labels": [],
+      "entry": "additional_skill_icon_setting.json",
+      "evidence_class": "weak-context",
+      "format": "json",
+      "kind": "key",
+      "map_id": "002_002_00001",
+      "negative_labels": [],
+      "pointer": "/002_002_00001",
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "ancestor_positive_labels": [],
+      "container": "gui/Battle/additional_skill.mbn",
+      "direct_key": "002_002_00002",
+      "direct_positive_labels": [],
+      "entry": "additional_skill_icon_setting.json",
+      "evidence_class": "weak-context",
+      "format": "json",
+      "kind": "key",
+      "map_id": "002_002_00002",
+      "negative_labels": [],
+      "pointer": "/002_002_00002",
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "ancestor_positive_labels": [],
+      "container": "gui/Battle/additional_skill.mbn",
+      "direct_key": "002_002_00003",
+      "direct_positive_labels": [],
+      "entry": "additional_skill_icon_setting.json",
+      "evidence_class": "weak-context",
+      "format": "json",
+      "kind": "key",
+      "map_id": "002_002_00003",
+      "negative_labels": [],
+      "pointer": "/002_002_00003",
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "ancestor_positive_labels": [],
+      "container": "gui/Battle/additional_skill.mbn",
+      "direct_key": "004_000_00001",
+      "direct_positive_labels": [],
+      "entry": "additional_skill_icon_setting.json",
+      "evidence_class": "weak-context",
+      "format": "json",
+      "kind": "key",
+      "map_id": "004_000_00001",
+      "negative_labels": [],
+      "pointer": "/004_000_00001",
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "ancestor_positive_labels": [],
+      "container": "gui/Battle/additional_skill.mbn",
+      "direct_key": "004_000_00002",
+      "direct_positive_labels": [],
+      "entry": "additional_skill_icon_setting.json",
+      "evidence_class": "weak-context",
+      "format": "json",
+      "kind": "key",
+      "map_id": "004_000_00002",
+      "negative_labels": [],
+      "pointer": "/004_000_00002",
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "ancestor_positive_labels": [],
+      "container": "gui/Battle/additional_skill.mbn",
+      "direct_key": "004_000_00003",
+      "direct_positive_labels": [],
+      "entry": "additional_skill_icon_setting.json",
+      "evidence_class": "weak-context",
+      "format": "json",
+      "kind": "key",
+      "map_id": "004_000_00003",
+      "negative_labels": [],
+      "pointer": "/004_000_00003",
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "ancestor_positive_labels": [],
+      "container": "gui/Battle/additional_skill.mbn",
+      "direct_key": "004_000_00004",
+      "direct_positive_labels": [],
+      "entry": "additional_skill_icon_setting.json",
+      "evidence_class": "weak-context",
+      "format": "json",
+      "kind": "key",
+      "map_id": "004_000_00004",
+      "negative_labels": [],
+      "pointer": "/004_000_00004",
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "ancestor_positive_labels": [],
+      "container": "gui/Battle/additional_skill.mbn",
+      "direct_key": "004_000_00005",
+      "direct_positive_labels": [],
+      "entry": "additional_skill_icon_setting.json",
+      "evidence_class": "weak-context",
+      "format": "json",
+      "kind": "key",
+      "map_id": "004_000_00005",
+      "negative_labels": [],
+      "pointer": "/004_000_00005",
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "ancestor_positive_labels": [],
+      "container": "gui/Battle/additional_skill.mbn",
+      "direct_key": "004_000_00006",
+      "direct_positive_labels": [],
+      "entry": "additional_skill_icon_setting.json",
+      "evidence_class": "weak-context",
+      "format": "json",
+      "kind": "key",
+      "map_id": "004_000_00006",
+      "negative_labels": [],
+      "pointer": "/004_000_00006",
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "ancestor_positive_labels": [],
+      "container": "gui/Battle/additional_skill.mbn",
+      "direct_key": "004_002_00001",
+      "direct_positive_labels": [],
+      "entry": "additional_skill_icon_setting.json",
+      "evidence_class": "weak-context",
+      "format": "json",
+      "kind": "key",
+      "map_id": "004_002_00001",
+      "negative_labels": [],
+      "pointer": "/004_002_00001",
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "ancestor_positive_labels": [],
+      "container": "gui/Battle/additional_skill.mbn",
+      "direct_key": "004_002_00005",
+      "direct_positive_labels": [],
+      "entry": "additional_skill_icon_setting.json",
+      "evidence_class": "weak-context",
+      "format": "json",
+      "kind": "key",
+      "map_id": "004_002_00005",
+      "negative_labels": [],
+      "pointer": "/004_002_00005",
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "ancestor_positive_labels": [],
+      "container": "gui/Battle/additional_skill.mbn",
+      "direct_key": "005_000_00002",
+      "direct_positive_labels": [],
+      "entry": "additional_skill_icon_setting.json",
+      "evidence_class": "weak-context",
+      "format": "json",
+      "kind": "key",
+      "map_id": "005_000_00002",
+      "negative_labels": [],
+      "pointer": "/005_000_00002",
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "ancestor_positive_labels": [],
+      "container": "gui/Battle/additional_skill.mbn",
+      "direct_key": "005_000_00003",
+      "direct_positive_labels": [],
+      "entry": "additional_skill_icon_setting.json",
+      "evidence_class": "weak-context",
+      "format": "json",
+      "kind": "key",
+      "map_id": "005_000_00003",
+      "negative_labels": [],
+      "pointer": "/005_000_00003",
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "ancestor_positive_labels": [],
+      "container": "gui/Battle/additional_skill.mbn",
+      "direct_key": "005_000_00004",
+      "direct_positive_labels": [],
+      "entry": "additional_skill_icon_setting.json",
+      "evidence_class": "weak-context",
+      "format": "json",
+      "kind": "key",
+      "map_id": "005_000_00004",
+      "negative_labels": [],
+      "pointer": "/005_000_00004",
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "ancestor_positive_labels": [],
+      "container": "gui/Battle/additional_skill.mbn",
+      "direct_key": "006_000_00001",
+      "direct_positive_labels": [],
+      "entry": "additional_skill_icon_setting.json",
+      "evidence_class": "weak-context",
+      "format": "json",
+      "kind": "key",
+      "map_id": "006_000_00001",
+      "negative_labels": [],
+      "pointer": "/006_000_00001",
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "ancestor_positive_labels": [],
+      "container": "gui/Battle/additional_skill.mbn",
+      "direct_key": "006_000_00002",
+      "direct_positive_labels": [],
+      "entry": "additional_skill_icon_setting.json",
+      "evidence_class": "weak-context",
+      "format": "json",
+      "kind": "key",
+      "map_id": "006_000_00002",
+      "negative_labels": [],
+      "pointer": "/006_000_00002",
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "ancestor_positive_labels": [],
+      "container": "gui/Battle/additional_skill.mbn",
+      "direct_key": "006_000_00003",
+      "direct_positive_labels": [],
+      "entry": "additional_skill_icon_setting.json",
+      "evidence_class": "weak-context",
+      "format": "json",
+      "kind": "key",
+      "map_id": "006_000_00003",
+      "negative_labels": [],
+      "pointer": "/006_000_00003",
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "ancestor_positive_labels": [],
+      "container": "gui/Battle/additional_skill.mbn",
+      "direct_key": "006_000_00005",
+      "direct_positive_labels": [],
+      "entry": "additional_skill_icon_setting.json",
+      "evidence_class": "weak-context",
+      "format": "json",
+      "kind": "key",
+      "map_id": "006_000_00005",
+      "negative_labels": [],
+      "pointer": "/006_000_00005",
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "ancestor_positive_labels": [],
+      "container": "gui/Battle/additional_skill.mbn",
+      "direct_key": "006_000_00006",
+      "direct_positive_labels": [],
+      "entry": "additional_skill_icon_setting.json",
+      "evidence_class": "weak-context",
+      "format": "json",
+      "kind": "key",
+      "map_id": "006_000_00006",
+      "negative_labels": [],
+      "pointer": "/006_000_00006",
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "ancestor_positive_labels": [],
+      "container": "gui/Battle/additional_skill.mbn",
+      "direct_key": "006_001_00001",
+      "direct_positive_labels": [],
+      "entry": "additional_skill_icon_setting.json",
+      "evidence_class": "weak-context",
+      "format": "json",
+      "kind": "key",
+      "map_id": "006_001_00001",
+      "negative_labels": [],
+      "pointer": "/006_001_00001",
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "ancestor_positive_labels": [],
+      "container": "gui/Battle/additional_skill.mbn",
+      "direct_key": "006_001_00002",
+      "direct_positive_labels": [],
+      "entry": "additional_skill_icon_setting.json",
+      "evidence_class": "weak-context",
+      "format": "json",
+      "kind": "key",
+      "map_id": "006_001_00002",
+      "negative_labels": [],
+      "pointer": "/006_001_00002",
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "ancestor_positive_labels": [],
+      "container": "gui/Battle/additional_skill.mbn",
+      "direct_key": "006_001_00003",
+      "direct_positive_labels": [],
+      "entry": "additional_skill_icon_setting.json",
+      "evidence_class": "weak-context",
+      "format": "json",
+      "kind": "key",
+      "map_id": "006_001_00003",
+      "negative_labels": [],
+      "pointer": "/006_001_00003",
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "ancestor_positive_labels": [],
+      "container": "gui/Battle/additional_skill.mbn",
+      "direct_key": "007_000_00001",
+      "direct_positive_labels": [],
+      "entry": "additional_skill_icon_setting.json",
+      "evidence_class": "weak-context",
+      "format": "json",
+      "kind": "key",
+      "map_id": "007_000_00001",
+      "negative_labels": [],
+      "pointer": "/007_000_00001",
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "ancestor_positive_labels": [],
+      "container": "gui/Battle/additional_skill.mbn",
+      "direct_key": "007_000_00002",
+      "direct_positive_labels": [],
+      "entry": "additional_skill_icon_setting.json",
+      "evidence_class": "weak-context",
+      "format": "json",
+      "kind": "key",
+      "map_id": "007_000_00002",
+      "negative_labels": [],
+      "pointer": "/007_000_00002",
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "ancestor_positive_labels": [],
+      "container": "gui/Battle/additional_skill.mbn",
+      "direct_key": "007_000_00003",
+      "direct_positive_labels": [],
+      "entry": "additional_skill_icon_setting.json",
+      "evidence_class": "weak-context",
+      "format": "json",
+      "kind": "key",
+      "map_id": "007_000_00003",
+      "negative_labels": [],
+      "pointer": "/007_000_00003",
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "ancestor_positive_labels": [],
+      "container": "gui/Battle/additional_skill.mbn",
+      "direct_key": "007_000_00004",
+      "direct_positive_labels": [],
+      "entry": "additional_skill_icon_setting.json",
+      "evidence_class": "weak-context",
+      "format": "json",
+      "kind": "key",
+      "map_id": "007_000_00004",
+      "negative_labels": [],
+      "pointer": "/007_000_00004",
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "ancestor_positive_labels": [],
+      "container": "gui/Battle/additional_skill.mbn",
+      "direct_key": "007_000_00005",
+      "direct_positive_labels": [],
+      "entry": "additional_skill_icon_setting.json",
+      "evidence_class": "weak-context",
+      "format": "json",
+      "kind": "key",
+      "map_id": "007_000_00005",
+      "negative_labels": [],
+      "pointer": "/007_000_00005",
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "ancestor_positive_labels": [],
+      "container": "gui/Battle/additional_skill.mbn",
+      "direct_key": "007_000_00006",
+      "direct_positive_labels": [],
+      "entry": "additional_skill_icon_setting.json",
+      "evidence_class": "weak-context",
+      "format": "json",
+      "kind": "key",
+      "map_id": "007_000_00006",
+      "negative_labels": [],
+      "pointer": "/007_000_00006",
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "ancestor_positive_labels": [],
+      "container": "gui/Battle/additional_skill.mbn",
+      "direct_key": "007_002_00002",
+      "direct_positive_labels": [],
+      "entry": "additional_skill_icon_setting.json",
+      "evidence_class": "weak-context",
+      "format": "json",
+      "kind": "key",
+      "map_id": "007_002_00002",
+      "negative_labels": [],
+      "pointer": "/007_002_00002",
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "ancestor_positive_labels": [],
+      "container": "gui/Battle/additional_skill.mbn",
+      "direct_key": "007_002_00004",
+      "direct_positive_labels": [],
+      "entry": "additional_skill_icon_setting.json",
+      "evidence_class": "weak-context",
+      "format": "json",
+      "kind": "key",
+      "map_id": "007_002_00004",
+      "negative_labels": [],
+      "pointer": "/007_002_00004",
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "ancestor_positive_labels": [],
+      "container": "gui/Battle/additional_skill.mbn",
+      "direct_key": "007_003_00004",
+      "direct_positive_labels": [],
+      "entry": "additional_skill_icon_setting.json",
+      "evidence_class": "weak-context",
+      "format": "json",
+      "kind": "key",
+      "map_id": "007_003_00004",
+      "negative_labels": [],
+      "pointer": "/007_003_00004",
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "ancestor_positive_labels": [],
+      "container": "gui/Battle/additional_skill.mbn",
+      "direct_key": "007_003_00006",
+      "direct_positive_labels": [],
+      "entry": "additional_skill_icon_setting.json",
+      "evidence_class": "weak-context",
+      "format": "json",
+      "kind": "key",
+      "map_id": "007_003_00006",
+      "negative_labels": [],
+      "pointer": "/007_003_00006",
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "ancestor_positive_labels": [],
+      "container": "json_resource.mbn",
+      "direct_key": "009_007_00000",
+      "direct_positive_labels": [],
+      "entry": "clan_room_item_icon_setting.json",
+      "evidence_class": "weak-context",
+      "format": "json",
+      "kind": "key",
+      "map_id": "009_007_00000",
+      "negative_labels": [],
+      "pointer": "/009_007_00000",
+      "source_sha256": "919cf81903d4de8194814298b69be1d7cf104043e5193cdb44395464de5a294d"
+    },
+    {
+      "ancestor_positive_labels": [],
+      "container": "gui/Battle/additional_skill.mbn",
+      "direct_key": "009_010_00001",
+      "direct_positive_labels": [],
+      "entry": "additional_skill_icon_setting.json",
+      "evidence_class": "weak-context",
+      "format": "json",
+      "kind": "key",
+      "map_id": "009_010_00001",
+      "negative_labels": [],
+      "pointer": "/009_010_00001",
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "ancestor_positive_labels": [],
+      "container": "gui/Battle/additional_skill.mbn",
+      "direct_key": "009_010_00002",
+      "direct_positive_labels": [],
+      "entry": "additional_skill_icon_setting.json",
+      "evidence_class": "weak-context",
+      "format": "json",
+      "kind": "key",
+      "map_id": "009_010_00002",
+      "negative_labels": [],
+      "pointer": "/009_010_00002",
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "ancestor_positive_labels": [],
+      "container": "gui/Battle/additional_skill.mbn",
+      "direct_key": "009_010_00003",
+      "direct_positive_labels": [],
+      "entry": "additional_skill_icon_setting.json",
+      "evidence_class": "weak-context",
+      "format": "json",
+      "kind": "key",
+      "map_id": "009_010_00003",
+      "negative_labels": [],
+      "pointer": "/009_010_00003",
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "ancestor_positive_labels": [],
+      "container": "gui/Battle/additional_skill.mbn",
+      "direct_key": "009_010_00004",
+      "direct_positive_labels": [],
+      "entry": "additional_skill_icon_setting.json",
+      "evidence_class": "weak-context",
+      "format": "json",
+      "kind": "key",
+      "map_id": "009_010_00004",
+      "negative_labels": [],
+      "pointer": "/009_010_00004",
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "ancestor_positive_labels": [],
+      "container": "gui/Battle/additional_skill.mbn",
+      "direct_key": "009_010_00005",
+      "direct_positive_labels": [],
+      "entry": "additional_skill_icon_setting.json",
+      "evidence_class": "weak-context",
+      "format": "json",
+      "kind": "key",
+      "map_id": "009_010_00005",
+      "negative_labels": [],
+      "pointer": "/009_010_00005",
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "ancestor_positive_labels": [],
+      "container": "gui/Battle/additional_skill.mbn",
+      "direct_key": "009_010_00006",
+      "direct_positive_labels": [],
+      "entry": "additional_skill_icon_setting.json",
+      "evidence_class": "weak-context",
+      "format": "json",
+      "kind": "key",
+      "map_id": "009_010_00006",
+      "negative_labels": [],
+      "pointer": "/009_010_00006",
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "ancestor_positive_labels": [],
+      "container": "gui/Battle/additional_skill.mbn",
+      "direct_key": "009_013_00001",
+      "direct_positive_labels": [],
+      "entry": "additional_skill_icon_setting.json",
+      "evidence_class": "weak-context",
+      "format": "json",
+      "kind": "key",
+      "map_id": "009_013_00001",
+      "negative_labels": [],
+      "pointer": "/009_013_00001",
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "ancestor_positive_labels": [],
+      "container": "gui/Battle/additional_skill.mbn",
+      "direct_key": "009_013_00002",
+      "direct_positive_labels": [],
+      "entry": "additional_skill_icon_setting.json",
+      "evidence_class": "weak-context",
+      "format": "json",
+      "kind": "key",
+      "map_id": "009_013_00002",
+      "negative_labels": [],
+      "pointer": "/009_013_00002",
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "ancestor_positive_labels": [],
+      "container": "gui/Battle/additional_skill.mbn",
+      "direct_key": "009_015_00001",
+      "direct_positive_labels": [],
+      "entry": "additional_skill_icon_setting.json",
+      "evidence_class": "weak-context",
+      "format": "json",
+      "kind": "key",
+      "map_id": "009_015_00001",
+      "negative_labels": [],
+      "pointer": "/009_015_00001",
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "ancestor_positive_labels": [],
+      "container": "gui/Battle/additional_skill.mbn",
+      "direct_key": "009_015_00002",
+      "direct_positive_labels": [],
+      "entry": "additional_skill_icon_setting.json",
+      "evidence_class": "weak-context",
+      "format": "json",
+      "kind": "key",
+      "map_id": "009_015_00002",
+      "negative_labels": [],
+      "pointer": "/009_015_00002",
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "ancestor_positive_labels": [],
+      "container": "gui/Battle/additional_skill.mbn",
+      "direct_key": "009_015_00003",
+      "direct_positive_labels": [],
+      "entry": "additional_skill_icon_setting.json",
+      "evidence_class": "weak-context",
+      "format": "json",
+      "kind": "key",
+      "map_id": "009_015_00003",
+      "negative_labels": [],
+      "pointer": "/009_015_00003",
+      "source_sha256": "3d6ed0c13c0bae9550f070f459b1cbf4122bee5454cf52c1059665c5cfa5f525"
+    },
+    {
+      "ancestor_positive_labels": [],
+      "container": "json_resource.mbn",
+      "direct_key": "012_003_00010",
+      "direct_positive_labels": [],
+      "entry": "clan_room_item_icon_setting.json",
+      "evidence_class": "weak-context",
+      "format": "json",
+      "kind": "key",
+      "map_id": "012_003_00010",
+      "negative_labels": [],
+      "pointer": "/012_003_00010",
+      "source_sha256": "919cf81903d4de8194814298b69be1d7cf104043e5193cdb44395464de5a294d"
+    },
+    {
+      "ancestor_positive_labels": [],
+      "container": "json_resource.mbn",
+      "direct_key": "012_004_00000",
+      "direct_positive_labels": [],
+      "entry": "clan_room_item_icon_setting.json",
+      "evidence_class": "weak-context",
+      "format": "json",
+      "kind": "key",
+      "map_id": "012_004_00000",
+      "negative_labels": [],
+      "pointer": "/012_004_00000",
+      "source_sha256": "919cf81903d4de8194814298b69be1d7cf104043e5193cdb44395464de5a294d"
+    },
+    {
+      "ancestor_positive_labels": [],
+      "container": "json_resource.mbn",
+      "direct_key": "012_004_00002",
+      "direct_positive_labels": [],
+      "entry": "clan_room_item_icon_setting.json",
+      "evidence_class": "weak-context",
+      "format": "json",
+      "kind": "key",
+      "map_id": "012_004_00002",
+      "negative_labels": [],
+      "pointer": "/012_004_00002",
+      "source_sha256": "919cf81903d4de8194814298b69be1d7cf104043e5193cdb44395464de5a294d"
+    },
+    {
+      "ancestor_positive_labels": [],
+      "container": "json_resource.mbn",
+      "direct_key": "012_005_00001",
+      "direct_positive_labels": [],
+      "entry": "clan_room_item_icon_setting.json",
+      "evidence_class": "weak-context",
+      "format": "json",
+      "kind": "key",
+      "map_id": "012_005_00001",
+      "negative_labels": [],
+      "pointer": "/012_005_00001",
+      "source_sha256": "919cf81903d4de8194814298b69be1d7cf104043e5193cdb44395464de5a294d"
+    },
+    {
+      "ancestor_positive_labels": [],
+      "container": "json_resource.mbn",
+      "direct_key": "reel_stop",
+      "direct_positive_labels": [],
+      "entry": "slot_gacha_setting.json",
+      "evidence_class": "weak-context",
+      "format": "json",
+      "kind": "value",
+      "map_id": "100_000_00001",
+      "negative_labels": [
+        "sound"
+      ],
+      "pointer": "/sound/reel_stop",
+      "source_sha256": "440201e5fc1421316837532aa271df307123c61a3b4c14690608467f9ff88f56"
+    },
+    {
+      "ancestor_positive_labels": [],
+      "container": "json_resource.mbn",
+      "direct_key": "begin_sign",
+      "direct_positive_labels": [],
+      "entry": "raid_battle_texts.json",
+      "evidence_class": "weak-context",
+      "format": "json",
+      "kind": "value",
+      "map_id": "100_001_00000",
+      "negative_labels": [
+        "sound"
+      ],
+      "pointer": "/telop_sound/begin_sign",
+      "source_sha256": "d0aec6cac679fdd0af99be8d2c6164a225d142cf21f6535d21f541f23df7c4c1"
+    },
+    {
+      "ancestor_positive_labels": [],
+      "container": "json_resource.mbn",
+      "direct_key": "complete_sign",
+      "direct_positive_labels": [],
+      "entry": "raid_battle_texts.json",
+      "evidence_class": "weak-context",
+      "format": "json",
+      "kind": "value",
+      "map_id": "100_001_00001",
+      "negative_labels": [
+        "sound"
+      ],
+      "pointer": "/telop_sound/complete_sign",
+      "source_sha256": "d0aec6cac679fdd0af99be8d2c6164a225d142cf21f6535d21f541f23df7c4c1"
+    },
+    {
+      "ancestor_positive_labels": [],
+      "container": "json_resource.mbn",
+      "direct_key": "fail_sign",
+      "direct_positive_labels": [],
+      "entry": "raid_battle_texts.json",
+      "evidence_class": "weak-context",
+      "format": "json",
+      "kind": "value",
+      "map_id": "100_001_00001",
+      "negative_labels": [
+        "sound"
+      ],
+      "pointer": "/telop_sound/fail_sign",
+      "source_sha256": "d0aec6cac679fdd0af99be8d2c6164a225d142cf21f6535d21f541f23df7c4c1"
+    },
+    {
+      "ancestor_positive_labels": [],
+      "container": "json_resource.mbn",
+      "direct_key": "result_normal",
+      "direct_positive_labels": [],
+      "entry": "slot_gacha_setting.json",
+      "evidence_class": "weak-context",
+      "format": "json",
+      "kind": "value",
+      "map_id": "100_001_00001",
+      "negative_labels": [
+        "sound"
+      ],
+      "pointer": "/sound/result_normal",
+      "source_sha256": "440201e5fc1421316837532aa271df307123c61a3b4c14690608467f9ff88f56"
+    },
+    {
+      "ancestor_positive_labels": [],
+      "container": "json_resource.mbn",
+      "direct_key": "250_000_00002",
+      "direct_positive_labels": [],
+      "entry": "clan_room_item_icon_setting.json",
+      "evidence_class": "weak-context",
+      "format": "json",
+      "kind": "key",
+      "map_id": "250_000_00002",
+      "negative_labels": [],
+      "pointer": "/250_000_00002",
+      "source_sha256": "919cf81903d4de8194814298b69be1d7cf104043e5193cdb44395464de5a294d"
+    },
+    {
+      "ancestor_positive_labels": [],
+      "container": "json_resource.mbn",
+      "direct_key": "250_001_00000",
+      "direct_positive_labels": [],
+      "entry": "clan_room_item_icon_setting.json",
+      "evidence_class": "weak-context",
+      "format": "json",
+      "kind": "key",
+      "map_id": "250_001_00000",
+      "negative_labels": [],
+      "pointer": "/250_001_00000",
+      "source_sha256": "919cf81903d4de8194814298b69be1d7cf104043e5193cdb44395464de5a294d"
+    },
+    {
+      "ancestor_positive_labels": [],
+      "container": "json_resource.mbn",
+      "direct_key": "250_001_00002",
+      "direct_positive_labels": [],
+      "entry": "clan_room_item_icon_setting.json",
+      "evidence_class": "weak-context",
+      "format": "json",
+      "kind": "key",
+      "map_id": "250_001_00002",
+      "negative_labels": [],
+      "pointer": "/250_001_00002",
+      "source_sha256": "919cf81903d4de8194814298b69be1d7cf104043e5193cdb44395464de5a294d"
+    },
+    {
+      "ancestor_positive_labels": [],
+      "container": "json_resource.mbn",
+      "direct_key": "250_001_00003",
+      "direct_positive_labels": [],
+      "entry": "clan_room_item_icon_setting.json",
+      "evidence_class": "weak-context",
+      "format": "json",
+      "kind": "key",
+      "map_id": "250_001_00003",
+      "negative_labels": [],
+      "pointer": "/250_001_00003",
+      "source_sha256": "919cf81903d4de8194814298b69be1d7cf104043e5193cdb44395464de5a294d"
+    },
+    {
+      "ancestor_positive_labels": [],
+      "container": "json_resource.mbn",
+      "direct_key": "250_001_00004",
+      "direct_positive_labels": [],
+      "entry": "clan_room_item_icon_setting.json",
+      "evidence_class": "weak-context",
+      "format": "json",
+      "kind": "key",
+      "map_id": "250_001_00004",
+      "negative_labels": [],
+      "pointer": "/250_001_00004",
+      "source_sha256": "919cf81903d4de8194814298b69be1d7cf104043e5193cdb44395464de5a294d"
+    },
+    {
+      "ancestor_positive_labels": [],
+      "container": "json_resource.mbn",
+      "direct_key": "250_001_00006",
+      "direct_positive_labels": [],
+      "entry": "clan_room_item_icon_setting.json",
+      "evidence_class": "weak-context",
+      "format": "json",
+      "kind": "key",
+      "map_id": "250_001_00006",
+      "negative_labels": [],
+      "pointer": "/250_001_00006",
+      "source_sha256": "919cf81903d4de8194814298b69be1d7cf104043e5193cdb44395464de5a294d"
+    },
+    {
+      "ancestor_positive_labels": [],
+      "container": "json_resource.mbn",
+      "direct_key": "250_002_00000",
+      "direct_positive_labels": [],
+      "entry": "clan_room_item_icon_setting.json",
+      "evidence_class": "weak-context",
+      "format": "json",
+      "kind": "key",
+      "map_id": "250_002_00000",
+      "negative_labels": [],
+      "pointer": "/250_002_00000",
+      "source_sha256": "919cf81903d4de8194814298b69be1d7cf104043e5193cdb44395464de5a294d"
+    },
+    {
+      "ancestor_positive_labels": [],
+      "container": "json_resource.mbn",
+      "direct_key": "effect_id",
+      "direct_positive_labels": [],
+      "entry": "weather_settings.json",
+      "evidence_class": "negative-resource-context",
+      "format": "json",
+      "kind": "value",
+      "map_id": "014_000_00000",
+      "negative_labels": [
+        "effect"
+      ],
+      "pointer": "/effect_settings/126/effect_id",
+      "source_sha256": "84c038e98608a537b06c4a3368e91a77915735ba3fc070237fa45ef433c1fedc"
+    },
+    {
+      "ancestor_positive_labels": [
+        "tutorial"
+      ],
+      "container": "json_resource.mbn",
+      "direct_key": "soundID",
+      "direct_positive_labels": [],
+      "entry": "popUp_tutorial_texts.json",
+      "evidence_class": "negative-resource-context",
+      "format": "json",
+      "kind": "value",
+      "map_id": "100_001_00002",
+      "negative_labels": [
+        "sound"
+      ],
+      "pointer": "/popUp_tutorial_texts/soundID",
+      "source_sha256": "ffce0b850ca119e2f2f6a6d7891b2d64d5ef1d5bb45f184e151cf603ba93dc70"
+    }
+  ],
+  "scanned_mbn_count": 1896,
+  "scanned_source_count": 7319
+}

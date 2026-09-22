@@ -1,0 +1,10 @@
+{
+  "duration_seconds": 3.531,
+  "error": null,
+  "exit_code": 0,
+  "job_id": "oracle-live-semantic-map-refs-001",
+  "kind": "python",
+  "schema": 1,
+  "source_sha": "aeba2a8dcec1c143e262b6f7ec34afa4a18d5284",
+  "status": "success"
+}
