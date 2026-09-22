@@ -1,0 +1,10 @@
+{
+  "duration_seconds": 2.881,
+  "error": null,
+  "exit_code": 0,
+  "job_id": "oracle-public-setupentities-vectors-001",
+  "kind": "python",
+  "schema": 1,
+  "source_sha": "1cfed1ba2e7beb48e4e259ae094244526bd9fbf2",
+  "status": "success"
+}

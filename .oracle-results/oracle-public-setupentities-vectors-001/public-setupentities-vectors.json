@@ -1,0 +1,3311 @@
+{
+  "analysis": {
+    "branch_instructions": [
+      {
+        "address": "0x3948e1c",
+        "mnemonic": "b.ne",
+        "operands": "0x3948e88 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0xc8>"
+      },
+      {
+        "address": "0x3948e28",
+        "mnemonic": "cbz",
+        "operands": "x0, 0x394940c <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x64c>"
+      },
+      {
+        "address": "0x3948e34",
+        "mnemonic": "cbz",
+        "operands": "x0, 0x394940c <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x64c>"
+      },
+      {
+        "address": "0x3948e40",
+        "mnemonic": "cbz",
+        "operands": "x22, 0x3949210 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x450>"
+      },
+      {
+        "address": "0x3948e60",
+        "mnemonic": "cbz",
+        "operands": "x0, 0x3949210 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x450>"
+      },
+      {
+        "address": "0x3948e74",
+        "mnemonic": "b",
+        "operands": "0x3949214 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x454>"
+      },
+      {
+        "address": "0x3948e84",
+        "mnemonic": "b.eq",
+        "operands": "0x3948e20 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x60>"
+      },
+      {
+        "address": "0x3948ea0",
+        "mnemonic": "b",
+        "operands": "0x3948ebc <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0xfc>"
+      },
+      {
+        "address": "0x3948ec0",
+        "mnemonic": "b.eq",
+        "operands": "0x3948e78 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0xb8>"
+      },
+      {
+        "address": "0x3948edc",
+        "mnemonic": "b.eq",
+        "operands": "0x3948fa4 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x1e4>"
+      },
+      {
+        "address": "0x3948ee4",
+        "mnemonic": "b.ne",
+        "operands": "0x3948eb8 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0xf8>"
+      },
+      {
+        "address": "0x3948ef4",
+        "mnemonic": "b.eq",
+        "operands": "0x3949000 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x240>"
+      },
+      {
+        "address": "0x3948f18",
+        "mnemonic": "b.lo",
+        "operands": "0x3948ea4 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0xe4>"
+      },
+      {
+        "address": "0x3948f30",
+        "mnemonic": "cbnz",
+        "operands": "x10, 0x39493a4 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x5e4>"
+      },
+      {
+        "address": "0x3948f58",
+        "mnemonic": "cbnz",
+        "operands": "x8, 0x39493c0 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x600>"
+      },
+      {
+        "address": "0x3948f80",
+        "mnemonic": "b.eq",
+        "operands": "0x39490bc <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x2fc>"
+      },
+      {
+        "address": "0x3948f9c",
+        "mnemonic": "b.ne",
+        "operands": "0x3948f84 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x1c4>"
+      },
+      {
+        "address": "0x3948fa0",
+        "mnemonic": "b",
+        "operands": "0x39490c0 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x300>"
+      },
+      {
+        "address": "0x3948fb0",
+        "mnemonic": "b.eq",
+        "operands": "0x3948eb8 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0xf8>"
+      },
+      {
+        "address": "0x3948fe0",
+        "mnemonic": "b.hs",
+        "operands": "0x3949034 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x274>"
+      },
+      {
+        "address": "0x3948ffc",
+        "mnemonic": "b",
+        "operands": "0x3948ebc <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0xfc>"
+      },
+      {
+        "address": "0x3949010",
+        "mnemonic": "tbz",
+        "operands": "w0, #0x0, 0x3948eb8 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0xf8>"
+      },
+      {
+        "address": "0x394901c",
+        "mnemonic": "tbnz",
+        "operands": "w9, #0x0, 0x3949104 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x344>"
+      },
+      {
+        "address": "0x3949030",
+        "mnemonic": "b",
+        "operands": "0x3949110 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x350>"
+      },
+      {
+        "address": "0x3949048",
+        "mnemonic": "cbnz",
+        "operands": "x10, 0x39493d8 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x618>"
+      },
+      {
+        "address": "0x3949070",
+        "mnemonic": "cbnz",
+        "operands": "x8, 0x39493f4 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x634>"
+      },
+      {
+        "address": "0x3949098",
+        "mnemonic": "b.eq",
+        "operands": "0x39490dc <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x31c>"
+      },
+      {
+        "address": "0x39490b4",
+        "mnemonic": "b.ne",
+        "operands": "0x394909c <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x2dc>"
+      },
+      {
+        "address": "0x39490b8",
+        "mnemonic": "b",
+        "operands": "0x39490e0 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x320>"
+      },
+      {
+        "address": "0x39490cc",
+        "mnemonic": "cbz",
+        "operands": "x23, 0x3948eb4 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0xf4>"
+      },
+      {
+        "address": "0x39490d8",
+        "mnemonic": "b",
+        "operands": "0x3948eb4 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0xf4>"
+      },
+      {
+        "address": "0x39490ec",
+        "mnemonic": "cbz",
+        "operands": "x23, 0x39490f8 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x338>"
+      },
+      {
+        "address": "0x3949100",
+        "mnemonic": "b",
+        "operands": "0x3948ebc <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0xfc>"
+      },
+      {
+        "address": "0x3949184",
+        "mnemonic": "b.hs",
+        "operands": "0x39491a4 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x3e4>"
+      },
+      {
+        "address": "0x394918c",
+        "mnemonic": "tbnz",
+        "operands": "w8, #0x0, 0x39491c0 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x400>"
+      },
+      {
+        "address": "0x39491a0",
+        "mnemonic": "b",
+        "operands": "0x39491cc <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x40c>"
+      },
+      {
+        "address": "0x39491bc",
+        "mnemonic": "b",
+        "operands": "0x39491e4 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x424>"
+      },
+      {
+        "address": "0x39491ec",
+        "mnemonic": "tbz",
+        "operands": "w8, #0x0, 0x39491f8 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x438>"
+      },
+      {
+        "address": "0x39491fc",
+        "mnemonic": "tbz",
+        "operands": "w8, #0x0, 0x3948eb8 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0xf8>"
+      },
+      {
+        "address": "0x394920c",
+        "mnemonic": "b",
+        "operands": "0x3948ebc <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0xfc>"
+      },
+      {
+        "address": "0x3949220",
+        "mnemonic": "cbz",
+        "operands": "x0, 0x3949230 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x470>"
+      },
+      {
+        "address": "0x3949228",
+        "mnemonic": "cbnz",
+        "operands": "x8, 0x3949250 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x490>"
+      },
+      {
+        "address": "0x394922c",
+        "mnemonic": "b",
+        "operands": "0x39492c8 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x508>"
+      },
+      {
+        "address": "0x394924c",
+        "mnemonic": "cbz",
+        "operands": "x8, 0x39492c8 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x508>"
+      },
+      {
+        "address": "0x394929c",
+        "mnemonic": "cbz",
+        "operands": "x20, 0x39492c8 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x508>"
+      },
+      {
+        "address": "0x39492ac",
+        "mnemonic": "cbnz",
+        "operands": "x0, 0x39492c8 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x508>"
+      },
+      {
+        "address": "0x39492cc",
+        "mnemonic": "cbz",
+        "operands": "x19, 0x39492f8 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x538>"
+      },
+      {
+        "address": "0x39492dc",
+        "mnemonic": "cbnz",
+        "operands": "x0, 0x39492f8 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x538>"
+      },
+      {
+        "address": "0x39492fc",
+        "mnemonic": "cbz",
+        "operands": "x20, 0x3949350 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x590>"
+      },
+      {
+        "address": "0x394930c",
+        "mnemonic": "b.eq",
+        "operands": "0x3949348 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x588>"
+      },
+      {
+        "address": "0x3949314",
+        "mnemonic": "b",
+        "operands": "0x3949328 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x568>"
+      },
+      {
+        "address": "0x3949324",
+        "mnemonic": "b.eq",
+        "operands": "0x3949344 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x584>"
+      },
+      {
+        "address": "0x3949334",
+        "mnemonic": "tbz",
+        "operands": "w8, #0x0, 0x3949318 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x558>"
+      },
+      {
+        "address": "0x3949340",
+        "mnemonic": "b",
+        "operands": "0x3949318 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x558>"
+      },
+      {
+        "address": "0x3949354",
+        "mnemonic": "cbz",
+        "operands": "x0, 0x3949360 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x5a0>"
+      },
+      {
+        "address": "0x3949364",
+        "mnemonic": "cbz",
+        "operands": "x0, 0x3949370 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x5b0>"
+      },
+      {
+        "address": "0x394937c",
+        "mnemonic": "b.ne",
+        "operands": "0x3949534 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x774>"
+      },
+      {
+        "address": "0x39493b4",
+        "mnemonic": "b.ne",
+        "operands": "0x3949534 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x774>"
+      },
+      {
+        "address": "0x39493d0",
+        "mnemonic": "b.ne",
+        "operands": "0x3949534 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x774>"
+      },
+      {
+        "address": "0x39493e8",
+        "mnemonic": "b.ne",
+        "operands": "0x3949534 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x774>"
+      },
+      {
+        "address": "0x3949404",
+        "mnemonic": "b.ne",
+        "operands": "0x3949534 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x774>"
+      },
+      {
+        "address": "0x394941c",
+        "mnemonic": "b.ne",
+        "operands": "0x3949534 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x774>"
+      },
+      {
+        "address": "0x3949430",
+        "mnemonic": "b",
+        "operands": "0x3949448 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x688>"
+      },
+      {
+        "address": "0x3949440",
+        "mnemonic": "b",
+        "operands": "0x3949448 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x688>"
+      },
+      {
+        "address": "0x3949450",
+        "mnemonic": "b",
+        "operands": "0x39494f0 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x730>"
+      },
+      {
+        "address": "0x3949454",
+        "mnemonic": "b",
+        "operands": "0x39494ec <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x72c>"
+      },
+      {
+        "address": "0x394945c",
+        "mnemonic": "b",
+        "operands": "0x394946c <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x6ac>"
+      },
+      {
+        "address": "0x3949468",
+        "mnemonic": "tbnz",
+        "operands": "w8, #0x0, 0x3949474 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x6b4>"
+      },
+      {
+        "address": "0x3949470",
+        "mnemonic": "b",
+        "operands": "0x39494a8 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x6e8>"
+      },
+      {
+        "address": "0x3949480",
+        "mnemonic": "b",
+        "operands": "0x39494a8 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x6e8>"
+      },
+      {
+        "address": "0x3949484",
+        "mnemonic": "b",
+        "operands": "0x39494a4 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x6e4>"
+      },
+      {
+        "address": "0x3949488",
+        "mnemonic": "b",
+        "operands": "0x39494ec <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x72c>"
+      },
+      {
+        "address": "0x394948c",
+        "mnemonic": "b",
+        "operands": "0x39494ec <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x72c>"
+      },
+      {
+        "address": "0x3949490",
+        "mnemonic": "b",
+        "operands": "0x39494a4 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x6e4>"
+      },
+      {
+        "address": "0x3949498",
+        "mnemonic": "b",
+        "operands": "0x39494b8 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x6f8>"
+      },
+      {
+        "address": "0x394949c",
+        "mnemonic": "b",
+        "operands": "0x39494ec <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x72c>"
+      },
+      {
+        "address": "0x39494a0",
+        "mnemonic": "b",
+        "operands": "0x39494ec <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x72c>"
+      },
+      {
+        "address": "0x39494ac",
+        "mnemonic": "tbz",
+        "operands": "w8, #0x0, 0x39494b8 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x6f8>"
+      },
+      {
+        "address": "0x39494c0",
+        "mnemonic": "tbz",
+        "operands": "w8, #0x0, 0x39494f4 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x734>"
+      },
+      {
+        "address": "0x39494cc",
+        "mnemonic": "b",
+        "operands": "0x39494f4 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x734>"
+      },
+      {
+        "address": "0x39494d0",
+        "mnemonic": "b",
+        "operands": "0x39494ec <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x72c>"
+      },
+      {
+        "address": "0x39494d8",
+        "mnemonic": "b",
+        "operands": "0x39494f4 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x734>"
+      },
+      {
+        "address": "0x39494e0",
+        "mnemonic": "b",
+        "operands": "0x39494f4 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x734>"
+      },
+      {
+        "address": "0x39494e4",
+        "mnemonic": "b",
+        "operands": "0x39494ec <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x72c>"
+      },
+      {
+        "address": "0x39494e8",
+        "mnemonic": "b",
+        "operands": "0x39494ec <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x72c>"
+      },
+      {
+        "address": "0x3949500",
+        "mnemonic": "cbz",
+        "operands": "x0, 0x394950c <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x74c>"
+      },
+      {
+        "address": "0x3949510",
+        "mnemonic": "cbz",
+        "operands": "x0, 0x394951c <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x75c>"
+      },
+      {
+        "address": "0x3949528",
+        "mnemonic": "b.ne",
+        "operands": "0x3949534 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x774>"
+      },
+      {
+        "address": "0x394954c",
+        "mnemonic": "cbz",
+        "operands": "x21, 0x39495b0 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x7f0>"
+      },
+      {
+        "address": "0x3949560",
+        "mnemonic": "b.eq",
+        "operands": "0x394959c <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x7dc>"
+      },
+      {
+        "address": "0x3949568",
+        "mnemonic": "b",
+        "operands": "0x394957c <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x7bc>"
+      },
+      {
+        "address": "0x3949578",
+        "mnemonic": "b.eq",
+        "operands": "0x3949598 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x7d8>"
+      },
+      {
+        "address": "0x3949588",
+        "mnemonic": "tbz",
+        "operands": "w8, #0x0, 0x394956c <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x7ac>"
+      },
+      {
+        "address": "0x3949594",
+        "mnemonic": "b",
+        "operands": "0x394956c <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x7ac>"
+      },
+      {
+        "address": "0x39495ac",
+        "mnemonic": "b",
+        "operands": "0x5255450 <_ZdlPv@plt>"
+      }
+    ],
+    "calls_with_vector_args": [
+      {
+        "arguments": {
+          "x2": {
+            "frame_offset": -56,
+            "is_vector_base": true,
+            "vector": "constructor_arg2_vector_at_fp_minus_0x38"
+          },
+          "x3": {
+            "frame_offset": -80,
+            "is_vector_base": true,
+            "vector": "constructor_arg3_vector_at_fp_minus_0x50"
+          }
+        },
+        "call": {
+          "address": "0x3949270",
+          "mnemonic": "bl",
+          "operands": "0x529b3f0 <_ZN3lfs5field10DataParserC1ERKNSt6__ndk110shared_ptrINS0_17FieldQuadTreeLeafEEERNS2_6vectorINS0_10ConvexhullENS2_9allocatorIS9_EEEESD_RKNS8_INS0_26FieldAnimatedStructureInfoENSA_ISE_EEEERKNS3_INS0_13FieldAnimatorEEE@plt>"
+        }
+      }
+    ],
+    "pointer_assignments": [
+      {
+        "frame_offset": -56,
+        "instruction": {
+          "address": "0x3949260",
+          "mnemonic": "sub",
+          "operands": "x2, x29, #0x38"
+        },
+        "is_vector_base": true,
+        "register": "x2",
+        "vector": "constructor_arg2_vector_at_fp_minus_0x38"
+      },
+      {
+        "frame_offset": -80,
+        "instruction": {
+          "address": "0x3949264",
+          "mnemonic": "sub",
+          "operands": "x3, x29, #0x50"
+        },
+        "is_vector_base": true,
+        "register": "x3",
+        "vector": "constructor_arg3_vector_at_fp_minus_0x50"
+      }
+    ],
+    "vector_accesses": [
+      {
+        "base_register": "x29",
+        "effective_frame_offset": -56,
+        "instruction": {
+          "address": "0x3948dfc",
+          "mnemonic": "stp",
+          "operands": "xzr, xzr, [x29, #-0x38]"
+        },
+        "vector": "constructor_arg2_vector_at_fp_minus_0x38"
+      },
+      {
+        "base_register": "x29",
+        "effective_frame_offset": -40,
+        "instruction": {
+          "address": "0x3948e00",
+          "mnemonic": "stur",
+          "operands": "xzr, [x29, #-0x28]"
+        },
+        "vector": "constructor_arg2_vector_at_fp_minus_0x38"
+      },
+      {
+        "base_register": "x29",
+        "effective_frame_offset": -80,
+        "instruction": {
+          "address": "0x3948e04",
+          "mnemonic": "stp",
+          "operands": "xzr, xzr, [x29, #-0x50]"
+        },
+        "vector": "constructor_arg3_vector_at_fp_minus_0x50"
+      },
+      {
+        "base_register": "x29",
+        "effective_frame_offset": -64,
+        "instruction": {
+          "address": "0x3948e0c",
+          "mnemonic": "stur",
+          "operands": "xzr, [x29, #-0x40]"
+        },
+        "vector": "constructor_arg3_vector_at_fp_minus_0x50"
+      },
+      {
+        "base_register": "x29",
+        "effective_frame_offset": -72,
+        "instruction": {
+          "address": "0x3948eb4",
+          "mnemonic": "stur",
+          "operands": "x27, [x29, #-0x48]"
+        },
+        "vector": "constructor_arg3_vector_at_fp_minus_0x50"
+      },
+      {
+        "base_register": "x29",
+        "effective_frame_offset": -72,
+        "instruction": {
+          "address": "0x3948f10",
+          "mnemonic": "ldp",
+          "operands": "x21, x8, [x29, #-0x48]"
+        },
+        "vector": "constructor_arg3_vector_at_fp_minus_0x50"
+      },
+      {
+        "base_register": "x29",
+        "effective_frame_offset": -80,
+        "instruction": {
+          "address": "0x3948f1c",
+          "mnemonic": "ldur",
+          "operands": "x23, [x29, #-0x50]"
+        },
+        "vector": "constructor_arg3_vector_at_fp_minus_0x50"
+      },
+      {
+        "base_register": "x29",
+        "effective_frame_offset": -48,
+        "instruction": {
+          "address": "0x3948fd0",
+          "mnemonic": "ldp",
+          "operands": "x24, x8, [x29, #-0x30]"
+        },
+        "vector": "constructor_arg2_vector_at_fp_minus_0x38"
+      },
+      {
+        "base_register": "x29",
+        "effective_frame_offset": -48,
+        "instruction": {
+          "address": "0x3948ff8",
+          "mnemonic": "stur",
+          "operands": "x27, [x29, #-0x30]"
+        },
+        "vector": "constructor_arg2_vector_at_fp_minus_0x38"
+      },
+      {
+        "base_register": "x29",
+        "effective_frame_offset": -56,
+        "instruction": {
+          "address": "0x3949034",
+          "mnemonic": "ldur",
+          "operands": "x23, [x29, #-0x38]"
+        },
+        "vector": "constructor_arg2_vector_at_fp_minus_0x38"
+      },
+      {
+        "base_register": "x29",
+        "effective_frame_offset": -80,
+        "instruction": {
+          "address": "0x39490c4",
+          "mnemonic": "stp",
+          "operands": "x9, x27, [x29, #-0x50]"
+        },
+        "vector": "constructor_arg3_vector_at_fp_minus_0x50"
+      },
+      {
+        "base_register": "x29",
+        "effective_frame_offset": -64,
+        "instruction": {
+          "address": "0x39490c8",
+          "mnemonic": "stur",
+          "operands": "x8, [x29, #-0x40]"
+        },
+        "vector": "constructor_arg3_vector_at_fp_minus_0x50"
+      },
+      {
+        "base_register": "x29",
+        "effective_frame_offset": -56,
+        "instruction": {
+          "address": "0x39490e4",
+          "mnemonic": "stp",
+          "operands": "x9, x27, [x29, #-0x38]"
+        },
+        "vector": "constructor_arg2_vector_at_fp_minus_0x38"
+      },
+      {
+        "base_register": "x29",
+        "effective_frame_offset": -40,
+        "instruction": {
+          "address": "0x39490e8",
+          "mnemonic": "stur",
+          "operands": "x8, [x29, #-0x28]"
+        },
+        "vector": "constructor_arg2_vector_at_fp_minus_0x38"
+      },
+      {
+        "base_register": "x29",
+        "effective_frame_offset": -48,
+        "instruction": {
+          "address": "0x39490f8",
+          "mnemonic": "stur",
+          "operands": "x27, [x29, #-0x30]"
+        },
+        "vector": "constructor_arg2_vector_at_fp_minus_0x38"
+      },
+      {
+        "base_register": "x29",
+        "effective_frame_offset": -80,
+        "instruction": {
+          "address": "0x3949350",
+          "mnemonic": "ldur",
+          "operands": "x0, [x29, #-0x50]"
+        },
+        "vector": "constructor_arg3_vector_at_fp_minus_0x50"
+      },
+      {
+        "base_register": "x29",
+        "effective_frame_offset": -72,
+        "instruction": {
+          "address": "0x3949358",
+          "mnemonic": "stur",
+          "operands": "x0, [x29, #-0x48]"
+        },
+        "vector": "constructor_arg3_vector_at_fp_minus_0x50"
+      },
+      {
+        "base_register": "x29",
+        "effective_frame_offset": -56,
+        "instruction": {
+          "address": "0x3949360",
+          "mnemonic": "ldur",
+          "operands": "x0, [x29, #-0x38]"
+        },
+        "vector": "constructor_arg2_vector_at_fp_minus_0x38"
+      },
+      {
+        "base_register": "x29",
+        "effective_frame_offset": -48,
+        "instruction": {
+          "address": "0x3949368",
+          "mnemonic": "stur",
+          "operands": "x0, [x29, #-0x30]"
+        },
+        "vector": "constructor_arg2_vector_at_fp_minus_0x38"
+      }
+    ],
+    "vector_locals": {
+      "constructor_arg2_vector_at_fp_minus_0x38": {
+        "frame_start": -56,
+        "frame_stop": -33,
+        "size_bytes": 24
+      },
+      "constructor_arg3_vector_at_fp_minus_0x50": {
+        "frame_start": -80,
+        "frame_stop": -57,
+        "size_bytes": 24
+      }
+    }
+  },
+  "apk": "config.arm64_v8a.apk",
+  "disassembler": "llvm-objdump",
+  "download": {
+    "sha256": "7803989f3a02d2662f83cefe25e648e04e7d529f650a70ca7911d7b98972c76c",
+    "size": 125559968
+  },
+  "function": {
+    "address": "0x3948dc0",
+    "bounded_bytes": 2048,
+    "bounded_stop": "0x39495c0",
+    "instruction_count": 512,
+    "name": "lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*> > const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)"
+  },
+  "instructions": [
+    {
+      "address": "0x3948dc0",
+      "mnemonic": "sub",
+      "operands": "sp, sp, #0x130"
+    },
+    {
+      "address": "0x3948dc4",
+      "mnemonic": "str",
+      "operands": "d8, [sp, #0xc0]"
+    },
+    {
+      "address": "0x3948dc8",
+      "mnemonic": "stp",
+      "operands": "x29, x30, [sp, #0xd0]"
+    },
+    {
+      "address": "0x3948dcc",
+      "mnemonic": "stp",
+      "operands": "x28, x27, [sp, #0xe0]"
+    },
+    {
+      "address": "0x3948dd0",
+      "mnemonic": "stp",
+      "operands": "x26, x25, [sp, #0xf0]"
+    },
+    {
+      "address": "0x3948dd4",
+      "mnemonic": "stp",
+      "operands": "x24, x23, [sp, #0x100]"
+    },
+    {
+      "address": "0x3948dd8",
+      "mnemonic": "stp",
+      "operands": "x22, x21, [sp, #0x110]"
+    },
+    {
+      "address": "0x3948ddc",
+      "mnemonic": "stp",
+      "operands": "x20, x19, [sp, #0x120]"
+    },
+    {
+      "address": "0x3948de0",
+      "mnemonic": "add",
+      "operands": "x29, sp, #0xd0"
+    },
+    {
+      "address": "0x3948de4",
+      "mnemonic": "stp",
+      "operands": "x2, x0, [sp]"
+    },
+    {
+      "address": "0x3948de8",
+      "mnemonic": "mrs",
+      "operands": "x8, TPIDR_EL0"
+    },
+    {
+      "address": "0x3948dec",
+      "mnemonic": "str",
+      "operands": "x8, [sp, #0x10]"
+    },
+    {
+      "address": "0x3948df0",
+      "mnemonic": "ldr",
+      "operands": "x8, [x8, #0x28]"
+    },
+    {
+      "address": "0x3948df4",
+      "mnemonic": "stur",
+      "operands": "x8, [x29, #-0x20]"
+    },
+    {
+      "address": "0x3948df8",
+      "mnemonic": "ldp",
+      "operands": "x26, x8, [x1]"
+    },
+    {
+      "address": "0x3948dfc",
+      "mnemonic": "stp",
+      "operands": "xzr, xzr, [x29, #-0x38]"
+    },
+    {
+      "address": "0x3948e00",
+      "mnemonic": "stur",
+      "operands": "xzr, [x29, #-0x28]"
+    },
+    {
+      "address": "0x3948e04",
+      "mnemonic": "stp",
+      "operands": "xzr, xzr, [x29, #-0x50]"
+    },
+    {
+      "address": "0x3948e08",
+      "mnemonic": "cmp",
+      "operands": "x26, x8"
+    },
+    {
+      "address": "0x3948e0c",
+      "mnemonic": "stur",
+      "operands": "xzr, [x29, #-0x40]"
+    },
+    {
+      "address": "0x3948e10",
+      "mnemonic": "stp",
+      "operands": "xzr, xzr, [sp, #0x68]"
+    },
+    {
+      "address": "0x3948e14",
+      "mnemonic": "str",
+      "operands": "x8, [sp, #0x18]"
+    },
+    {
+      "address": "0x3948e18",
+      "mnemonic": "str",
+      "operands": "xzr, [sp, #0x78]"
+    },
+    {
+      "address": "0x3948e1c",
+      "mnemonic": "b.ne",
+      "operands": "0x3948e88 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0xc8>"
+    },
+    {
+      "address": "0x3948e20",
+      "mnemonic": "ldr",
+      "operands": "x19, [sp, #0x8]"
+    },
+    {
+      "address": "0x3948e24",
+      "mnemonic": "ldr",
+      "operands": "x0, [x19, #0x10]"
+    },
+    {
+      "address": "0x3948e28",
+      "mnemonic": "cbz",
+      "operands": "x0, 0x394940c <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x64c>"
+    },
+    {
+      "address": "0x3948e2c",
+      "mnemonic": "ldr",
+      "operands": "x22, [x19, #0x8]"
+    },
+    {
+      "address": "0x3948e30",
+      "mnemonic": "bl",
+      "operands": "0x525b080 <_ZNSt6__ndk119__shared_weak_count4lockEv@plt>"
+    },
+    {
+      "address": "0x3948e34",
+      "mnemonic": "cbz",
+      "operands": "x0, 0x394940c <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x64c>"
+    },
+    {
+      "address": "0x3948e38",
+      "mnemonic": "ldr",
+      "operands": "x23, [sp, #0x10]"
+    },
+    {
+      "address": "0x3948e3c",
+      "mnemonic": "mov",
+      "operands": "x21, x0"
+    },
+    {
+      "address": "0x3948e40",
+      "mnemonic": "cbz",
+      "operands": "x22, 0x3949210 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x450>"
+    },
+    {
+      "address": "0x3948e44",
+      "mnemonic": "adrp",
+      "operands": "x1, 0x570a000"
+    },
+    {
+      "address": "0x3948e48",
+      "mnemonic": "adrp",
+      "operands": "x2, 0x570a000"
+    },
+    {
+      "address": "0x3948e4c",
+      "mnemonic": "mov",
+      "operands": "x0, x22"
+    },
+    {
+      "address": "0x3948e50",
+      "mnemonic": "ldr",
+      "operands": "x1, [x1, #0xf00]"
+    },
+    {
+      "address": "0x3948e54",
+      "mnemonic": "ldr",
+      "operands": "x2, [x2, #0xf10]"
+    },
+    {
+      "address": "0x3948e58",
+      "mnemonic": "mov",
+      "operands": "x3, xzr"
+    },
+    {
+      "address": "0x3948e5c",
+      "mnemonic": "bl",
+      "operands": "0x5258930 <__dynamic_cast@plt>"
+    },
+    {
+      "address": "0x3948e60",
+      "mnemonic": "cbz",
+      "operands": "x0, 0x3949210 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x450>"
+    },
+    {
+      "address": "0x3948e64",
+      "mnemonic": "stp",
+      "operands": "x0, x21, [sp, #0x50]"
+    },
+    {
+      "address": "0x3948e68",
+      "mnemonic": "add",
+      "operands": "x1, x21, #0x8"
+    },
+    {
+      "address": "0x3948e6c",
+      "mnemonic": "mov",
+      "operands": "w0, #0x1                // =1"
+    },
+    {
+      "address": "0x3948e70",
+      "mnemonic": "bl",
+      "operands": "0x5251260 <__emutls_get_address+0xb74>"
+    },
+    {
+      "address": "0x3948e74",
+      "mnemonic": "b",
+      "operands": "0x3949214 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x454>"
+    },
+    {
+      "address": "0x3948e78",
+      "mnemonic": "ldr",
+      "operands": "x8, [sp, #0x18]"
+    },
+    {
+      "address": "0x3948e7c",
+      "mnemonic": "add",
+      "operands": "x26, x26, #0x8"
+    },
+    {
+      "address": "0x3948e80",
+      "mnemonic": "cmp",
+      "operands": "x26, x8"
+    },
+    {
+      "address": "0x3948e84",
+      "mnemonic": "b.eq",
+      "operands": "0x3948e20 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x60>"
+    },
+    {
+      "address": "0x3948e88",
+      "mnemonic": "ldr",
+      "operands": "x0, [x26]"
+    },
+    {
+      "address": "0x3948e8c",
+      "mnemonic": "ldr",
+      "operands": "x8, [x0]"
+    },
+    {
+      "address": "0x3948e90",
+      "mnemonic": "ldr",
+      "operands": "x8, [x8, #0x28]"
+    },
+    {
+      "address": "0x3948e94",
+      "mnemonic": "str",
+      "operands": "x0, [sp, #0x20]"
+    },
+    {
+      "address": "0x3948e98",
+      "mnemonic": "blr",
+      "operands": "x8"
+    },
+    {
+      "address": "0x3948e9c",
+      "mnemonic": "ldp",
+      "operands": "x25, x19, [x0]"
+    },
+    {
+      "address": "0x3948ea0",
+      "mnemonic": "b",
+      "operands": "0x3948ebc <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0xfc>"
+    },
+    {
+      "address": "0x3948ea4",
+      "mnemonic": "str",
+      "operands": "wzr, [x21]"
+    },
+    {
+      "address": "0x3948ea8",
+      "mnemonic": "add",
+      "operands": "x27, x21, #0x10"
+    },
+    {
+      "address": "0x3948eac",
+      "mnemonic": "str",
+      "operands": "s8, [x21, #0x4]"
+    },
+    {
+      "address": "0x3948eb0",
+      "mnemonic": "str",
+      "operands": "x24, [x21, #0x8]"
+    },
+    {
+      "address": "0x3948eb4",
+      "mnemonic": "stur",
+      "operands": "x27, [x29, #-0x48]"
+    },
+    {
+      "address": "0x3948eb8",
+      "mnemonic": "add",
+      "operands": "x25, x25, #0x8"
+    },
+    {
+      "address": "0x3948ebc",
+      "mnemonic": "cmp",
+      "operands": "x25, x19"
+    },
+    {
+      "address": "0x3948ec0",
+      "mnemonic": "b.eq",
+      "operands": "0x3948e78 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0xb8>"
+    },
+    {
+      "address": "0x3948ec4",
+      "mnemonic": "ldr",
+      "operands": "x23, [x25]"
+    },
+    {
+      "address": "0x3948ec8",
+      "mnemonic": "ldr",
+      "operands": "x8, [x23]"
+    },
+    {
+      "address": "0x3948ecc",
+      "mnemonic": "ldr",
+      "operands": "x8, [x8, #0x30]"
+    },
+    {
+      "address": "0x3948ed0",
+      "mnemonic": "mov",
+      "operands": "x0, x23"
+    },
+    {
+      "address": "0x3948ed4",
+      "mnemonic": "blr",
+      "operands": "x8"
+    },
+    {
+      "address": "0x3948ed8",
+      "mnemonic": "cmp",
+      "operands": "w0, #0x3"
+    },
+    {
+      "address": "0x3948edc",
+      "mnemonic": "b.eq",
+      "operands": "0x3948fa4 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x1e4>"
+    },
+    {
+      "address": "0x3948ee0",
+      "mnemonic": "cmp",
+      "operands": "w0, #0x4"
+    },
+    {
+      "address": "0x3948ee4",
+      "mnemonic": "b.ne",
+      "operands": "0x3948eb8 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0xf8>"
+    },
+    {
+      "address": "0x3948ee8",
+      "mnemonic": "mov",
+      "operands": "x24, x23"
+    },
+    {
+      "address": "0x3948eec",
+      "mnemonic": "ldp",
+      "operands": "x8, x9, [x24, #0x28]!"
+    },
+    {
+      "address": "0x3948ef0",
+      "mnemonic": "cmp",
+      "operands": "x8, x9"
+    },
+    {
+      "address": "0x3948ef4",
+      "mnemonic": "b.eq",
+      "operands": "0x3949000 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x240>"
+    },
+    {
+      "address": "0x3948ef8",
+      "mnemonic": "ldr",
+      "operands": "x8, [x23]"
+    },
+    {
+      "address": "0x3948efc",
+      "mnemonic": "ldr",
+      "operands": "x8, [x8, #0x58]"
+    },
+    {
+      "address": "0x3948f00",
+      "mnemonic": "mov",
+      "operands": "x0, x23"
+    },
+    {
+      "address": "0x3948f04",
+      "mnemonic": "blr",
+      "operands": "x8"
+    },
+    {
+      "address": "0x3948f08",
+      "mnemonic": "bl",
+      "operands": "0x5277bc0 <_ZN3lfs13FieldConstant8depthToZEj@plt>"
+    },
+    {
+      "address": "0x3948f0c",
+      "mnemonic": "fmov",
+      "operands": "s8, s0"
+    },
+    {
+      "address": "0x3948f10",
+      "mnemonic": "ldp",
+      "operands": "x21, x8, [x29, #-0x48]"
+    },
+    {
+      "address": "0x3948f14",
+      "mnemonic": "cmp",
+      "operands": "x21, x8"
+    },
+    {
+      "address": "0x3948f18",
+      "mnemonic": "b.lo",
+      "operands": "0x3948ea4 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0xe4>"
+    },
+    {
+      "address": "0x3948f1c",
+      "mnemonic": "ldur",
+      "operands": "x23, [x29, #-0x50]"
+    },
+    {
+      "address": "0x3948f20",
+      "mnemonic": "sub",
+      "operands": "x27, x21, x23"
+    },
+    {
+      "address": "0x3948f24",
+      "mnemonic": "asr",
+      "operands": "x20, x27, #4"
+    },
+    {
+      "address": "0x3948f28",
+      "mnemonic": "add",
+      "operands": "x9, x20, #0x1"
+    },
+    {
+      "address": "0x3948f2c",
+      "mnemonic": "lsr",
+      "operands": "x10, x9, #60"
+    },
+    {
+      "address": "0x3948f30",
+      "mnemonic": "cbnz",
+      "operands": "x10, 0x39493a4 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x5e4>"
+    },
+    {
+      "address": "0x3948f34",
+      "mnemonic": "sub",
+      "operands": "x8, x8, x23"
+    },
+    {
+      "address": "0x3948f38",
+      "mnemonic": "asr",
+      "operands": "x10, x8, #3"
+    },
+    {
+      "address": "0x3948f3c",
+      "mnemonic": "cmp",
+      "operands": "x10, x9"
+    },
+    {
+      "address": "0x3948f40",
+      "mnemonic": "csel",
+      "operands": "x9, x10, x9, hi"
+    },
+    {
+      "address": "0x3948f44",
+      "mnemonic": "mov",
+      "operands": "x10, #0x7ffffffffffffff0 // =9223372036854775792"
+    },
+    {
+      "address": "0x3948f48",
+      "mnemonic": "cmp",
+      "operands": "x8, x10"
+    },
+    {
+      "address": "0x3948f4c",
+      "mnemonic": "mov",
+      "operands": "x8, #0xfffffffffffffff  // =1152921504606846975"
+    },
+    {
+      "address": "0x3948f50",
+      "mnemonic": "csel",
+      "operands": "x28, x9, x8, lo"
+    },
+    {
+      "address": "0x3948f54",
+      "mnemonic": "lsr",
+      "operands": "x8, x28, #60"
+    },
+    {
+      "address": "0x3948f58",
+      "mnemonic": "cbnz",
+      "operands": "x8, 0x39493c0 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x600>"
+    },
+    {
+      "address": "0x3948f5c",
+      "mnemonic": "lsl",
+      "operands": "x0, x28, #4"
+    },
+    {
+      "address": "0x3948f60",
+      "mnemonic": "bl",
+      "operands": "0x52554a0 <_Znwm@plt>"
+    },
+    {
+      "address": "0x3948f64",
+      "mnemonic": "add",
+      "operands": "x8, x0, x27"
+    },
+    {
+      "address": "0x3948f68",
+      "mnemonic": "add",
+      "operands": "x9, x0, x20, lsl #4"
+    },
+    {
+      "address": "0x3948f6c",
+      "mnemonic": "cmp",
+      "operands": "x21, x23"
+    },
+    {
+      "address": "0x3948f70",
+      "mnemonic": "mov",
+      "operands": "x27, x8"
+    },
+    {
+      "address": "0x3948f74",
+      "mnemonic": "str",
+      "operands": "wzr, [x27], #0x10"
+    },
+    {
+      "address": "0x3948f78",
+      "mnemonic": "str",
+      "operands": "s8, [x9, #0x4]"
+    },
+    {
+      "address": "0x3948f7c",
+      "mnemonic": "str",
+      "operands": "x24, [x9, #0x8]"
+    },
+    {
+      "address": "0x3948f80",
+      "mnemonic": "b.eq",
+      "operands": "0x39490bc <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x2fc>"
+    },
+    {
+      "address": "0x3948f84",
+      "mnemonic": "ldur",
+      "operands": "q0, [x21, #-0x10]"
+    },
+    {
+      "address": "0x3948f88",
+      "mnemonic": "sub",
+      "operands": "x21, x21, #0x10"
+    },
+    {
+      "address": "0x3948f8c",
+      "mnemonic": "sub",
+      "operands": "x9, x8, #0x10"
+    },
+    {
+      "address": "0x3948f90",
+      "mnemonic": "cmp",
+      "operands": "x21, x23"
+    },
+    {
+      "address": "0x3948f94",
+      "mnemonic": "stur",
+      "operands": "q0, [x8, #-0x10]"
+    },
+    {
+      "address": "0x3948f98",
+      "mnemonic": "mov",
+      "operands": "x8, x9"
+    },
+    {
+      "address": "0x3948f9c",
+      "mnemonic": "b.ne",
+      "operands": "0x3948f84 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x1c4>"
+    },
+    {
+      "address": "0x3948fa0",
+      "mnemonic": "b",
+      "operands": "0x39490c0 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x300>"
+    },
+    {
+      "address": "0x3948fa4",
+      "mnemonic": "ldr",
+      "operands": "x8, [x23, #0x28]"
+    },
+    {
+      "address": "0x3948fa8",
+      "mnemonic": "ldp",
+      "operands": "x9, x10, [x8, #0x20]"
+    },
+    {
+      "address": "0x3948fac",
+      "mnemonic": "cmp",
+      "operands": "x9, x10"
+    },
+    {
+      "address": "0x3948fb0",
+      "mnemonic": "b.eq",
+      "operands": "0x3948eb8 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0xf8>"
+    },
+    {
+      "address": "0x3948fb4",
+      "mnemonic": "ldr",
+      "operands": "x9, [x23]"
+    },
+    {
+      "address": "0x3948fb8",
+      "mnemonic": "ldr",
+      "operands": "w21, [x8, #0x10]"
+    },
+    {
+      "address": "0x3948fbc",
+      "mnemonic": "ldr",
+      "operands": "x8, [x9, #0x58]"
+    },
+    {
+      "address": "0x3948fc0",
+      "mnemonic": "mov",
+      "operands": "x0, x23"
+    },
+    {
+      "address": "0x3948fc4",
+      "mnemonic": "blr",
+      "operands": "x8"
+    },
+    {
+      "address": "0x3948fc8",
+      "mnemonic": "bl",
+      "operands": "0x5277bc0 <_ZN3lfs13FieldConstant8depthToZEj@plt>"
+    },
+    {
+      "address": "0x3948fcc",
+      "mnemonic": "fmov",
+      "operands": "s8, s0"
+    },
+    {
+      "address": "0x3948fd0",
+      "mnemonic": "ldp",
+      "operands": "x24, x8, [x29, #-0x30]"
+    },
+    {
+      "address": "0x3948fd4",
+      "mnemonic": "ldr",
+      "operands": "x9, [x23, #0x28]"
+    },
+    {
+      "address": "0x3948fd8",
+      "mnemonic": "cmp",
+      "operands": "x24, x8"
+    },
+    {
+      "address": "0x3948fdc",
+      "mnemonic": "add",
+      "operands": "x20, x9, #0x20"
+    },
+    {
+      "address": "0x3948fe0",
+      "mnemonic": "b.hs",
+      "operands": "0x3949034 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x274>"
+    },
+    {
+      "address": "0x3948fe4",
+      "mnemonic": "add",
+      "operands": "x27, x24, #0x10"
+    },
+    {
+      "address": "0x3948fe8",
+      "mnemonic": "str",
+      "operands": "w21, [x24]"
+    },
+    {
+      "address": "0x3948fec",
+      "mnemonic": "add",
+      "operands": "x25, x25, #0x8"
+    },
+    {
+      "address": "0x3948ff0",
+      "mnemonic": "str",
+      "operands": "s8, [x24, #0x4]"
+    },
+    {
+      "address": "0x3948ff4",
+      "mnemonic": "str",
+      "operands": "x20, [x24, #0x8]"
+    },
+    {
+      "address": "0x3948ff8",
+      "mnemonic": "stur",
+      "operands": "x27, [x29, #-0x30]"
+    },
+    {
+      "address": "0x3948ffc",
+      "mnemonic": "b",
+      "operands": "0x3948ebc <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0xfc>"
+    },
+    {
+      "address": "0x3949000",
+      "mnemonic": "ldr",
+      "operands": "x8, [x24, #-0x30]!"
+    },
+    {
+      "address": "0x3949004",
+      "mnemonic": "ldr",
+      "operands": "x8, [x8, #0x18]"
+    },
+    {
+      "address": "0x3949008",
+      "mnemonic": "mov",
+      "operands": "x0, x24"
+    },
+    {
+      "address": "0x394900c",
+      "mnemonic": "blr",
+      "operands": "x8"
+    },
+    {
+      "address": "0x3949010",
+      "mnemonic": "tbz",
+      "operands": "w0, #0x0, 0x3948eb8 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0xf8>"
+    },
+    {
+      "address": "0x3949014",
+      "mnemonic": "mov",
+      "operands": "x8, x23"
+    },
+    {
+      "address": "0x3949018",
+      "mnemonic": "ldrb",
+      "operands": "w9, [x8, #0x50]!"
+    },
+    {
+      "address": "0x394901c",
+      "mnemonic": "tbnz",
+      "operands": "w9, #0x0, 0x3949104 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x344>"
+    },
+    {
+      "address": "0x3949020",
+      "mnemonic": "ldr",
+      "operands": "q0, [x8]"
+    },
+    {
+      "address": "0x3949024",
+      "mnemonic": "ldr",
+      "operands": "x8, [x8, #0x10]"
+    },
+    {
+      "address": "0x3949028",
+      "mnemonic": "str",
+      "operands": "q0, [sp, #0x30]"
+    },
+    {
+      "address": "0x394902c",
+      "mnemonic": "str",
+      "operands": "x8, [sp, #0x40]"
+    },
+    {
+      "address": "0x3949030",
+      "mnemonic": "b",
+      "operands": "0x3949110 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x350>"
+    },
+    {
+      "address": "0x3949034",
+      "mnemonic": "ldur",
+      "operands": "x23, [x29, #-0x38]"
+    },
+    {
+      "address": "0x3949038",
+      "mnemonic": "sub",
+      "operands": "x22, x24, x23"
+    },
+    {
+      "address": "0x394903c",
+      "mnemonic": "asr",
+      "operands": "x27, x22, #4"
+    },
+    {
+      "address": "0x3949040",
+      "mnemonic": "add",
+      "operands": "x9, x27, #0x1"
+    },
+    {
+      "address": "0x3949044",
+      "mnemonic": "lsr",
+      "operands": "x10, x9, #60"
+    },
+    {
+      "address": "0x3949048",
+      "mnemonic": "cbnz",
+      "operands": "x10, 0x39493d8 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x618>"
+    },
+    {
+      "address": "0x394904c",
+      "mnemonic": "sub",
+      "operands": "x8, x8, x23"
+    },
+    {
+      "address": "0x3949050",
+      "mnemonic": "asr",
+      "operands": "x10, x8, #3"
+    },
+    {
+      "address": "0x3949054",
+      "mnemonic": "cmp",
+      "operands": "x10, x9"
+    },
+    {
+      "address": "0x3949058",
+      "mnemonic": "csel",
+      "operands": "x9, x10, x9, hi"
+    },
+    {
+      "address": "0x394905c",
+      "mnemonic": "mov",
+      "operands": "x10, #0x7ffffffffffffff0 // =9223372036854775792"
+    },
+    {
+      "address": "0x3949060",
+      "mnemonic": "cmp",
+      "operands": "x8, x10"
+    },
+    {
+      "address": "0x3949064",
+      "mnemonic": "mov",
+      "operands": "x8, #0xfffffffffffffff  // =1152921504606846975"
+    },
+    {
+      "address": "0x3949068",
+      "mnemonic": "csel",
+      "operands": "x28, x9, x8, lo"
+    },
+    {
+      "address": "0x394906c",
+      "mnemonic": "lsr",
+      "operands": "x8, x28, #60"
+    },
+    {
+      "address": "0x3949070",
+      "mnemonic": "cbnz",
+      "operands": "x8, 0x39493f4 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x634>"
+    },
+    {
+      "address": "0x3949074",
+      "mnemonic": "lsl",
+      "operands": "x0, x28, #4"
+    },
+    {
+      "address": "0x3949078",
+      "mnemonic": "bl",
+      "operands": "0x52554a0 <_Znwm@plt>"
+    },
+    {
+      "address": "0x394907c",
+      "mnemonic": "add",
+      "operands": "x8, x0, x22"
+    },
+    {
+      "address": "0x3949080",
+      "mnemonic": "add",
+      "operands": "x9, x0, x27, lsl #4"
+    },
+    {
+      "address": "0x3949084",
+      "mnemonic": "cmp",
+      "operands": "x24, x23"
+    },
+    {
+      "address": "0x3949088",
+      "mnemonic": "mov",
+      "operands": "x27, x8"
+    },
+    {
+      "address": "0x394908c",
+      "mnemonic": "str",
+      "operands": "w21, [x27], #0x10"
+    },
+    {
+      "address": "0x3949090",
+      "mnemonic": "str",
+      "operands": "s8, [x9, #0x4]"
+    },
+    {
+      "address": "0x3949094",
+      "mnemonic": "str",
+      "operands": "x20, [x9, #0x8]"
+    },
+    {
+      "address": "0x3949098",
+      "mnemonic": "b.eq",
+      "operands": "0x39490dc <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x31c>"
+    },
+    {
+      "address": "0x394909c",
+      "mnemonic": "ldur",
+      "operands": "q0, [x24, #-0x10]"
+    },
+    {
+      "address": "0x39490a0",
+      "mnemonic": "sub",
+      "operands": "x24, x24, #0x10"
+    },
+    {
+      "address": "0x39490a4",
+      "mnemonic": "sub",
+      "operands": "x9, x8, #0x10"
+    },
+    {
+      "address": "0x39490a8",
+      "mnemonic": "cmp",
+      "operands": "x24, x23"
+    },
+    {
+      "address": "0x39490ac",
+      "mnemonic": "stur",
+      "operands": "q0, [x8, #-0x10]"
+    },
+    {
+      "address": "0x39490b0",
+      "mnemonic": "mov",
+      "operands": "x8, x9"
+    },
+    {
+      "address": "0x39490b4",
+      "mnemonic": "b.ne",
+      "operands": "0x394909c <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x2dc>"
+    },
+    {
+      "address": "0x39490b8",
+      "mnemonic": "b",
+      "operands": "0x39490e0 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x320>"
+    },
+    {
+      "address": "0x39490bc",
+      "mnemonic": "mov",
+      "operands": "x9, x8"
+    },
+    {
+      "address": "0x39490c0",
+      "mnemonic": "add",
+      "operands": "x8, x0, x28, lsl #4"
+    },
+    {
+      "address": "0x39490c4",
+      "mnemonic": "stp",
+      "operands": "x9, x27, [x29, #-0x50]"
+    },
+    {
+      "address": "0x39490c8",
+      "mnemonic": "stur",
+      "operands": "x8, [x29, #-0x40]"
+    },
+    {
+      "address": "0x39490cc",
+      "mnemonic": "cbz",
+      "operands": "x23, 0x3948eb4 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0xf4>"
+    },
+    {
+      "address": "0x39490d0",
+      "mnemonic": "mov",
+      "operands": "x0, x23"
+    },
+    {
+      "address": "0x39490d4",
+      "mnemonic": "bl",
+      "operands": "0x5255450 <_ZdlPv@plt>"
+    },
+    {
+      "address": "0x39490d8",
+      "mnemonic": "b",
+      "operands": "0x3948eb4 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0xf4>"
+    },
+    {
+      "address": "0x39490dc",
+      "mnemonic": "mov",
+      "operands": "x9, x8"
+    },
+    {
+      "address": "0x39490e0",
+      "mnemonic": "add",
+      "operands": "x8, x0, x28, lsl #4"
+    },
+    {
+      "address": "0x39490e4",
+      "mnemonic": "stp",
+      "operands": "x9, x27, [x29, #-0x38]"
+    },
+    {
+      "address": "0x39490e8",
+      "mnemonic": "stur",
+      "operands": "x8, [x29, #-0x28]"
+    },
+    {
+      "address": "0x39490ec",
+      "mnemonic": "cbz",
+      "operands": "x23, 0x39490f8 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x338>"
+    },
+    {
+      "address": "0x39490f0",
+      "mnemonic": "mov",
+      "operands": "x0, x23"
+    },
+    {
+      "address": "0x39490f4",
+      "mnemonic": "bl",
+      "operands": "0x5255450 <_ZdlPv@plt>"
+    },
+    {
+      "address": "0x39490f8",
+      "mnemonic": "stur",
+      "operands": "x27, [x29, #-0x30]"
+    },
+    {
+      "address": "0x39490fc",
+      "mnemonic": "add",
+      "operands": "x25, x25, #0x8"
+    },
+    {
+      "address": "0x3949100",
+      "mnemonic": "b",
+      "operands": "0x3948ebc <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0xfc>"
+    },
+    {
+      "address": "0x3949104",
+      "mnemonic": "ldp",
+      "operands": "x2, x1, [x23, #0x58]"
+    },
+    {
+      "address": "0x3949108",
+      "mnemonic": "add",
+      "operands": "x0, sp, #0x30"
+    },
+    {
+      "address": "0x394910c",
+      "mnemonic": "bl",
+      "operands": "0x2f14314 <std::__ndk1::basic_string<char, std::__ndk1::char_traits<char>, std::__ndk1::allocator<char>>* std::__ndk1::vector<std::__ndk1::basic_string<char, std::__ndk1::char_traits<char>, std::__ndk1::allocator<char>>, std::__ndk1::allocator<std::__ndk1::basic_string<char, std::__ndk1::char_traits<char>, std::__ndk1::allocator<char>>>>::__emplace_back_slow_path<std::__ndk1::__wrap_iter<char const*>&, std::__ndk1::__wrap_iter<char const*>&>(std::__ndk1::__wrap_iter<char const*>&, std::__ndk1::__wrap_iter<char const*>&)+0x6a0>"
+    },
+    {
+      "address": "0x3949110",
+      "mnemonic": "add",
+      "operands": "x0, sp, #0x30"
+    },
+    {
+      "address": "0x3949114",
+      "mnemonic": "mov",
+      "operands": "x1, xzr"
+    },
+    {
+      "address": "0x3949118",
+      "mnemonic": "adrp",
+      "operands": "x2, 0x2146000"
+    },
+    {
+      "address": "0x394911c",
+      "mnemonic": "add",
+      "operands": "x2, x2, #0x75e"
+    },
+    {
+      "address": "0x3949120",
+      "mnemonic": "bl",
+      "operands": "0x525c650 <_ZNSt6__ndk112basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE6insertEmPKc@plt>"
+    },
+    {
+      "address": "0x3949124",
+      "mnemonic": "ldr",
+      "operands": "x8, [x0, #0x10]"
+    },
+    {
+      "address": "0x3949128",
+      "mnemonic": "ldr",
+      "operands": "q0, [x0]"
+    },
+    {
+      "address": "0x394912c",
+      "mnemonic": "str",
+      "operands": "x8, [sp, #0x60]"
+    },
+    {
+      "address": "0x3949130",
+      "mnemonic": "str",
+      "operands": "q0, [sp, #0x50]"
+    },
+    {
+      "address": "0x3949134",
+      "mnemonic": "stp",
+      "operands": "xzr, xzr, [x0, #0x8]"
+    },
+    {
+      "address": "0x3949138",
+      "mnemonic": "str",
+      "operands": "xzr, [x0]"
+    },
+    {
+      "address": "0x394913c",
+      "mnemonic": "ldr",
+      "operands": "x8, [x24]"
+    },
+    {
+      "address": "0x3949140",
+      "mnemonic": "ldr",
+      "operands": "x8, [x8, #0x48]"
+    },
+    {
+      "address": "0x3949144",
+      "mnemonic": "mov",
+      "operands": "x0, x24"
+    },
+    {
+      "address": "0x3949148",
+      "mnemonic": "blr",
+      "operands": "x8"
+    },
+    {
+      "address": "0x394914c",
+      "mnemonic": "ldr",
+      "operands": "x8, [x23]"
+    },
+    {
+      "address": "0x3949150",
+      "mnemonic": "mov",
+      "operands": "x24, x0"
+    },
+    {
+      "address": "0x3949154",
+      "mnemonic": "ldr",
+      "operands": "x8, [x8, #0x58]"
+    },
+    {
+      "address": "0x3949158",
+      "mnemonic": "mov",
+      "operands": "x0, x23"
+    },
+    {
+      "address": "0x394915c",
+      "mnemonic": "blr",
+      "operands": "x8"
+    },
+    {
+      "address": "0x3949160",
+      "mnemonic": "bl",
+      "operands": "0x5277bc0 <_ZN3lfs13FieldConstant8depthToZEj@plt>"
+    },
+    {
+      "address": "0x3949164",
+      "mnemonic": "ldr",
+      "operands": "x8, [sp, #0x20]"
+    },
+    {
+      "address": "0x3949168",
+      "mnemonic": "fmov",
+      "operands": "s8, s0"
+    },
+    {
+      "address": "0x394916c",
+      "mnemonic": "ldr",
+      "operands": "s0, [x8, #0x68]"
+    },
+    {
+      "address": "0x3949170",
+      "mnemonic": "ldp",
+      "operands": "x23, x8, [sp, #0x70]"
+    },
+    {
+      "address": "0x3949174",
+      "mnemonic": "fcvtzu",
+      "operands": "w20, s0"
+    },
+    {
+      "address": "0x3949178",
+      "mnemonic": "str",
+      "operands": "s8, [sp, #0x2c]"
+    },
+    {
+      "address": "0x394917c",
+      "mnemonic": "cmp",
+      "operands": "x23, x8"
+    },
+    {
+      "address": "0x3949180",
+      "mnemonic": "str",
+      "operands": "w20, [sp, #0x28]"
+    },
+    {
+      "address": "0x3949184",
+      "mnemonic": "b.hs",
+      "operands": "0x39491a4 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x3e4>"
+    },
+    {
+      "address": "0x3949188",
+      "mnemonic": "ldrb",
+      "operands": "w8, [sp, #0x50]"
+    },
+    {
+      "address": "0x394918c",
+      "mnemonic": "tbnz",
+      "operands": "w8, #0x0, 0x39491c0 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x400>"
+    },
+    {
+      "address": "0x3949190",
+      "mnemonic": "ldr",
+      "operands": "x8, [sp, #0x60]"
+    },
+    {
+      "address": "0x3949194",
+      "mnemonic": "ldr",
+      "operands": "q0, [sp, #0x50]"
+    },
+    {
+      "address": "0x3949198",
+      "mnemonic": "str",
+      "operands": "x8, [x23, #0x10]"
+    },
+    {
+      "address": "0x394919c",
+      "mnemonic": "str",
+      "operands": "q0, [x23]"
+    },
+    {
+      "address": "0x39491a0",
+      "mnemonic": "b",
+      "operands": "0x39491cc <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x40c>"
+    },
+    {
+      "address": "0x39491a4",
+      "mnemonic": "add",
+      "operands": "x0, sp, #0x68"
+    },
+    {
+      "address": "0x39491a8",
+      "mnemonic": "add",
+      "operands": "x1, sp, #0x50"
+    },
+    {
+      "address": "0x39491ac",
+      "mnemonic": "add",
+      "operands": "x3, sp, #0x2c"
+    },
+    {
+      "address": "0x39491b0",
+      "mnemonic": "add",
+      "operands": "x4, sp, #0x28"
+    },
+    {
+      "address": "0x39491b4",
+      "mnemonic": "mov",
+      "operands": "x2, x24"
+    },
+    {
+      "address": "0x39491b8",
+      "mnemonic": "bl",
+      "operands": "0x529b3e0 <_ZNSt6__ndk16vectorIN3lfs5field26FieldAnimatedStructureInfoENS_9allocatorIS3_EEE24__emplace_back_slow_pathIJNS_12basic_stringIcNS_11char_traitsIcEENS4_IcEEEERKN7cocos2d4Vec2EfjEEEPS3_DpOT_@plt>"
+    },
+    {
+      "address": "0x39491bc",
+      "mnemonic": "b",
+      "operands": "0x39491e4 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x424>"
+    },
+    {
+      "address": "0x39491c0",
+      "mnemonic": "ldp",
+      "operands": "x2, x1, [sp, #0x58]"
+    },
+    {
+      "address": "0x39491c4",
+      "mnemonic": "mov",
+      "operands": "x0, x23"
+    },
+    {
+      "address": "0x39491c8",
+      "mnemonic": "bl",
+      "operands": "0x2f14314 <std::__ndk1::basic_string<char, std::__ndk1::char_traits<char>, std::__ndk1::allocator<char>>* std::__ndk1::vector<std::__ndk1::basic_string<char, std::__ndk1::char_traits<char>, std::__ndk1::allocator<char>>, std::__ndk1::allocator<std::__ndk1::basic_string<char, std::__ndk1::char_traits<char>, std::__ndk1::allocator<char>>>>::__emplace_back_slow_path<std::__ndk1::__wrap_iter<char const*>&, std::__ndk1::__wrap_iter<char const*>&>(std::__ndk1::__wrap_iter<char const*>&, std::__ndk1::__wrap_iter<char const*>&)+0x6a0>"
+    },
+    {
+      "address": "0x39491cc",
+      "mnemonic": "add",
+      "operands": "x0, x23, #0x18"
+    },
+    {
+      "address": "0x39491d0",
+      "mnemonic": "mov",
+      "operands": "x1, x24"
+    },
+    {
+      "address": "0x39491d4",
+      "mnemonic": "bl",
+      "operands": "0x525f9a0 <_ZN7cocos2d4Vec2C1ERKS0_@plt>"
+    },
+    {
+      "address": "0x39491d8",
+      "mnemonic": "str",
+      "operands": "s8, [x23, #0x20]"
+    },
+    {
+      "address": "0x39491dc",
+      "mnemonic": "add",
+      "operands": "x0, x23, #0x28"
+    },
+    {
+      "address": "0x39491e0",
+      "mnemonic": "str",
+      "operands": "w20, [x23, #0x24]"
+    },
+    {
+      "address": "0x39491e4",
+      "mnemonic": "ldrb",
+      "operands": "w8, [sp, #0x50]"
+    },
+    {
+      "address": "0x39491e8",
+      "mnemonic": "str",
+      "operands": "x0, [sp, #0x70]"
+    },
+    {
+      "address": "0x39491ec",
+      "mnemonic": "tbz",
+      "operands": "w8, #0x0, 0x39491f8 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x438>"
+    },
+    {
+      "address": "0x39491f0",
+      "mnemonic": "ldr",
+      "operands": "x0, [sp, #0x60]"
+    },
+    {
+      "address": "0x39491f4",
+      "mnemonic": "bl",
+      "operands": "0x5255450 <_ZdlPv@plt>"
+    },
+    {
+      "address": "0x39491f8",
+      "mnemonic": "ldrb",
+      "operands": "w8, [sp, #0x30]"
+    },
+    {
+      "address": "0x39491fc",
+      "mnemonic": "tbz",
+      "operands": "w8, #0x0, 0x3948eb8 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0xf8>"
+    },
+    {
+      "address": "0x3949200",
+      "mnemonic": "ldr",
+      "operands": "x0, [sp, #0x40]"
+    },
+    {
+      "address": "0x3949204",
+      "mnemonic": "bl",
+      "operands": "0x5255450 <_ZdlPv@plt>"
+    },
+    {
+      "address": "0x3949208",
+      "mnemonic": "add",
+      "operands": "x25, x25, #0x8"
+    },
+    {
+      "address": "0x394920c",
+      "mnemonic": "b",
+      "operands": "0x3948ebc <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0xfc>"
+    },
+    {
+      "address": "0x3949210",
+      "mnemonic": "stp",
+      "operands": "xzr, xzr, [sp, #0x50]"
+    },
+    {
+      "address": "0x3949214",
+      "mnemonic": "add",
+      "operands": "x1, x21, #0x8"
+    },
+    {
+      "address": "0x3949218",
+      "mnemonic": "mov",
+      "operands": "x0, #-0x1               // =-1"
+    },
+    {
+      "address": "0x394921c",
+      "mnemonic": "bl",
+      "operands": "0x5251290 <__emutls_get_address+0xba4>"
+    },
+    {
+      "address": "0x3949220",
+      "mnemonic": "cbz",
+      "operands": "x0, 0x3949230 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x470>"
+    },
+    {
+      "address": "0x3949224",
+      "mnemonic": "ldr",
+      "operands": "x8, [sp, #0x50]"
+    },
+    {
+      "address": "0x3949228",
+      "mnemonic": "cbnz",
+      "operands": "x8, 0x3949250 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x490>"
+    },
+    {
+      "address": "0x394922c",
+      "mnemonic": "b",
+      "operands": "0x39492c8 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x508>"
+    },
+    {
+      "address": "0x3949230",
+      "mnemonic": "ldr",
+      "operands": "x8, [x21]"
+    },
+    {
+      "address": "0x3949234",
+      "mnemonic": "mov",
+      "operands": "x0, x21"
+    },
+    {
+      "address": "0x3949238",
+      "mnemonic": "ldr",
+      "operands": "x8, [x8, #0x10]"
+    },
+    {
+      "address": "0x394923c",
+      "mnemonic": "blr",
+      "operands": "x8"
+    },
+    {
+      "address": "0x3949240",
+      "mnemonic": "mov",
+      "operands": "x0, x21"
+    },
+    {
+      "address": "0x3949244",
+      "mnemonic": "bl",
+      "operands": "0x5256620 <_ZNSt6__ndk119__shared_weak_count14__release_weakEv@plt>"
+    },
+    {
+      "address": "0x3949248",
+      "mnemonic": "ldr",
+      "operands": "x8, [sp, #0x50]"
+    },
+    {
+      "address": "0x394924c",
+      "mnemonic": "cbz",
+      "operands": "x8, 0x39492c8 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x508>"
+    },
+    {
+      "address": "0x3949250",
+      "mnemonic": "mov",
+      "operands": "w0, #0xa8               // =168"
+    },
+    {
+      "address": "0x3949254",
+      "mnemonic": "bl",
+      "operands": "0x52554a0 <_Znwm@plt>"
+    },
+    {
+      "address": "0x3949258",
+      "mnemonic": "ldr",
+      "operands": "x5, [sp]"
+    },
+    {
+      "address": "0x394925c",
+      "mnemonic": "add",
+      "operands": "x1, sp, #0x50"
+    },
+    {
+      "address": "0x3949260",
+      "mnemonic": "sub",
+      "operands": "x2, x29, #0x38"
+    },
+    {
+      "address": "0x3949264",
+      "mnemonic": "sub",
+      "operands": "x3, x29, #0x50"
+    },
+    {
+      "address": "0x3949268",
+      "mnemonic": "add",
+      "operands": "x4, sp, #0x68"
+    },
+    {
+      "address": "0x394926c",
+      "mnemonic": "mov",
+      "operands": "x21, x0"
+    },
+    {
+      "address": "0x3949270",
+      "mnemonic": "bl",
+      "operands": "0x529b3f0 <_ZN3lfs5field10DataParserC1ERKNSt6__ndk110shared_ptrINS0_17FieldQuadTreeLeafEEERNS2_6vectorINS0_10ConvexhullENS2_9allocatorIS9_EEEESD_RKNS8_INS0_26FieldAnimatedStructureInfoENSA_ISE_EEEERKNS3_INS0_13FieldAnimatorEEE@plt>"
+    },
+    {
+      "address": "0x3949274",
+      "mnemonic": "str",
+      "operands": "x21, [sp, #0x30]"
+    },
+    {
+      "address": "0x3949278",
+      "mnemonic": "mov",
+      "operands": "w0, #0x20               // =32"
+    },
+    {
+      "address": "0x394927c",
+      "mnemonic": "bl",
+      "operands": "0x52554a0 <_Znwm@plt>"
+    },
+    {
+      "address": "0x3949280",
+      "mnemonic": "adrp",
+      "operands": "x8, 0x570a000"
+    },
+    {
+      "address": "0x3949284",
+      "mnemonic": "ldr",
+      "operands": "x8, [x8, #0xf18]"
+    },
+    {
+      "address": "0x3949288",
+      "mnemonic": "ldr",
+      "operands": "x20, [x19, #0x38]"
+    },
+    {
+      "address": "0x394928c",
+      "mnemonic": "stp",
+      "operands": "xzr, x21, [x0, #0x10]"
+    },
+    {
+      "address": "0x3949290",
+      "mnemonic": "stp",
+      "operands": "x21, x0, [x19, #0x30]"
+    },
+    {
+      "address": "0x3949294",
+      "mnemonic": "add",
+      "operands": "x8, x8, #0x10"
+    },
+    {
+      "address": "0x3949298",
+      "mnemonic": "stp",
+      "operands": "x8, xzr, [x0]"
+    },
+    {
+      "address": "0x394929c",
+      "mnemonic": "cbz",
+      "operands": "x20, 0x39492c8 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x508>"
+    },
+    {
+      "address": "0x39492a0",
+      "mnemonic": "add",
+      "operands": "x1, x20, #0x8"
+    },
+    {
+      "address": "0x39492a4",
+      "mnemonic": "mov",
+      "operands": "x0, #-0x1               // =-1"
+    },
+    {
+      "address": "0x39492a8",
+      "mnemonic": "bl",
+      "operands": "0x5251290 <__emutls_get_address+0xba4>"
+    },
+    {
+      "address": "0x39492ac",
+      "mnemonic": "cbnz",
+      "operands": "x0, 0x39492c8 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x508>"
+    },
+    {
+      "address": "0x39492b0",
+      "mnemonic": "ldr",
+      "operands": "x8, [x20]"
+    },
+    {
+      "address": "0x39492b4",
+      "mnemonic": "mov",
+      "operands": "x0, x20"
+    },
+    {
+      "address": "0x39492b8",
+      "mnemonic": "ldr",
+      "operands": "x8, [x8, #0x10]"
+    },
+    {
+      "address": "0x39492bc",
+      "mnemonic": "blr",
+      "operands": "x8"
+    },
+    {
+      "address": "0x39492c0",
+      "mnemonic": "mov",
+      "operands": "x0, x20"
+    },
+    {
+      "address": "0x39492c4",
+      "mnemonic": "bl",
+      "operands": "0x5256620 <_ZNSt6__ndk119__shared_weak_count14__release_weakEv@plt>"
+    },
+    {
+      "address": "0x39492c8",
+      "mnemonic": "ldr",
+      "operands": "x19, [sp, #0x58]"
+    },
+    {
+      "address": "0x39492cc",
+      "mnemonic": "cbz",
+      "operands": "x19, 0x39492f8 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x538>"
+    },
+    {
+      "address": "0x39492d0",
+      "mnemonic": "add",
+      "operands": "x1, x19, #0x8"
+    },
+    {
+      "address": "0x39492d4",
+      "mnemonic": "mov",
+      "operands": "x0, #-0x1               // =-1"
+    },
+    {
+      "address": "0x39492d8",
+      "mnemonic": "bl",
+      "operands": "0x5251290 <__emutls_get_address+0xba4>"
+    },
+    {
+      "address": "0x39492dc",
+      "mnemonic": "cbnz",
+      "operands": "x0, 0x39492f8 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x538>"
+    },
+    {
+      "address": "0x39492e0",
+      "mnemonic": "ldr",
+      "operands": "x8, [x19]"
+    },
+    {
+      "address": "0x39492e4",
+      "mnemonic": "mov",
+      "operands": "x0, x19"
+    },
+    {
+      "address": "0x39492e8",
+      "mnemonic": "ldr",
+      "operands": "x8, [x8, #0x10]"
+    },
+    {
+      "address": "0x39492ec",
+      "mnemonic": "blr",
+      "operands": "x8"
+    },
+    {
+      "address": "0x39492f0",
+      "mnemonic": "mov",
+      "operands": "x0, x19"
+    },
+    {
+      "address": "0x39492f4",
+      "mnemonic": "bl",
+      "operands": "0x5256620 <_ZNSt6__ndk119__shared_weak_count14__release_weakEv@plt>"
+    },
+    {
+      "address": "0x39492f8",
+      "mnemonic": "ldr",
+      "operands": "x20, [sp, #0x68]"
+    },
+    {
+      "address": "0x39492fc",
+      "mnemonic": "cbz",
+      "operands": "x20, 0x3949350 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x590>"
+    },
+    {
+      "address": "0x3949300",
+      "mnemonic": "ldr",
+      "operands": "x8, [sp, #0x70]"
+    },
+    {
+      "address": "0x3949304",
+      "mnemonic": "mov",
+      "operands": "x0, x20"
+    },
+    {
+      "address": "0x3949308",
+      "mnemonic": "cmp",
+      "operands": "x8, x20"
+    },
+    {
+      "address": "0x394930c",
+      "mnemonic": "b.eq",
+      "operands": "0x3949348 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x588>"
+    },
+    {
+      "address": "0x3949310",
+      "mnemonic": "sub",
+      "operands": "x19, x8, #0x10"
+    },
+    {
+      "address": "0x3949314",
+      "mnemonic": "b",
+      "operands": "0x3949328 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x568>"
+    },
+    {
+      "address": "0x3949318",
+      "mnemonic": "sub",
+      "operands": "x8, x19, #0x18"
+    },
+    {
+      "address": "0x394931c",
+      "mnemonic": "sub",
+      "operands": "x19, x19, #0x28"
+    },
+    {
+      "address": "0x3949320",
+      "mnemonic": "cmp",
+      "operands": "x8, x20"
+    },
+    {
+      "address": "0x3949324",
+      "mnemonic": "b.eq",
+      "operands": "0x3949344 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x584>"
+    },
+    {
+      "address": "0x3949328",
+      "mnemonic": "mov",
+      "operands": "x0, x19"
+    },
+    {
+      "address": "0x394932c",
+      "mnemonic": "bl",
+      "operands": "0x5257940 <_ZN7cocos2d4Vec2D1Ev@plt>"
+    },
+    {
+      "address": "0x3949330",
+      "mnemonic": "ldurb",
+      "operands": "w8, [x19, #-0x18]"
+    },
+    {
+      "address": "0x3949334",
+      "mnemonic": "tbz",
+      "operands": "w8, #0x0, 0x3949318 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x558>"
+    },
+    {
+      "address": "0x3949338",
+      "mnemonic": "ldur",
+      "operands": "x0, [x19, #-0x8]"
+    },
+    {
+      "address": "0x394933c",
+      "mnemonic": "bl",
+      "operands": "0x5255450 <_ZdlPv@plt>"
+    },
+    {
+      "address": "0x3949340",
+      "mnemonic": "b",
+      "operands": "0x3949318 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x558>"
+    },
+    {
+      "address": "0x3949344",
+      "mnemonic": "ldr",
+      "operands": "x0, [sp, #0x68]"
+    },
+    {
+      "address": "0x3949348",
+      "mnemonic": "str",
+      "operands": "x20, [sp, #0x70]"
+    },
+    {
+      "address": "0x394934c",
+      "mnemonic": "bl",
+      "operands": "0x5255450 <_ZdlPv@plt>"
+    },
+    {
+      "address": "0x3949350",
+      "mnemonic": "ldur",
+      "operands": "x0, [x29, #-0x50]"
+    },
+    {
+      "address": "0x3949354",
+      "mnemonic": "cbz",
+      "operands": "x0, 0x3949360 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x5a0>"
+    },
+    {
+      "address": "0x3949358",
+      "mnemonic": "stur",
+      "operands": "x0, [x29, #-0x48]"
+    },
+    {
+      "address": "0x394935c",
+      "mnemonic": "bl",
+      "operands": "0x5255450 <_ZdlPv@plt>"
+    },
+    {
+      "address": "0x3949360",
+      "mnemonic": "ldur",
+      "operands": "x0, [x29, #-0x38]"
+    },
+    {
+      "address": "0x3949364",
+      "mnemonic": "cbz",
+      "operands": "x0, 0x3949370 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x5b0>"
+    },
+    {
+      "address": "0x3949368",
+      "mnemonic": "stur",
+      "operands": "x0, [x29, #-0x30]"
+    },
+    {
+      "address": "0x394936c",
+      "mnemonic": "bl",
+      "operands": "0x5255450 <_ZdlPv@plt>"
+    },
+    {
+      "address": "0x3949370",
+      "mnemonic": "ldr",
+      "operands": "x8, [x23, #0x28]"
+    },
+    {
+      "address": "0x3949374",
+      "mnemonic": "ldur",
+      "operands": "x9, [x29, #-0x20]"
+    },
+    {
+      "address": "0x3949378",
+      "mnemonic": "cmp",
+      "operands": "x8, x9"
+    },
+    {
+      "address": "0x394937c",
+      "mnemonic": "b.ne",
+      "operands": "0x3949534 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x774>"
+    },
+    {
+      "address": "0x3949380",
+      "mnemonic": "ldp",
+      "operands": "x20, x19, [sp, #0x120]"
+    },
+    {
+      "address": "0x3949384",
+      "mnemonic": "ldr",
+      "operands": "d8, [sp, #0xc0]"
+    },
+    {
+      "address": "0x3949388",
+      "mnemonic": "ldp",
+      "operands": "x22, x21, [sp, #0x110]"
+    },
+    {
+      "address": "0x394938c",
+      "mnemonic": "ldp",
+      "operands": "x24, x23, [sp, #0x100]"
+    },
+    {
+      "address": "0x3949390",
+      "mnemonic": "ldp",
+      "operands": "x26, x25, [sp, #0xf0]"
+    },
+    {
+      "address": "0x3949394",
+      "mnemonic": "ldp",
+      "operands": "x28, x27, [sp, #0xe0]"
+    },
+    {
+      "address": "0x3949398",
+      "mnemonic": "ldp",
+      "operands": "x29, x30, [sp, #0xd0]"
+    },
+    {
+      "address": "0x394939c",
+      "mnemonic": "add",
+      "operands": "sp, sp, #0x130"
+    },
+    {
+      "address": "0x39493a0",
+      "mnemonic": "ret",
+      "operands": ""
+    },
+    {
+      "address": "0x39493a4",
+      "mnemonic": "ldr",
+      "operands": "x20, [sp, #0x10]"
+    },
+    {
+      "address": "0x39493a8",
+      "mnemonic": "ldr",
+      "operands": "x8, [x20, #0x28]"
+    },
+    {
+      "address": "0x39493ac",
+      "mnemonic": "ldur",
+      "operands": "x9, [x29, #-0x20]"
+    },
+    {
+      "address": "0x39493b0",
+      "mnemonic": "cmp",
+      "operands": "x8, x9"
+    },
+    {
+      "address": "0x39493b4",
+      "mnemonic": "b.ne",
+      "operands": "0x3949534 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x774>"
+    },
+    {
+      "address": "0x39493b8",
+      "mnemonic": "sub",
+      "operands": "x0, x29, #0x50"
+    },
+    {
+      "address": "0x39493bc",
+      "mnemonic": "bl",
+      "operands": "0x3949b9c <lfs::field::FieldQuadTreeLeaf::flipAnimationFrame(unsigned int, unsigned int, float, float)+0x10>"
+    },
+    {
+      "address": "0x39493c0",
+      "mnemonic": "ldr",
+      "operands": "x20, [sp, #0x10]"
+    },
+    {
+      "address": "0x39493c4",
+      "mnemonic": "ldr",
+      "operands": "x8, [x20, #0x28]"
+    },
+    {
+      "address": "0x39493c8",
+      "mnemonic": "ldur",
+      "operands": "x9, [x29, #-0x20]"
+    },
+    {
+      "address": "0x39493cc",
+      "mnemonic": "cmp",
+      "operands": "x8, x9"
+    },
+    {
+      "address": "0x39493d0",
+      "mnemonic": "b.ne",
+      "operands": "0x3949534 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x774>"
+    },
+    {
+      "address": "0x39493d4",
+      "mnemonic": "bl",
+      "operands": "0x2f13a9c <MotionTbl::getLabelIconPos(int) const+0x194>"
+    },
+    {
+      "address": "0x39493d8",
+      "mnemonic": "ldr",
+      "operands": "x20, [sp, #0x10]"
+    },
+    {
+      "address": "0x39493dc",
+      "mnemonic": "ldr",
+      "operands": "x8, [x20, #0x28]"
+    },
+    {
+      "address": "0x39493e0",
+      "mnemonic": "ldur",
+      "operands": "x9, [x29, #-0x20]"
+    },
+    {
+      "address": "0x39493e4",
+      "mnemonic": "cmp",
+      "operands": "x8, x9"
+    },
+    {
+      "address": "0x39493e8",
+      "mnemonic": "b.ne",
+      "operands": "0x3949534 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x774>"
+    },
+    {
+      "address": "0x39493ec",
+      "mnemonic": "sub",
+      "operands": "x0, x29, #0x38"
+    },
+    {
+      "address": "0x39493f0",
+      "mnemonic": "bl",
+      "operands": "0x3949b9c <lfs::field::FieldQuadTreeLeaf::flipAnimationFrame(unsigned int, unsigned int, float, float)+0x10>"
+    },
+    {
+      "address": "0x39493f4",
+      "mnemonic": "ldr",
+      "operands": "x20, [sp, #0x10]"
+    },
+    {
+      "address": "0x39493f8",
+      "mnemonic": "ldr",
+      "operands": "x8, [x20, #0x28]"
+    },
+    {
+      "address": "0x39493fc",
+      "mnemonic": "ldur",
+      "operands": "x9, [x29, #-0x20]"
+    },
+    {
+      "address": "0x3949400",
+      "mnemonic": "cmp",
+      "operands": "x8, x9"
+    },
+    {
+      "address": "0x3949404",
+      "mnemonic": "b.ne",
+      "operands": "0x3949534 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x774>"
+    },
+    {
+      "address": "0x3949408",
+      "mnemonic": "bl",
+      "operands": "0x2f13a9c <MotionTbl::getLabelIconPos(int) const+0x194>"
+    },
+    {
+      "address": "0x394940c",
+      "mnemonic": "ldr",
+      "operands": "x8, [sp, #0x10]"
+    },
+    {
+      "address": "0x3949410",
+      "mnemonic": "ldr",
+      "operands": "x8, [x8, #0x28]"
+    },
+    {
+      "address": "0x3949414",
+      "mnemonic": "ldur",
+      "operands": "x9, [x29, #-0x20]"
+    },
+    {
+      "address": "0x3949418",
+      "mnemonic": "cmp",
+      "operands": "x8, x9"
+    },
+    {
+      "address": "0x394941c",
+      "mnemonic": "b.ne",
+      "operands": "0x3949534 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x774>"
+    },
+    {
+      "address": "0x3949420",
+      "mnemonic": "bl",
+      "operands": "0x2fad4f4 <void std::__ndk1::vector<lfs::unified_item::ID, std::__ndk1::allocator<lfs::unified_item::ID>>::__assign_with_size[abi:ne180000]<lfs::unified_item::ID*, lfs::unified_item::ID*>(lfs::unified_item::ID*, lfs::unified_item::ID*, long)+0x478>"
+    },
+    {
+      "address": "0x3949424",
+      "mnemonic": "mov",
+      "operands": "x19, x0"
+    },
+    {
+      "address": "0x3949428",
+      "mnemonic": "add",
+      "operands": "x0, sp, #0x30"
+    },
+    {
+      "address": "0x394942c",
+      "mnemonic": "bl",
+      "operands": "0x394a028 <lfs::field::FieldAnimatedStructureInfo* std::__ndk1::vector<lfs::field::FieldAnimatedStructureInfo, std::__ndk1::allocator<lfs::field::FieldAnimatedStructureInfo>>::__emplace_back_slow_path<std::__ndk1::basic_string<char, std::__ndk1::char_traits<char>, std::__ndk1::allocator<char>>, cocos2d::Vec2 const&, float, unsigned int>(std::__ndk1::basic_string<char, std::__ndk1::char_traits<char>, std::__ndk1::allocator<char>>&&, cocos2d::Vec2 const&, float&&, unsigned int&&)+0x478>"
+    },
+    {
+      "address": "0x3949430",
+      "mnemonic": "b",
+      "operands": "0x3949448 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x688>"
+    },
+    {
+      "address": "0x3949434",
+      "mnemonic": "mov",
+      "operands": "x19, x0"
+    },
+    {
+      "address": "0x3949438",
+      "mnemonic": "mov",
+      "operands": "x0, x21"
+    },
+    {
+      "address": "0x394943c",
+      "mnemonic": "bl",
+      "operands": "0x5255450 <_ZdlPv@plt>"
+    },
+    {
+      "address": "0x3949440",
+      "mnemonic": "b",
+      "operands": "0x3949448 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x688>"
+    },
+    {
+      "address": "0x3949444",
+      "mnemonic": "mov",
+      "operands": "x19, x0"
+    },
+    {
+      "address": "0x3949448",
+      "mnemonic": "add",
+      "operands": "x0, sp, #0x50"
+    },
+    {
+      "address": "0x394944c",
+      "mnemonic": "bl",
+      "operands": "0x3934ee8 <lfs::field::ChipAnimator::resetAnimations()+0x184>"
+    },
+    {
+      "address": "0x3949450",
+      "mnemonic": "b",
+      "operands": "0x39494f0 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x730>"
+    },
+    {
+      "address": "0x3949454",
+      "mnemonic": "b",
+      "operands": "0x39494ec <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x72c>"
+    },
+    {
+      "address": "0x3949458",
+      "mnemonic": "mov",
+      "operands": "x19, x0"
+    },
+    {
+      "address": "0x394945c",
+      "mnemonic": "b",
+      "operands": "0x394946c <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x6ac>"
+    },
+    {
+      "address": "0x3949460",
+      "mnemonic": "ldrb",
+      "operands": "w8, [x23]"
+    },
+    {
+      "address": "0x3949464",
+      "mnemonic": "mov",
+      "operands": "x19, x0"
+    },
+    {
+      "address": "0x3949468",
+      "mnemonic": "tbnz",
+      "operands": "w8, #0x0, 0x3949474 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x6b4>"
+    },
+    {
+      "address": "0x394946c",
+      "mnemonic": "str",
+      "operands": "x23, [sp, #0x70]"
+    },
+    {
+      "address": "0x3949470",
+      "mnemonic": "b",
+      "operands": "0x39494a8 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x6e8>"
+    },
+    {
+      "address": "0x3949474",
+      "mnemonic": "ldr",
+      "operands": "x0, [x23, #0x10]"
+    },
+    {
+      "address": "0x3949478",
+      "mnemonic": "bl",
+      "operands": "0x5255450 <_ZdlPv@plt>"
+    },
+    {
+      "address": "0x394947c",
+      "mnemonic": "str",
+      "operands": "x23, [sp, #0x70]"
+    },
+    {
+      "address": "0x3949480",
+      "mnemonic": "b",
+      "operands": "0x39494a8 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x6e8>"
+    },
+    {
+      "address": "0x3949484",
+      "mnemonic": "b",
+      "operands": "0x39494a4 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x6e4>"
+    },
+    {
+      "address": "0x3949488",
+      "mnemonic": "b",
+      "operands": "0x39494ec <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x72c>"
+    },
+    {
+      "address": "0x394948c",
+      "mnemonic": "b",
+      "operands": "0x39494ec <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x72c>"
+    },
+    {
+      "address": "0x3949490",
+      "mnemonic": "b",
+      "operands": "0x39494a4 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x6e4>"
+    },
+    {
+      "address": "0x3949494",
+      "mnemonic": "mov",
+      "operands": "x19, x0"
+    },
+    {
+      "address": "0x3949498",
+      "mnemonic": "b",
+      "operands": "0x39494b8 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x6f8>"
+    },
+    {
+      "address": "0x394949c",
+      "mnemonic": "b",
+      "operands": "0x39494ec <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x72c>"
+    },
+    {
+      "address": "0x39494a0",
+      "mnemonic": "b",
+      "operands": "0x39494ec <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x72c>"
+    },
+    {
+      "address": "0x39494a4",
+      "mnemonic": "mov",
+      "operands": "x19, x0"
+    },
+    {
+      "address": "0x39494a8",
+      "mnemonic": "ldrb",
+      "operands": "w8, [sp, #0x50]"
+    },
+    {
+      "address": "0x39494ac",
+      "mnemonic": "tbz",
+      "operands": "w8, #0x0, 0x39494b8 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x6f8>"
+    },
+    {
+      "address": "0x39494b0",
+      "mnemonic": "ldr",
+      "operands": "x0, [sp, #0x60]"
+    },
+    {
+      "address": "0x39494b4",
+      "mnemonic": "bl",
+      "operands": "0x5255450 <_ZdlPv@plt>"
+    },
+    {
+      "address": "0x39494b8",
+      "mnemonic": "ldr",
+      "operands": "x20, [sp, #0x10]"
+    },
+    {
+      "address": "0x39494bc",
+      "mnemonic": "ldrb",
+      "operands": "w8, [sp, #0x30]"
+    },
+    {
+      "address": "0x39494c0",
+      "mnemonic": "tbz",
+      "operands": "w8, #0x0, 0x39494f4 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x734>"
+    },
+    {
+      "address": "0x39494c4",
+      "mnemonic": "ldr",
+      "operands": "x0, [sp, #0x40]"
+    },
+    {
+      "address": "0x39494c8",
+      "mnemonic": "bl",
+      "operands": "0x5255450 <_ZdlPv@plt>"
+    },
+    {
+      "address": "0x39494cc",
+      "mnemonic": "b",
+      "operands": "0x39494f4 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x734>"
+    },
+    {
+      "address": "0x39494d0",
+      "mnemonic": "b",
+      "operands": "0x39494ec <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x72c>"
+    },
+    {
+      "address": "0x39494d4",
+      "mnemonic": "mov",
+      "operands": "x19, x0"
+    },
+    {
+      "address": "0x39494d8",
+      "mnemonic": "b",
+      "operands": "0x39494f4 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x734>"
+    },
+    {
+      "address": "0x39494dc",
+      "mnemonic": "mov",
+      "operands": "x19, x0"
+    },
+    {
+      "address": "0x39494e0",
+      "mnemonic": "b",
+      "operands": "0x39494f4 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x734>"
+    },
+    {
+      "address": "0x39494e4",
+      "mnemonic": "b",
+      "operands": "0x39494ec <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x72c>"
+    },
+    {
+      "address": "0x39494e8",
+      "mnemonic": "b",
+      "operands": "0x39494ec <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x72c>"
+    },
+    {
+      "address": "0x39494ec",
+      "mnemonic": "mov",
+      "operands": "x19, x0"
+    },
+    {
+      "address": "0x39494f0",
+      "mnemonic": "ldr",
+      "operands": "x20, [sp, #0x10]"
+    },
+    {
+      "address": "0x39494f4",
+      "mnemonic": "add",
+      "operands": "x0, sp, #0x68"
+    },
+    {
+      "address": "0x39494f8",
+      "mnemonic": "bl",
+      "operands": "0x3949538 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x778>"
+    },
+    {
+      "address": "0x39494fc",
+      "mnemonic": "ldur",
+      "operands": "x0, [x29, #-0x50]"
+    },
+    {
+      "address": "0x3949500",
+      "mnemonic": "cbz",
+      "operands": "x0, 0x394950c <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x74c>"
+    },
+    {
+      "address": "0x3949504",
+      "mnemonic": "stur",
+      "operands": "x0, [x29, #-0x48]"
+    },
+    {
+      "address": "0x3949508",
+      "mnemonic": "bl",
+      "operands": "0x5255450 <_ZdlPv@plt>"
+    },
+    {
+      "address": "0x394950c",
+      "mnemonic": "ldur",
+      "operands": "x0, [x29, #-0x38]"
+    },
+    {
+      "address": "0x3949510",
+      "mnemonic": "cbz",
+      "operands": "x0, 0x394951c <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x75c>"
+    },
+    {
+      "address": "0x3949514",
+      "mnemonic": "stur",
+      "operands": "x0, [x29, #-0x30]"
+    },
+    {
+      "address": "0x3949518",
+      "mnemonic": "bl",
+      "operands": "0x5255450 <_ZdlPv@plt>"
+    },
+    {
+      "address": "0x394951c",
+      "mnemonic": "ldr",
+      "operands": "x8, [x20, #0x28]"
+    },
+    {
+      "address": "0x3949520",
+      "mnemonic": "ldur",
+      "operands": "x9, [x29, #-0x20]"
+    },
+    {
+      "address": "0x3949524",
+      "mnemonic": "cmp",
+      "operands": "x8, x9"
+    },
+    {
+      "address": "0x3949528",
+      "mnemonic": "b.ne",
+      "operands": "0x3949534 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x774>"
+    },
+    {
+      "address": "0x394952c",
+      "mnemonic": "mov",
+      "operands": "x0, x19"
+    },
+    {
+      "address": "0x3949530",
+      "mnemonic": "bl",
+      "operands": "0x52514ec <__emutls_get_address+0xe00>"
+    },
+    {
+      "address": "0x3949534",
+      "mnemonic": "bl",
+      "operands": "0x5255460 <__stack_chk_fail@plt>"
+    },
+    {
+      "address": "0x3949538",
+      "mnemonic": "stp",
+      "operands": "x29, x30, [sp, #-0x30]!"
+    },
+    {
+      "address": "0x394953c",
+      "mnemonic": "str",
+      "operands": "x21, [sp, #0x10]"
+    },
+    {
+      "address": "0x3949540",
+      "mnemonic": "stp",
+      "operands": "x20, x19, [sp, #0x20]"
+    },
+    {
+      "address": "0x3949544",
+      "mnemonic": "mov",
+      "operands": "x29, sp"
+    },
+    {
+      "address": "0x3949548",
+      "mnemonic": "ldr",
+      "operands": "x21, [x0]"
+    },
+    {
+      "address": "0x394954c",
+      "mnemonic": "cbz",
+      "operands": "x21, 0x39495b0 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x7f0>"
+    },
+    {
+      "address": "0x3949550",
+      "mnemonic": "ldr",
+      "operands": "x8, [x0, #0x8]"
+    },
+    {
+      "address": "0x3949554",
+      "mnemonic": "mov",
+      "operands": "x19, x0"
+    },
+    {
+      "address": "0x3949558",
+      "mnemonic": "mov",
+      "operands": "x0, x21"
+    },
+    {
+      "address": "0x394955c",
+      "mnemonic": "cmp",
+      "operands": "x8, x21"
+    },
+    {
+      "address": "0x3949560",
+      "mnemonic": "b.eq",
+      "operands": "0x394959c <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x7dc>"
+    },
+    {
+      "address": "0x3949564",
+      "mnemonic": "sub",
+      "operands": "x20, x8, #0x10"
+    },
+    {
+      "address": "0x3949568",
+      "mnemonic": "b",
+      "operands": "0x394957c <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x7bc>"
+    },
+    {
+      "address": "0x394956c",
+      "mnemonic": "sub",
+      "operands": "x8, x20, #0x18"
+    },
+    {
+      "address": "0x3949570",
+      "mnemonic": "sub",
+      "operands": "x20, x20, #0x28"
+    },
+    {
+      "address": "0x3949574",
+      "mnemonic": "cmp",
+      "operands": "x8, x21"
+    },
+    {
+      "address": "0x3949578",
+      "mnemonic": "b.eq",
+      "operands": "0x3949598 <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x7d8>"
+    },
+    {
+      "address": "0x394957c",
+      "mnemonic": "mov",
+      "operands": "x0, x20"
+    },
+    {
+      "address": "0x3949580",
+      "mnemonic": "bl",
+      "operands": "0x5257940 <_ZN7cocos2d4Vec2D1Ev@plt>"
+    },
+    {
+      "address": "0x3949584",
+      "mnemonic": "ldurb",
+      "operands": "w8, [x20, #-0x18]"
+    },
+    {
+      "address": "0x3949588",
+      "mnemonic": "tbz",
+      "operands": "w8, #0x0, 0x394956c <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x7ac>"
+    },
+    {
+      "address": "0x394958c",
+      "mnemonic": "ldur",
+      "operands": "x0, [x20, #-0x8]"
+    },
+    {
+      "address": "0x3949590",
+      "mnemonic": "bl",
+      "operands": "0x5255450 <_ZdlPv@plt>"
+    },
+    {
+      "address": "0x3949594",
+      "mnemonic": "b",
+      "operands": "0x394956c <lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*>> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)+0x7ac>"
+    },
+    {
+      "address": "0x3949598",
+      "mnemonic": "ldr",
+      "operands": "x0, [x19]"
+    },
+    {
+      "address": "0x394959c",
+      "mnemonic": "str",
+      "operands": "x21, [x19, #0x8]"
+    },
+    {
+      "address": "0x39495a0",
+      "mnemonic": "ldp",
+      "operands": "x20, x19, [sp, #0x20]"
+    },
+    {
+      "address": "0x39495a4",
+      "mnemonic": "ldr",
+      "operands": "x21, [sp, #0x10]"
+    },
+    {
+      "address": "0x39495a8",
+      "mnemonic": "ldp",
+      "operands": "x29, x30, [sp], #0x30"
+    },
+    {
+      "address": "0x39495ac",
+      "mnemonic": "b",
+      "operands": "0x5255450 <_ZdlPv@plt>"
+    },
+    {
+      "address": "0x39495b0",
+      "mnemonic": "ldp",
+      "operands": "x20, x19, [sp, #0x20]"
+    },
+    {
+      "address": "0x39495b4",
+      "mnemonic": "ldr",
+      "operands": "x21, [sp, #0x10]"
+    },
+    {
+      "address": "0x39495b8",
+      "mnemonic": "ldp",
+      "operands": "x29, x30, [sp], #0x30"
+    },
+    {
+      "address": "0x39495bc",
+      "mnemonic": "ret",
+      "operands": ""
+    }
+  ],
+  "libgame": {
+    "sha256": "1564f02b23c9909adc0d26636adfc8e72a7ed9363655af0d1ae22635e55acbeb",
+    "size": 91934656
+  },
+  "policy": "Bounded public native metadata for exactly FieldQuadTreeLeaf::setupEntities. The stopping condition is identifying producers/accesses/call consumers of the two frame-local Convexhull vectors passed to DataParser. If dataflow escapes the simple frame-alias model, it remains unresolved rather than broadening scope.",
+  "provenance": "PUBLIC_CURRENT_JP_SETUPENTITIES_VECTOR_PRODUCER_METADATA"
+}
