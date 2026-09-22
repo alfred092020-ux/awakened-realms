@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "job_id": "oracle-map-nested-profile-001",
+  "source_sha": "c52773a9445660f722128c69bfea39c62df1410f",
+  "kind": "python",
+  "script": "scripts/logres/inspect_private_map_nested.py",
+  "args": [
+    "@PRIVATE_ARCHIVE@",
+    "--output",
+    "@OUTPUT@/nested-map-evidence.json"
+  ],
+  "timeout_seconds": 1800
+}
