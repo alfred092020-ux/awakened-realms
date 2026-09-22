@@ -1,0 +1,8 @@
+{
+  "commit": "ab4fe110f5e4edd49543323272d8b78e0917a7fa",
+  "job_id": "merge-logres-private-source-inventory-001",
+  "job_type": "MERGE",
+  "status": "SUCCESS",
+  "target_branch": "feat/logres-reconstruction",
+  "written_at": "2026-09-22T04:46:51.852505+00:00"
+}
