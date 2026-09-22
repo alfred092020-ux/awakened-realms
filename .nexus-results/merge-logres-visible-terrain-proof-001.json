@@ -1,0 +1,8 @@
+{
+  "commit": "e93acf8915d08128ca4f798b9f2f8c51e7806c65",
+  "job_id": "merge-logres-visible-terrain-proof-001",
+  "job_type": "MERGE",
+  "status": "SUCCESS",
+  "target_branch": "feat/logres-reconstruction",
+  "written_at": "2026-09-22T11:14:15.330356+00:00"
+}
