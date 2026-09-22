@@ -1,0 +1,7 @@
+{
+  "error": "verify_command not allowed: 'python3 scripts/logres/hydrate_private_assets.py --self-test && npm run verify'",
+  "job_id": "logres-private-asset-hydrator-001",
+  "job_type": "PATCH",
+  "status": "INVALID_JOB",
+  "written_at": "2026-09-22T00:38:37.406416+00:00"
+}
