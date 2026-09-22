@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "job_id": "oracle-field-renderer-symbols-001",
+  "source_sha": "5db592058a9f58cdb95e08c3939d040a1da11b29",
+  "kind": "python",
+  "script": "scripts/logres/inspect_private_field_renderer_symbols.py",
+  "args": [
+    "@PRIVATE_ARCHIVE@",
+    "--output",
+    "@OUTPUT@/field-renderer-symbols.json"
+  ],
+  "timeout_seconds": 1800
+}
