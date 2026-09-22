@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "job_id": "oracle-public-hostentry-native-001",
+  "source_sha": "4a965e783a4cc313d7522f2b5d65f292d250cb00",
+  "kind": "python",
+  "script": "scripts/logres/inspect_public_hostentry_native.py",
+  "args": [
+    "--url",
+    "https://d.apkpure.net/b/XAPK/jp.MarvelousAQL.logres?version=latest",
+    "--output",
+    "@OUTPUT@/hostentry-native.json"
+  ],
+  "timeout_seconds": 1800
+}
