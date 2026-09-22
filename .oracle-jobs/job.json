@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "job_id": "oracle-public-field-formulas-001",
+  "source_sha": "fd02e72a4f408495eb09a53e2835afe6ecb6694b",
+  "kind": "python",
+  "script": "scripts/logres/inspect_public_field_formulas.py",
+  "args": [
+    "--url",
+    "https://d.apkpure.net/b/XAPK/jp.MarvelousAQL.logres?version=latest",
+    "--output",
+    "@OUTPUT@/public-field-formulas.json"
+  ],
+  "timeout_seconds": 1800
+}
