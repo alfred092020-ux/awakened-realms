@@ -1,0 +1,10 @@
+{
+  "duration_seconds": 9.048,
+  "error": null,
+  "exit_code": 0,
+  "job_id": "oracle-public-xapk-patch-network-001",
+  "kind": "python",
+  "schema": 1,
+  "source_sha": "c0cdeb01b5e40c31c2b2a01ab56198b2f63592af",
+  "status": "success"
+}
