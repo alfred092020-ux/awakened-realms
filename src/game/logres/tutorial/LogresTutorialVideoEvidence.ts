@@ -31,17 +31,28 @@ export const LOGRES_TUTORIAL_VIDEO_EVIDENCE =
         'UNRESOLVED' as const,
     },
     /*
-     * No active internal map-id candidate currently satisfies both the
-     * recovered map evidence and the original tutorial recording.
+     * SUPPORTED INFERENCE:
+     * 002_000_00001 is currently the strongest opening-tutorial map
+     * candidate. A named archived Millennium Tree map produces a strong
+     * geometric match against the recovered authentic render, this exact map
+     * package exists in the recovered Global cache, and the user-supplied
+     * original tutorial frame independently matches the same field family.
      *
-     * Research-only area-name clues belong in the evidence backlog until a
-     * concrete recovered map is tied to them.
+     * The exact tutorial Room, spawn, encounter population, and quest-instance
+     * state remain unresolved, so mapIdentity stays UNRESOLVED.
      */
     candidatePriority:
-      Object.freeze(
-        [] as
-          LogresTutorialMapCandidateEvidence[],
-      ),
+      Object.freeze([
+        {
+          mapId:
+            '002_000_00001',
+          label:
+            'SUPPORTED INFERENCE' as const,
+          reason:
+            'Named Millennium Tree archive strongly matches the recovered render; the exact package exists in the Global cache and independently matches the original tutorial field family.',
+        },
+      ] satisfies
+        readonly LogresTutorialMapCandidateEvidence[]),
     /*
      * SUPPORTED INFERENCE:
      * 001_000_00001 was previously prioritized by semantic quest-reference

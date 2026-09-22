@@ -13,7 +13,7 @@ describe(
   'original tutorial video evidence',
   () => {
     it(
-      'keeps tutorial map identity unresolved and removes visually rejected candidates',
+      'keeps exact tutorial map identity unresolved while prioritizing the strongest cross-checked candidate',
       () => {
         expect(
           LOGRES_TUTORIAL_VIDEO_EVIDENCE
@@ -26,8 +26,15 @@ describe(
 
         expect(
           LOGRES_TUTORIAL_VIDEO_EVIDENCE
-            .candidatePriority,
-        ).toEqual([])
+            .candidatePriority[0],
+        ).toEqual({
+          mapId:
+            '002_000_00001',
+          label:
+            'SUPPORTED INFERENCE',
+          reason:
+            'Named Millennium Tree archive strongly matches the recovered render; the exact package exists in the Global cache and independently matches the original tutorial field family.',
+        })
 
         expect(
           LOGRES_TUTORIAL_VIDEO_EVIDENCE

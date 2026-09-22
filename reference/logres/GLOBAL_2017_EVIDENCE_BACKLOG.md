@@ -59,23 +59,34 @@ Internal cross-check:
   quest overlay, and battle transition.
 - Authentic rendering visually rejects `001_000_00001` as that tutorial
   field.
-- The recovered Global cache currently contains top-level field packages
-  `001_000_00002`, `001_000_00200`, `001_000_00700`,
-  `002_000_00001`, and `002_000_00003`. Cache presence is not proof of
-  tutorial identity or completeness.
-- The 31,237-package JP mirror and renderer pipeline can supply comparison
-  geometry/assets for candidate validation.
+- A named archived Millennium Tree daytime map
+  (SHA-256 `2b1adead93ff78b3aa86c7cc9800b5f71604c442e64418c8f800d85a99607248`)
+  was compared deterministically against recovered authentic field renders.
+- `002_000_00001` produced 338 RANSAC-consistent SIFT inliers from 434
+  ratio-test matches against that named Millennium Tree artifact
+  (inlier ratio 0.7788). `002_000_00012` was related but weaker at 183
+  inliers; unrelated candidates were far lower.
+- The exact `002_000_00001.mbn` field package is present in the recovered
+  Global client cache. The similarly matching later JP variant
+  `002_000_00008` is not present in that Global cache capture.
+- The user-supplied original tutorial frame independently produced 59
+  RANSAC-consistent inliers against `002_000_00001`, supporting the same
+  field family. The tutorial frame alone is not unique enough to prove a map
+  ID because nearby variants share art/topology.
+- Combined with the handoff's near-Global Millennium Tree / Room 1 clue,
+  `002_000_00001` is now the strongest tutorial-map candidate.
+  This remains SUPPORTED INFERENCE, not CONFIRMED ORIGINAL.
 
 Unblocks: Map/Rendering, Tutorial/Onboarding, NPC/Quest, Encounter.
 
 Next proof:
 
-- Crosswalk Millennium Tree area/topology to recovered map IDs using Global
-  cache data first, then pre-May-2017 JP/fan-map topology.
-- Require direct visual/topological agreement with the original tutorial
-  recording before assigning the tutorial map ID.
-- Keep room, enemy population, spawn, objective, NPC state, and tutorial
-  overlays separate from static map identity.
+- Tie the recovered map identifier to a Global-era area/warp/entity record or
+  another primary/client source that names Millennium Tree directly.
+- Resolve Room 1, tutorial spawn, Green Gel population, NPC state, and objective
+  as quest-instance data rather than properties of the static map.
+- Keep map identity and quest-instance state separate until those values are
+  independently recovered.
 
 ### G17-ONB-001 - Character-registration ordering
 
