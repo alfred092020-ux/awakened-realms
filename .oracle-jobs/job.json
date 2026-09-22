@@ -1,0 +1,18 @@
+{
+  "schema": 1,
+  "job_id": "oracle-live-json-map-context-001",
+  "source_sha": "c2ffe32108ba08594a9f56e392fa597a911cca47",
+  "kind": "python",
+  "script": "scripts/logres/inspect_live_json_map_context.py",
+  "args": [
+    "--anchor",
+    "@PRIVATE_ARCHIVE@",
+    "--map-id",
+    "100_001_00002",
+    "--entry",
+    "popUp_tutorial_texts.json",
+    "--output",
+    "@OUTPUT@/live-json-map-context.json"
+  ],
+  "timeout_seconds": 600
+}
