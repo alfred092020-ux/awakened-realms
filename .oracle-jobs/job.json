@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "job_id": "oracle-live-renderer-proof-hydrate-001",
+  "source_sha": "19048d48e0b27ccf6982aa2a04856c767f0963b1",
+  "kind": "python",
+  "script": "scripts/logres/hydrate_live_renderer_proof.py",
+  "args": [
+    "--anchor",
+    "@PRIVATE_ARCHIVE@",
+    "--map-id",
+    "001_000_00002",
+    "--summary",
+    "@OUTPUT@/renderer-proof-hydration.json"
+  ],
+  "timeout_seconds": 1800
+}
