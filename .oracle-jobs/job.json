@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "job_id": "oracle-patch-filelist-inspector-001",
+  "source_sha": "bf2dc28bb8a74b805c57e4ea265b0bfd0beeb96f",
+  "kind": "python",
+  "script": "scripts/logres/inspect_private_patch_filelists.py",
+  "args": [
+    "@PRIVATE_ARCHIVE@",
+    "--output",
+    "@OUTPUT@/patch-filelists.json"
+  ],
+  "timeout_seconds": 1800
+}
