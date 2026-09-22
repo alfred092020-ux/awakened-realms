@@ -1,0 +1,7 @@
+{
+  "error": "PATCH_APPLY_FAILED: error: corrupt patch at line 22",
+  "job_id": "logres-field-scale-evidence-001",
+  "job_type": "PATCH",
+  "status": "PATCH_APPLY_FAILED",
+  "written_at": "2026-09-22T05:47:49.317390+00:00"
+}
