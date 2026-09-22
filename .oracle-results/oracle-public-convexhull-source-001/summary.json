@@ -1,0 +1,10 @@
+{
+  "duration_seconds": 20.272,
+  "error": null,
+  "exit_code": 0,
+  "job_id": "oracle-public-convexhull-source-001",
+  "kind": "python",
+  "schema": 1,
+  "source_sha": "9a9bf7f446b792a8384d4444489b083d4b764a6c",
+  "status": "success"
+}
