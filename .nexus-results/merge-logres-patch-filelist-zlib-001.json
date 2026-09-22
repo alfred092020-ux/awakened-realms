@@ -1,0 +1,8 @@
+{
+  "commit": "243204571622ce06faea1bace5731c77054eafed",
+  "job_id": "merge-logres-patch-filelist-zlib-001",
+  "job_type": "MERGE",
+  "status": "SUCCESS",
+  "target_branch": "feat/logres-reconstruction",
+  "written_at": "2026-09-22T05:34:51.011047+00:00"
+}
