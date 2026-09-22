@@ -1,0 +1,7 @@
+{
+  "error": "SOURCE_MOVED: expected c6a9a9e9cbf9c0aa67183cd2d8216e9ae1ac960c, got c6a9a9ef9f617ae4fc1865bdae6bcde24350dc00",
+  "job_id": "merge-logres-tutorial-video-evidence-002",
+  "job_type": "MERGE",
+  "status": "SOURCE_MOVED",
+  "written_at": "2026-09-22T12:16:50.744121+00:00"
+}
