@@ -1,0 +1,8 @@
+{
+  "commit": "1cfed1ba2e7beb48e4e259ae094244526bd9fbf2",
+  "job_id": "merge-logres-public-setupentities-vectors-001",
+  "job_type": "MERGE",
+  "status": "SUCCESS",
+  "target_branch": "feat/logres-reconstruction",
+  "written_at": "2026-09-22T11:21:26.294480+00:00"
+}
