@@ -1,0 +1,8 @@
+{
+  "commit": "fd39753a859c18a4e0af5263e05870deaac2d3b4",
+  "job_id": "merge-logres-public-terrain-z-002",
+  "job_type": "MERGE",
+  "status": "SUCCESS",
+  "target_branch": "feat/logres-reconstruction",
+  "written_at": "2026-09-22T09:36:33.416038+00:00"
+}
