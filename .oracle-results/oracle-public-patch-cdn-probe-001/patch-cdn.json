@@ -1,0 +1,122 @@
+{
+  "base": "https://prd-cdn.mmo-logres.com/patch/1789742711/android/",
+  "provenance": "PUBLIC_LOGRES_PATCH_CDN_PROBE",
+  "results": [
+    {
+      "content_type": "application/octet-stream",
+      "final_url": "https://prd-cdn.mmo-logres.com/patch/1789742711/android/filelist.bin",
+      "header_hex": "789c8c9d59b22439b25cff6315b18247",
+      "path": "filelist.bin",
+      "sha1": "050a518792a9c7cb52a256885ca6e6b89906d19d",
+      "sha256": "7299d18e6e85d1caa1012b27b3358d172a2c2e973e64a25cb302d5c304b3a8f6",
+      "size": 1132885,
+      "status": 200,
+      "url": "https://prd-cdn.mmo-logres.com/patch/1789742711/android/filelist.bin",
+      "zlib": {
+        "decompressed_sha256": "3134d93f75c3f5e64c799a6115b01786a79a131c15686c80271bb72b18112bb3",
+        "decompressed_size": 3146605,
+        "first_lines": [
+          "548229135c9dcfa30facd947e180a73901521eb9 40387 ./avacolle/bg/bg_010_001_001_000.mbn 1519646909",
+          "bb807d256c879f125a4788923fb43b9973a9c164 29606 ./avacolle/bg/bg_010_001_001_002.mbn 1626865496",
+          "0f877817fe323e83a8ebbf5ecff292d6b7f0d4c7 32865 ./avacolle/bg/bg_010_001_001_005.mbn 1519646909",
+          "786ee486a3df1b2300500f65b8b01d366643cddb 167211 ./avacolle/bg/bg_010_001_001_012.mbn 1647227117",
+          "9c77b2d18d82c65ba9f8a738dfc50f491fd8af83 138953 ./avacolle/bg/bg_010_001_004_004.mbn 1728540303"
+        ],
+        "line_count": 31236,
+        "mbn_ascii_count": 38840
+      }
+    },
+    {
+      "content_type": null,
+      "final_url": "https://prd-cdn.mmo-logres.com/patch/1789742711/android/filelistbin.hash",
+      "header_hex": "30353061353138373932613963376362",
+      "path": "filelistbin.hash",
+      "sha1": "b3b75116023f97dc8d10bf7d776a8bd9c703dc5d",
+      "sha256": "6c2148b7fb860d8765bd2171cb00fa8c540167c65f322b0b5c0e3209c0b24c0d",
+      "size": 41,
+      "status": 200,
+      "text_preview": "050a518792a9c7cb52a256885ca6e6b89906d19d",
+      "url": "https://prd-cdn.mmo-logres.com/patch/1789742711/android/filelistbin.hash"
+    },
+    {
+      "content_type": "application/octet-stream",
+      "final_url": "https://prd-cdn.mmo-logres.com/patch/1789742711/android/extra_filelist.bin",
+      "header_hex": "789c25c6310e80200c00c0dd57f00249",
+      "path": "extra_filelist.bin",
+      "sha1": "f849e1b7419b93e1a25bf6428a1bf4f3807bcda1",
+      "sha256": "2bc83a91acb435249da893b2c1d3cd9481e2504a4f7ca84fcdf0dd60bf69799d",
+      "size": 91,
+      "status": 200,
+      "url": "https://prd-cdn.mmo-logres.com/patch/1789742711/android/extra_filelist.bin",
+      "zlib": {
+        "decompressed_sha256": "aaff07b41c012aa74380a1bbc282c5c7379fa8cf369919261df00a00aecead86",
+        "decompressed_size": 97,
+        "first_lines": [
+          "c67eddc26f838faa1c4ee119af4c15cbb18f55b4 91259 ./gui/up_date/banner/menu_banner52.mbn 1789464663"
+        ],
+        "line_count": 1,
+        "mbn_ascii_count": 1
+      }
+    },
+    {
+      "content_type": null,
+      "final_url": "https://prd-cdn.mmo-logres.com/patch/1789742711/android/extra_filelistbin.hash",
+      "header_hex": "66383439653162373431396239336531",
+      "path": "extra_filelistbin.hash",
+      "sha1": "e384d8d94cca5509c65bc5027e36575df1f712a8",
+      "sha256": "a3c9cda19813e50b75018fb4fca61efa3b786469dd0921cd50aa02654ddf9f75",
+      "size": 41,
+      "status": 200,
+      "text_preview": "f849e1b7419b93e1a25bf6428a1bf4f3807bcda1",
+      "url": "https://prd-cdn.mmo-logres.com/patch/1789742711/android/extra_filelistbin.hash"
+    },
+    {
+      "content_type": "application/octet-stream",
+      "final_url": "https://prd-cdn.mmo-logres.com/patch/1789742711/android/binfilelist.bin",
+      "header_hex": "789cecbdd192e5368e2dfa7cefbf4c4f",
+      "path": "binfilelist.bin",
+      "sha1": "ad059deb115992428cbcf8301982c32cd2192923",
+      "sha256": "c325a36d6a3814075ccee7c09cab8ee3038ce9a39d79dc108d5bcac43d766ed2",
+      "size": 1190298,
+      "status": 200,
+      "url": "https://prd-cdn.mmo-logres.com/patch/1789742711/android/binfilelist.bin",
+      "zlib": {
+        "decompressed_sha256": "81c1f21c472dec2275b37540d870315d37714a3ef2fd2b21e165fb1140700c4e",
+        "decompressed_size": 12250199,
+        "first_lines": [
+          "avacolle/bg/bg_010_001_001_000.mbn\tbg_010_001_001_000_obj.dds\tbg_010_001_001_000_thumb.dds\t",
+          "avacolle/bg/bg_010_001_001_002.mbn\tbg_010_001_001_002_obj.dds\tbg_010_001_001_002_thumb.dds\t",
+          "avacolle/bg/bg_010_001_001_005.mbn\tbg_010_001_001_005_obj.dds\tbg_010_001_001_005_thumb.dds\t",
+          "avacolle/bg/bg_010_001_001_012.mbn\tbg_010_001_001_012_obj.dds\tbg_010_001_001_012_thumb.dds\t",
+          "avacolle/bg/bg_010_001_004_004.mbn\tbg_010_001_004_004_obj.png\tbg_010_001_004_004_thumb.png\t"
+        ],
+        "line_count": 30780,
+        "mbn_ascii_count": 30780
+      }
+    },
+    {
+      "content_type": "text/html; charset=iso-8859-1",
+      "error_body_size": 196,
+      "final_url": "https://prd-cdn.mmo-logres.com/patch/1789742711/android/patch/binfilelist.bin",
+      "path": "patch/binfilelist.bin",
+      "status": 404,
+      "url": "https://prd-cdn.mmo-logres.com/patch/1789742711/android/patch/binfilelist.bin"
+    },
+    {
+      "content_type": "text/html; charset=iso-8859-1",
+      "error_body_size": 196,
+      "final_url": "https://prd-cdn.mmo-logres.com/patch/1789742711/android/download_filelist.txt",
+      "path": "download_filelist.txt",
+      "status": 404,
+      "url": "https://prd-cdn.mmo-logres.com/patch/1789742711/android/download_filelist.txt"
+    },
+    {
+      "content_type": "text/html; charset=iso-8859-1",
+      "error_body_size": 196,
+      "final_url": "https://prd-cdn.mmo-logres.com/patch/1789742711/android/download_binfilelist.txt",
+      "path": "download_binfilelist.txt",
+      "status": 404,
+      "url": "https://prd-cdn.mmo-logres.com/patch/1789742711/android/download_binfilelist.txt"
+    }
+  ]
+}
