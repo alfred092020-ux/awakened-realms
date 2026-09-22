@@ -1,0 +1,8 @@
+{
+  "commit": "0a6657a172720455ea9aedcd4b8f7ec48f460a72",
+  "job_id": "merge-logres-private-asset-hydrator-002",
+  "job_type": "MERGE",
+  "status": "SUCCESS",
+  "target_branch": "feat/logres-reconstruction",
+  "written_at": "2026-09-22T00:47:43.693844+00:00"
+}
