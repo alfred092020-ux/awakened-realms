@@ -1,0 +1,789 @@
+{
+  "missing": [],
+  "policy": "Exports decompressed file-list structure and bounded metadata only. No game resource payloads, dialogue, images, geometry or textures are exported.",
+  "provenance": "PRIVATE_CACHE_DECOMPRESSED_PATCH_FILELIST_METADATA",
+  "targets": {
+    "files/cache/extra_filelist.bin": {
+      "compressed_header_hex": "789c25c6310e80200c00c0dd57f00249",
+      "compressed_sha256": "2bc83a91acb435249da893b2c1d3cd9481e2504a4f7ca84fcdf0dd60bf69799d",
+      "compressed_size": 91,
+      "compression_ratio": 0.938144,
+      "decompressed_header_hex": "63363765646463323666383338666161316334656531313961663463313563626231386635356234203931323539202e2f6775692f75705f646174652f62616e",
+      "decompressed_sha256": "aaff07b41c012aa74380a1bbc282c5c7379fa8cf369919261df00a00aecead86",
+      "decompressed_size": 97,
+      "mbn_ascii_count": 1,
+      "member": "files/cache/extra_filelist.bin",
+      "nul_ratio": 0.0,
+      "printable_metadata": {
+        "hosts": [],
+        "paths": [],
+        "printable_string_count": 1,
+        "urls": []
+      },
+      "text_comparisons": [
+        {
+          "decompressed_prefix_match_bytes": 0,
+          "exact_byte_match": false,
+          "text_member": "files/cache/download_filelist.txt",
+          "text_sha256": "46328a5a5ab44511a73779d0794fefae8056afc2ec79f61c03c0f20c3dd21ff3",
+          "text_size": 2086795
+        },
+        {
+          "decompressed_prefix_match_bytes": 97,
+          "exact_byte_match": true,
+          "text_member": "files/cache/download_extra_filelist.txt",
+          "text_sha256": "aaff07b41c012aa74380a1bbc282c5c7379fa8cf369919261df00a00aecead86",
+          "text_size": 97
+        },
+        {
+          "decompressed_prefix_match_bytes": 0,
+          "exact_byte_match": false,
+          "text_member": "files/cache/download_binfilelist.txt",
+          "text_sha256": "7d27b2e65089d6219d6e14c33a3871282e6d566abc0744c7388a72bb35f9eec7",
+          "text_size": 10364476
+        }
+      ],
+      "text_profile": {
+        "delimiter_line_counts": {},
+        "line_count": 1,
+        "nonempty_line_count": 1,
+        "printable_ratio": 1.0,
+        "sample_records": [
+          [
+            {
+              "kind": "SHA1",
+              "prefix": "c67eddc26f83"
+            },
+            91259,
+            "./gui/up_date/banner/menu_banner52.mbn",
+            1789464663
+          ]
+        ],
+        "shapes": {
+          "SHA1|INT|PATH|INT": 1
+        },
+        "utf8": true
+      }
+    },
+    "files/cache/filelist.bin": {
+      "compressed_header_hex": "789c8c9d59b22439b25cff6315b18247",
+      "compressed_sha256": "7299d18e6e85d1caa1012b27b3358d172a2c2e973e64a25cb302d5c304b3a8f6",
+      "compressed_size": 1132885,
+      "compression_ratio": 0.360034,
+      "decompressed_header_hex": "35343832323931333563396463666133306661636439343765313830613733393031353231656239203430333837202e2f617661636f6c6c652f62672f62675f",
+      "decompressed_sha256": "3134d93f75c3f5e64c799a6115b01786a79a131c15686c80271bb72b18112bb3",
+      "decompressed_size": 3146605,
+      "mbn_ascii_count": 38840,
+      "member": "files/cache/filelist.bin",
+      "nul_ratio": 0.0,
+      "printable_metadata": {
+        "hosts": [],
+        "paths": [
+          "4b302b54962d571e006f1871b25b10af2a33155e 52399 ./avacolle/bg/bg_010_001_004_005__ans.mbn 1714440648 2 ./avacolle/bg/bg_010_001_004_005.mbn",
+          "5c71ac674b85b0dfad704d26232ca49af137b5c2 49862 ./avacolle/bg/bg_010_002_003_000__ans.mbn 1681968658 2 ./avacolle/bg/bg_010_002_003_000.mbn",
+          "9c2209333cbbfb76c87ccc2f995315578f7d90c9 56254 ./avacolle/bg/bg_010_003_001_001__ans.mbn 1628136300 2 ./avacolle/bg/bg_010_003_001_001.mbn",
+          "bb88c59130bc72f69a796ff3fd1e3d5dc9da34e6 61085 ./avacolle/bg/bg_010_004_002_001__ans.mbn 1686204308 2 ./avacolle/bg/bg_010_004_002_001.mbn",
+          "4d64e11a37fd590d0b9b5eccd40885c1796080e0 41771 ./avacolle/bg/bg_010_005_002_001__ans.mbn 1721280654 2 ./avacolle/bg/bg_010_005_002_001.mbn",
+          "f7d2908ea0c2e291271692ce9f817688db7afca1 104047 ./avacolle/bg/bg_010_007_001_000__ans.mbn 1599103857 2 ./avacolle/bg/bg_010_007_001_000.mbn",
+          "4ec62d1b39d7377a9b213a6131db263ea8fbbac2 27018 ./avacolle/bg/bg_010_250_001_000__ans.mbn 1759989910 2 ./avacolle/bg/bg_010_250_001_000.mbn",
+          "a92337e6c8f2bcd03e190b83f851a92923d025ad 11716 ./avacolle/bg/bg_020_302_102_000__ans.mbn 1665642685 2 ./avacolle/bg/bg_020_302_102_000.mbn",
+          "df4efc9881dfa179e8bdcbf94bd5a777e4f8d4c1 82938 ./avacolle/bg/bg_030_001_000_000__ans.mbn 1590121845 2 ./avacolle/bg/bg_030_001_000_000.mbn",
+          "8d691eebfb3477c02d9eb2d91488175c6972d8e0 83887 ./avacolle/bg/bg_030_002_000_000__ans.mbn 1590121848 2 ./avacolle/bg/bg_030_002_000_000.mbn",
+          "4014ddea41814c56f62e2ed0204ef385c723fbb4 88496 ./avacolle/bg/bg_030_003_000_000__ans.mbn 1590121851 2 ./avacolle/bg/bg_030_003_000_000.mbn",
+          "c943ec2ed0930b9b539d7b4e00cc523732f574fa 95421 ./avacolle/bg/bg_030_004_000_000__ans.mbn 1590121854 2 ./avacolle/bg/bg_030_004_000_000.mbn",
+          "200cf150745f1fb417348cf0ccb50a4d85a22e79 88061 ./avacolle/bg/bg_030_005_000_000__ans.mbn 1590121857 2 ./avacolle/bg/bg_030_005_000_000.mbn",
+          "39656755a73b23ff28196d6aa8448a803d9e6112 92619 ./avacolle/bg/bg_030_006_000_000__ans.mbn 1590121860 2 ./avacolle/bg/bg_030_006_000_000.mbn",
+          "cb656d95906aa4ce48465d188e7fe2f64bc0cfa8 61047 ./avacolle/bg/bg_050_001_024_000__ans.mbn 1600920291 2 ./avacolle/bg/bg_050_001_024_000.mbn",
+          "f276613011394cc4b82db1180eb870a3b35a6706 39668 ./avacolle/bg/bg_050_001_026_000__ans.mbn 1671684423 2 ./avacolle/bg/bg_050_001_026_000.mbn",
+          "14affdb67c7df864a25097839482eaf87a5969b8 190867 ./avacolle/bg/bg_050_002_007_000__ans.mbn 1568943048 2 ./avacolle/bg/bg_050_002_007_000.mbn",
+          "6d437214a991397ad1368d2030bb069321fd4025 274346 ./avacolle/bg/bg_050_002_008_000__ans.mbn 1570086282 2 ./avacolle/bg/bg_050_002_008_000.mbn",
+          "a0244afbded1b580ab8ae2a51cda460bd78d8ce5 297592 ./avacolle/bg/bg_050_002_009_000__ans.mbn 1576483486 2 ./avacolle/bg/bg_050_002_009_000.mbn",
+          "153eb8056033f08c4f593a8c1ec21b0be907c060 189339 ./avacolle/bg/bg_050_002_011_000__ans.mbn 1580439899 2 ./avacolle/bg/bg_050_002_011_000.mbn",
+          "f77073b0825263db524769eebc4f7ad87eebf2ef 60206 ./avacolle/bg/bg_050_002_012_000__ans.mbn 1584932685 2 ./avacolle/bg/bg_050_002_012_000.mbn",
+          "6a24f988a9884bcd4c3cdff4422404d3f16a9234 105210 ./avacolle/bg/bg_500_001_004_000__ans.mbn 1640233870 2 ./avacolle/bg/bg_500_001_004_000.mbn",
+          "a515814f0f3fa5814ee4ef7e58227619104eba18 105795 ./avacolle/bg/bg_500_001_007_001__ans.mbn 1671684426 2 ./avacolle/bg/bg_500_001_007_001.mbn",
+          "befd35a358cffa6c2b7a8d147c3965a55ab44166 93282 ./avacolle/bg/bg_500_001_015_000__ans.mbn 1573716651 2 ./avacolle/bg/bg_500_001_015_000.mbn",
+          "829e92693bd056a6cbdd06890a7f52cd5df30c9a 126089 ./avacolle/bg/bg_500_001_015_001__ans.mbn 1575597891 2 ./avacolle/bg/bg_500_001_015_001.mbn",
+          "6d9644c91e432711e75354b3b374dab9476f6b09 70671 ./avacolle/bg/bg_500_001_016_000__ans.mbn 1590120285 2 ./avacolle/bg/bg_500_001_016_000.mbn",
+          "1d3701317d25ed4ece48df231fa232f3c3cbf7d5 45414 ./avacolle/bg/bg_500_001_016_001__ans.mbn 1590120288 2 ./avacolle/bg/bg_500_001_016_001.mbn",
+          "15a4a297a417c1522b65988077b3c7969daa77c1 48619 ./avacolle/bg/bg_500_001_016_002__ans.mbn 1590120291 2 ./avacolle/bg/bg_500_001_016_002.mbn",
+          "084c486c69eb94c4285441a2d134251c524726b5 55238 ./avacolle/bg/bg_500_001_016_003__ans.mbn 1590120294 2 ./avacolle/bg/bg_500_001_016_003.mbn",
+          "1ca56b04aafa64eb1861a1d9cd35d0e5cbb89ef7 115300 ./avacolle/bg/bg_500_001_018_001__ans.mbn 1594274687 2 ./avacolle/bg/bg_500_001_018_001.mbn",
+          "451754e225066c6c6bd76bd79fe39941a064d040 114791 ./avacolle/bg/bg_500_001_018_002__ans.mbn 1594274691 2 ./avacolle/bg/bg_500_001_018_002.mbn",
+          "c21bc45efd219403c371827185c81f6dad858624 93224 ./avacolle/bg/bg_500_001_019_000__ans.mbn 1655969468 2 ./avacolle/bg/bg_500_001_019_000.mbn"
+        ],
+        "printable_string_count": 31236,
+        "urls": []
+      },
+      "text_comparisons": [
+        {
+          "decompressed_prefix_match_bytes": 571,
+          "exact_byte_match": false,
+          "text_member": "files/cache/download_filelist.txt",
+          "text_sha256": "46328a5a5ab44511a73779d0794fefae8056afc2ec79f61c03c0f20c3dd21ff3",
+          "text_size": 2086795
+        },
+        {
+          "decompressed_prefix_match_bytes": 0,
+          "exact_byte_match": false,
+          "text_member": "files/cache/download_extra_filelist.txt",
+          "text_sha256": "aaff07b41c012aa74380a1bbc282c5c7379fa8cf369919261df00a00aecead86",
+          "text_size": 97
+        },
+        {
+          "decompressed_prefix_match_bytes": 0,
+          "exact_byte_match": false,
+          "text_member": "files/cache/download_binfilelist.txt",
+          "text_sha256": "7d27b2e65089d6219d6e14c33a3871282e6d566abc0744c7388a72bb35f9eec7",
+          "text_size": 10364476
+        }
+      ],
+      "text_profile": {
+        "delimiter_line_counts": {},
+        "line_count": 31236,
+        "nonempty_line_count": 31236,
+        "printable_ratio": 1.0,
+        "sample_records": [
+          [
+            {
+              "kind": "SHA1",
+              "prefix": "548229135c9d"
+            },
+            40387,
+            "./avacolle/bg/bg_010_001_001_000.mbn",
+            1519646909
+          ],
+          [
+            {
+              "kind": "SHA1",
+              "prefix": "bb807d256c87"
+            },
+            29606,
+            "./avacolle/bg/bg_010_001_001_002.mbn",
+            1626865496
+          ],
+          [
+            {
+              "kind": "SHA1",
+              "prefix": "0f877817fe32"
+            },
+            32865,
+            "./avacolle/bg/bg_010_001_001_005.mbn",
+            1519646909
+          ],
+          [
+            {
+              "kind": "SHA1",
+              "prefix": "786ee486a3df"
+            },
+            167211,
+            "./avacolle/bg/bg_010_001_001_012.mbn",
+            1647227117
+          ],
+          [
+            {
+              "kind": "SHA1",
+              "prefix": "9c77b2d18d82"
+            },
+            138953,
+            "./avacolle/bg/bg_010_001_004_004.mbn",
+            1728540303
+          ],
+          [
+            {
+              "kind": "SHA1",
+              "prefix": "c47d62392461"
+            },
+            76993,
+            "./avacolle/bg/bg_010_001_004_005.mbn",
+            1714440645,
+            1
+          ],
+          [
+            {
+              "kind": "SHA1",
+              "prefix": "4b302b54962d"
+            },
+            52399,
+            "./avacolle/bg/bg_010_001_004_005__ans.mbn",
+            1714440648,
+            2,
+            "./avacolle/bg/bg_010_001_004_005.mbn"
+          ],
+          [
+            {
+              "kind": "SHA1",
+              "prefix": "a5337231bc6a"
+            },
+            241051,
+            "./avacolle/bg/bg_010_002_002_001.mbn",
+            1773322264
+          ],
+          [
+            {
+              "kind": "SHA1",
+              "prefix": "f5d677d398ec"
+            },
+            49666,
+            "./avacolle/bg/bg_010_002_003_000.mbn",
+            1681968654,
+            1
+          ],
+          [
+            {
+              "kind": "SHA1",
+              "prefix": "5c71ac674b85"
+            },
+            49862,
+            "./avacolle/bg/bg_010_002_003_000__ans.mbn",
+            1681968658,
+            2,
+            "./avacolle/bg/bg_010_002_003_000.mbn"
+          ],
+          [
+            {
+              "kind": "SHA1",
+              "prefix": "004e7905b15b"
+            },
+            32215,
+            "./avacolle/bg/bg_010_002_004_000.mbn",
+            1593583483
+          ],
+          [
+            {
+              "kind": "SHA1",
+              "prefix": "adcaa6578c95"
+            },
+            29208,
+            "./avacolle/bg/bg_010_002_103_000.mbn",
+            1600394682
+          ],
+          [
+            {
+              "kind": "SHA1",
+              "prefix": "bfb600590b47"
+            },
+            84054,
+            "./avacolle/bg/bg_010_003_001_001.mbn",
+            1628136297,
+            1
+          ],
+          [
+            {
+              "kind": "SHA1",
+              "prefix": "9c2209333cbb"
+            },
+            56254,
+            "./avacolle/bg/bg_010_003_001_001__ans.mbn",
+            1628136300,
+            2,
+            "./avacolle/bg/bg_010_003_001_001.mbn"
+          ],
+          [
+            {
+              "kind": "SHA1",
+              "prefix": "c31dedb3a49f"
+            },
+            26500,
+            "./avacolle/bg/bg_010_003_002_000.mbn",
+            1519646909
+          ],
+          [
+            {
+              "kind": "SHA1",
+              "prefix": "3ccadb1c1032"
+            },
+            37250,
+            "./avacolle/bg/bg_010_004_002_000.mbn",
+            1519646909
+          ],
+          [
+            {
+              "kind": "SHA1",
+              "prefix": "2eacaa2101d5"
+            },
+            59214,
+            "./avacolle/bg/bg_010_004_002_001.mbn",
+            1686204305,
+            1
+          ],
+          [
+            {
+              "kind": "SHA1",
+              "prefix": "bb88c59130bc"
+            },
+            61085,
+            "./avacolle/bg/bg_010_004_002_001__ans.mbn",
+            1686204308,
+            2,
+            "./avacolle/bg/bg_010_004_002_001.mbn"
+          ],
+          [
+            {
+              "kind": "SHA1",
+              "prefix": "64199afefec1"
+            },
+            86452,
+            "./avacolle/bg/bg_010_005_002_001.mbn",
+            1721280651,
+            1
+          ],
+          [
+            {
+              "kind": "SHA1",
+              "prefix": "4d64e11a37fd"
+            },
+            41771,
+            "./avacolle/bg/bg_010_005_002_001__ans.mbn",
+            1721280654,
+            2,
+            "./avacolle/bg/bg_010_005_002_001.mbn"
+          ],
+          [
+            {
+              "kind": "SHA1",
+              "prefix": "4cce3f9197fa"
+            },
+            22473,
+            "./avacolle/bg/bg_010_006_001_000.mbn",
+            1519646909
+          ],
+          [
+            {
+              "kind": "SHA1",
+              "prefix": "9badbe2b53f1"
+            },
+            22026,
+            "./avacolle/bg/bg_010_006_001_001.mbn",
+            1519646909
+          ],
+          [
+            {
+              "kind": "SHA1",
+              "prefix": "65d45412e4a4"
+            },
+            85639,
+            "./avacolle/bg/bg_010_007_001_000.mbn",
+            1599103852,
+            1
+          ],
+          [
+            {
+              "kind": "SHA1",
+              "prefix": "f7d2908ea0c2"
+            },
+            104047,
+            "./avacolle/bg/bg_010_007_001_000__ans.mbn",
+            1599103857,
+            2,
+            "./avacolle/bg/bg_010_007_001_000.mbn"
+          ],
+          [
+            {
+              "kind": "SHA1",
+              "prefix": "3a0b8dc59c36"
+            },
+            105777,
+            "./avacolle/bg/bg_010_012_000_000.mbn",
+            1519646909
+          ],
+          [
+            {
+              "kind": "SHA1",
+              "prefix": "fa558b499dd5"
+            },
+            49530,
+            "./avacolle/bg/bg_010_250_001_000.mbn",
+            1759989910,
+            1
+          ],
+          [
+            {
+              "kind": "SHA1",
+              "prefix": "4ec62d1b39d7"
+            },
+            27018,
+            "./avacolle/bg/bg_010_250_001_000__ans.mbn",
+            1759989910,
+            2,
+            "./avacolle/bg/bg_010_250_001_000.mbn"
+          ],
+          [
+            {
+              "kind": "SHA1",
+              "prefix": "7949c6d753c5"
+            },
+            22684,
+            "./avacolle/bg/bg_020_101_000_000.mbn",
+            1539235236
+          ],
+          [
+            {
+              "kind": "SHA1",
+              "prefix": "c3369ee067de"
+            },
+            24888,
+            "./avacolle/bg/bg_020_105_000_000.mbn",
+            1600394682
+          ],
+          [
+            {
+              "kind": "SHA1",
+              "prefix": "d4fcb9d38e2f"
+            },
+            25206,
+            "./avacolle/bg/bg_020_302_000_000.mbn",
+            1539235236
+          ],
+          [
+            {
+              "kind": "SHA1",
+              "prefix": "156662798fd4"
+            },
+            20972,
+            "./avacolle/bg/bg_020_302_102_000.mbn",
+            1665642682,
+            1
+          ],
+          [
+            {
+              "kind": "SHA1",
+              "prefix": "a92337e6c8f2"
+            },
+            11716,
+            "./avacolle/bg/bg_020_302_102_000__ans.mbn",
+            1665642685,
+            2,
+            "./avacolle/bg/bg_020_302_102_000.mbn"
+          ]
+        ],
+        "shapes": {
+          "SHA1|INT|PATH|INT": 569,
+          "SHA1|INT|PATH|INT|INT": 716,
+          "SHA1|INT|PATH|INT|INT|PATH": 715
+        },
+        "utf8": true
+      }
+    },
+    "files/cache/patch/binfilelist.bin": {
+      "compressed_header_hex": "789cecbdd192e5368e2dfa7cefbf4c4f",
+      "compressed_sha256": "c325a36d6a3814075ccee7c09cab8ee3038ce9a39d79dc108d5bcac43d766ed2",
+      "compressed_size": 1190298,
+      "compression_ratio": 0.097166,
+      "decompressed_header_hex": "617661636f6c6c652f62672f62675f3031305f3030315f3030315f3030302e6d626e0962675f3031305f3030315f3030315f3030305f6f626a2e646473096267",
+      "decompressed_sha256": "81c1f21c472dec2275b37540d870315d37714a3ef2fd2b21e165fb1140700c4e",
+      "decompressed_size": 12250199,
+      "mbn_ascii_count": 30780,
+      "member": "files/cache/patch/binfilelist.bin",
+      "nul_ratio": 0.0,
+      "printable_metadata": {
+        "hosts": [
+          "png.bss",
+          "png.dds",
+          "png.astc",
+          "png.png",
+          "fish00.png",
+          "fish01.png",
+          "fish02.png",
+          "obj-left-1.png",
+          "obj-right-1-1.png",
+          "obj-right-2-1.png",
+          "avatar.mbn",
+          "scale.json",
+          "z.json",
+          "shadow.dds",
+          "shadow.json",
+          "shadow.astc",
+          "shadow.png",
+          "pal.json",
+          "pal.png",
+          "pal001.json",
+          "pal001.png",
+          "z.png",
+          "desktop.ini",
+          "battle.mbn",
+          "elest.lua",
+          "ffrkencode.lua",
+          "md5.lua",
+          "tlgdencode.lua",
+          "unison.lua",
+          "graphicsettings.mbn",
+          "gui.mbn",
+          "guihelper.lua"
+        ],
+        "paths": [
+          "avacolle/bg/bg_010_001_001_000.mbn",
+          "bg_010_001_001_000_obj.dds",
+          "bg_010_001_001_000_thumb.dds",
+          "avacolle/bg/bg_010_001_001_002.mbn",
+          "bg_010_001_001_002_obj.dds",
+          "bg_010_001_001_002_thumb.dds",
+          "avacolle/bg/bg_010_001_001_005.mbn",
+          "bg_010_001_001_005_obj.dds",
+          "bg_010_001_001_005_thumb.dds",
+          "avacolle/bg/bg_010_001_001_012.mbn",
+          "bg_010_001_001_012_obj.dds",
+          "bg_010_001_001_012_thumb.dds",
+          "avacolle/bg/bg_010_001_004_004.mbn",
+          "bg_010_001_004_004_obj.png",
+          "bg_010_001_004_004_thumb.png",
+          "avacolle/bg/bg_010_001_004_005.mbn",
+          "bg_010_001_004_005_obj.astc",
+          "bg_010_001_004_005_thumb.astc",
+          "avacolle/bg/bg_010_001_004_005__ans.mbn",
+          "bg_010_001_004_005_obj.dds",
+          "bg_010_001_004_005_thumb.dds",
+          "avacolle/bg/bg_010_002_002_001.mbn",
+          "bg_010_002_002_001_obj.png",
+          "bg_010_002_002_001_thumb.png",
+          "avacolle/bg/bg_010_002_003_000.mbn",
+          "bg_010_002_003_000_obj.astc",
+          "bg_010_002_003_000_thumb.astc",
+          "avacolle/bg/bg_010_002_003_000__ans.mbn",
+          "bg_010_002_003_000_obj.dds",
+          "bg_010_002_003_000_thumb.dds",
+          "avacolle/bg/bg_010_002_004_000.mbn",
+          "bg_010_002_004_000_obj.dds"
+        ],
+        "printable_string_count": 439074,
+        "urls": []
+      },
+      "text_comparisons": [
+        {
+          "decompressed_prefix_match_bytes": 0,
+          "exact_byte_match": false,
+          "text_member": "files/cache/download_filelist.txt",
+          "text_sha256": "46328a5a5ab44511a73779d0794fefae8056afc2ec79f61c03c0f20c3dd21ff3",
+          "text_size": 2086795
+        },
+        {
+          "decompressed_prefix_match_bytes": 0,
+          "exact_byte_match": false,
+          "text_member": "files/cache/download_extra_filelist.txt",
+          "text_sha256": "aaff07b41c012aa74380a1bbc282c5c7379fa8cf369919261df00a00aecead86",
+          "text_size": 97
+        },
+        {
+          "decompressed_prefix_match_bytes": 575,
+          "exact_byte_match": false,
+          "text_member": "files/cache/download_binfilelist.txt",
+          "text_sha256": "7d27b2e65089d6219d6e14c33a3871282e6d566abc0744c7388a72bb35f9eec7",
+          "text_size": 10364476
+        }
+      ],
+      "text_profile": {
+        "delimiter_line_counts": {
+          "TAB": 2000
+        },
+        "line_count": 30780,
+        "nonempty_line_count": 30780,
+        "printable_ratio": 1.0,
+        "sample_records": [
+          [
+            "avacolle/bg/bg_010_001_001_000.mbn",
+            "bg_010_001_001_000_obj.dds",
+            "bg_010_001_001_000_thumb.dds",
+            ""
+          ],
+          [
+            "avacolle/bg/bg_010_001_001_002.mbn",
+            "bg_010_001_001_002_obj.dds",
+            "bg_010_001_001_002_thumb.dds",
+            ""
+          ],
+          [
+            "avacolle/bg/bg_010_001_001_005.mbn",
+            "bg_010_001_001_005_obj.dds",
+            "bg_010_001_001_005_thumb.dds",
+            ""
+          ],
+          [
+            "avacolle/bg/bg_010_001_001_012.mbn",
+            "bg_010_001_001_012_obj.dds",
+            "bg_010_001_001_012_thumb.dds",
+            ""
+          ],
+          [
+            "avacolle/bg/bg_010_001_004_004.mbn",
+            "bg_010_001_004_004_obj.png",
+            "bg_010_001_004_004_thumb.png",
+            ""
+          ],
+          [
+            "avacolle/bg/bg_010_001_004_005.mbn",
+            "bg_010_001_004_005_obj.astc",
+            "bg_010_001_004_005_thumb.astc",
+            ""
+          ],
+          [
+            "avacolle/bg/bg_010_001_004_005__ans.mbn",
+            "bg_010_001_004_005_obj.dds",
+            "bg_010_001_004_005_thumb.dds",
+            ""
+          ],
+          [
+            "avacolle/bg/bg_010_002_002_001.mbn",
+            "bg_010_002_002_001_obj.png",
+            "bg_010_002_002_001_thumb.png",
+            ""
+          ],
+          [
+            "avacolle/bg/bg_010_002_003_000.mbn",
+            "bg_010_002_003_000_obj.astc",
+            "bg_010_002_003_000_thumb.astc",
+            ""
+          ],
+          [
+            "avacolle/bg/bg_010_002_003_000__ans.mbn",
+            "bg_010_002_003_000_obj.dds",
+            "bg_010_002_003_000_thumb.dds",
+            ""
+          ],
+          [
+            "avacolle/bg/bg_010_002_004_000.mbn",
+            "bg_010_002_004_000_obj.dds",
+            "bg_010_002_004_000_thumb.dds",
+            ""
+          ],
+          [
+            "avacolle/bg/bg_010_002_103_000.mbn",
+            "bg_010_002_103_000_obj.dds",
+            "bg_010_002_103_000_thumb.dds",
+            ""
+          ],
+          [
+            "avacolle/bg/bg_010_003_001_001.mbn",
+            "bg_010_003_001_001_obj.astc",
+            "bg_010_003_001_001_thumb.astc",
+            ""
+          ],
+          [
+            "avacolle/bg/bg_010_003_001_001__ans.mbn",
+            "bg_010_003_001_001_obj.dds",
+            "bg_010_003_001_001_thumb.dds",
+            ""
+          ],
+          [
+            "avacolle/bg/bg_010_003_002_000.mbn",
+            "bg_010_003_002_000_obj.dds",
+            "bg_010_003_002_000_thumb.dds",
+            ""
+          ],
+          [
+            "avacolle/bg/bg_010_004_002_000.mbn",
+            "bg_010_004_002_000_obj.dds",
+            "bg_010_004_002_000_thumb.dds",
+            ""
+          ],
+          [
+            "avacolle/bg/bg_010_004_002_001.mbn",
+            "bg_010_004_002_001_obj.astc",
+            "bg_010_004_002_001_thumb.astc",
+            ""
+          ],
+          [
+            "avacolle/bg/bg_010_004_002_001__ans.mbn",
+            "bg_010_004_002_001_obj.dds",
+            "bg_010_004_002_001_thumb.dds",
+            ""
+          ],
+          [
+            "avacolle/bg/bg_010_005_002_001.mbn",
+            "bg_010_005_002_001_obj.astc",
+            "bg_010_005_002_001_thumb.astc",
+            ""
+          ],
+          [
+            "avacolle/bg/bg_010_005_002_001__ans.mbn",
+            "bg_010_005_002_001_obj.dds",
+            "bg_010_005_002_001_thumb.dds",
+            ""
+          ],
+          [
+            "avacolle/bg/bg_010_006_001_000.mbn",
+            "bg_010_006_001_000_obj.dds",
+            "bg_010_006_001_000_thumb.dds",
+            ""
+          ],
+          [
+            "avacolle/bg/bg_010_006_001_001.mbn",
+            "bg_010_006_001_001_obj.dds",
+            "bg_010_006_001_001_thumb.dds",
+            ""
+          ],
+          [
+            "avacolle/bg/bg_010_007_001_000.mbn",
+            "bg_010_007_001_000_obj.astc",
+            "bg_010_007_001_000_thumb.astc",
+            ""
+          ],
+          [
+            "avacolle/bg/bg_010_007_001_000__ans.mbn",
+            "bg_010_007_001_000_obj.dds",
+            "bg_010_007_001_000_thumb.dds",
+            ""
+          ],
+          [
+            "avacolle/bg/bg_010_012_000_000.mbn",
+            "bg_010_012_000_000_obj.dds",
+            "bg_010_012_000_000_thumb.dds",
+            ""
+          ],
+          [
+            "avacolle/bg/bg_010_250_001_000.mbn",
+            "bg_010_250_001_000_obj.astc",
+            "bg_010_250_001_000_thumb.astc",
+            ""
+          ],
+          [
+            "avacolle/bg/bg_010_250_001_000__ans.mbn",
+            "bg_010_250_001_000_obj.dds",
+            "bg_010_250_001_000_thumb.dds",
+            ""
+          ],
+          [
+            "avacolle/bg/bg_020_101_000_000.mbn",
+            "bg_020_101_000_000_obj.dds",
+            "bg_020_101_000_000_thumb.dds",
+            ""
+          ],
+          [
+            "avacolle/bg/bg_020_105_000_000.mbn",
+            "bg_020_105_000_000_obj.dds",
+            "bg_020_105_000_000_thumb.dds",
+            ""
+          ],
+          [
+            "avacolle/bg/bg_020_302_000_000.mbn",
+            "bg_020_302_000_000_obj.dds",
+            "bg_020_302_000_000_thumb.dds",
+            ""
+          ],
+          [
+            "avacolle/bg/bg_020_302_102_000.mbn",
+            "bg_020_302_102_000_obj.astc",
+            "bg_020_302_102_000_thumb.astc",
+            ""
+          ],
+          [
+            "avacolle/bg/bg_020_302_102_000__ans.mbn",
+            "bg_020_302_102_000_obj.dds",
+            "bg_020_302_102_000_thumb.dds",
+            ""
+          ]
+        ],
+        "shapes": {
+          "PATH|PATH|EMPTY": 1,
+          "PATH|PATH|PATH|EMPTY": 1536,
+          "PATH|PATH|PATH|PATH|EMPTY": 1,
+          "PATH|PATH|PATH|PATH|PATH|EMPTY": 398,
+          "PATH|PATH|PATH|PATH|PATH|PATH|EMPTY": 53,
+          "PATH|PATH|PATH|PATH|PATH|PATH|PATH|EMPTY": 3,
+          "PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH": 6,
+          "PATH|PATH|PATH|TEXT|PATH|PATH|EMPTY": 2
+        },
+        "utf8": true
+      }
+    }
+  }
+}

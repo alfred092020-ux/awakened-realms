@@ -1,0 +1,10 @@
+{
+  "duration_seconds": 1.554,
+  "error": null,
+  "exit_code": 0,
+  "job_id": "oracle-patch-filelist-zlib-001",
+  "kind": "python",
+  "schema": 1,
+  "source_sha": "243204571622ce06faea1bace5731c77054eafed",
+  "status": "success"
+}
