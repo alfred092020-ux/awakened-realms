@@ -1,12 +1,12 @@
 /*
- * DEVELOPMENT-ONLY speed override.
+ * Strict Logres reconstruction preserves
+ * recovered client timing values.
  *
- * Original Logres timing values remain in the
- * reconstructed scenes as the source values.
- *
- * 5 means animations/delays run 5x faster.
+ * Keep this helper so evidence-backed scene
+ * code can state original milliseconds
+ * directly without hidden acceleration.
  */
-export const LOGRES_DEV_SPEED = 5
+export const LOGRES_DEV_SPEED = 1
 
 export function logresDevMs(
   originalMs: number,

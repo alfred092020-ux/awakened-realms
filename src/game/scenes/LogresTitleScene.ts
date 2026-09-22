@@ -5,8 +5,15 @@ import {
   preloadLogresAssets,
 } from '../logres/ui/LogresRuntimeAssets'
 
+import {
+  logresDevMs,
+} from '../logres/LogresDevSettings'
+
 export class LogresTitleScene
   extends Phaser.Scene {
+  private transitioning =
+    false
+
   constructor() {
     super(
       'LogresTitleScene',
@@ -18,14 +25,6 @@ export class LogresTitleScene
       this,
     )
 
-    /*
-     * Global client English strings.
-     */
-    this.load.json(
-      'logres-world-select-en',
-      '/__logres_ref/config/global/world_select_strings.json',
-    )
-
     this.load.json(
       'logres-system-strings-en',
       '/__logres_ref/config/global/system_strings.json',
@@ -33,81 +32,115 @@ export class LogresTitleScene
   }
 
   create() {
-    const {
-      width,
-      height,
-    } = this.scale
-
     /*
-     * Original Global Logres title background.
+     * Exact root design recovered from
+     * gui/title/title.lua:
+     *
+     * 720 x 1280 design space.
+     * title_back is centered at 360,640.
+     * The original image is 720 x 1248,
+     * so it is not stretched to 1280.
      */
     this.add
       .image(
-        width / 2,
-        height / 2,
+        360,
+        640,
         LOGRES_ASSETS
           .titleBackground
           .key,
       )
-      .setDisplaySize(
-        width,
-        height,
-      )
 
     /*
-     * Original Global Logres logo asset.
+     * title.lua names this button "start".
+     * Cocos position: 360,200 from a
+     * bottom-origin coordinate system.
+     * Phaser equivalent: 360,1080.
+     *
+     * The same title_ok resource is used
+     * for normal and highlighted states.
      */
-    this.add
-      .image(
-        width / 2,
-        220,
-        LOGRES_ASSETS
-          .titleLogo
-          .key,
-      )
-      .setDisplaySize(
-        650,
-        306,
-      )
-
-    /*
-     * Original Global world-selection artwork.
-     */
-    this.add
-      .image(
-        width / 2,
-        620,
-        LOGRES_ASSETS
-          .worldSelect
-          .key,
-      )
-      .setDisplaySize(
-        720,
-        360,
-      )
-
-    /*
-     * Original Global NEXT button.
-     */
-    const next =
+    const start =
       this.add
         .image(
-          width / 2,
-          height - 170,
+          360,
+          1080,
           LOGRES_ASSETS
-            .titleNext
+            .titleStart
             .key,
+        )
+        .setAlpha(
+          0,
         )
         .setInteractive({
           useHandCursor:
             true,
         })
 
-    next.on(
+    /*
+     * ReleaseScene_Title::onFadeInStart
+     * delays the title control reveal by
+     * 1.0 second.
+     */
+    this.time.delayedCall(
+      logresDevMs(
+        1000,
+      ),
+      () => {
+        start.setAlpha(
+          1,
+        )
+      },
+    )
+
+    start.on(
       'pointerdown',
       () => {
-        this.scene.start(
-          'LogresCharacterCreateScene',
+        if (
+          this.transitioning
+        ) {
+          return
+        }
+
+        this.transitioning =
+          true
+
+        start
+          .disableInteractive()
+
+        /*
+         * ReleaseScene_Title::onTapStart:
+         * start control fades for 0.3 sec.
+         */
+        this.tweens.add({
+          targets:
+            start,
+
+          alpha:
+            0,
+
+          duration:
+            logresDevMs(
+              300,
+            ),
+        })
+
+        /*
+         * The native title scene waits
+         * 1.5 sec before switching into
+         * the login state. Our rebuilt
+         * server bootstrap resolves that
+         * login boundary into the original
+         * player world-selection scene.
+         */
+        this.time.delayedCall(
+          logresDevMs(
+            1500,
+          ),
+          () => {
+            this.scene.start(
+              'LogresWorldSelectScene',
+            )
+          },
         )
       },
     )
