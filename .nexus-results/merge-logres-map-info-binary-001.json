@@ -1,0 +1,8 @@
+{
+  "commit": "b1c7cace48671cb551600059ceebed6d6e6e3baf",
+  "job_id": "merge-logres-map-info-binary-001",
+  "job_type": "MERGE",
+  "status": "SUCCESS",
+  "target_branch": "feat/logres-reconstruction",
+  "written_at": "2026-09-22T15:44:23.240905+00:00"
+}
