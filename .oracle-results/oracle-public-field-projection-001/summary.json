@@ -1,0 +1,10 @@
+{
+  "duration_seconds": 6.198,
+  "error": null,
+  "exit_code": 0,
+  "job_id": "oracle-public-field-projection-001",
+  "kind": "python",
+  "schema": 1,
+  "source_sha": "43859eb057364dbf022f6f2a3e5dd589b1ae473d",
+  "status": "success"
+}

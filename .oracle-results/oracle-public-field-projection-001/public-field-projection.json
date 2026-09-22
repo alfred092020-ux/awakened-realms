@@ -1,0 +1,1562 @@
+{
+  "apk": "config.arm64_v8a.apk",
+  "disassembler": "llvm-objdump",
+  "download": {
+    "sha256": "7803989f3a02d2662f83cefe25e648e04e7d529f650a70ca7911d7b98972c76c",
+    "size": 125559968
+  },
+  "libgame": {
+    "sha256": "1564f02b23c9909adc0d26636adfc8e72a7ed9363655af0d1ae22635e55acbeb",
+    "size": 91934656
+  },
+  "missing_labels": [],
+  "policy": "Bounded public native instruction metadata for an explicit projection/depth allowlist only. Missing labels are reported rather than broadened. No binary bytes or whole-library disassembly are exported.",
+  "provenance": "PUBLIC_CURRENT_JP_FIELD_PROJECTION_DEPTH_METADATA",
+  "target_count": 12,
+  "targets": [
+    {
+      "address": "0x3941c74",
+      "bounded_bytes": 76,
+      "bounded_stop": "0x3941cc0",
+      "instruction_count": 16,
+      "instructions": [
+        {
+          "address": "0x3941c74",
+          "mnemonic": "adrp",
+          "operands": "x9, 0x57be000 <lfs::event_point::accumulation::RewardRecord::s_recordSize>"
+        },
+        {
+          "address": "0x3941c78",
+          "mnemonic": "ldp",
+          "operands": "s0, s5, [x0]"
+        },
+        {
+          "address": "0x3941c7c",
+          "mnemonic": "ldr",
+          "operands": "s1, [x9, #0x4c0]"
+        },
+        {
+          "address": "0x3941c80",
+          "mnemonic": "adrp",
+          "operands": "x9, 0x57be000 <lfs::event_point::accumulation::RewardRecord::s_recordSize>"
+        },
+        {
+          "address": "0x3941c84",
+          "mnemonic": "ldr",
+          "operands": "s4, [x0, #0x8]"
+        },
+        {
+          "address": "0x3941c88",
+          "mnemonic": "ldr",
+          "operands": "s3, [x9, #0x4c4]"
+        },
+        {
+          "address": "0x3941c8c",
+          "mnemonic": "adrp",
+          "operands": "x9, 0x57be000 <lfs::event_point::accumulation::RewardRecord::s_recordSize>"
+        },
+        {
+          "address": "0x3941c90",
+          "mnemonic": "mov",
+          "operands": "x0, x8"
+        },
+        {
+          "address": "0x3941c98",
+          "mnemonic": "ldr",
+          "operands": "s6, [x9, #0x4b8]"
+        },
+        {
+          "address": "0x3941c9c",
+          "mnemonic": "fmul",
+          "operands": "s1, s4, s1"
+        },
+        {
+          "address": "0x3941ca0",
+          "mnemonic": "adrp",
+          "operands": "x9, 0x57be000 <lfs::event_point::accumulation::RewardRecord::s_recordSize>"
+        },
+        {
+          "address": "0x3941ca4",
+          "mnemonic": "fmadd",
+          "operands": "s2, s4, s3, s2"
+        },
+        {
+          "address": "0x3941ca8",
+          "mnemonic": "fneg",
+          "operands": "s4, s5"
+        },
+        {
+          "address": "0x3941cac",
+          "mnemonic": "ldr",
+          "operands": "s5, [x9, #0x4bc]"
+        },
+        {
+          "address": "0x3941cb0",
+          "mnemonic": "fmadd",
+          "operands": "s0, s0, s3, s1"
+        },
+        {
+          "address": "0x3941cbc",
+          "mnemonic": "b",
+          "operands": "0x5259190 <_ZN7cocos2d4Vec2C1Eff@plt>"
+        }
+      ],
+      "label": "map_to_screen",
+      "name": "lfs::Isometric::mapToScreen(lfs::Vector3 const&)",
+      "summary": {
+        "calls": [],
+        "immediates": [
+          "#0x4c0",
+          "#0x8",
+          "#0x4c4",
+          "#0x4b8",
+          "#0x4bc"
+        ],
+        "mnemonic_counts": {
+          "adrp": 4,
+          "b": 1,
+          "fmadd": 2,
+          "fmul": 1,
+          "fneg": 1,
+          "ldp": 1,
+          "ldr": 5,
+          "mov": 1
+        }
+      }
+    },
+    {
+      "address": "0x3941cc0",
+      "bounded_bytes": 72,
+      "bounded_stop": "0x3941d08",
+      "instruction_count": 17,
+      "instructions": [
+        {
+          "address": "0x3941cc0",
+          "mnemonic": "adrp",
+          "operands": "x9, 0x57be000 <lfs::event_point::accumulation::RewardRecord::s_recordSize>"
+        },
+        {
+          "address": "0x3941cc4",
+          "mnemonic": "ldr",
+          "operands": "s0, [x0, #0x4]"
+        },
+        {
+          "address": "0x3941cc8",
+          "mnemonic": "ldr",
+          "operands": "s1, [x9, #0x4d0]"
+        },
+        {
+          "address": "0x3941ccc",
+          "mnemonic": "adrp",
+          "operands": "x9, 0x57be000 <lfs::event_point::accumulation::RewardRecord::s_recordSize>"
+        },
+        {
+          "address": "0x3941cd0",
+          "mnemonic": "ldr",
+          "operands": "s3, [x9, #0x4c8]"
+        },
+        {
+          "address": "0x3941cd4",
+          "mnemonic": "adrp",
+          "operands": "x9, 0x57be000 <lfs::event_point::accumulation::RewardRecord::s_recordSize>"
+        },
+        {
+          "address": "0x3941cd8",
+          "mnemonic": "fmul",
+          "operands": "s0, s0, s1"
+        },
+        {
+          "address": "0x3941cdc",
+          "mnemonic": "ldr",
+          "operands": "s1, [x0]"
+        },
+        {
+          "address": "0x3941ce0",
+          "mnemonic": "ldr",
+          "operands": "s2, [x9, #0x4d4]"
+        },
+        {
+          "address": "0x3941ce4",
+          "mnemonic": "adrp",
+          "operands": "x9, 0x57be000 <lfs::event_point::accumulation::RewardRecord::s_recordSize>"
+        },
+        {
+          "address": "0x3941ce8",
+          "mnemonic": "mov",
+          "operands": "x0, x8"
+        },
+        {
+          "address": "0x3941cec",
+          "mnemonic": "fmadd",
+          "operands": "s0, s1, s3, s0"
+        },
+        {
+          "address": "0x3941cf0",
+          "mnemonic": "fmul",
+          "operands": "s2, s2, s0"
+        },
+        {
+          "address": "0x3941cf4",
+          "mnemonic": "ldr",
+          "operands": "s0, [x9, #0x4c0]"
+        },
+        {
+          "address": "0x3941cf8",
+          "mnemonic": "fmsub",
+          "operands": "s0, s2, s0, s1"
+        },
+        {
+          "address": "0x3941d00",
+          "mnemonic": "fmul",
+          "operands": "s0, s3, s0"
+        },
+        {
+          "address": "0x3941d04",
+          "mnemonic": "b",
+          "operands": "0x5278040 <_ZN3lfs7Vector3C1Efff@plt>"
+        }
+      ],
+      "label": "screen_to_map",
+      "name": "lfs::Isometric::screenToMap(cocos2d::Vec2 const&)",
+      "summary": {
+        "calls": [],
+        "immediates": [
+          "#0x4",
+          "#0x4d0",
+          "#0x4c8",
+          "#0x4d4",
+          "#0x4c0"
+        ],
+        "mnemonic_counts": {
+          "adrp": 4,
+          "b": 1,
+          "fmadd": 1,
+          "fmsub": 1,
+          "fmul": 3,
+          "ldr": 6,
+          "mov": 1
+        }
+      }
+    },
+    {
+      "address": "0x393b634",
+      "bounded_bytes": 52,
+      "bounded_stop": "0x393b668",
+      "instruction_count": 13,
+      "instructions": [
+        {
+          "address": "0x393b634",
+          "mnemonic": "ldr",
+          "operands": "s0, [x0, #0x8]"
+        },
+        {
+          "address": "0x393b638",
+          "mnemonic": "adrp",
+          "operands": "x8, 0x57be000 <lfs::event_point::accumulation::RewardRecord::s_recordSize>"
+        },
+        {
+          "address": "0x393b63c",
+          "mnemonic": "add",
+          "operands": "x8, x8, #0x478"
+        },
+        {
+          "address": "0x393b640",
+          "mnemonic": "ldr",
+          "operands": "s1, [x0]"
+        },
+        {
+          "address": "0x393b644",
+          "mnemonic": "ldr",
+          "operands": "s2, [x8]"
+        },
+        {
+          "address": "0x393b648",
+          "mnemonic": "ldr",
+          "operands": "s3, [x8, #0x8]"
+        },
+        {
+          "address": "0x393b64c",
+          "mnemonic": "fabs",
+          "operands": "s0, s0"
+        },
+        {
+          "address": "0x393b650",
+          "mnemonic": "fmul",
+          "operands": "s1, s1, s2"
+        },
+        {
+          "address": "0x393b654",
+          "mnemonic": "fmul",
+          "operands": "s0, s0, s3"
+        },
+        {
+          "address": "0x393b658",
+          "mnemonic": "fcvtzs",
+          "operands": "w8, s1"
+        },
+        {
+          "address": "0x393b65c",
+          "mnemonic": "fcvtzs",
+          "operands": "w9, s0"
+        },
+        {
+          "address": "0x393b660",
+          "mnemonic": "orr",
+          "operands": "x0, x8, x9, lsl #32"
+        },
+        {
+          "address": "0x393b664",
+          "mnemonic": "ret",
+          "operands": ""
+        }
+      ],
+      "label": "position_to_coord3",
+      "name": "lfs::FieldConstant::positionToCoord3(lfs::Vector3 const&)",
+      "summary": {
+        "calls": [],
+        "immediates": [
+          "#0x8",
+          "#0x478",
+          "#32"
+        ],
+        "mnemonic_counts": {
+          "add": 1,
+          "adrp": 1,
+          "fabs": 1,
+          "fcvtzs": 2,
+          "fmul": 2,
+          "ldr": 4,
+          "orr": 1,
+          "ret": 1
+        }
+      }
+    },
+    {
+      "address": "0x393b310",
+      "bounded_bytes": 16,
+      "bounded_stop": "0x393b320",
+      "instruction_count": 4,
+      "instructions": [
+        {
+          "address": "0x393b310",
+          "mnemonic": "ldp",
+          "operands": "w9, w10, [x0]"
+        },
+        {
+          "address": "0x393b314",
+          "mnemonic": "ldr",
+          "operands": "w8, [x1, #0x4]"
+        },
+        {
+          "address": "0x393b318",
+          "mnemonic": "madd",
+          "operands": "w0, w8, w9, w10"
+        },
+        {
+          "address": "0x393b31c",
+          "mnemonic": "ret",
+          "operands": ""
+        }
+      ],
+      "label": "coord_to_index",
+      "name": "lfs::FieldConstant::coordToIndex(lfs::Coord const&, lfs::Coord const&)",
+      "summary": {
+        "calls": [],
+        "immediates": [
+          "#0x4"
+        ],
+        "mnemonic_counts": {
+          "ldp": 1,
+          "ldr": 1,
+          "madd": 1,
+          "ret": 1
+        }
+      }
+    },
+    {
+      "address": "0x393b1e8",
+      "bounded_bytes": 12,
+      "bounded_stop": "0x393b1f4",
+      "instruction_count": 3,
+      "instructions": [
+        {
+          "address": "0x393b1e8",
+          "mnemonic": "adrp",
+          "operands": "x0, 0x57be000 <lfs::event_point::accumulation::RewardRecord::s_recordSize>"
+        },
+        {
+          "address": "0x393b1ec",
+          "mnemonic": "add",
+          "operands": "x0, x0, #0x46c"
+        },
+        {
+          "address": "0x393b1f0",
+          "mnemonic": "ret",
+          "operands": ""
+        }
+      ],
+      "label": "grid_size_half",
+      "name": "lfs::FieldConstant::gridSizeHalf()",
+      "summary": {
+        "calls": [],
+        "immediates": [
+          "#0x46c"
+        ],
+        "mnemonic_counts": {
+          "add": 1,
+          "adrp": 1,
+          "ret": 1
+        }
+      }
+    },
+    {
+      "address": "0x393b1d4",
+      "bounded_bytes": 8,
+      "bounded_stop": "0x393b1dc",
+      "instruction_count": 2,
+      "instructions": [
+        {
+          "address": "0x393b1d4",
+          "mnemonic": "fmov",
+          "operands": "s0, #22.00000000"
+        },
+        {
+          "address": "0x393b1d8",
+          "mnemonic": "ret",
+          "operands": ""
+        }
+      ],
+      "label": "tile_side_height",
+      "name": "lfs::FieldConstant::tileSideHeight()",
+      "summary": {
+        "calls": [],
+        "immediates": [
+          "#22.00000000"
+        ],
+        "mnemonic_counts": {
+          "fmov": 1,
+          "ret": 1
+        }
+      }
+    },
+    {
+      "address": "0x3945fb4",
+      "bounded_bytes": 8,
+      "bounded_stop": "0x3945fbc",
+      "instruction_count": 2,
+      "instructions": [
+        {
+          "address": "0x3945fb4",
+          "mnemonic": "ldr",
+          "operands": "w0, [x0, #0x8c]"
+        },
+        {
+          "address": "0x3945fb8",
+          "mnemonic": "ret",
+          "operands": ""
+        }
+      ],
+      "label": "terrain_depth",
+      "name": "lfs::field::FieldTerrain::getDepthOrder() const",
+      "summary": {
+        "calls": [],
+        "immediates": [
+          "#0x8c"
+        ],
+        "mnemonic_counts": {
+          "ldr": 1,
+          "ret": 1
+        }
+      }
+    },
+    {
+      "address": "0x3947664",
+      "bounded_bytes": 8,
+      "bounded_stop": "0x394766c",
+      "instruction_count": 2,
+      "instructions": [
+        {
+          "address": "0x3947664",
+          "mnemonic": "ldr",
+          "operands": "w0, [x0, #0x5c]"
+        },
+        {
+          "address": "0x3947668",
+          "mnemonic": "ret",
+          "operands": ""
+        }
+      ],
+      "label": "tile_depth",
+      "name": "lfs::field::FieldTile::getDepthOrder() const",
+      "summary": {
+        "calls": [],
+        "immediates": [
+          "#0x5c"
+        ],
+        "mnemonic_counts": {
+          "ldr": 1,
+          "ret": 1
+        }
+      }
+    },
+    {
+      "address": "0x394766c",
+      "bounded_bytes": 8,
+      "bounded_stop": "0x3947674",
+      "instruction_count": 2,
+      "instructions": [
+        {
+          "address": "0x394766c",
+          "mnemonic": "add",
+          "operands": "x0, x0, #0x40"
+        },
+        {
+          "address": "0x3947670",
+          "mnemonic": "ret",
+          "operands": ""
+        }
+      ],
+      "label": "tile_node_pos",
+      "name": "lfs::field::FieldTile::getNodePos() const",
+      "summary": {
+        "calls": [],
+        "immediates": [
+          "#0x40"
+        ],
+        "mnemonic_counts": {
+          "add": 1,
+          "ret": 1
+        }
+      }
+    },
+    {
+      "address": "0x39438bc",
+      "bounded_bytes": 8,
+      "bounded_stop": "0x39438c4",
+      "instruction_count": 2,
+      "instructions": [
+        {
+          "address": "0x39438bc",
+          "mnemonic": "ldr",
+          "operands": "w0, [x0, #0x14]"
+        },
+        {
+          "address": "0x39438c0",
+          "mnemonic": "ret",
+          "operands": ""
+        }
+      ],
+      "label": "block_depth",
+      "name": "lfs::FieldBlockBase::getDepthOrder() const",
+      "summary": {
+        "calls": [],
+        "immediates": [
+          "#0x14"
+        ],
+        "mnemonic_counts": {
+          "ldr": 1,
+          "ret": 1
+        }
+      }
+    },
+    {
+      "address": "0x3945b60",
+      "bounded_bytes": 480,
+      "bounded_stop": "0x3945d40",
+      "instruction_count": 112,
+      "instructions": [
+        {
+          "address": "0x3945b60",
+          "mnemonic": "sub",
+          "operands": "sp, sp, #0x50"
+        },
+        {
+          "address": "0x3945b64",
+          "mnemonic": "stp",
+          "operands": "x29, x30, [sp, #0x10]"
+        },
+        {
+          "address": "0x3945b68",
+          "mnemonic": "stp",
+          "operands": "x24, x23, [sp, #0x20]"
+        },
+        {
+          "address": "0x3945b6c",
+          "mnemonic": "stp",
+          "operands": "x22, x21, [sp, #0x30]"
+        },
+        {
+          "address": "0x3945b70",
+          "mnemonic": "stp",
+          "operands": "x20, x19, [sp, #0x40]"
+        },
+        {
+          "address": "0x3945b74",
+          "mnemonic": "add",
+          "operands": "x29, sp, #0x10"
+        },
+        {
+          "address": "0x3945b7c",
+          "mnemonic": "ldr",
+          "operands": "x8, [x23, #0x28]"
+        },
+        {
+          "address": "0x3945b80",
+          "mnemonic": "str",
+          "operands": "x8, [sp, #0x8]"
+        },
+        {
+          "address": "0x3945b84",
+          "mnemonic": "ldr",
+          "operands": "x21, [x0, #0x40]"
+        },
+        {
+          "address": "0x3945b88",
+          "mnemonic": "cbz",
+          "operands": "x21, 0x3945d10 <lfs::field::FieldTerrain::getScreeningTile(lfs::field::FieldTile const*) const+0x1b0>"
+        },
+        {
+          "address": "0x3945b8c",
+          "mnemonic": "ldr",
+          "operands": "x8, [x1]"
+        },
+        {
+          "address": "0x3945b90",
+          "mnemonic": "mov",
+          "operands": "x20, x0"
+        },
+        {
+          "address": "0x3945b94",
+          "mnemonic": "mov",
+          "operands": "x0, x1"
+        },
+        {
+          "address": "0x3945b98",
+          "mnemonic": "mov",
+          "operands": "x19, x1"
+        },
+        {
+          "address": "0x3945b9c",
+          "mnemonic": "ldr",
+          "operands": "x8, [x8, #0x40]"
+        },
+        {
+          "address": "0x3945ba0",
+          "mnemonic": "blr",
+          "operands": "x8"
+        },
+        {
+          "address": "0x3945ba4",
+          "mnemonic": "adrp",
+          "operands": "x24, 0x570a000"
+        },
+        {
+          "address": "0x3945ba8",
+          "mnemonic": "ldr",
+          "operands": "x24, [x24, #0xe88]"
+        },
+        {
+          "address": "0x3945bac",
+          "mnemonic": "ldr",
+          "operands": "x8, [x24]"
+        },
+        {
+          "address": "0x3945bb0",
+          "mnemonic": "add",
+          "operands": "x1, x8, #0x18"
+        },
+        {
+          "address": "0x3945bb4",
+          "mnemonic": "bl",
+          "operands": "0x529b140 <_ZNK3lfs5CoordplERKS0_@plt>"
+        },
+        {
+          "address": "0x3945bb8",
+          "mnemonic": "str",
+          "operands": "x0, [sp]"
+        },
+        {
+          "address": "0x3945bbc",
+          "mnemonic": "mov",
+          "operands": "x0, sp"
+        },
+        {
+          "address": "0x3945bc0",
+          "mnemonic": "add",
+          "operands": "x1, x21, #0x10"
+        },
+        {
+          "address": "0x3945bc4",
+          "mnemonic": "bl",
+          "operands": "0x529ab40 <_ZN3lfs13FieldConstant12coordToIndexERKNS_5CoordES3_@plt>"
+        },
+        {
+          "address": "0x3945bc8",
+          "mnemonic": "ldr",
+          "operands": "x9, [x21]"
+        },
+        {
+          "address": "0x3945bcc",
+          "mnemonic": "mov",
+          "operands": "w8, w0"
+        },
+        {
+          "address": "0x3945bd0",
+          "mnemonic": "ldp",
+          "operands": "x9, x10, [x9]"
+        },
+        {
+          "address": "0x3945bd4",
+          "mnemonic": "sub",
+          "operands": "x10, x10, x9"
+        },
+        {
+          "address": "0x3945bd8",
+          "mnemonic": "cmp",
+          "operands": "x8, x10, asr #3"
+        },
+        {
+          "address": "0x3945be0",
+          "mnemonic": "ldr",
+          "operands": "x21, [x9, x8, lsl #3]"
+        },
+        {
+          "address": "0x3945be4",
+          "mnemonic": "cbz",
+          "operands": "x21, 0x3945c14 <lfs::field::FieldTerrain::getScreeningTile(lfs::field::FieldTile const*) const+0xb4>"
+        },
+        {
+          "address": "0x3945be8",
+          "mnemonic": "ldr",
+          "operands": "x8, [x19]"
+        },
+        {
+          "address": "0x3945bec",
+          "mnemonic": "mov",
+          "operands": "x0, x19"
+        },
+        {
+          "address": "0x3945bf0",
+          "mnemonic": "ldr",
+          "operands": "x8, [x8, #0x50]"
+        },
+        {
+          "address": "0x3945bf4",
+          "mnemonic": "blr",
+          "operands": "x8"
+        },
+        {
+          "address": "0x3945bf8",
+          "mnemonic": "ldr",
+          "operands": "x8, [x21]"
+        },
+        {
+          "address": "0x3945bfc",
+          "mnemonic": "mov",
+          "operands": "w22, w0"
+        },
+        {
+          "address": "0x3945c00",
+          "mnemonic": "mov",
+          "operands": "x0, x21"
+        },
+        {
+          "address": "0x3945c04",
+          "mnemonic": "ldr",
+          "operands": "x8, [x8, #0x50]"
+        },
+        {
+          "address": "0x3945c08",
+          "mnemonic": "blr",
+          "operands": "x8"
+        },
+        {
+          "address": "0x3945c0c",
+          "mnemonic": "cmp",
+          "operands": "w22, w0"
+        },
+        {
+          "address": "0x3945c14",
+          "mnemonic": "ldr",
+          "operands": "x8, [x19]"
+        },
+        {
+          "address": "0x3945c18",
+          "mnemonic": "ldr",
+          "operands": "x21, [x20, #0x40]"
+        },
+        {
+          "address": "0x3945c1c",
+          "mnemonic": "mov",
+          "operands": "x0, x19"
+        },
+        {
+          "address": "0x3945c20",
+          "mnemonic": "ldr",
+          "operands": "x8, [x8, #0x40]"
+        },
+        {
+          "address": "0x3945c24",
+          "mnemonic": "blr",
+          "operands": "x8"
+        },
+        {
+          "address": "0x3945c28",
+          "mnemonic": "ldr",
+          "operands": "x8, [x24]"
+        },
+        {
+          "address": "0x3945c2c",
+          "mnemonic": "add",
+          "operands": "x1, x8, #0x28"
+        },
+        {
+          "address": "0x3945c30",
+          "mnemonic": "bl",
+          "operands": "0x529b140 <_ZNK3lfs5CoordplERKS0_@plt>"
+        },
+        {
+          "address": "0x3945c34",
+          "mnemonic": "str",
+          "operands": "x0, [sp]"
+        },
+        {
+          "address": "0x3945c38",
+          "mnemonic": "mov",
+          "operands": "x0, sp"
+        },
+        {
+          "address": "0x3945c3c",
+          "mnemonic": "add",
+          "operands": "x1, x21, #0x10"
+        },
+        {
+          "address": "0x3945c40",
+          "mnemonic": "bl",
+          "operands": "0x529ab40 <_ZN3lfs13FieldConstant12coordToIndexERKNS_5CoordES3_@plt>"
+        },
+        {
+          "address": "0x3945c44",
+          "mnemonic": "ldr",
+          "operands": "x9, [x21]"
+        },
+        {
+          "address": "0x3945c48",
+          "mnemonic": "mov",
+          "operands": "w8, w0"
+        },
+        {
+          "address": "0x3945c4c",
+          "mnemonic": "ldp",
+          "operands": "x9, x10, [x9]"
+        },
+        {
+          "address": "0x3945c50",
+          "mnemonic": "sub",
+          "operands": "x10, x10, x9"
+        },
+        {
+          "address": "0x3945c54",
+          "mnemonic": "cmp",
+          "operands": "x8, x10, asr #3"
+        },
+        {
+          "address": "0x3945c5c",
+          "mnemonic": "ldr",
+          "operands": "x21, [x9, x8, lsl #3]"
+        },
+        {
+          "address": "0x3945c60",
+          "mnemonic": "cbz",
+          "operands": "x21, 0x3945c90 <lfs::field::FieldTerrain::getScreeningTile(lfs::field::FieldTile const*) const+0x130>"
+        },
+        {
+          "address": "0x3945c64",
+          "mnemonic": "ldr",
+          "operands": "x8, [x19]"
+        },
+        {
+          "address": "0x3945c68",
+          "mnemonic": "mov",
+          "operands": "x0, x19"
+        },
+        {
+          "address": "0x3945c6c",
+          "mnemonic": "ldr",
+          "operands": "x8, [x8, #0x50]"
+        },
+        {
+          "address": "0x3945c70",
+          "mnemonic": "blr",
+          "operands": "x8"
+        },
+        {
+          "address": "0x3945c74",
+          "mnemonic": "ldr",
+          "operands": "x8, [x21]"
+        },
+        {
+          "address": "0x3945c78",
+          "mnemonic": "mov",
+          "operands": "w22, w0"
+        },
+        {
+          "address": "0x3945c7c",
+          "mnemonic": "mov",
+          "operands": "x0, x21"
+        },
+        {
+          "address": "0x3945c80",
+          "mnemonic": "ldr",
+          "operands": "x8, [x8, #0x50]"
+        },
+        {
+          "address": "0x3945c84",
+          "mnemonic": "blr",
+          "operands": "x8"
+        },
+        {
+          "address": "0x3945c88",
+          "mnemonic": "cmp",
+          "operands": "w22, w0"
+        },
+        {
+          "address": "0x3945c90",
+          "mnemonic": "ldr",
+          "operands": "x8, [x19]"
+        },
+        {
+          "address": "0x3945c94",
+          "mnemonic": "ldr",
+          "operands": "x20, [x20, #0x40]"
+        },
+        {
+          "address": "0x3945c98",
+          "mnemonic": "mov",
+          "operands": "x0, x19"
+        },
+        {
+          "address": "0x3945c9c",
+          "mnemonic": "ldr",
+          "operands": "x8, [x8, #0x40]"
+        },
+        {
+          "address": "0x3945ca0",
+          "mnemonic": "blr",
+          "operands": "x8"
+        },
+        {
+          "address": "0x3945ca4",
+          "mnemonic": "ldr",
+          "operands": "x8, [x24]"
+        },
+        {
+          "address": "0x3945ca8",
+          "mnemonic": "add",
+          "operands": "x1, x8, #0x20"
+        },
+        {
+          "address": "0x3945cac",
+          "mnemonic": "bl",
+          "operands": "0x529b140 <_ZNK3lfs5CoordplERKS0_@plt>"
+        },
+        {
+          "address": "0x3945cb0",
+          "mnemonic": "str",
+          "operands": "x0, [sp]"
+        },
+        {
+          "address": "0x3945cb4",
+          "mnemonic": "mov",
+          "operands": "x0, sp"
+        },
+        {
+          "address": "0x3945cb8",
+          "mnemonic": "add",
+          "operands": "x1, x20, #0x10"
+        },
+        {
+          "address": "0x3945cbc",
+          "mnemonic": "bl",
+          "operands": "0x529ab40 <_ZN3lfs13FieldConstant12coordToIndexERKNS_5CoordES3_@plt>"
+        },
+        {
+          "address": "0x3945cc0",
+          "mnemonic": "ldr",
+          "operands": "x9, [x20]"
+        },
+        {
+          "address": "0x3945cc4",
+          "mnemonic": "mov",
+          "operands": "w8, w0"
+        },
+        {
+          "address": "0x3945cc8",
+          "mnemonic": "ldp",
+          "operands": "x9, x10, [x9]"
+        },
+        {
+          "address": "0x3945ccc",
+          "mnemonic": "sub",
+          "operands": "x10, x10, x9"
+        },
+        {
+          "address": "0x3945cd0",
+          "mnemonic": "cmp",
+          "operands": "x8, x10, asr #3"
+        },
+        {
+          "address": "0x3945cd8",
+          "mnemonic": "ldr",
+          "operands": "x21, [x9, x8, lsl #3]"
+        },
+        {
+          "address": "0x3945cdc",
+          "mnemonic": "cbz",
+          "operands": "x21, 0x3945d0c <lfs::field::FieldTerrain::getScreeningTile(lfs::field::FieldTile const*) const+0x1ac>"
+        },
+        {
+          "address": "0x3945ce0",
+          "mnemonic": "ldr",
+          "operands": "x8, [x19]"
+        },
+        {
+          "address": "0x3945ce4",
+          "mnemonic": "mov",
+          "operands": "x0, x19"
+        },
+        {
+          "address": "0x3945ce8",
+          "mnemonic": "ldr",
+          "operands": "x8, [x8, #0x50]"
+        },
+        {
+          "address": "0x3945cec",
+          "mnemonic": "blr",
+          "operands": "x8"
+        },
+        {
+          "address": "0x3945cf0",
+          "mnemonic": "ldr",
+          "operands": "x8, [x21]"
+        },
+        {
+          "address": "0x3945cf4",
+          "mnemonic": "mov",
+          "operands": "w19, w0"
+        },
+        {
+          "address": "0x3945cf8",
+          "mnemonic": "mov",
+          "operands": "x0, x21"
+        },
+        {
+          "address": "0x3945cfc",
+          "mnemonic": "ldr",
+          "operands": "x8, [x8, #0x50]"
+        },
+        {
+          "address": "0x3945d00",
+          "mnemonic": "blr",
+          "operands": "x8"
+        },
+        {
+          "address": "0x3945d04",
+          "mnemonic": "cmp",
+          "operands": "w19, w0"
+        },
+        {
+          "address": "0x3945d0c",
+          "mnemonic": "mov",
+          "operands": "x21, xzr"
+        },
+        {
+          "address": "0x3945d10",
+          "mnemonic": "ldr",
+          "operands": "x8, [x23, #0x28]"
+        },
+        {
+          "address": "0x3945d14",
+          "mnemonic": "ldr",
+          "operands": "x9, [sp, #0x8]"
+        },
+        {
+          "address": "0x3945d18",
+          "mnemonic": "cmp",
+          "operands": "x8, x9"
+        },
+        {
+          "address": "0x3945d20",
+          "mnemonic": "mov",
+          "operands": "x0, x21"
+        },
+        {
+          "address": "0x3945d24",
+          "mnemonic": "ldp",
+          "operands": "x20, x19, [sp, #0x40]"
+        },
+        {
+          "address": "0x3945d28",
+          "mnemonic": "ldp",
+          "operands": "x22, x21, [sp, #0x30]"
+        },
+        {
+          "address": "0x3945d2c",
+          "mnemonic": "ldp",
+          "operands": "x24, x23, [sp, #0x20]"
+        },
+        {
+          "address": "0x3945d30",
+          "mnemonic": "ldp",
+          "operands": "x29, x30, [sp, #0x10]"
+        },
+        {
+          "address": "0x3945d34",
+          "mnemonic": "add",
+          "operands": "sp, sp, #0x50"
+        },
+        {
+          "address": "0x3945d38",
+          "mnemonic": "ret",
+          "operands": ""
+        },
+        {
+          "address": "0x3945d3c",
+          "mnemonic": "bl",
+          "operands": "0x5255460 <__stack_chk_fail@plt>"
+        }
+      ],
+      "label": "screening_tile",
+      "name": "lfs::field::FieldTerrain::getScreeningTile(lfs::field::FieldTile const*) const",
+      "summary": {
+        "calls": [
+          {
+            "address": "0x3945ba0",
+            "mnemonic": "blr",
+            "operands": "x8"
+          },
+          {
+            "address": "0x3945bb4",
+            "mnemonic": "bl",
+            "operands": "0x529b140 <_ZNK3lfs5CoordplERKS0_@plt>"
+          },
+          {
+            "address": "0x3945bc4",
+            "mnemonic": "bl",
+            "operands": "0x529ab40 <_ZN3lfs13FieldConstant12coordToIndexERKNS_5CoordES3_@plt>"
+          },
+          {
+            "address": "0x3945bf4",
+            "mnemonic": "blr",
+            "operands": "x8"
+          },
+          {
+            "address": "0x3945c08",
+            "mnemonic": "blr",
+            "operands": "x8"
+          },
+          {
+            "address": "0x3945c24",
+            "mnemonic": "blr",
+            "operands": "x8"
+          },
+          {
+            "address": "0x3945c30",
+            "mnemonic": "bl",
+            "operands": "0x529b140 <_ZNK3lfs5CoordplERKS0_@plt>"
+          },
+          {
+            "address": "0x3945c40",
+            "mnemonic": "bl",
+            "operands": "0x529ab40 <_ZN3lfs13FieldConstant12coordToIndexERKNS_5CoordES3_@plt>"
+          },
+          {
+            "address": "0x3945c70",
+            "mnemonic": "blr",
+            "operands": "x8"
+          },
+          {
+            "address": "0x3945c84",
+            "mnemonic": "blr",
+            "operands": "x8"
+          },
+          {
+            "address": "0x3945ca0",
+            "mnemonic": "blr",
+            "operands": "x8"
+          },
+          {
+            "address": "0x3945cac",
+            "mnemonic": "bl",
+            "operands": "0x529b140 <_ZNK3lfs5CoordplERKS0_@plt>"
+          },
+          {
+            "address": "0x3945cbc",
+            "mnemonic": "bl",
+            "operands": "0x529ab40 <_ZN3lfs13FieldConstant12coordToIndexERKNS_5CoordES3_@plt>"
+          },
+          {
+            "address": "0x3945cec",
+            "mnemonic": "blr",
+            "operands": "x8"
+          },
+          {
+            "address": "0x3945d00",
+            "mnemonic": "blr",
+            "operands": "x8"
+          },
+          {
+            "address": "0x3945d3c",
+            "mnemonic": "bl",
+            "operands": "0x5255460 <__stack_chk_fail@plt>"
+          }
+        ],
+        "immediates": [
+          "#0x50",
+          "#0x10",
+          "#0x20",
+          "#0x30",
+          "#0x40",
+          "#0x28",
+          "#0x8",
+          "#0xe88",
+          "#0x18",
+          "#3"
+        ],
+        "mnemonic_counts": {
+          "add": 8,
+          "adrp": 1,
+          "bl": 7,
+          "blr": 9,
+          "cbz": 4,
+          "cmp": 7,
+          "ldp": 7,
+          "ldr": 34,
+          "mov": 22,
+          "ret": 1,
+          "stp": 4,
+          "str": 4,
+          "sub": 4
+        }
+      }
+    },
+    {
+      "address": "0x3945d40",
+      "bounded_bytes": 208,
+      "bounded_stop": "0x3945e10",
+      "instruction_count": 49,
+      "instructions": [
+        {
+          "address": "0x3945d40",
+          "mnemonic": "sub",
+          "operands": "sp, sp, #0x40"
+        },
+        {
+          "address": "0x3945d44",
+          "mnemonic": "stp",
+          "operands": "x29, x30, [sp, #0x10]"
+        },
+        {
+          "address": "0x3945d48",
+          "mnemonic": "str",
+          "operands": "x21, [sp, #0x20]"
+        },
+        {
+          "address": "0x3945d4c",
+          "mnemonic": "stp",
+          "operands": "x20, x19, [sp, #0x30]"
+        },
+        {
+          "address": "0x3945d50",
+          "mnemonic": "add",
+          "operands": "x29, sp, #0x10"
+        },
+        {
+          "address": "0x3945d58",
+          "mnemonic": "mov",
+          "operands": "x19, x1"
+        },
+        {
+          "address": "0x3945d5c",
+          "mnemonic": "ldr",
+          "operands": "x8, [x21, #0x28]"
+        },
+        {
+          "address": "0x3945d60",
+          "mnemonic": "str",
+          "operands": "x8, [sp, #0x8]"
+        },
+        {
+          "address": "0x3945d64",
+          "mnemonic": "ldr",
+          "operands": "x8, [x0, #0x40]"
+        },
+        {
+          "address": "0x3945d68",
+          "mnemonic": "cbz",
+          "operands": "x8, 0x3945de4 <lfs::field::FieldTerrain::checkScreeningTile(lfs::field::FieldTile const*) const+0xa4>"
+        },
+        {
+          "address": "0x3945d6c",
+          "mnemonic": "mov",
+          "operands": "x1, x19"
+        },
+        {
+          "address": "0x3945d70",
+          "mnemonic": "mov",
+          "operands": "x20, x0"
+        },
+        {
+          "address": "0x3945d74",
+          "mnemonic": "bl",
+          "operands": "0x529b200 <_ZNK3lfs5field12FieldTerrain16getScreeningTileEPKNS0_9FieldTileE@plt>"
+        },
+        {
+          "address": "0x3945d78",
+          "mnemonic": "cbnz",
+          "operands": "x0, 0x3945de4 <lfs::field::FieldTerrain::checkScreeningTile(lfs::field::FieldTile const*) const+0xa4>"
+        },
+        {
+          "address": "0x3945d7c",
+          "mnemonic": "ldr",
+          "operands": "x8, [x19]"
+        },
+        {
+          "address": "0x3945d80",
+          "mnemonic": "ldr",
+          "operands": "x20, [x20, #0x40]"
+        },
+        {
+          "address": "0x3945d84",
+          "mnemonic": "mov",
+          "operands": "x0, x19"
+        },
+        {
+          "address": "0x3945d88",
+          "mnemonic": "ldr",
+          "operands": "x8, [x8, #0x40]"
+        },
+        {
+          "address": "0x3945d8c",
+          "mnemonic": "blr",
+          "operands": "x8"
+        },
+        {
+          "address": "0x3945d90",
+          "mnemonic": "adrp",
+          "operands": "x8, 0x570a000"
+        },
+        {
+          "address": "0x3945d94",
+          "mnemonic": "ldr",
+          "operands": "x8, [x8, #0xe88]"
+        },
+        {
+          "address": "0x3945d98",
+          "mnemonic": "ldr",
+          "operands": "x8, [x8]"
+        },
+        {
+          "address": "0x3945d9c",
+          "mnemonic": "add",
+          "operands": "x1, x8, #0x20"
+        },
+        {
+          "address": "0x3945da0",
+          "mnemonic": "bl",
+          "operands": "0x529b140 <_ZNK3lfs5CoordplERKS0_@plt>"
+        },
+        {
+          "address": "0x3945da4",
+          "mnemonic": "str",
+          "operands": "x0, [sp]"
+        },
+        {
+          "address": "0x3945da8",
+          "mnemonic": "mov",
+          "operands": "x0, sp"
+        },
+        {
+          "address": "0x3945dac",
+          "mnemonic": "add",
+          "operands": "x1, x20, #0x10"
+        },
+        {
+          "address": "0x3945db0",
+          "mnemonic": "bl",
+          "operands": "0x529ab40 <_ZN3lfs13FieldConstant12coordToIndexERKNS_5CoordES3_@plt>"
+        },
+        {
+          "address": "0x3945db4",
+          "mnemonic": "ldr",
+          "operands": "x9, [x20]"
+        },
+        {
+          "address": "0x3945db8",
+          "mnemonic": "mov",
+          "operands": "w8, w0"
+        },
+        {
+          "address": "0x3945dbc",
+          "mnemonic": "ldp",
+          "operands": "x9, x10, [x9]"
+        },
+        {
+          "address": "0x3945dc0",
+          "mnemonic": "sub",
+          "operands": "x10, x10, x9"
+        },
+        {
+          "address": "0x3945dc4",
+          "mnemonic": "cmp",
+          "operands": "x8, x10, asr #3"
+        },
+        {
+          "address": "0x3945dcc",
+          "mnemonic": "ldr",
+          "operands": "x20, [x9, x8, lsl #3]"
+        },
+        {
+          "address": "0x3945dd0",
+          "mnemonic": "cbz",
+          "operands": "x20, 0x3945de4 <lfs::field::FieldTerrain::checkScreeningTile(lfs::field::FieldTile const*) const+0xa4>"
+        },
+        {
+          "address": "0x3945dd4",
+          "mnemonic": "mov",
+          "operands": "x0, x20"
+        },
+        {
+          "address": "0x3945dd8",
+          "mnemonic": "bl",
+          "operands": "0x528c0d0 <_ZNK3lfs5field9FieldTile6existsEv@plt>"
+        },
+        {
+          "address": "0x3945ddc",
+          "mnemonic": "tst",
+          "operands": "w0, #0x1"
+        },
+        {
+          "address": "0x3945de0",
+          "mnemonic": "csel",
+          "operands": "x19, x20, x19, ne"
+        },
+        {
+          "address": "0x3945de4",
+          "mnemonic": "ldr",
+          "operands": "x8, [x21, #0x28]"
+        },
+        {
+          "address": "0x3945de8",
+          "mnemonic": "ldr",
+          "operands": "x9, [sp, #0x8]"
+        },
+        {
+          "address": "0x3945dec",
+          "mnemonic": "cmp",
+          "operands": "x8, x9"
+        },
+        {
+          "address": "0x3945df4",
+          "mnemonic": "mov",
+          "operands": "x0, x19"
+        },
+        {
+          "address": "0x3945df8",
+          "mnemonic": "ldp",
+          "operands": "x20, x19, [sp, #0x30]"
+        },
+        {
+          "address": "0x3945dfc",
+          "mnemonic": "ldr",
+          "operands": "x21, [sp, #0x20]"
+        },
+        {
+          "address": "0x3945e00",
+          "mnemonic": "ldp",
+          "operands": "x29, x30, [sp, #0x10]"
+        },
+        {
+          "address": "0x3945e04",
+          "mnemonic": "add",
+          "operands": "sp, sp, #0x40"
+        },
+        {
+          "address": "0x3945e08",
+          "mnemonic": "ret",
+          "operands": ""
+        },
+        {
+          "address": "0x3945e0c",
+          "mnemonic": "bl",
+          "operands": "0x5255460 <__stack_chk_fail@plt>"
+        }
+      ],
+      "label": "check_screening_tile",
+      "name": "lfs::field::FieldTerrain::checkScreeningTile(lfs::field::FieldTile const*) const",
+      "summary": {
+        "calls": [
+          {
+            "address": "0x3945d74",
+            "mnemonic": "bl",
+            "operands": "0x529b200 <_ZNK3lfs5field12FieldTerrain16getScreeningTileEPKNS0_9FieldTileE@plt>"
+          },
+          {
+            "address": "0x3945d8c",
+            "mnemonic": "blr",
+            "operands": "x8"
+          },
+          {
+            "address": "0x3945da0",
+            "mnemonic": "bl",
+            "operands": "0x529b140 <_ZNK3lfs5CoordplERKS0_@plt>"
+          },
+          {
+            "address": "0x3945db0",
+            "mnemonic": "bl",
+            "operands": "0x529ab40 <_ZN3lfs13FieldConstant12coordToIndexERKNS_5CoordES3_@plt>"
+          },
+          {
+            "address": "0x3945dd8",
+            "mnemonic": "bl",
+            "operands": "0x528c0d0 <_ZNK3lfs5field9FieldTile6existsEv@plt>"
+          },
+          {
+            "address": "0x3945e0c",
+            "mnemonic": "bl",
+            "operands": "0x5255460 <__stack_chk_fail@plt>"
+          }
+        ],
+        "immediates": [
+          "#0x40",
+          "#0x10",
+          "#0x20",
+          "#0x30",
+          "#0x28",
+          "#0x8",
+          "#0xe88",
+          "#3",
+          "#0x1"
+        ],
+        "mnemonic_counts": {
+          "add": 4,
+          "adrp": 1,
+          "bl": 5,
+          "blr": 1,
+          "cbnz": 1,
+          "cbz": 2,
+          "cmp": 2,
+          "csel": 1,
+          "ldp": 3,
+          "ldr": 12,
+          "mov": 8,
+          "ret": 1,
+          "stp": 2,
+          "str": 3,
+          "sub": 2,
+          "tst": 1
+        }
+      }
+    }
+  ]
+}
