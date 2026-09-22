@@ -1,0 +1,10 @@
+{
+  "duration_seconds": 2.246,
+  "error": null,
+  "exit_code": 0,
+  "job_id": "oracle-patch-system-inspector-001",
+  "kind": "python",
+  "schema": 1,
+  "source_sha": "6b950f8e0f85c70bbc04df2682682ad95fa4adbb",
+  "status": "success"
+}
