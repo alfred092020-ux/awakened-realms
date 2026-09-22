@@ -1,0 +1,8 @@
+{
+  "commit": "cdb9091239c247b033e25cc9f5e7ba438b97065b",
+  "job_id": "merge-logres-live-patch-mbn-catalog-001",
+  "job_type": "MERGE",
+  "status": "SUCCESS",
+  "target_branch": "feat/logres-reconstruction",
+  "written_at": "2026-09-22T06:54:43.668644+00:00"
+}
