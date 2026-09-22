@@ -1,0 +1,10 @@
+{
+  "duration_seconds": 20.274,
+  "error": null,
+  "exit_code": 0,
+  "job_id": "oracle-studio-movement-evidence-002",
+  "kind": "python",
+  "schema": 1,
+  "source_sha": "aaee164b02c11a1bf96d69b18bc2ceed5be25bc9",
+  "status": "success"
+}
