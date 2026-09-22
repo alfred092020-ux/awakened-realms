@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "job_id": "oracle-confirmed-map-refs-001",
+  "source_sha": "a6d223f7cad892d4e447b7245a7900b054133f89",
+  "kind": "python",
+  "script": "scripts/logres/inspect_private_confirmed_map_refs.py",
+  "args": [
+    "@PRIVATE_ARCHIVE@",
+    "--output",
+    "@OUTPUT@/confirmed-map-refs.json"
+  ],
+  "timeout_seconds": 1800
+}
