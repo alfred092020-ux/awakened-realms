@@ -1,0 +1,19 @@
+{
+  "schema": 1,
+  "job_id": "oracle-public-patch-download-smoke-001",
+  "source_sha": "f90ca841379de6cfb60d2bf1d3bb171a6aebe85a",
+  "kind": "python",
+  "script": "scripts/logres/download_public_patch.py",
+  "args": [
+    "--anchor",
+    "@PRIVATE_ARCHIVE@",
+    "--download",
+    "--max-files",
+    "20",
+    "--workers",
+    "8",
+    "--output",
+    "@OUTPUT@/patch-download-smoke.json"
+  ],
+  "timeout_seconds": 600
+}
