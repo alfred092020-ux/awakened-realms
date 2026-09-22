@@ -1,0 +1,20 @@
+{
+  "disk": {
+    "free_bytes": 195461943296,
+    "free_gib": 182.038,
+    "total_bytes": 206900281344,
+    "used_bytes": 11421560832
+  },
+  "enough_with_2gib_reserve": true,
+  "filesystem_path_kind": "private-archive-parent",
+  "patch_cache": {
+    "bytes": 0,
+    "exists": false,
+    "file_count": 0
+  },
+  "provenance": "ORACLE_PRIVATE_STORAGE_METADATA",
+  "remaining_gib": 5.675,
+  "remaining_manifest_bytes": 6093432146,
+  "required_manifest_bytes": 6093432146,
+  "safety_reserve_bytes": 2147483648
+}
