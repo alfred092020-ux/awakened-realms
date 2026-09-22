@@ -1,0 +1,8 @@
+{
+  "commit": "56fcbb747d895c954779d85da869fe315d1649bc",
+  "job_id": "merge-logres-field-math-001",
+  "job_type": "MERGE",
+  "status": "SUCCESS",
+  "target_branch": "feat/logres-reconstruction",
+  "written_at": "2026-09-22T09:32:34.597867+00:00"
+}
