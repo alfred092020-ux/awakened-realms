@@ -1,0 +1,4694 @@
+{
+  "apk": "config.arm64_v8a.apk",
+  "disassembler": "llvm-objdump",
+  "download": {
+    "sha256": "7803989f3a02d2662f83cefe25e648e04e7d529f650a70ca7911d7b98972c76c",
+    "size": 125559968
+  },
+  "libgame": {
+    "sha256": "1564f02b23c9909adc0d26636adfc8e72a7ed9363655af0d1ae22635e55acbeb",
+    "size": 91934656
+  },
+  "policy": "Public current libgame instruction metadata for an explicit small allowlist only. Machine-code bytes and whole-library disassembly are omitted. Instruction sequences are reverse-engineering evidence; semantic formulas require coordinator review.",
+  "provenance": "PUBLIC_CURRENT_JP_FIELD_FORMULA_INSTRUCTION_METADATA",
+  "target_count": 10,
+  "targets": [
+    {
+      "address": "0x39454d0",
+      "bounded_bytes": 152,
+      "bounded_stop": "0x3945568",
+      "instruction_count": 35,
+      "instructions": [
+        {
+          "address": "0x39454d0",
+          "mnemonic": "stp",
+          "operands": "x29, x30, [sp, #-0x40]!"
+        },
+        {
+          "address": "0x39454d4",
+          "mnemonic": "str",
+          "operands": "x23, [sp, #0x10]"
+        },
+        {
+          "address": "0x39454d8",
+          "mnemonic": "stp",
+          "operands": "x22, x21, [sp, #0x20]"
+        },
+        {
+          "address": "0x39454dc",
+          "mnemonic": "stp",
+          "operands": "x20, x19, [sp, #0x30]"
+        },
+        {
+          "address": "0x39454e0",
+          "mnemonic": "mov",
+          "operands": "x29, sp"
+        },
+        {
+          "address": "0x39454e4",
+          "mnemonic": "ldp",
+          "operands": "x23, x8, [x0, #0x10]"
+        },
+        {
+          "address": "0x39454e8",
+          "mnemonic": "cmp",
+          "operands": "x23, x8"
+        },
+        {
+          "address": "0x39454f0",
+          "mnemonic": "mov",
+          "operands": "x19, x0"
+        },
+        {
+          "address": "0x39454f4",
+          "mnemonic": "mov",
+          "operands": "x20, x1"
+        },
+        {
+          "address": "0x39454f8",
+          "mnemonic": "mov",
+          "operands": "x21, xzr"
+        },
+        {
+          "address": "0x39454fc",
+          "mnemonic": "b",
+          "operands": "0x3945510 <lfs::field::FieldTerrain::tileContains(cocos2d::Vec2 const&) const+0x40>"
+        },
+        {
+          "address": "0x3945500",
+          "mnemonic": "ldr",
+          "operands": "x8, [x19, #0x18]"
+        },
+        {
+          "address": "0x3945504",
+          "mnemonic": "add",
+          "operands": "x23, x23, #0x8"
+        },
+        {
+          "address": "0x3945508",
+          "mnemonic": "cmp",
+          "operands": "x23, x8"
+        },
+        {
+          "address": "0x3945510",
+          "mnemonic": "ldr",
+          "operands": "x0, [x23]"
+        },
+        {
+          "address": "0x3945514",
+          "mnemonic": "cbz",
+          "operands": "x0, 0x3945500 <lfs::field::FieldTerrain::tileContains(cocos2d::Vec2 const&) const+0x30>"
+        },
+        {
+          "address": "0x3945518",
+          "mnemonic": "ldr",
+          "operands": "x8, [x0]"
+        },
+        {
+          "address": "0x394551c",
+          "mnemonic": "ldr",
+          "operands": "x8, [x8, #0x30]"
+        },
+        {
+          "address": "0x3945520",
+          "mnemonic": "blr",
+          "operands": "x8"
+        },
+        {
+          "address": "0x3945524",
+          "mnemonic": "cmp",
+          "operands": "w0, #0x2"
+        },
+        {
+          "address": "0x394552c",
+          "mnemonic": "ldr",
+          "operands": "x22, [x23]"
+        },
+        {
+          "address": "0x3945530",
+          "mnemonic": "cbz",
+          "operands": "x22, 0x3945500 <lfs::field::FieldTerrain::tileContains(cocos2d::Vec2 const&) const+0x30>"
+        },
+        {
+          "address": "0x3945534",
+          "mnemonic": "mov",
+          "operands": "x0, x22"
+        },
+        {
+          "address": "0x3945538",
+          "mnemonic": "mov",
+          "operands": "x1, x20"
+        },
+        {
+          "address": "0x394553c",
+          "mnemonic": "bl",
+          "operands": "0x529b1b0 <_ZNK3lfs5field9FieldTile8containsERKN7cocos2d4Vec2E@plt>"
+        },
+        {
+          "address": "0x3945540",
+          "mnemonic": "tst",
+          "operands": "w0, #0x1"
+        },
+        {
+          "address": "0x3945544",
+          "mnemonic": "csel",
+          "operands": "x21, x22, x21, ne"
+        },
+        {
+          "address": "0x3945548",
+          "mnemonic": "b",
+          "operands": "0x3945500 <lfs::field::FieldTerrain::tileContains(cocos2d::Vec2 const&) const+0x30>"
+        },
+        {
+          "address": "0x394554c",
+          "mnemonic": "mov",
+          "operands": "x21, xzr"
+        },
+        {
+          "address": "0x3945550",
+          "mnemonic": "mov",
+          "operands": "x0, x21"
+        },
+        {
+          "address": "0x3945554",
+          "mnemonic": "ldp",
+          "operands": "x20, x19, [sp, #0x30]"
+        },
+        {
+          "address": "0x3945558",
+          "mnemonic": "ldr",
+          "operands": "x23, [sp, #0x10]"
+        },
+        {
+          "address": "0x394555c",
+          "mnemonic": "ldp",
+          "operands": "x22, x21, [sp, #0x20]"
+        },
+        {
+          "address": "0x3945560",
+          "mnemonic": "ldp",
+          "operands": "x29, x30, [sp], #0x40"
+        },
+        {
+          "address": "0x3945564",
+          "mnemonic": "ret",
+          "operands": ""
+        }
+      ],
+      "label": "tile_contains",
+      "name": "lfs::field::FieldTerrain::tileContains(cocos2d::Vec2 const&) const",
+      "summary": {
+        "calls": [
+          {
+            "address": "0x3945520",
+            "mnemonic": "blr",
+            "operands": "x8"
+          },
+          {
+            "address": "0x394553c",
+            "mnemonic": "bl",
+            "operands": "0x529b1b0 <_ZNK3lfs5field9FieldTile8containsERKN7cocos2d4Vec2E@plt>"
+          }
+        ],
+        "immediates": [
+          "#-0x40",
+          "#0x10",
+          "#0x20",
+          "#0x30",
+          "#0x18",
+          "#0x8",
+          "#0x2",
+          "#0x1",
+          "#0x40"
+        ],
+        "mnemonic_counts": {
+          "add": 1,
+          "b": 2,
+          "bl": 1,
+          "blr": 1,
+          "cbz": 2,
+          "cmp": 3,
+          "csel": 1,
+          "ldp": 4,
+          "ldr": 6,
+          "mov": 8,
+          "ret": 1,
+          "stp": 3,
+          "str": 1,
+          "tst": 1
+        }
+      }
+    },
+    {
+      "address": "0x39455e8",
+      "bounded_bytes": 132,
+      "bounded_stop": "0x394566c",
+      "instruction_count": 30,
+      "instructions": [
+        {
+          "address": "0x39455e8",
+          "mnemonic": "sub",
+          "operands": "sp, sp, #0x30"
+        },
+        {
+          "address": "0x39455ec",
+          "mnemonic": "stp",
+          "operands": "x29, x30, [sp, #0x10]"
+        },
+        {
+          "address": "0x39455f0",
+          "mnemonic": "stp",
+          "operands": "x20, x19, [sp, #0x20]"
+        },
+        {
+          "address": "0x39455f4",
+          "mnemonic": "add",
+          "operands": "x29, sp, #0x10"
+        },
+        {
+          "address": "0x39455fc",
+          "mnemonic": "ldr",
+          "operands": "x8, [x19, #0x28]"
+        },
+        {
+          "address": "0x3945600",
+          "mnemonic": "str",
+          "operands": "x8, [sp, #0x8]"
+        },
+        {
+          "address": "0x3945604",
+          "mnemonic": "ldr",
+          "operands": "x20, [x0, #0x40]"
+        },
+        {
+          "address": "0x3945608",
+          "mnemonic": "cbz",
+          "operands": "x20, 0x3945644 <lfs::field::FieldTerrain::tileAt(lfs::Vector3 const&) const+0x5c>"
+        },
+        {
+          "address": "0x394560c",
+          "mnemonic": "mov",
+          "operands": "x0, x1"
+        },
+        {
+          "address": "0x3945610",
+          "mnemonic": "bl",
+          "operands": "0x52783e0 <_ZN3lfs13FieldConstant16positionToCoord3ERKNS_7Vector3E@plt>"
+        },
+        {
+          "address": "0x3945614",
+          "mnemonic": "str",
+          "operands": "x0, [sp]"
+        },
+        {
+          "address": "0x3945618",
+          "mnemonic": "mov",
+          "operands": "x0, sp"
+        },
+        {
+          "address": "0x394561c",
+          "mnemonic": "add",
+          "operands": "x1, x20, #0x10"
+        },
+        {
+          "address": "0x3945620",
+          "mnemonic": "bl",
+          "operands": "0x529ab40 <_ZN3lfs13FieldConstant12coordToIndexERKNS_5CoordES3_@plt>"
+        },
+        {
+          "address": "0x3945624",
+          "mnemonic": "ldr",
+          "operands": "x9, [x20]"
+        },
+        {
+          "address": "0x3945628",
+          "mnemonic": "mov",
+          "operands": "w8, w0"
+        },
+        {
+          "address": "0x394562c",
+          "mnemonic": "ldp",
+          "operands": "x9, x10, [x9]"
+        },
+        {
+          "address": "0x3945630",
+          "mnemonic": "sub",
+          "operands": "x10, x10, x9"
+        },
+        {
+          "address": "0x3945634",
+          "mnemonic": "cmp",
+          "operands": "x8, x10, asr #3"
+        },
+        {
+          "address": "0x394563c",
+          "mnemonic": "ldr",
+          "operands": "x0, [x9, x8, lsl #3]"
+        },
+        {
+          "address": "0x3945640",
+          "mnemonic": "b",
+          "operands": "0x3945648 <lfs::field::FieldTerrain::tileAt(lfs::Vector3 const&) const+0x60>"
+        },
+        {
+          "address": "0x3945644",
+          "mnemonic": "mov",
+          "operands": "x0, xzr"
+        },
+        {
+          "address": "0x3945648",
+          "mnemonic": "ldr",
+          "operands": "x8, [x19, #0x28]"
+        },
+        {
+          "address": "0x394564c",
+          "mnemonic": "ldr",
+          "operands": "x9, [sp, #0x8]"
+        },
+        {
+          "address": "0x3945650",
+          "mnemonic": "cmp",
+          "operands": "x8, x9"
+        },
+        {
+          "address": "0x3945658",
+          "mnemonic": "ldp",
+          "operands": "x20, x19, [sp, #0x20]"
+        },
+        {
+          "address": "0x394565c",
+          "mnemonic": "ldp",
+          "operands": "x29, x30, [sp, #0x10]"
+        },
+        {
+          "address": "0x3945660",
+          "mnemonic": "add",
+          "operands": "sp, sp, #0x30"
+        },
+        {
+          "address": "0x3945664",
+          "mnemonic": "ret",
+          "operands": ""
+        },
+        {
+          "address": "0x3945668",
+          "mnemonic": "bl",
+          "operands": "0x5255460 <__stack_chk_fail@plt>"
+        }
+      ],
+      "label": "tile_at_vec3",
+      "name": "lfs::field::FieldTerrain::tileAt(lfs::Vector3 const&) const",
+      "summary": {
+        "calls": [
+          {
+            "address": "0x3945610",
+            "mnemonic": "bl",
+            "operands": "0x52783e0 <_ZN3lfs13FieldConstant16positionToCoord3ERKNS_7Vector3E@plt>"
+          },
+          {
+            "address": "0x3945620",
+            "mnemonic": "bl",
+            "operands": "0x529ab40 <_ZN3lfs13FieldConstant12coordToIndexERKNS_5CoordES3_@plt>"
+          },
+          {
+            "address": "0x3945668",
+            "mnemonic": "bl",
+            "operands": "0x5255460 <__stack_chk_fail@plt>"
+          }
+        ],
+        "immediates": [
+          "#0x30",
+          "#0x10",
+          "#0x20",
+          "#0x28",
+          "#0x8",
+          "#0x40",
+          "#3"
+        ],
+        "mnemonic_counts": {
+          "add": 3,
+          "b": 1,
+          "bl": 3,
+          "cbz": 1,
+          "cmp": 2,
+          "ldp": 3,
+          "ldr": 6,
+          "mov": 4,
+          "ret": 1,
+          "stp": 2,
+          "str": 2,
+          "sub": 2
+        }
+      }
+    },
+    {
+      "address": "0x39456a8",
+      "bounded_bytes": 1132,
+      "bounded_stop": "0x3945b14",
+      "instruction_count": 260,
+      "instructions": [
+        {
+          "address": "0x39456a8",
+          "mnemonic": "sub",
+          "operands": "sp, sp, #0xc0"
+        },
+        {
+          "address": "0x39456ac",
+          "mnemonic": "stp",
+          "operands": "d9, d8, [sp, #0x50]"
+        },
+        {
+          "address": "0x39456b0",
+          "mnemonic": "stp",
+          "operands": "x29, x30, [sp, #0x60]"
+        },
+        {
+          "address": "0x39456b4",
+          "mnemonic": "str",
+          "operands": "x27, [sp, #0x70]"
+        },
+        {
+          "address": "0x39456b8",
+          "mnemonic": "stp",
+          "operands": "x26, x25, [sp, #0x80]"
+        },
+        {
+          "address": "0x39456bc",
+          "mnemonic": "stp",
+          "operands": "x24, x23, [sp, #0x90]"
+        },
+        {
+          "address": "0x39456c0",
+          "mnemonic": "stp",
+          "operands": "x22, x21, [sp, #0xa0]"
+        },
+        {
+          "address": "0x39456c4",
+          "mnemonic": "stp",
+          "operands": "x20, x19, [sp, #0xb0]"
+        },
+        {
+          "address": "0x39456c8",
+          "mnemonic": "add",
+          "operands": "x29, sp, #0x60"
+        },
+        {
+          "address": "0x39456d0",
+          "mnemonic": "mov",
+          "operands": "x20, x0"
+        },
+        {
+          "address": "0x39456d4",
+          "mnemonic": "mov",
+          "operands": "x19, x1"
+        },
+        {
+          "address": "0x39456d8",
+          "mnemonic": "ldr",
+          "operands": "x8, [x25, #0x28]"
+        },
+        {
+          "address": "0x39456dc",
+          "mnemonic": "stur",
+          "operands": "x8, [x29, #-0x18]"
+        },
+        {
+          "address": "0x39456e0",
+          "mnemonic": "ldr",
+          "operands": "x8, [x1]"
+        },
+        {
+          "address": "0x39456e4",
+          "mnemonic": "ldr",
+          "operands": "x9, [x8]"
+        },
+        {
+          "address": "0x39456e8",
+          "mnemonic": "mov",
+          "operands": "x0, x8"
+        },
+        {
+          "address": "0x39456ec",
+          "mnemonic": "ldr",
+          "operands": "x9, [x9, #0x50]"
+        },
+        {
+          "address": "0x39456f0",
+          "mnemonic": "blr",
+          "operands": "x9"
+        },
+        {
+          "address": "0x39456f4",
+          "mnemonic": "mov",
+          "operands": "x22, x0"
+        },
+        {
+          "address": "0x39456f8",
+          "mnemonic": "bl",
+          "operands": "0x52783e0 <_ZN3lfs13FieldConstant16positionToCoord3ERKNS_7Vector3E@plt>"
+        },
+        {
+          "address": "0x39456fc",
+          "mnemonic": "stur",
+          "operands": "x0, [x29, #-0x20]"
+        },
+        {
+          "address": "0x3945700",
+          "mnemonic": "sub",
+          "operands": "x8, x29, #0x28"
+        },
+        {
+          "address": "0x3945704",
+          "mnemonic": "mov",
+          "operands": "x0, x22"
+        },
+        {
+          "address": "0x3945708",
+          "mnemonic": "bl",
+          "operands": "0x529ab70 <_ZN3lfs9Isometric11mapToScreenERKNS_7Vector3E@plt>"
+        },
+        {
+          "address": "0x394570c",
+          "mnemonic": "ldr",
+          "operands": "x21, [x20, #0x40]"
+        },
+        {
+          "address": "0x3945710",
+          "mnemonic": "cbz",
+          "operands": "x21, 0x3945a5c <lfs::field::FieldTerrain::adjustActorToTerrain(std::__ndk1::shared_ptr<lfs::Actor> const&)+0x3b4>"
+        },
+        {
+          "address": "0x3945714",
+          "mnemonic": "sub",
+          "operands": "x0, x29, #0x20"
+        },
+        {
+          "address": "0x3945718",
+          "mnemonic": "add",
+          "operands": "x1, x21, #0x10"
+        },
+        {
+          "address": "0x394571c",
+          "mnemonic": "bl",
+          "operands": "0x529ab40 <_ZN3lfs13FieldConstant12coordToIndexERKNS_5CoordES3_@plt>"
+        },
+        {
+          "address": "0x3945720",
+          "mnemonic": "ldr",
+          "operands": "x8, [x21]"
+        },
+        {
+          "address": "0x3945724",
+          "mnemonic": "mov",
+          "operands": "w9, w0"
+        },
+        {
+          "address": "0x3945728",
+          "mnemonic": "ldp",
+          "operands": "x8, x10, [x8]"
+        },
+        {
+          "address": "0x394572c",
+          "mnemonic": "sub",
+          "operands": "x10, x10, x8"
+        },
+        {
+          "address": "0x3945730",
+          "mnemonic": "cmp",
+          "operands": "x9, x10, asr #3"
+        },
+        {
+          "address": "0x3945738",
+          "mnemonic": "ldr",
+          "operands": "x21, [x8, x9, lsl #3]"
+        },
+        {
+          "address": "0x394573c",
+          "mnemonic": "cbz",
+          "operands": "x21, 0x3945a5c <lfs::field::FieldTerrain::adjustActorToTerrain(std::__ndk1::shared_ptr<lfs::Actor> const&)+0x3b4>"
+        },
+        {
+          "address": "0x3945740",
+          "mnemonic": "mov",
+          "operands": "x0, x21"
+        },
+        {
+          "address": "0x3945744",
+          "mnemonic": "bl",
+          "operands": "0x528c0d0 <_ZNK3lfs5field9FieldTile6existsEv@plt>"
+        },
+        {
+          "address": "0x3945748",
+          "mnemonic": "tbz",
+          "operands": "w0, #0x0, 0x3945a5c <lfs::field::FieldTerrain::adjustActorToTerrain(std::__ndk1::shared_ptr<lfs::Actor> const&)+0x3b4>"
+        },
+        {
+          "address": "0x394574c",
+          "mnemonic": "ldp",
+          "operands": "s1, s0, [x21, #0x68]"
+        },
+        {
+          "address": "0x3945750",
+          "mnemonic": "ldr",
+          "operands": "x0, [x19]"
+        },
+        {
+          "address": "0x3945754",
+          "mnemonic": "ldr",
+          "operands": "x8, [x0]"
+        },
+        {
+          "address": "0x394575c",
+          "mnemonic": "ldr",
+          "operands": "x8, [x8, #0x58]"
+        },
+        {
+          "address": "0x3945760",
+          "mnemonic": "blr",
+          "operands": "x8"
+        },
+        {
+          "address": "0x3945764",
+          "mnemonic": "ldr",
+          "operands": "s8, [x21, #0x38]"
+        },
+        {
+          "address": "0x3945768",
+          "mnemonic": "bl",
+          "operands": "0x528c0e0 <_ZN3lfs13FieldConstant14tileSideHeightEv@plt>"
+        },
+        {
+          "address": "0x394576c",
+          "mnemonic": "fadd",
+          "operands": "s0, s8, s0"
+        },
+        {
+          "address": "0x3945770",
+          "mnemonic": "ldur",
+          "operands": "s1, [x29, #-0x24]"
+        },
+        {
+          "address": "0x3945774",
+          "mnemonic": "ldr",
+          "operands": "x0, [x19]"
+        },
+        {
+          "address": "0x3945778",
+          "mnemonic": "fadd",
+          "operands": "s0, s0, s1"
+        },
+        {
+          "address": "0x394577c",
+          "mnemonic": "stur",
+          "operands": "s0, [x29, #-0x24]"
+        },
+        {
+          "address": "0x3945780",
+          "mnemonic": "ldr",
+          "operands": "x8, [x0]"
+        },
+        {
+          "address": "0x3945784",
+          "mnemonic": "ldr",
+          "operands": "x8, [x8, #0x40]"
+        },
+        {
+          "address": "0x3945788",
+          "mnemonic": "sub",
+          "operands": "x1, x29, #0x28"
+        },
+        {
+          "address": "0x394578c",
+          "mnemonic": "blr",
+          "operands": "x8"
+        },
+        {
+          "address": "0x3945790",
+          "mnemonic": "ldr",
+          "operands": "x0, [x19]"
+        },
+        {
+          "address": "0x3945794",
+          "mnemonic": "ldr",
+          "operands": "x8, [x0]"
+        },
+        {
+          "address": "0x3945798",
+          "mnemonic": "ldr",
+          "operands": "x8, [x8, #0x98]"
+        },
+        {
+          "address": "0x394579c",
+          "mnemonic": "blr",
+          "operands": "x8"
+        },
+        {
+          "address": "0x39457a0",
+          "mnemonic": "tbz",
+          "operands": "w0, #0x0, 0x39457c8 <lfs::field::FieldTerrain::adjustActorToTerrain(std::__ndk1::shared_ptr<lfs::Actor> const&)+0x120>"
+        },
+        {
+          "address": "0x39457a4",
+          "mnemonic": "ldp",
+          "operands": "s9, s8, [x21, #0x68]"
+        },
+        {
+          "address": "0x39457a8",
+          "mnemonic": "mov",
+          "operands": "x0, x20"
+        },
+        {
+          "address": "0x39457ac",
+          "mnemonic": "mov",
+          "operands": "x1, x21"
+        },
+        {
+          "address": "0x39457b0",
+          "mnemonic": "bl",
+          "operands": "0x529b200 <_ZNK3lfs5field12FieldTerrain16getScreeningTileEPKNS0_9FieldTileE@plt>"
+        },
+        {
+          "address": "0x39457b4",
+          "mnemonic": "adrp",
+          "operands": "x26, 0x570a000"
+        },
+        {
+          "address": "0x39457b8",
+          "mnemonic": "mov",
+          "operands": "x22, x0"
+        },
+        {
+          "address": "0x39457bc",
+          "mnemonic": "mov",
+          "operands": "w27, #0x10              // =16"
+        },
+        {
+          "address": "0x39457c0",
+          "mnemonic": "ldr",
+          "operands": "x26, [x26, #0xe88]"
+        },
+        {
+          "address": "0x39457c4",
+          "mnemonic": "b",
+          "operands": "0x3945970 <lfs::field::FieldTerrain::adjustActorToTerrain(std::__ndk1::shared_ptr<lfs::Actor> const&)+0x2c8>"
+        },
+        {
+          "address": "0x39457c8",
+          "mnemonic": "ldr",
+          "operands": "x0, [x19]"
+        },
+        {
+          "address": "0x39457cc",
+          "mnemonic": "ldr",
+          "operands": "x8, [x0]"
+        },
+        {
+          "address": "0x39457d0",
+          "mnemonic": "ldr",
+          "operands": "x8, [x8, #0x88]"
+        },
+        {
+          "address": "0x39457d4",
+          "mnemonic": "blr",
+          "operands": "x8"
+        },
+        {
+          "address": "0x39457d8",
+          "mnemonic": "tbz",
+          "operands": "w0, #0x0, 0x3945a5c <lfs::field::FieldTerrain::adjustActorToTerrain(std::__ndk1::shared_ptr<lfs::Actor> const&)+0x3b4>"
+        },
+        {
+          "address": "0x39457dc",
+          "mnemonic": "bl",
+          "operands": "0x529ab20 <_ZN3lfs13FieldConstant12gridSizeHalfEv@plt>"
+        },
+        {
+          "address": "0x39457e0",
+          "mnemonic": "ldr",
+          "operands": "x8, [x19]"
+        },
+        {
+          "address": "0x39457e4",
+          "mnemonic": "ldr",
+          "operands": "s8, [x0]"
+        },
+        {
+          "address": "0x39457e8",
+          "mnemonic": "ldr",
+          "operands": "x9, [x8]"
+        },
+        {
+          "address": "0x39457ec",
+          "mnemonic": "ldr",
+          "operands": "x9, [x9, #0x60]"
+        },
+        {
+          "address": "0x39457f0",
+          "mnemonic": "mov",
+          "operands": "x0, x8"
+        },
+        {
+          "address": "0x39457f4",
+          "mnemonic": "blr",
+          "operands": "x9"
+        },
+        {
+          "address": "0x39457f8",
+          "mnemonic": "mov",
+          "operands": "x1, x0"
+        },
+        {
+          "address": "0x39457fc",
+          "mnemonic": "add",
+          "operands": "x0, sp, #0xc"
+        },
+        {
+          "address": "0x3945800",
+          "mnemonic": "bl",
+          "operands": "0x52723f0 <_ZN7cocos2d4Vec3C1ERKS0_@plt>"
+        },
+        {
+          "address": "0x3945804",
+          "mnemonic": "fmov",
+          "operands": "s0, #0.50000000"
+        },
+        {
+          "address": "0x3945808",
+          "mnemonic": "fmul",
+          "operands": "s0, s8, s0"
+        },
+        {
+          "address": "0x394580c",
+          "mnemonic": "add",
+          "operands": "x0, sp, #0xc"
+        },
+        {
+          "address": "0x3945810",
+          "mnemonic": "bl",
+          "operands": "0x5272400 <_ZN7cocos2d4Vec35scaleEf@plt>"
+        },
+        {
+          "address": "0x3945814",
+          "mnemonic": "add",
+          "operands": "x0, sp, #0x18"
+        },
+        {
+          "address": "0x3945818",
+          "mnemonic": "mov",
+          "operands": "x1, x22"
+        },
+        {
+          "address": "0x394581c",
+          "mnemonic": "bl",
+          "operands": "0x52723f0 <_ZN7cocos2d4Vec3C1ERKS0_@plt>"
+        },
+        {
+          "address": "0x3945820",
+          "mnemonic": "add",
+          "operands": "x0, sp, #0x18"
+        },
+        {
+          "address": "0x3945824",
+          "mnemonic": "add",
+          "operands": "x1, sp, #0xc"
+        },
+        {
+          "address": "0x3945828",
+          "mnemonic": "bl",
+          "operands": "0x529b210 <_ZN7cocos2d4Vec33addERKS0_@plt>"
+        },
+        {
+          "address": "0x394582c",
+          "mnemonic": "add",
+          "operands": "x0, sp, #0x28"
+        },
+        {
+          "address": "0x3945830",
+          "mnemonic": "add",
+          "operands": "x1, sp, #0x18"
+        },
+        {
+          "address": "0x3945834",
+          "mnemonic": "bl",
+          "operands": "0x529b220 <_ZN3lfs7Vector3C1ERKN7cocos2d4Vec3E@plt>"
+        },
+        {
+          "address": "0x3945838",
+          "mnemonic": "add",
+          "operands": "x0, sp, #0x18"
+        },
+        {
+          "address": "0x394583c",
+          "mnemonic": "bl",
+          "operands": "0x5261870 <_ZN7cocos2d4Vec3D1Ev@plt>"
+        },
+        {
+          "address": "0x3945840",
+          "mnemonic": "add",
+          "operands": "x0, sp, #0xc"
+        },
+        {
+          "address": "0x3945844",
+          "mnemonic": "bl",
+          "operands": "0x5261870 <_ZN7cocos2d4Vec3D1Ev@plt>"
+        },
+        {
+          "address": "0x3945848",
+          "mnemonic": "add",
+          "operands": "x0, sp, #0x28"
+        },
+        {
+          "address": "0x394584c",
+          "mnemonic": "bl",
+          "operands": "0x52783e0 <_ZN3lfs13FieldConstant16positionToCoord3ERKNS_7Vector3E@plt>"
+        },
+        {
+          "address": "0x3945850",
+          "mnemonic": "ldr",
+          "operands": "x22, [x20, #0x40]"
+        },
+        {
+          "address": "0x3945854",
+          "mnemonic": "str",
+          "operands": "x0, [sp, #0x18]"
+        },
+        {
+          "address": "0x3945858",
+          "mnemonic": "cbz",
+          "operands": "x22, 0x3945944 <lfs::field::FieldTerrain::adjustActorToTerrain(std::__ndk1::shared_ptr<lfs::Actor> const&)+0x29c>"
+        },
+        {
+          "address": "0x394585c",
+          "mnemonic": "add",
+          "operands": "x0, sp, #0x18"
+        },
+        {
+          "address": "0x3945860",
+          "mnemonic": "add",
+          "operands": "x1, x22, #0x10"
+        },
+        {
+          "address": "0x3945864",
+          "mnemonic": "bl",
+          "operands": "0x529ab40 <_ZN3lfs13FieldConstant12coordToIndexERKNS_5CoordES3_@plt>"
+        },
+        {
+          "address": "0x3945868",
+          "mnemonic": "ldr",
+          "operands": "x8, [x22]"
+        },
+        {
+          "address": "0x394586c",
+          "mnemonic": "mov",
+          "operands": "w9, w0"
+        },
+        {
+          "address": "0x3945870",
+          "mnemonic": "ldp",
+          "operands": "x8, x10, [x8]"
+        },
+        {
+          "address": "0x3945874",
+          "mnemonic": "sub",
+          "operands": "x10, x10, x8"
+        },
+        {
+          "address": "0x3945878",
+          "mnemonic": "cmp",
+          "operands": "x9, x10, asr #3"
+        },
+        {
+          "address": "0x3945880",
+          "mnemonic": "ldr",
+          "operands": "x22, [x8, x9, lsl #3]"
+        },
+        {
+          "address": "0x3945884",
+          "mnemonic": "cbz",
+          "operands": "x22, 0x3945944 <lfs::field::FieldTerrain::adjustActorToTerrain(std::__ndk1::shared_ptr<lfs::Actor> const&)+0x29c>"
+        },
+        {
+          "address": "0x3945888",
+          "mnemonic": "ldr",
+          "operands": "x8, [x22]"
+        },
+        {
+          "address": "0x394588c",
+          "mnemonic": "ldr",
+          "operands": "x8, [x8, #0x40]"
+        },
+        {
+          "address": "0x3945890",
+          "mnemonic": "mov",
+          "operands": "x0, x22"
+        },
+        {
+          "address": "0x3945894",
+          "mnemonic": "blr",
+          "operands": "x8"
+        },
+        {
+          "address": "0x3945898",
+          "mnemonic": "ldr",
+          "operands": "x8, [x21]"
+        },
+        {
+          "address": "0x394589c",
+          "mnemonic": "mov",
+          "operands": "x23, x0"
+        },
+        {
+          "address": "0x39458a0",
+          "mnemonic": "ldr",
+          "operands": "x8, [x8, #0x40]"
+        },
+        {
+          "address": "0x39458a4",
+          "mnemonic": "mov",
+          "operands": "x0, x21"
+        },
+        {
+          "address": "0x39458a8",
+          "mnemonic": "blr",
+          "operands": "x8"
+        },
+        {
+          "address": "0x39458ac",
+          "mnemonic": "mov",
+          "operands": "x1, x0"
+        },
+        {
+          "address": "0x39458b0",
+          "mnemonic": "mov",
+          "operands": "x0, x23"
+        },
+        {
+          "address": "0x39458b4",
+          "mnemonic": "bl",
+          "operands": "0x5278fe0 <_ZNK3lfs5CoordmiERKS0_@plt>"
+        },
+        {
+          "address": "0x39458b8",
+          "mnemonic": "lsr",
+          "operands": "x8, x0, #32"
+        },
+        {
+          "address": "0x39458bc",
+          "mnemonic": "cmp",
+          "operands": "w0, #0x0"
+        },
+        {
+          "address": "0x39458c4",
+          "mnemonic": "cmp",
+          "operands": "w8, #0x0"
+        },
+        {
+          "address": "0x39458c8",
+          "mnemonic": "orr",
+          "operands": "w11, w8, w0"
+        },
+        {
+          "address": "0x39458d0",
+          "mnemonic": "cbz",
+          "operands": "w11, 0x3945918 <lfs::field::FieldTerrain::adjustActorToTerrain(std::__ndk1::shared_ptr<lfs::Actor> const&)+0x270>"
+        },
+        {
+          "address": "0x39458d4",
+          "mnemonic": "cmp",
+          "operands": "w10, #0x1"
+        },
+        {
+          "address": "0x39458dc",
+          "mnemonic": "cmp",
+          "operands": "w9, #0x1"
+        },
+        {
+          "address": "0x39458e4",
+          "mnemonic": "adrp",
+          "operands": "x9, 0x570a000"
+        },
+        {
+          "address": "0x39458e8",
+          "mnemonic": "add",
+          "operands": "w10, w0, w0, lsl #1"
+        },
+        {
+          "address": "0x39458ec",
+          "mnemonic": "ldr",
+          "operands": "x9, [x9, #0xe90]"
+        },
+        {
+          "address": "0x39458f0",
+          "mnemonic": "add",
+          "operands": "w8, w8, w10"
+        },
+        {
+          "address": "0x39458f4",
+          "mnemonic": "ldp",
+          "operands": "x9, x11, [x9]"
+        },
+        {
+          "address": "0x39458f8",
+          "mnemonic": "add",
+          "operands": "w8, w8, #0x4"
+        },
+        {
+          "address": "0x39458fc",
+          "mnemonic": "sub",
+          "operands": "x10, x11, x9"
+        },
+        {
+          "address": "0x3945900",
+          "mnemonic": "cmp",
+          "operands": "x8, x10, asr #2"
+        },
+        {
+          "address": "0x3945908",
+          "mnemonic": "ldr",
+          "operands": "w8, [x9, x8, lsl #2]"
+        },
+        {
+          "address": "0x394590c",
+          "mnemonic": "sub",
+          "operands": "w8, w8, #0x7"
+        },
+        {
+          "address": "0x3945910",
+          "mnemonic": "cmn",
+          "operands": "w8, #0x5"
+        },
+        {
+          "address": "0x3945914",
+          "mnemonic": "csel",
+          "operands": "x21, x21, x22, lo"
+        },
+        {
+          "address": "0x3945918",
+          "mnemonic": "mov",
+          "operands": "x0, x20"
+        },
+        {
+          "address": "0x394591c",
+          "mnemonic": "mov",
+          "operands": "x1, x21"
+        },
+        {
+          "address": "0x3945920",
+          "mnemonic": "bl",
+          "operands": "0x529b230 <_ZNK3lfs5field12FieldTerrain18checkScreeningTileEPKNS0_9FieldTileE@plt>"
+        },
+        {
+          "address": "0x3945924",
+          "mnemonic": "cbz",
+          "operands": "x0, 0x3945944 <lfs::field::FieldTerrain::adjustActorToTerrain(std::__ndk1::shared_ptr<lfs::Actor> const&)+0x29c>"
+        },
+        {
+          "address": "0x3945928",
+          "mnemonic": "ldp",
+          "operands": "s1, s0, [x0, #0x68]"
+        },
+        {
+          "address": "0x394592c",
+          "mnemonic": "ldr",
+          "operands": "x8, [x19]"
+        },
+        {
+          "address": "0x3945930",
+          "mnemonic": "ldr",
+          "operands": "x9, [x8]"
+        },
+        {
+          "address": "0x3945934",
+          "mnemonic": "fcvtzs",
+          "operands": "w1, s1"
+        },
+        {
+          "address": "0x3945938",
+          "mnemonic": "ldr",
+          "operands": "x9, [x9, #0x58]"
+        },
+        {
+          "address": "0x394593c",
+          "mnemonic": "mov",
+          "operands": "x0, x8"
+        },
+        {
+          "address": "0x3945940",
+          "mnemonic": "blr",
+          "operands": "x9"
+        },
+        {
+          "address": "0x3945944",
+          "mnemonic": "add",
+          "operands": "x0, sp, #0x28"
+        },
+        {
+          "address": "0x3945948",
+          "mnemonic": "bl",
+          "operands": "0x5278050 <_ZN7cocos2d4Vec3D2Ev@plt>"
+        },
+        {
+          "address": "0x394594c",
+          "mnemonic": "b",
+          "operands": "0x3945a5c <lfs::field::FieldTerrain::adjustActorToTerrain(std::__ndk1::shared_ptr<lfs::Actor> const&)+0x3b4>"
+        },
+        {
+          "address": "0x3945950",
+          "mnemonic": "ldr",
+          "operands": "s1, [x23, #0x6c]"
+        },
+        {
+          "address": "0x3945954",
+          "mnemonic": "fcmp",
+          "operands": "s9, s0"
+        },
+        {
+          "address": "0x394595c",
+          "mnemonic": "fcmp",
+          "operands": "s8, s1"
+        },
+        {
+          "address": "0x3945964",
+          "mnemonic": "add",
+          "operands": "x27, x27, #0x8"
+        },
+        {
+          "address": "0x3945968",
+          "mnemonic": "cmp",
+          "operands": "x27, #0x38"
+        },
+        {
+          "address": "0x3945970",
+          "mnemonic": "ldr",
+          "operands": "x8, [x21]"
+        },
+        {
+          "address": "0x3945974",
+          "mnemonic": "ldr",
+          "operands": "x23, [x20, #0x40]"
+        },
+        {
+          "address": "0x3945978",
+          "mnemonic": "ldr",
+          "operands": "x8, [x8, #0x40]"
+        },
+        {
+          "address": "0x394597c",
+          "mnemonic": "mov",
+          "operands": "x0, x21"
+        },
+        {
+          "address": "0x3945980",
+          "mnemonic": "blr",
+          "operands": "x8"
+        },
+        {
+          "address": "0x3945984",
+          "mnemonic": "ldr",
+          "operands": "x8, [x26]"
+        },
+        {
+          "address": "0x3945988",
+          "mnemonic": "add",
+          "operands": "x1, x8, x27"
+        },
+        {
+          "address": "0x394598c",
+          "mnemonic": "bl",
+          "operands": "0x529b140 <_ZNK3lfs5CoordplERKS0_@plt>"
+        },
+        {
+          "address": "0x3945990",
+          "mnemonic": "str",
+          "operands": "x0, [sp, #0x28]"
+        },
+        {
+          "address": "0x3945994",
+          "mnemonic": "add",
+          "operands": "x0, sp, #0x28"
+        },
+        {
+          "address": "0x3945998",
+          "mnemonic": "add",
+          "operands": "x1, x23, #0x10"
+        },
+        {
+          "address": "0x394599c",
+          "mnemonic": "bl",
+          "operands": "0x529ab40 <_ZN3lfs13FieldConstant12coordToIndexERKNS_5CoordES3_@plt>"
+        },
+        {
+          "address": "0x39459a0",
+          "mnemonic": "ldr",
+          "operands": "x8, [x23]"
+        },
+        {
+          "address": "0x39459a4",
+          "mnemonic": "mov",
+          "operands": "w9, w0"
+        },
+        {
+          "address": "0x39459a8",
+          "mnemonic": "ldp",
+          "operands": "x8, x10, [x8]"
+        },
+        {
+          "address": "0x39459ac",
+          "mnemonic": "sub",
+          "operands": "x10, x10, x8"
+        },
+        {
+          "address": "0x39459b0",
+          "mnemonic": "cmp",
+          "operands": "x9, x10, asr #3"
+        },
+        {
+          "address": "0x39459b8",
+          "mnemonic": "ldr",
+          "operands": "x23, [x8, x9, lsl #3]"
+        },
+        {
+          "address": "0x39459bc",
+          "mnemonic": "cbz",
+          "operands": "x23, 0x3945964 <lfs::field::FieldTerrain::adjustActorToTerrain(std::__ndk1::shared_ptr<lfs::Actor> const&)+0x2bc>"
+        },
+        {
+          "address": "0x39459c0",
+          "mnemonic": "mov",
+          "operands": "x0, x23"
+        },
+        {
+          "address": "0x39459c4",
+          "mnemonic": "bl",
+          "operands": "0x528c0d0 <_ZNK3lfs5field9FieldTile6existsEv@plt>"
+        },
+        {
+          "address": "0x39459c8",
+          "mnemonic": "tbz",
+          "operands": "w0, #0x0, 0x3945964 <lfs::field::FieldTerrain::adjustActorToTerrain(std::__ndk1::shared_ptr<lfs::Actor> const&)+0x2bc>"
+        },
+        {
+          "address": "0x39459cc",
+          "mnemonic": "ldr",
+          "operands": "x8, [x23]"
+        },
+        {
+          "address": "0x39459d0",
+          "mnemonic": "ldr",
+          "operands": "x8, [x8, #0x50]"
+        },
+        {
+          "address": "0x39459d4",
+          "mnemonic": "mov",
+          "operands": "x0, x23"
+        },
+        {
+          "address": "0x39459d8",
+          "mnemonic": "blr",
+          "operands": "x8"
+        },
+        {
+          "address": "0x39459dc",
+          "mnemonic": "ldr",
+          "operands": "x8, [x21]"
+        },
+        {
+          "address": "0x39459e0",
+          "mnemonic": "mov",
+          "operands": "w24, w0"
+        },
+        {
+          "address": "0x39459e4",
+          "mnemonic": "ldr",
+          "operands": "x8, [x8, #0x50]"
+        },
+        {
+          "address": "0x39459e8",
+          "mnemonic": "mov",
+          "operands": "x0, x21"
+        },
+        {
+          "address": "0x39459ec",
+          "mnemonic": "blr",
+          "operands": "x8"
+        },
+        {
+          "address": "0x39459f0",
+          "mnemonic": "cmp",
+          "operands": "w24, w0"
+        },
+        {
+          "address": "0x39459f8",
+          "mnemonic": "ldr",
+          "operands": "s0, [x23, #0x68]"
+        },
+        {
+          "address": "0x39459fc",
+          "mnemonic": "cbz",
+          "operands": "x22, 0x3945950 <lfs::field::FieldTerrain::adjustActorToTerrain(std::__ndk1::shared_ptr<lfs::Actor> const&)+0x2a8>"
+        },
+        {
+          "address": "0x3945a00",
+          "mnemonic": "ldr",
+          "operands": "s1, [x22, #0x68]"
+        },
+        {
+          "address": "0x3945a04",
+          "mnemonic": "fcmp",
+          "operands": "s0, s1"
+        },
+        {
+          "address": "0x3945a0c",
+          "mnemonic": "ldr",
+          "operands": "s1, [x23, #0x6c]"
+        },
+        {
+          "address": "0x3945a10",
+          "mnemonic": "ldr",
+          "operands": "s2, [x22, #0x6c]"
+        },
+        {
+          "address": "0x3945a14",
+          "mnemonic": "fcmp",
+          "operands": "s1, s2"
+        },
+        {
+          "address": "0x3945a1c",
+          "mnemonic": "b",
+          "operands": "0x3945964 <lfs::field::FieldTerrain::adjustActorToTerrain(std::__ndk1::shared_ptr<lfs::Actor> const&)+0x2bc>"
+        },
+        {
+          "address": "0x3945a20",
+          "mnemonic": "ldr",
+          "operands": "s0, [x21, #0x68]"
+        },
+        {
+          "address": "0x3945a2c",
+          "mnemonic": "fcmp",
+          "operands": "s0, s1"
+        },
+        {
+          "address": "0x3945a34",
+          "mnemonic": "ldr",
+          "operands": "s0, [x21, #0x6c]"
+        },
+        {
+          "address": "0x3945a3c",
+          "mnemonic": "fcmp",
+          "operands": "s0, s1"
+        },
+        {
+          "address": "0x3945a44",
+          "mnemonic": "ldr",
+          "operands": "x0, [x19]"
+        },
+        {
+          "address": "0x3945a48",
+          "mnemonic": "fcvtzs",
+          "operands": "w1, s9"
+        },
+        {
+          "address": "0x3945a4c",
+          "mnemonic": "ldr",
+          "operands": "x8, [x0]"
+        },
+        {
+          "address": "0x3945a50",
+          "mnemonic": "ldr",
+          "operands": "x8, [x8, #0x58]"
+        },
+        {
+          "address": "0x3945a54",
+          "mnemonic": "fmov",
+          "operands": "s0, s8"
+        },
+        {
+          "address": "0x3945a58",
+          "mnemonic": "blr",
+          "operands": "x8"
+        },
+        {
+          "address": "0x3945a5c",
+          "mnemonic": "sub",
+          "operands": "x0, x29, #0x28"
+        },
+        {
+          "address": "0x3945a60",
+          "mnemonic": "bl",
+          "operands": "0x5257940 <_ZN7cocos2d4Vec2D1Ev@plt>"
+        },
+        {
+          "address": "0x3945a64",
+          "mnemonic": "ldr",
+          "operands": "x8, [x25, #0x28]"
+        },
+        {
+          "address": "0x3945a68",
+          "mnemonic": "ldur",
+          "operands": "x9, [x29, #-0x18]"
+        },
+        {
+          "address": "0x3945a6c",
+          "mnemonic": "cmp",
+          "operands": "x8, x9"
+        },
+        {
+          "address": "0x3945a74",
+          "mnemonic": "ldp",
+          "operands": "x20, x19, [sp, #0xb0]"
+        },
+        {
+          "address": "0x3945a78",
+          "mnemonic": "ldr",
+          "operands": "x27, [sp, #0x70]"
+        },
+        {
+          "address": "0x3945a7c",
+          "mnemonic": "ldp",
+          "operands": "x22, x21, [sp, #0xa0]"
+        },
+        {
+          "address": "0x3945a80",
+          "mnemonic": "ldp",
+          "operands": "x24, x23, [sp, #0x90]"
+        },
+        {
+          "address": "0x3945a84",
+          "mnemonic": "ldp",
+          "operands": "x26, x25, [sp, #0x80]"
+        },
+        {
+          "address": "0x3945a88",
+          "mnemonic": "ldp",
+          "operands": "x29, x30, [sp, #0x60]"
+        },
+        {
+          "address": "0x3945a8c",
+          "mnemonic": "ldp",
+          "operands": "d9, d8, [sp, #0x50]"
+        },
+        {
+          "address": "0x3945a90",
+          "mnemonic": "add",
+          "operands": "sp, sp, #0xc0"
+        },
+        {
+          "address": "0x3945a94",
+          "mnemonic": "ret",
+          "operands": ""
+        },
+        {
+          "address": "0x3945a98",
+          "mnemonic": "b",
+          "operands": "0x3945acc <lfs::field::FieldTerrain::adjustActorToTerrain(std::__ndk1::shared_ptr<lfs::Actor> const&)+0x424>"
+        },
+        {
+          "address": "0x3945a9c",
+          "mnemonic": "b",
+          "operands": "0x3945acc <lfs::field::FieldTerrain::adjustActorToTerrain(std::__ndk1::shared_ptr<lfs::Actor> const&)+0x424>"
+        },
+        {
+          "address": "0x3945aa0",
+          "mnemonic": "b",
+          "operands": "0x3945aa4 <lfs::field::FieldTerrain::adjustActorToTerrain(std::__ndk1::shared_ptr<lfs::Actor> const&)+0x3fc>"
+        },
+        {
+          "address": "0x3945aa4",
+          "mnemonic": "mov",
+          "operands": "x19, x0"
+        },
+        {
+          "address": "0x3945aa8",
+          "mnemonic": "add",
+          "operands": "x0, sp, #0x18"
+        },
+        {
+          "address": "0x3945aac",
+          "mnemonic": "bl",
+          "operands": "0x5261870 <_ZN7cocos2d4Vec3D1Ev@plt>"
+        },
+        {
+          "address": "0x3945ab0",
+          "mnemonic": "b",
+          "operands": "0x3945abc <lfs::field::FieldTerrain::adjustActorToTerrain(std::__ndk1::shared_ptr<lfs::Actor> const&)+0x414>"
+        },
+        {
+          "address": "0x3945ab4",
+          "mnemonic": "b",
+          "operands": "0x3945ab8 <lfs::field::FieldTerrain::adjustActorToTerrain(std::__ndk1::shared_ptr<lfs::Actor> const&)+0x410>"
+        },
+        {
+          "address": "0x3945ab8",
+          "mnemonic": "mov",
+          "operands": "x19, x0"
+        },
+        {
+          "address": "0x3945abc",
+          "mnemonic": "add",
+          "operands": "x0, sp, #0xc"
+        },
+        {
+          "address": "0x3945ac0",
+          "mnemonic": "bl",
+          "operands": "0x5261870 <_ZN7cocos2d4Vec3D1Ev@plt>"
+        },
+        {
+          "address": "0x3945ac4",
+          "mnemonic": "b",
+          "operands": "0x3945af0 <lfs::field::FieldTerrain::adjustActorToTerrain(std::__ndk1::shared_ptr<lfs::Actor> const&)+0x448>"
+        },
+        {
+          "address": "0x3945ac8",
+          "mnemonic": "b",
+          "operands": "0x3945aec <lfs::field::FieldTerrain::adjustActorToTerrain(std::__ndk1::shared_ptr<lfs::Actor> const&)+0x444>"
+        },
+        {
+          "address": "0x3945acc",
+          "mnemonic": "mov",
+          "operands": "x19, x0"
+        },
+        {
+          "address": "0x3945ad0",
+          "mnemonic": "add",
+          "operands": "x0, sp, #0x28"
+        },
+        {
+          "address": "0x3945ad4",
+          "mnemonic": "bl",
+          "operands": "0x5278050 <_ZN7cocos2d4Vec3D2Ev@plt>"
+        },
+        {
+          "address": "0x3945ad8",
+          "mnemonic": "b",
+          "operands": "0x3945af0 <lfs::field::FieldTerrain::adjustActorToTerrain(std::__ndk1::shared_ptr<lfs::Actor> const&)+0x448>"
+        },
+        {
+          "address": "0x3945adc",
+          "mnemonic": "b",
+          "operands": "0x3945aec <lfs::field::FieldTerrain::adjustActorToTerrain(std::__ndk1::shared_ptr<lfs::Actor> const&)+0x444>"
+        },
+        {
+          "address": "0x3945ae0",
+          "mnemonic": "b",
+          "operands": "0x3945aec <lfs::field::FieldTerrain::adjustActorToTerrain(std::__ndk1::shared_ptr<lfs::Actor> const&)+0x444>"
+        },
+        {
+          "address": "0x3945ae4",
+          "mnemonic": "b",
+          "operands": "0x3945aec <lfs::field::FieldTerrain::adjustActorToTerrain(std::__ndk1::shared_ptr<lfs::Actor> const&)+0x444>"
+        },
+        {
+          "address": "0x3945ae8",
+          "mnemonic": "b",
+          "operands": "0x3945aec <lfs::field::FieldTerrain::adjustActorToTerrain(std::__ndk1::shared_ptr<lfs::Actor> const&)+0x444>"
+        },
+        {
+          "address": "0x3945aec",
+          "mnemonic": "mov",
+          "operands": "x19, x0"
+        },
+        {
+          "address": "0x3945af0",
+          "mnemonic": "sub",
+          "operands": "x0, x29, #0x28"
+        },
+        {
+          "address": "0x3945af4",
+          "mnemonic": "bl",
+          "operands": "0x5257940 <_ZN7cocos2d4Vec2D1Ev@plt>"
+        },
+        {
+          "address": "0x3945af8",
+          "mnemonic": "ldr",
+          "operands": "x8, [x25, #0x28]"
+        },
+        {
+          "address": "0x3945afc",
+          "mnemonic": "ldur",
+          "operands": "x9, [x29, #-0x18]"
+        },
+        {
+          "address": "0x3945b00",
+          "mnemonic": "cmp",
+          "operands": "x8, x9"
+        },
+        {
+          "address": "0x3945b08",
+          "mnemonic": "mov",
+          "operands": "x0, x19"
+        },
+        {
+          "address": "0x3945b0c",
+          "mnemonic": "bl",
+          "operands": "0x52514ec <__emutls_get_address+0xe00>"
+        },
+        {
+          "address": "0x3945b10",
+          "mnemonic": "bl",
+          "operands": "0x5255460 <__stack_chk_fail@plt>"
+        }
+      ],
+      "label": "adjust_actor",
+      "name": "lfs::field::FieldTerrain::adjustActorToTerrain(std::__ndk1::shared_ptr<lfs::Actor> const&)",
+      "summary": {
+        "calls": [
+          {
+            "address": "0x39456f0",
+            "mnemonic": "blr",
+            "operands": "x9"
+          },
+          {
+            "address": "0x39456f8",
+            "mnemonic": "bl",
+            "operands": "0x52783e0 <_ZN3lfs13FieldConstant16positionToCoord3ERKNS_7Vector3E@plt>"
+          },
+          {
+            "address": "0x3945708",
+            "mnemonic": "bl",
+            "operands": "0x529ab70 <_ZN3lfs9Isometric11mapToScreenERKNS_7Vector3E@plt>"
+          },
+          {
+            "address": "0x394571c",
+            "mnemonic": "bl",
+            "operands": "0x529ab40 <_ZN3lfs13FieldConstant12coordToIndexERKNS_5CoordES3_@plt>"
+          },
+          {
+            "address": "0x3945744",
+            "mnemonic": "bl",
+            "operands": "0x528c0d0 <_ZNK3lfs5field9FieldTile6existsEv@plt>"
+          },
+          {
+            "address": "0x3945760",
+            "mnemonic": "blr",
+            "operands": "x8"
+          },
+          {
+            "address": "0x3945768",
+            "mnemonic": "bl",
+            "operands": "0x528c0e0 <_ZN3lfs13FieldConstant14tileSideHeightEv@plt>"
+          },
+          {
+            "address": "0x394578c",
+            "mnemonic": "blr",
+            "operands": "x8"
+          },
+          {
+            "address": "0x394579c",
+            "mnemonic": "blr",
+            "operands": "x8"
+          },
+          {
+            "address": "0x39457b0",
+            "mnemonic": "bl",
+            "operands": "0x529b200 <_ZNK3lfs5field12FieldTerrain16getScreeningTileEPKNS0_9FieldTileE@plt>"
+          },
+          {
+            "address": "0x39457d4",
+            "mnemonic": "blr",
+            "operands": "x8"
+          },
+          {
+            "address": "0x39457dc",
+            "mnemonic": "bl",
+            "operands": "0x529ab20 <_ZN3lfs13FieldConstant12gridSizeHalfEv@plt>"
+          },
+          {
+            "address": "0x39457f4",
+            "mnemonic": "blr",
+            "operands": "x9"
+          },
+          {
+            "address": "0x3945800",
+            "mnemonic": "bl",
+            "operands": "0x52723f0 <_ZN7cocos2d4Vec3C1ERKS0_@plt>"
+          },
+          {
+            "address": "0x3945810",
+            "mnemonic": "bl",
+            "operands": "0x5272400 <_ZN7cocos2d4Vec35scaleEf@plt>"
+          },
+          {
+            "address": "0x394581c",
+            "mnemonic": "bl",
+            "operands": "0x52723f0 <_ZN7cocos2d4Vec3C1ERKS0_@plt>"
+          },
+          {
+            "address": "0x3945828",
+            "mnemonic": "bl",
+            "operands": "0x529b210 <_ZN7cocos2d4Vec33addERKS0_@plt>"
+          },
+          {
+            "address": "0x3945834",
+            "mnemonic": "bl",
+            "operands": "0x529b220 <_ZN3lfs7Vector3C1ERKN7cocos2d4Vec3E@plt>"
+          },
+          {
+            "address": "0x394583c",
+            "mnemonic": "bl",
+            "operands": "0x5261870 <_ZN7cocos2d4Vec3D1Ev@plt>"
+          },
+          {
+            "address": "0x3945844",
+            "mnemonic": "bl",
+            "operands": "0x5261870 <_ZN7cocos2d4Vec3D1Ev@plt>"
+          },
+          {
+            "address": "0x394584c",
+            "mnemonic": "bl",
+            "operands": "0x52783e0 <_ZN3lfs13FieldConstant16positionToCoord3ERKNS_7Vector3E@plt>"
+          },
+          {
+            "address": "0x3945864",
+            "mnemonic": "bl",
+            "operands": "0x529ab40 <_ZN3lfs13FieldConstant12coordToIndexERKNS_5CoordES3_@plt>"
+          },
+          {
+            "address": "0x3945894",
+            "mnemonic": "blr",
+            "operands": "x8"
+          },
+          {
+            "address": "0x39458a8",
+            "mnemonic": "blr",
+            "operands": "x8"
+          },
+          {
+            "address": "0x39458b4",
+            "mnemonic": "bl",
+            "operands": "0x5278fe0 <_ZNK3lfs5CoordmiERKS0_@plt>"
+          },
+          {
+            "address": "0x3945920",
+            "mnemonic": "bl",
+            "operands": "0x529b230 <_ZNK3lfs5field12FieldTerrain18checkScreeningTileEPKNS0_9FieldTileE@plt>"
+          },
+          {
+            "address": "0x3945940",
+            "mnemonic": "blr",
+            "operands": "x9"
+          },
+          {
+            "address": "0x3945948",
+            "mnemonic": "bl",
+            "operands": "0x5278050 <_ZN7cocos2d4Vec3D2Ev@plt>"
+          },
+          {
+            "address": "0x3945980",
+            "mnemonic": "blr",
+            "operands": "x8"
+          },
+          {
+            "address": "0x394598c",
+            "mnemonic": "bl",
+            "operands": "0x529b140 <_ZNK3lfs5CoordplERKS0_@plt>"
+          },
+          {
+            "address": "0x394599c",
+            "mnemonic": "bl",
+            "operands": "0x529ab40 <_ZN3lfs13FieldConstant12coordToIndexERKNS_5CoordES3_@plt>"
+          },
+          {
+            "address": "0x39459c4",
+            "mnemonic": "bl",
+            "operands": "0x528c0d0 <_ZNK3lfs5field9FieldTile6existsEv@plt>"
+          },
+          {
+            "address": "0x39459d8",
+            "mnemonic": "blr",
+            "operands": "x8"
+          },
+          {
+            "address": "0x39459ec",
+            "mnemonic": "blr",
+            "operands": "x8"
+          },
+          {
+            "address": "0x3945a58",
+            "mnemonic": "blr",
+            "operands": "x8"
+          },
+          {
+            "address": "0x3945a60",
+            "mnemonic": "bl",
+            "operands": "0x5257940 <_ZN7cocos2d4Vec2D1Ev@plt>"
+          },
+          {
+            "address": "0x3945aac",
+            "mnemonic": "bl",
+            "operands": "0x5261870 <_ZN7cocos2d4Vec3D1Ev@plt>"
+          },
+          {
+            "address": "0x3945ac0",
+            "mnemonic": "bl",
+            "operands": "0x5261870 <_ZN7cocos2d4Vec3D1Ev@plt>"
+          },
+          {
+            "address": "0x3945ad4",
+            "mnemonic": "bl",
+            "operands": "0x5278050 <_ZN7cocos2d4Vec3D2Ev@plt>"
+          },
+          {
+            "address": "0x3945af4",
+            "mnemonic": "bl",
+            "operands": "0x5257940 <_ZN7cocos2d4Vec2D1Ev@plt>"
+          },
+          {
+            "address": "0x3945b0c",
+            "mnemonic": "bl",
+            "operands": "0x52514ec <__emutls_get_address+0xe00>"
+          },
+          {
+            "address": "0x3945b10",
+            "mnemonic": "bl",
+            "operands": "0x5255460 <__stack_chk_fail@plt>"
+          }
+        ],
+        "immediates": [
+          "#0xc0",
+          "#0x50",
+          "#0x60",
+          "#0x70",
+          "#0x80",
+          "#0x90",
+          "#0xa0",
+          "#0xb0",
+          "#0x28",
+          "#-0x18",
+          "#-0x20",
+          "#0x40",
+          "#0x20",
+          "#0x10",
+          "#3",
+          "#0x0",
+          "#0x68",
+          "#0x58",
+          "#0x38",
+          "#-0x24",
+          "#0x98",
+          "#0xe88",
+          "#0x88",
+          "#0xc",
+          "#0",
+          "#0x18",
+          "#32",
+          "#0x1",
+          "#1",
+          "#0xe90",
+          "#0x4",
+          "#2",
+          "#0x7",
+          "#0x5",
+          "#0x6c",
+          "#0x8"
+        ],
+        "mnemonic_counts": {
+          "add": 26,
+          "adrp": 2,
+          "b": 15,
+          "bl": 29,
+          "blr": 13,
+          "cbz": 8,
+          "cmn": 1,
+          "cmp": 12,
+          "csel": 1,
+          "fadd": 2,
+          "fcmp": 6,
+          "fcvtzs": 2,
+          "fmov": 2,
+          "fmul": 1,
+          "ldp": 13,
+          "ldr": 60,
+          "ldur": 3,
+          "lsr": 1,
+          "mov": 34,
+          "orr": 1,
+          "ret": 1,
+          "stp": 6,
+          "str": 3,
+          "stur": 3,
+          "sub": 11,
+          "tbz": 4
+        }
+      }
+    },
+    {
+      "address": "0x39474f0",
+      "bounded_bytes": 124,
+      "bounded_stop": "0x394756c",
+      "instruction_count": 29,
+      "instructions": [
+        {
+          "address": "0x39474f0",
+          "mnemonic": "stp",
+          "operands": "x29, x30, [sp, #-0x30]!"
+        },
+        {
+          "address": "0x39474f4",
+          "mnemonic": "str",
+          "operands": "x21, [sp, #0x10]"
+        },
+        {
+          "address": "0x39474f8",
+          "mnemonic": "stp",
+          "operands": "x20, x19, [sp, #0x20]"
+        },
+        {
+          "address": "0x39474fc",
+          "mnemonic": "mov",
+          "operands": "x29, sp"
+        },
+        {
+          "address": "0x3947500",
+          "mnemonic": "ldr",
+          "operands": "x20, [x1, #0x28]"
+        },
+        {
+          "address": "0x3947504",
+          "mnemonic": "cbz",
+          "operands": "x20, 0x3947558 <lfs::field::FieldTile::calculateLinkNodeCost(lfs::pathfinding::Node const&) const+0x68>"
+        },
+        {
+          "address": "0x3947508",
+          "mnemonic": "ldr",
+          "operands": "x8, [x20]"
+        },
+        {
+          "address": "0x394750c",
+          "mnemonic": "mov",
+          "operands": "x19, x0"
+        },
+        {
+          "address": "0x3947510",
+          "mnemonic": "mov",
+          "operands": "x0, x20"
+        },
+        {
+          "address": "0x3947514",
+          "mnemonic": "ldr",
+          "operands": "x8, [x8, #0x30]"
+        },
+        {
+          "address": "0x3947518",
+          "mnemonic": "blr",
+          "operands": "x8"
+        },
+        {
+          "address": "0x394751c",
+          "mnemonic": "ldr",
+          "operands": "w8, [x19, #0x50]"
+        },
+        {
+          "address": "0x3947520",
+          "mnemonic": "ldr",
+          "operands": "w9, [x0]"
+        },
+        {
+          "address": "0x3947524",
+          "mnemonic": "mov",
+          "operands": "x0, x20"
+        },
+        {
+          "address": "0x3947528",
+          "mnemonic": "ldr",
+          "operands": "x10, [x20]"
+        },
+        {
+          "address": "0x394752c",
+          "mnemonic": "subs",
+          "operands": "w8, w9, w8"
+        },
+        {
+          "address": "0x3947530",
+          "mnemonic": "ldr",
+          "operands": "x9, [x10, #0x30]"
+        },
+        {
+          "address": "0x3947538",
+          "mnemonic": "blr",
+          "operands": "x9"
+        },
+        {
+          "address": "0x394753c",
+          "mnemonic": "ldr",
+          "operands": "w8, [x19, #0x54]"
+        },
+        {
+          "address": "0x3947540",
+          "mnemonic": "ldr",
+          "operands": "w9, [x0, #0x4]"
+        },
+        {
+          "address": "0x3947544",
+          "mnemonic": "subs",
+          "operands": "w8, w9, w8"
+        },
+        {
+          "address": "0x394754c",
+          "mnemonic": "add",
+          "operands": "w8, w8, w21"
+        },
+        {
+          "address": "0x3947550",
+          "mnemonic": "scvtf",
+          "operands": "s0, w8"
+        },
+        {
+          "address": "0x3947554",
+          "mnemonic": "b",
+          "operands": "0x394755c <lfs::field::FieldTile::calculateLinkNodeCost(lfs::pathfinding::Node const&) const+0x6c>"
+        },
+        {
+          "address": "0x3947558",
+          "mnemonic": "fmov",
+          "operands": "s0, #1.00000000"
+        },
+        {
+          "address": "0x394755c",
+          "mnemonic": "ldp",
+          "operands": "x20, x19, [sp, #0x20]"
+        },
+        {
+          "address": "0x3947560",
+          "mnemonic": "ldr",
+          "operands": "x21, [sp, #0x10]"
+        },
+        {
+          "address": "0x3947564",
+          "mnemonic": "ldp",
+          "operands": "x29, x30, [sp], #0x30"
+        },
+        {
+          "address": "0x3947568",
+          "mnemonic": "ret",
+          "operands": ""
+        }
+      ],
+      "label": "link_cost",
+      "name": "lfs::field::FieldTile::calculateLinkNodeCost(lfs::pathfinding::Node const&) const",
+      "summary": {
+        "calls": [
+          {
+            "address": "0x3947518",
+            "mnemonic": "blr",
+            "operands": "x8"
+          },
+          {
+            "address": "0x3947538",
+            "mnemonic": "blr",
+            "operands": "x9"
+          }
+        ],
+        "immediates": [
+          "#-0x30",
+          "#0x10",
+          "#0x20",
+          "#0x28",
+          "#0x30",
+          "#0x50",
+          "#0x54",
+          "#0x4",
+          "#1"
+        ],
+        "mnemonic_counts": {
+          "add": 1,
+          "b": 1,
+          "blr": 2,
+          "cbz": 1,
+          "fmov": 1,
+          "ldp": 2,
+          "ldr": 10,
+          "mov": 4,
+          "ret": 1,
+          "scvtf": 1,
+          "stp": 2,
+          "str": 1,
+          "subs": 2
+        }
+      }
+    },
+    {
+      "address": "0x3944a0c",
+      "bounded_bytes": 8,
+      "bounded_stop": "0x3944a14",
+      "instruction_count": 2,
+      "instructions": [
+        {
+          "address": "0x3944a0c",
+          "mnemonic": "mov",
+          "operands": "w0, wzr"
+        },
+        {
+          "address": "0x3944a10",
+          "mnemonic": "ret",
+          "operands": ""
+        }
+      ],
+      "label": "player_depth",
+      "name": "lfs::field::FieldPlayer::getDepthOrder() const",
+      "summary": {
+        "calls": [],
+        "immediates": [],
+        "mnemonic_counts": {
+          "mov": 1,
+          "ret": 1
+        }
+      }
+    },
+    {
+      "address": "0x394cc48",
+      "bounded_bytes": 652,
+      "bounded_stop": "0x394ced4",
+      "instruction_count": 145,
+      "instructions": [
+        {
+          "address": "0x394cc48",
+          "mnemonic": "sub",
+          "operands": "sp, sp, #0x30"
+        },
+        {
+          "address": "0x394cc4c",
+          "mnemonic": "stp",
+          "operands": "x29, x30, [sp, #0x10]"
+        },
+        {
+          "address": "0x394cc50",
+          "mnemonic": "stp",
+          "operands": "x20, x19, [sp, #0x20]"
+        },
+        {
+          "address": "0x394cc54",
+          "mnemonic": "add",
+          "operands": "x29, sp, #0x10"
+        },
+        {
+          "address": "0x394cc5c",
+          "mnemonic": "mov",
+          "operands": "x19, x2"
+        },
+        {
+          "address": "0x394cc60",
+          "mnemonic": "add",
+          "operands": "x0, sp, #0x4"
+        },
+        {
+          "address": "0x394cc64",
+          "mnemonic": "ldr",
+          "operands": "x8, [x20, #0x28]"
+        },
+        {
+          "address": "0x394cc68",
+          "mnemonic": "mov",
+          "operands": "w2, #0xff               // =255"
+        },
+        {
+          "address": "0x394cc6c",
+          "mnemonic": "str",
+          "operands": "x8, [sp, #0x8]"
+        },
+        {
+          "address": "0x394cc70",
+          "mnemonic": "ldr",
+          "operands": "d1, [x4]"
+        },
+        {
+          "address": "0x394cc74",
+          "mnemonic": "ldr",
+          "operands": "x8, [x4, #0x8]"
+        },
+        {
+          "address": "0x394cc78",
+          "mnemonic": "str",
+          "operands": "s0, [x1, #0x8]"
+        },
+        {
+          "address": "0x394cc7c",
+          "mnemonic": "mov",
+          "operands": "w4, #0xff               // =255"
+        },
+        {
+          "address": "0x394cc80",
+          "mnemonic": "str",
+          "operands": "d1, [x1]"
+        },
+        {
+          "address": "0x394cc84",
+          "mnemonic": "mov",
+          "operands": "w1, #0xff               // =255"
+        },
+        {
+          "address": "0x394cc88",
+          "mnemonic": "ldr",
+          "operands": "d0, [x8]"
+        },
+        {
+          "address": "0x394cc8c",
+          "mnemonic": "str",
+          "operands": "d0, [x3]"
+        },
+        {
+          "address": "0x394cc90",
+          "mnemonic": "mov",
+          "operands": "w3, #0xff               // =255"
+        },
+        {
+          "address": "0x394cc94",
+          "mnemonic": "bl",
+          "operands": "0x5274cb0 <_ZN7cocos2d7Color4BC1Ehhhh@plt>"
+        },
+        {
+          "address": "0x394cc98",
+          "mnemonic": "ldr",
+          "operands": "w8, [sp, #0x4]"
+        },
+        {
+          "address": "0x394cc9c",
+          "mnemonic": "str",
+          "operands": "w8, [x19]"
+        },
+        {
+          "address": "0x394cca0",
+          "mnemonic": "ldr",
+          "operands": "x8, [x20, #0x28]"
+        },
+        {
+          "address": "0x394cca4",
+          "mnemonic": "ldr",
+          "operands": "x9, [sp, #0x8]"
+        },
+        {
+          "address": "0x394cca8",
+          "mnemonic": "cmp",
+          "operands": "x8, x9"
+        },
+        {
+          "address": "0x394ccb0",
+          "mnemonic": "ldp",
+          "operands": "x20, x19, [sp, #0x20]"
+        },
+        {
+          "address": "0x394ccb4",
+          "mnemonic": "ldp",
+          "operands": "x29, x30, [sp, #0x10]"
+        },
+        {
+          "address": "0x394ccb8",
+          "mnemonic": "add",
+          "operands": "sp, sp, #0x30"
+        },
+        {
+          "address": "0x394ccbc",
+          "mnemonic": "ret",
+          "operands": ""
+        },
+        {
+          "address": "0x394ccc0",
+          "mnemonic": "bl",
+          "operands": "0x5255460 <__stack_chk_fail@plt>"
+        },
+        {
+          "address": "0x394ccc4",
+          "mnemonic": "stp",
+          "operands": "x29, x30, [sp, #-0x30]!"
+        },
+        {
+          "address": "0x394ccc8",
+          "mnemonic": "stp",
+          "operands": "x22, x21, [sp, #0x10]"
+        },
+        {
+          "address": "0x394cccc",
+          "mnemonic": "stp",
+          "operands": "x20, x19, [sp, #0x20]"
+        },
+        {
+          "address": "0x394ccd0",
+          "mnemonic": "mov",
+          "operands": "x29, sp"
+        },
+        {
+          "address": "0x394ccd8",
+          "mnemonic": "cbz",
+          "operands": "w8, 0x394ccec <lfs::field::DataParser::copyVertex(cocos2d::Vec3&, cocos2d::Color4B&, cocos2d::Tex2F&, lfs::field::FieldVertex const&, float)+0xa4>"
+        },
+        {
+          "address": "0x394ccdc",
+          "mnemonic": "ldp",
+          "operands": "x20, x19, [sp, #0x20]"
+        },
+        {
+          "address": "0x394cce0",
+          "mnemonic": "ldp",
+          "operands": "x22, x21, [sp, #0x10]"
+        },
+        {
+          "address": "0x394cce4",
+          "mnemonic": "ldp",
+          "operands": "x29, x30, [sp], #0x30"
+        },
+        {
+          "address": "0x394cce8",
+          "mnemonic": "ret",
+          "operands": ""
+        },
+        {
+          "address": "0x394ccec",
+          "mnemonic": "ldr",
+          "operands": "x20, [x0]"
+        },
+        {
+          "address": "0x394ccf0",
+          "mnemonic": "ldr",
+          "operands": "x21, [x20]"
+        },
+        {
+          "address": "0x394ccf4",
+          "mnemonic": "cbz",
+          "operands": "x21, 0x394ccdc <lfs::field::DataParser::copyVertex(cocos2d::Vec3&, cocos2d::Color4B&, cocos2d::Tex2F&, lfs::field::FieldVertex const&, float)+0x94>"
+        },
+        {
+          "address": "0x394ccf8",
+          "mnemonic": "ldr",
+          "operands": "x9, [x20, #0x8]"
+        },
+        {
+          "address": "0x394ccfc",
+          "mnemonic": "mov",
+          "operands": "x8, x21"
+        },
+        {
+          "address": "0x394cd00",
+          "mnemonic": "cmp",
+          "operands": "x9, x21"
+        },
+        {
+          "address": "0x394cd08",
+          "mnemonic": "mov",
+          "operands": "x22, x0"
+        },
+        {
+          "address": "0x394cd0c",
+          "mnemonic": "sub",
+          "operands": "x19, x9, #0x10"
+        },
+        {
+          "address": "0x394cd10",
+          "mnemonic": "b",
+          "operands": "0x394cd24 <lfs::field::DataParser::copyVertex(cocos2d::Vec3&, cocos2d::Color4B&, cocos2d::Tex2F&, lfs::field::FieldVertex const&, float)+0xdc>"
+        },
+        {
+          "address": "0x394cd14",
+          "mnemonic": "sub",
+          "operands": "x8, x19, #0x18"
+        },
+        {
+          "address": "0x394cd18",
+          "mnemonic": "sub",
+          "operands": "x19, x19, #0x28"
+        },
+        {
+          "address": "0x394cd1c",
+          "mnemonic": "cmp",
+          "operands": "x8, x21"
+        },
+        {
+          "address": "0x394cd24",
+          "mnemonic": "mov",
+          "operands": "x0, x19"
+        },
+        {
+          "address": "0x394cd28",
+          "mnemonic": "bl",
+          "operands": "0x5257940 <_ZN7cocos2d4Vec2D1Ev@plt>"
+        },
+        {
+          "address": "0x394cd30",
+          "mnemonic": "tbz",
+          "operands": "w8, #0x0, 0x394cd14 <lfs::field::DataParser::copyVertex(cocos2d::Vec3&, cocos2d::Color4B&, cocos2d::Tex2F&, lfs::field::FieldVertex const&, float)+0xcc>"
+        },
+        {
+          "address": "0x394cd34",
+          "mnemonic": "ldur",
+          "operands": "x0, [x19, #-0x8]"
+        },
+        {
+          "address": "0x394cd38",
+          "mnemonic": "bl",
+          "operands": "0x5255450 <_ZdlPv@plt>"
+        },
+        {
+          "address": "0x394cd3c",
+          "mnemonic": "b",
+          "operands": "0x394cd14 <lfs::field::DataParser::copyVertex(cocos2d::Vec3&, cocos2d::Color4B&, cocos2d::Tex2F&, lfs::field::FieldVertex const&, float)+0xcc>"
+        },
+        {
+          "address": "0x394cd40",
+          "mnemonic": "ldr",
+          "operands": "x8, [x22]"
+        },
+        {
+          "address": "0x394cd44",
+          "mnemonic": "ldr",
+          "operands": "x8, [x8]"
+        },
+        {
+          "address": "0x394cd48",
+          "mnemonic": "mov",
+          "operands": "x0, x8"
+        },
+        {
+          "address": "0x394cd4c",
+          "mnemonic": "str",
+          "operands": "x21, [x20, #0x8]"
+        },
+        {
+          "address": "0x394cd50",
+          "mnemonic": "ldp",
+          "operands": "x20, x19, [sp, #0x20]"
+        },
+        {
+          "address": "0x394cd54",
+          "mnemonic": "ldp",
+          "operands": "x22, x21, [sp, #0x10]"
+        },
+        {
+          "address": "0x394cd58",
+          "mnemonic": "ldp",
+          "operands": "x29, x30, [sp], #0x30"
+        },
+        {
+          "address": "0x394cd5c",
+          "mnemonic": "b",
+          "operands": "0x5255450 <_ZdlPv@plt>"
+        },
+        {
+          "address": "0x394cd60",
+          "mnemonic": "sub",
+          "operands": "sp, sp, #0x70"
+        },
+        {
+          "address": "0x394cd64",
+          "mnemonic": "stp",
+          "operands": "x29, x30, [sp, #0x40]"
+        },
+        {
+          "address": "0x394cd68",
+          "mnemonic": "stp",
+          "operands": "x22, x21, [sp, #0x50]"
+        },
+        {
+          "address": "0x394cd6c",
+          "mnemonic": "stp",
+          "operands": "x20, x19, [sp, #0x60]"
+        },
+        {
+          "address": "0x394cd70",
+          "mnemonic": "add",
+          "operands": "x29, sp, #0x40"
+        },
+        {
+          "address": "0x394cd78",
+          "mnemonic": "mov",
+          "operands": "x19, x3"
+        },
+        {
+          "address": "0x394cd7c",
+          "mnemonic": "ldr",
+          "operands": "x8, [x22, #0x28]"
+        },
+        {
+          "address": "0x394cd80",
+          "mnemonic": "cmp",
+          "operands": "x1, x2"
+        },
+        {
+          "address": "0x394cd84",
+          "mnemonic": "stur",
+          "operands": "x8, [x29, #-0x8]"
+        },
+        {
+          "address": "0x394cd88",
+          "mnemonic": "add",
+          "operands": "x8, sp, #0x8"
+        },
+        {
+          "address": "0x394cd8c",
+          "mnemonic": "stp",
+          "operands": "x0, x8, [sp, #0x18]"
+        },
+        {
+          "address": "0x394cd90",
+          "mnemonic": "add",
+          "operands": "x8, sp, #0x10"
+        },
+        {
+          "address": "0x394cd94",
+          "mnemonic": "stp",
+          "operands": "x3, x3, [sp, #0x8]"
+        },
+        {
+          "address": "0x394cd98",
+          "mnemonic": "str",
+          "operands": "x8, [sp, #0x28]"
+        },
+        {
+          "address": "0x394cda4",
+          "mnemonic": "mov",
+          "operands": "x20, x2"
+        },
+        {
+          "address": "0x394cda8",
+          "mnemonic": "mov",
+          "operands": "x21, x1"
+        },
+        {
+          "address": "0x394cdb0",
+          "mnemonic": "tbnz",
+          "operands": "w8, #0x0, 0x394cdc8 <lfs::field::DataParser::copyVertex(cocos2d::Vec3&, cocos2d::Color4B&, cocos2d::Tex2F&, lfs::field::FieldVertex const&, float)+0x180>"
+        },
+        {
+          "address": "0x394cdb4",
+          "mnemonic": "ldr",
+          "operands": "x8, [x21, #0x10]"
+        },
+        {
+          "address": "0x394cdb8",
+          "mnemonic": "ldr",
+          "operands": "q0, [x21]"
+        },
+        {
+          "address": "0x394cdbc",
+          "mnemonic": "str",
+          "operands": "x8, [x19, #0x10]"
+        },
+        {
+          "address": "0x394cdc0",
+          "mnemonic": "str",
+          "operands": "q0, [x19]"
+        },
+        {
+          "address": "0x394cdc4",
+          "mnemonic": "b",
+          "operands": "0x394cdd4 <lfs::field::DataParser::copyVertex(cocos2d::Vec3&, cocos2d::Color4B&, cocos2d::Tex2F&, lfs::field::FieldVertex const&, float)+0x18c>"
+        },
+        {
+          "address": "0x394cdc8",
+          "mnemonic": "ldp",
+          "operands": "x2, x1, [x21, #0x8]"
+        },
+        {
+          "address": "0x394cdcc",
+          "mnemonic": "mov",
+          "operands": "x0, x19"
+        },
+        {
+          "address": "0x394cdd0",
+          "mnemonic": "bl",
+          "operands": "0x2f14314 <std::__ndk1::basic_string<char, std::__ndk1::char_traits<char>, std::__ndk1::allocator<char>>* std::__ndk1::vector<std::__ndk1::basic_string<char, std::__ndk1::char_traits<char>, std::__ndk1::allocator<char>>, std::__ndk1::allocator<std::__ndk1::basic_string<char, std::__ndk1::char_traits<char>, std::__ndk1::allocator<char>>>>::__emplace_back_slow_path<std::__ndk1::__wrap_iter<char const*>&, std::__ndk1::__wrap_iter<char const*>&>(std::__ndk1::__wrap_iter<char const*>&, std::__ndk1::_"
+        },
+        {
+          "address": "0x394cdd4",
+          "mnemonic": "add",
+          "operands": "x0, x19, #0x18"
+        },
+        {
+          "address": "0x394cdd8",
+          "mnemonic": "add",
+          "operands": "x1, x21, #0x18"
+        },
+        {
+          "address": "0x394cddc",
+          "mnemonic": "bl",
+          "operands": "0x525f9a0 <_ZN7cocos2d4Vec2C1ERKS0_@plt>"
+        },
+        {
+          "address": "0x394cde0",
+          "mnemonic": "ldr",
+          "operands": "x8, [x21, #0x20]"
+        },
+        {
+          "address": "0x394cde4",
+          "mnemonic": "ldr",
+          "operands": "x9, [sp, #0x10]"
+        },
+        {
+          "address": "0x394cde8",
+          "mnemonic": "add",
+          "operands": "x21, x21, #0x28"
+        },
+        {
+          "address": "0x394cdec",
+          "mnemonic": "cmp",
+          "operands": "x21, x20"
+        },
+        {
+          "address": "0x394cdf0",
+          "mnemonic": "str",
+          "operands": "x8, [x19, #0x20]"
+        },
+        {
+          "address": "0x394cdf4",
+          "mnemonic": "add",
+          "operands": "x19, x9, #0x28"
+        },
+        {
+          "address": "0x394cdf8",
+          "mnemonic": "str",
+          "operands": "x19, [sp, #0x10]"
+        },
+        {
+          "address": "0x394ce00",
+          "mnemonic": "ldr",
+          "operands": "x8, [x22, #0x28]"
+        },
+        {
+          "address": "0x394ce04",
+          "mnemonic": "ldur",
+          "operands": "x9, [x29, #-0x8]"
+        },
+        {
+          "address": "0x394ce08",
+          "mnemonic": "cmp",
+          "operands": "x8, x9"
+        },
+        {
+          "address": "0x394ce10",
+          "mnemonic": "mov",
+          "operands": "x0, x19"
+        },
+        {
+          "address": "0x394ce14",
+          "mnemonic": "ldp",
+          "operands": "x20, x19, [sp, #0x60]"
+        },
+        {
+          "address": "0x394ce18",
+          "mnemonic": "ldp",
+          "operands": "x22, x21, [sp, #0x50]"
+        },
+        {
+          "address": "0x394ce1c",
+          "mnemonic": "ldp",
+          "operands": "x29, x30, [sp, #0x40]"
+        },
+        {
+          "address": "0x394ce20",
+          "mnemonic": "add",
+          "operands": "sp, sp, #0x70"
+        },
+        {
+          "address": "0x394ce24",
+          "mnemonic": "ret",
+          "operands": ""
+        },
+        {
+          "address": "0x394ce28",
+          "mnemonic": "mov",
+          "operands": "x20, x0"
+        },
+        {
+          "address": "0x394ce2c",
+          "mnemonic": "b",
+          "operands": "0x394ce44 <lfs::field::DataParser::copyVertex(cocos2d::Vec3&, cocos2d::Color4B&, cocos2d::Tex2F&, lfs::field::FieldVertex const&, float)+0x1fc>"
+        },
+        {
+          "address": "0x394ce34",
+          "mnemonic": "mov",
+          "operands": "x20, x0"
+        },
+        {
+          "address": "0x394ce38",
+          "mnemonic": "tbz",
+          "operands": "w8, #0x0, 0x394ce44 <lfs::field::DataParser::copyVertex(cocos2d::Vec3&, cocos2d::Color4B&, cocos2d::Tex2F&, lfs::field::FieldVertex const&, float)+0x1fc>"
+        },
+        {
+          "address": "0x394ce3c",
+          "mnemonic": "ldr",
+          "operands": "x0, [x19, #0x10]"
+        },
+        {
+          "address": "0x394ce40",
+          "mnemonic": "bl",
+          "operands": "0x5255450 <_ZdlPv@plt>"
+        },
+        {
+          "address": "0x394ce44",
+          "mnemonic": "add",
+          "operands": "x0, sp, #0x18"
+        },
+        {
+          "address": "0x394ce48",
+          "mnemonic": "bl",
+          "operands": "0x394ce68 <lfs::field::DataParser::copyVertex(cocos2d::Vec3&, cocos2d::Color4B&, cocos2d::Tex2F&, lfs::field::FieldVertex const&, float)+0x220>"
+        },
+        {
+          "address": "0x394ce4c",
+          "mnemonic": "ldr",
+          "operands": "x8, [x22, #0x28]"
+        },
+        {
+          "address": "0x394ce50",
+          "mnemonic": "ldur",
+          "operands": "x9, [x29, #-0x8]"
+        },
+        {
+          "address": "0x394ce54",
+          "mnemonic": "cmp",
+          "operands": "x8, x9"
+        },
+        {
+          "address": "0x394ce5c",
+          "mnemonic": "mov",
+          "operands": "x0, x20"
+        },
+        {
+          "address": "0x394ce60",
+          "mnemonic": "bl",
+          "operands": "0x52514ec <__emutls_get_address+0xe00>"
+        },
+        {
+          "address": "0x394ce64",
+          "mnemonic": "bl",
+          "operands": "0x5255460 <__stack_chk_fail@plt>"
+        },
+        {
+          "address": "0x394ce6c",
+          "mnemonic": "cbz",
+          "operands": "w8, 0x394ce74 <lfs::field::DataParser::copyVertex(cocos2d::Vec3&, cocos2d::Color4B&, cocos2d::Tex2F&, lfs::field::FieldVertex const&, float)+0x22c>"
+        },
+        {
+          "address": "0x394ce70",
+          "mnemonic": "ret",
+          "operands": ""
+        },
+        {
+          "address": "0x394ce74",
+          "mnemonic": "stp",
+          "operands": "x29, x30, [sp, #-0x20]!"
+        },
+        {
+          "address": "0x394ce78",
+          "mnemonic": "stp",
+          "operands": "x20, x19, [sp, #0x10]"
+        },
+        {
+          "address": "0x394ce7c",
+          "mnemonic": "mov",
+          "operands": "x29, sp"
+        },
+        {
+          "address": "0x394ce80",
+          "mnemonic": "ldp",
+          "operands": "x9, x8, [x0, #0x8]"
+        },
+        {
+          "address": "0x394ce84",
+          "mnemonic": "ldr",
+          "operands": "x8, [x8]"
+        },
+        {
+          "address": "0x394ce88",
+          "mnemonic": "ldr",
+          "operands": "x20, [x9]"
+        },
+        {
+          "address": "0x394ce8c",
+          "mnemonic": "cmp",
+          "operands": "x8, x20"
+        },
+        {
+          "address": "0x394ce94",
+          "mnemonic": "sub",
+          "operands": "x19, x8, #0x10"
+        },
+        {
+          "address": "0x394ce98",
+          "mnemonic": "b",
+          "operands": "0x394ceac <lfs::field::DataParser::copyVertex(cocos2d::Vec3&, cocos2d::Color4B&, cocos2d::Tex2F&, lfs::field::FieldVertex const&, float)+0x264>"
+        },
+        {
+          "address": "0x394ce9c",
+          "mnemonic": "sub",
+          "operands": "x8, x19, #0x18"
+        },
+        {
+          "address": "0x394cea0",
+          "mnemonic": "sub",
+          "operands": "x19, x19, #0x28"
+        },
+        {
+          "address": "0x394cea4",
+          "mnemonic": "cmp",
+          "operands": "x8, x20"
+        },
+        {
+          "address": "0x394ceac",
+          "mnemonic": "mov",
+          "operands": "x0, x19"
+        },
+        {
+          "address": "0x394ceb0",
+          "mnemonic": "bl",
+          "operands": "0x5257940 <_ZN7cocos2d4Vec2D1Ev@plt>"
+        },
+        {
+          "address": "0x394ceb8",
+          "mnemonic": "tbz",
+          "operands": "w8, #0x0, 0x394ce9c <lfs::field::DataParser::copyVertex(cocos2d::Vec3&, cocos2d::Color4B&, cocos2d::Tex2F&, lfs::field::FieldVertex const&, float)+0x254>"
+        },
+        {
+          "address": "0x394cebc",
+          "mnemonic": "ldur",
+          "operands": "x0, [x19, #-0x8]"
+        },
+        {
+          "address": "0x394cec0",
+          "mnemonic": "bl",
+          "operands": "0x5255450 <_ZdlPv@plt>"
+        },
+        {
+          "address": "0x394cec4",
+          "mnemonic": "b",
+          "operands": "0x394ce9c <lfs::field::DataParser::copyVertex(cocos2d::Vec3&, cocos2d::Color4B&, cocos2d::Tex2F&, lfs::field::FieldVertex const&, float)+0x254>"
+        },
+        {
+          "address": "0x394cec8",
+          "mnemonic": "ldp",
+          "operands": "x20, x19, [sp, #0x10]"
+        },
+        {
+          "address": "0x394cecc",
+          "mnemonic": "ldp",
+          "operands": "x29, x30, [sp], #0x20"
+        },
+        {
+          "address": "0x394ced0",
+          "mnemonic": "ret",
+          "operands": ""
+        }
+      ],
+      "label": "copy_vertex",
+      "name": "lfs::field::DataParser::copyVertex(cocos2d::Vec3&, cocos2d::Color4B&, cocos2d::Tex2F&, lfs::field::FieldVertex const&, float)",
+      "summary": {
+        "calls": [
+          {
+            "address": "0x394cc94",
+            "mnemonic": "bl",
+            "operands": "0x5274cb0 <_ZN7cocos2d7Color4BC1Ehhhh@plt>"
+          },
+          {
+            "address": "0x394ccc0",
+            "mnemonic": "bl",
+            "operands": "0x5255460 <__stack_chk_fail@plt>"
+          },
+          {
+            "address": "0x394cd28",
+            "mnemonic": "bl",
+            "operands": "0x5257940 <_ZN7cocos2d4Vec2D1Ev@plt>"
+          },
+          {
+            "address": "0x394cd38",
+            "mnemonic": "bl",
+            "operands": "0x5255450 <_ZdlPv@plt>"
+          },
+          {
+            "address": "0x394cdd0",
+            "mnemonic": "bl",
+            "operands": "0x2f14314 <std::__ndk1::basic_string<char, std::__ndk1::char_traits<char>, std::__ndk1::allocator<char>>* std::__ndk1::vector<std::__ndk1::basic_string<char, std::__ndk1::char_traits<char>, std::__ndk1::allocator<char>>, std::__ndk1::allocator<std::__ndk1::basic_string<char, std::__ndk1::char_traits<char>, std::__ndk1::allocator<char>>>>::__emplace_back_slow_path<std::__ndk1::__wrap_iter<char const*>&, std::__ndk1::__wrap_iter<char const*>&>(std::__ndk1::__wrap_iter<char const*>&, std::__ndk1::_"
+          },
+          {
+            "address": "0x394cddc",
+            "mnemonic": "bl",
+            "operands": "0x525f9a0 <_ZN7cocos2d4Vec2C1ERKS0_@plt>"
+          },
+          {
+            "address": "0x394ce40",
+            "mnemonic": "bl",
+            "operands": "0x5255450 <_ZdlPv@plt>"
+          },
+          {
+            "address": "0x394ce48",
+            "mnemonic": "bl",
+            "operands": "0x394ce68 <lfs::field::DataParser::copyVertex(cocos2d::Vec3&, cocos2d::Color4B&, cocos2d::Tex2F&, lfs::field::FieldVertex const&, float)+0x220>"
+          },
+          {
+            "address": "0x394ce60",
+            "mnemonic": "bl",
+            "operands": "0x52514ec <__emutls_get_address+0xe00>"
+          },
+          {
+            "address": "0x394ce64",
+            "mnemonic": "bl",
+            "operands": "0x5255460 <__stack_chk_fail@plt>"
+          },
+          {
+            "address": "0x394ceb0",
+            "mnemonic": "bl",
+            "operands": "0x5257940 <_ZN7cocos2d4Vec2D1Ev@plt>"
+          },
+          {
+            "address": "0x394cec0",
+            "mnemonic": "bl",
+            "operands": "0x5255450 <_ZdlPv@plt>"
+          }
+        ],
+        "immediates": [
+          "#0x30",
+          "#0x10",
+          "#0x20",
+          "#0x4",
+          "#0x28",
+          "#0xff",
+          "#0x8",
+          "#-0x30",
+          "#0x18",
+          "#0x0",
+          "#-0x8",
+          "#0x70",
+          "#0x40",
+          "#0x50",
+          "#0x60",
+          "#-0x20"
+        ],
+        "mnemonic_counts": {
+          "add": 12,
+          "b": 7,
+          "bl": 12,
+          "cbz": 3,
+          "cmp": 9,
+          "ldp": 15,
+          "ldr": 22,
+          "ldur": 4,
+          "mov": 20,
+          "ret": 5,
+          "stp": 12,
+          "str": 11,
+          "stur": 1,
+          "sub": 8,
+          "tbnz": 1,
+          "tbz": 3
+        }
+      }
+    },
+    {
+      "address": "0x3932d54",
+      "bounded_bytes": 60,
+      "bounded_stop": "0x3932d90",
+      "instruction_count": 11,
+      "instructions": [
+        {
+          "address": "0x3932d54",
+          "mnemonic": "ldr",
+          "operands": "x8, [x0, #0x340]"
+        },
+        {
+          "address": "0x3932d58",
+          "mnemonic": "ldr",
+          "operands": "x9, [x0, #0x348]"
+        },
+        {
+          "address": "0x3932d5c",
+          "mnemonic": "cmp",
+          "operands": "x8, x9"
+        },
+        {
+          "address": "0x3932d64",
+          "mnemonic": "fmov",
+          "operands": "s2, #1.00000000"
+        },
+        {
+          "address": "0x3932d68",
+          "mnemonic": "mov",
+          "operands": "w9, #0x18               // =24"
+        },
+        {
+          "address": "0x3932d74",
+          "mnemonic": "cmp",
+          "operands": "w10, #0x0"
+        },
+        {
+          "address": "0x3932d78",
+          "mnemonic": "fsub",
+          "operands": "s2, s2, s1"
+        },
+        {
+          "address": "0x3932d7c",
+          "mnemonic": "ldr",
+          "operands": "x8, [x8, x9]"
+        },
+        {
+          "address": "0x3932d80",
+          "mnemonic": "add",
+          "operands": "x8, x8, w2, uxtw #3"
+        },
+        {
+          "address": "0x3932d88",
+          "mnemonic": "stp",
+          "operands": "s0, s1, [x8]"
+        },
+        {
+          "address": "0x3932d8c",
+          "mnemonic": "ret",
+          "operands": ""
+        }
+      ],
+      "label": "flip_uv_frame",
+      "name": "lfs::field::FieldTerrainNode::flipAnimationFrame(unsigned int, unsigned int, float, float)",
+      "summary": {
+        "calls": [],
+        "immediates": [
+          "#0x340",
+          "#0x348",
+          "#1",
+          "#0x18",
+          "#0x0",
+          "#3"
+        ],
+        "mnemonic_counts": {
+          "add": 1,
+          "cmp": 2,
+          "fmov": 1,
+          "fsub": 1,
+          "ldr": 3,
+          "mov": 1,
+          "ret": 1,
+          "stp": 1
+        }
+      }
+    },
+    {
+      "address": "0x39365bc",
+      "bounded_bytes": 100,
+      "bounded_stop": "0x3936620",
+      "instruction_count": 22,
+      "instructions": [
+        {
+          "address": "0x39365c0",
+          "mnemonic": "cbz",
+          "operands": "w8, 0x393661c <lfs::field::FieldAnimator::updateFieldAnimations()+0x60>"
+        },
+        {
+          "address": "0x39365c4",
+          "mnemonic": "stp",
+          "operands": "x29, x30, [sp, #-0x30]!"
+        },
+        {
+          "address": "0x39365c8",
+          "mnemonic": "str",
+          "operands": "x21, [sp, #0x10]"
+        },
+        {
+          "address": "0x39365cc",
+          "mnemonic": "stp",
+          "operands": "x20, x19, [sp, #0x20]"
+        },
+        {
+          "address": "0x39365d0",
+          "mnemonic": "mov",
+          "operands": "x29, sp"
+        },
+        {
+          "address": "0x39365d4",
+          "mnemonic": "mov",
+          "operands": "x19, x0"
+        },
+        {
+          "address": "0x39365d8",
+          "mnemonic": "bl",
+          "operands": "0x526c190 <_ZN3lfs9GameTimer12getLocalTimeEv@plt>"
+        },
+        {
+          "address": "0x39365dc",
+          "mnemonic": "ldp",
+          "operands": "x20, x21, [x19, #0x8]"
+        },
+        {
+          "address": "0x39365e0",
+          "mnemonic": "cmp",
+          "operands": "x20, x21"
+        },
+        {
+          "address": "0x39365e8",
+          "mnemonic": "mov",
+          "operands": "x19, x0"
+        },
+        {
+          "address": "0x39365ec",
+          "mnemonic": "b",
+          "operands": "0x39365fc <lfs::field::FieldAnimator::updateFieldAnimations()+0x40>"
+        },
+        {
+          "address": "0x39365f0",
+          "mnemonic": "add",
+          "operands": "x20, x20, #0x10"
+        },
+        {
+          "address": "0x39365f4",
+          "mnemonic": "cmp",
+          "operands": "x20, x21"
+        },
+        {
+          "address": "0x39365fc",
+          "mnemonic": "ldr",
+          "operands": "x0, [x20]"
+        },
+        {
+          "address": "0x3936600",
+          "mnemonic": "cbz",
+          "operands": "x0, 0x39365f0 <lfs::field::FieldAnimator::updateFieldAnimations()+0x34>"
+        },
+        {
+          "address": "0x3936604",
+          "mnemonic": "mov",
+          "operands": "x1, x19"
+        },
+        {
+          "address": "0x3936608",
+          "mnemonic": "bl",
+          "operands": "0x529a6d0 <_ZN3lfs5field21ChipAnimatorScheduler15updateAnimationEy@plt>"
+        },
+        {
+          "address": "0x393660c",
+          "mnemonic": "b",
+          "operands": "0x39365f0 <lfs::field::FieldAnimator::updateFieldAnimations()+0x34>"
+        },
+        {
+          "address": "0x3936610",
+          "mnemonic": "ldp",
+          "operands": "x20, x19, [sp, #0x20]"
+        },
+        {
+          "address": "0x3936614",
+          "mnemonic": "ldr",
+          "operands": "x21, [sp, #0x10]"
+        },
+        {
+          "address": "0x3936618",
+          "mnemonic": "ldp",
+          "operands": "x29, x30, [sp], #0x30"
+        },
+        {
+          "address": "0x393661c",
+          "mnemonic": "ret",
+          "operands": ""
+        }
+      ],
+      "label": "anim_update",
+      "name": "lfs::field::FieldAnimator::updateFieldAnimations()",
+      "summary": {
+        "calls": [
+          {
+            "address": "0x39365d8",
+            "mnemonic": "bl",
+            "operands": "0x526c190 <_ZN3lfs9GameTimer12getLocalTimeEv@plt>"
+          },
+          {
+            "address": "0x3936608",
+            "mnemonic": "bl",
+            "operands": "0x529a6d0 <_ZN3lfs5field21ChipAnimatorScheduler15updateAnimationEy@plt>"
+          }
+        ],
+        "immediates": [
+          "#-0x30",
+          "#0x10",
+          "#0x20",
+          "#0x8",
+          "#0x30"
+        ],
+        "mnemonic_counts": {
+          "add": 1,
+          "b": 2,
+          "bl": 2,
+          "cbz": 2,
+          "cmp": 2,
+          "ldp": 3,
+          "ldr": 2,
+          "mov": 4,
+          "ret": 1,
+          "stp": 2,
+          "str": 1
+        }
+      }
+    },
+    {
+      "address": "0x3936620",
+      "bounded_bytes": 668,
+      "bounded_stop": "0x39368bc",
+      "instruction_count": 160,
+      "instructions": [
+        {
+          "address": "0x3936620",
+          "mnemonic": "sub",
+          "operands": "sp, sp, #0x80"
+        },
+        {
+          "address": "0x3936624",
+          "mnemonic": "stp",
+          "operands": "x29, x30, [sp, #0x20]"
+        },
+        {
+          "address": "0x3936628",
+          "mnemonic": "stp",
+          "operands": "x28, x27, [sp, #0x30]"
+        },
+        {
+          "address": "0x393662c",
+          "mnemonic": "stp",
+          "operands": "x26, x25, [sp, #0x40]"
+        },
+        {
+          "address": "0x3936630",
+          "mnemonic": "stp",
+          "operands": "x24, x23, [sp, #0x50]"
+        },
+        {
+          "address": "0x3936634",
+          "mnemonic": "stp",
+          "operands": "x22, x21, [sp, #0x60]"
+        },
+        {
+          "address": "0x3936638",
+          "mnemonic": "stp",
+          "operands": "x20, x19, [sp, #0x70]"
+        },
+        {
+          "address": "0x393663c",
+          "mnemonic": "add",
+          "operands": "x29, sp, #0x20"
+        },
+        {
+          "address": "0x3936644",
+          "mnemonic": "mov",
+          "operands": "x25, x0"
+        },
+        {
+          "address": "0x3936648",
+          "mnemonic": "mov",
+          "operands": "x19, x5"
+        },
+        {
+          "address": "0x393664c",
+          "mnemonic": "ldr",
+          "operands": "x8, [x28, #0x28]"
+        },
+        {
+          "address": "0x3936650",
+          "mnemonic": "mov",
+          "operands": "w20, w4"
+        },
+        {
+          "address": "0x3936654",
+          "mnemonic": "mov",
+          "operands": "w22, w3"
+        },
+        {
+          "address": "0x3936658",
+          "mnemonic": "mov",
+          "operands": "x24, x0"
+        },
+        {
+          "address": "0x393665c",
+          "mnemonic": "mov",
+          "operands": "w21, w2"
+        },
+        {
+          "address": "0x3936660",
+          "mnemonic": "mov",
+          "operands": "x23, x1"
+        },
+        {
+          "address": "0x3936664",
+          "mnemonic": "stur",
+          "operands": "x8, [x29, #-0x8]"
+        },
+        {
+          "address": "0x3936668",
+          "mnemonic": "ldp",
+          "operands": "x8, x9, [x25, #0x8]!"
+        },
+        {
+          "address": "0x393666c",
+          "mnemonic": "stp",
+          "operands": "xzr, xzr, [sp, #0x8]"
+        },
+        {
+          "address": "0x3936670",
+          "mnemonic": "cmp",
+          "operands": "x8, x9"
+        },
+        {
+          "address": "0x3936678",
+          "mnemonic": "ldr",
+          "operands": "x0, [sp, #0x8]"
+        },
+        {
+          "address": "0x393667c",
+          "mnemonic": "cbz",
+          "operands": "x0, 0x393676c <lfs::field::FieldAnimator::addAnimationData(std::__ndk1::shared_ptr<lfs::field::FieldQuadTreeLeaf> const&, unsigned int, unsigned int, unsigned int, std::__ndk1::vector<cocos2d::Vec2, std::__ndk1::allocator<cocos2d::Vec2>> const&)+0x14c>"
+        },
+        {
+          "address": "0x3936680",
+          "mnemonic": "mov",
+          "operands": "x1, x23"
+        },
+        {
+          "address": "0x3936684",
+          "mnemonic": "mov",
+          "operands": "w2, w22"
+        },
+        {
+          "address": "0x3936688",
+          "mnemonic": "mov",
+          "operands": "w3, w20"
+        },
+        {
+          "address": "0x393668c",
+          "mnemonic": "mov",
+          "operands": "x4, x19"
+        },
+        {
+          "address": "0x3936690",
+          "mnemonic": "mov",
+          "operands": "w5, w21"
+        },
+        {
+          "address": "0x3936694",
+          "mnemonic": "bl",
+          "operands": "0x529a6b0 <_ZN3lfs5field21ChipAnimatorScheduler15addChipAnimatorERKNSt6__ndk110shared_ptrINS0_17FieldQuadTreeLeafEEEjjRKNS2_6vectorIN7cocos2d4Vec2ENS2_9allocatorISA_EEEEj@plt>"
+        },
+        {
+          "address": "0x3936698",
+          "mnemonic": "ldr",
+          "operands": "x19, [sp, #0x10]"
+        },
+        {
+          "address": "0x393669c",
+          "mnemonic": "cbz",
+          "operands": "x19, 0x39366c8 <lfs::field::FieldAnimator::addAnimationData(std::__ndk1::shared_ptr<lfs::field::FieldQuadTreeLeaf> const&, unsigned int, unsigned int, unsigned int, std::__ndk1::vector<cocos2d::Vec2, std::__ndk1::allocator<cocos2d::Vec2>> const&)+0xa8>"
+        },
+        {
+          "address": "0x39366a0",
+          "mnemonic": "add",
+          "operands": "x1, x19, #0x8"
+        },
+        {
+          "address": "0x39366a4",
+          "mnemonic": "mov",
+          "operands": "x0, #-0x1               // =-1"
+        },
+        {
+          "address": "0x39366a8",
+          "mnemonic": "bl",
+          "operands": "0x5251290 <__emutls_get_address+0xba4>"
+        },
+        {
+          "address": "0x39366ac",
+          "mnemonic": "cbnz",
+          "operands": "x0, 0x39366c8 <lfs::field::FieldAnimator::addAnimationData(std::__ndk1::shared_ptr<lfs::field::FieldQuadTreeLeaf> const&, unsigned int, unsigned int, unsigned int, std::__ndk1::vector<cocos2d::Vec2, std::__ndk1::allocator<cocos2d::Vec2>> const&)+0xa8>"
+        },
+        {
+          "address": "0x39366b0",
+          "mnemonic": "ldr",
+          "operands": "x8, [x19]"
+        },
+        {
+          "address": "0x39366b4",
+          "mnemonic": "mov",
+          "operands": "x0, x19"
+        },
+        {
+          "address": "0x39366b8",
+          "mnemonic": "ldr",
+          "operands": "x8, [x8, #0x10]"
+        },
+        {
+          "address": "0x39366bc",
+          "mnemonic": "blr",
+          "operands": "x8"
+        },
+        {
+          "address": "0x39366c0",
+          "mnemonic": "mov",
+          "operands": "x0, x19"
+        },
+        {
+          "address": "0x39366c4",
+          "mnemonic": "bl",
+          "operands": "0x5256620 <_ZNSt6__ndk119__shared_weak_count14__release_weakEv@plt>"
+        },
+        {
+          "address": "0x39366c8",
+          "mnemonic": "ldr",
+          "operands": "x8, [x28, #0x28]"
+        },
+        {
+          "address": "0x39366cc",
+          "mnemonic": "ldur",
+          "operands": "x9, [x29, #-0x8]"
+        },
+        {
+          "address": "0x39366d0",
+          "mnemonic": "cmp",
+          "operands": "x8, x9"
+        },
+        {
+          "address": "0x39366d8",
+          "mnemonic": "ldp",
+          "operands": "x20, x19, [sp, #0x70]"
+        },
+        {
+          "address": "0x39366dc",
+          "mnemonic": "ldp",
+          "operands": "x22, x21, [sp, #0x60]"
+        },
+        {
+          "address": "0x39366e0",
+          "mnemonic": "ldp",
+          "operands": "x24, x23, [sp, #0x50]"
+        },
+        {
+          "address": "0x39366e4",
+          "mnemonic": "ldp",
+          "operands": "x26, x25, [sp, #0x40]"
+        },
+        {
+          "address": "0x39366e8",
+          "mnemonic": "ldp",
+          "operands": "x28, x27, [sp, #0x30]"
+        },
+        {
+          "address": "0x39366ec",
+          "mnemonic": "ldp",
+          "operands": "x29, x30, [sp, #0x20]"
+        },
+        {
+          "address": "0x39366f0",
+          "mnemonic": "add",
+          "operands": "sp, sp, #0x80"
+        },
+        {
+          "address": "0x39366f4",
+          "mnemonic": "ret",
+          "operands": ""
+        },
+        {
+          "address": "0x39366f8",
+          "mnemonic": "add",
+          "operands": "x8, x8, #0x10"
+        },
+        {
+          "address": "0x39366fc",
+          "mnemonic": "cmp",
+          "operands": "x8, x9"
+        },
+        {
+          "address": "0x3936704",
+          "mnemonic": "ldr",
+          "operands": "x0, [x8]"
+        },
+        {
+          "address": "0x3936708",
+          "mnemonic": "cbz",
+          "operands": "x0, 0x39366f8 <lfs::field::FieldAnimator::addAnimationData(std::__ndk1::shared_ptr<lfs::field::FieldQuadTreeLeaf> const&, unsigned int, unsigned int, unsigned int, std::__ndk1::vector<cocos2d::Vec2, std::__ndk1::allocator<cocos2d::Vec2>> const&)+0xd8>"
+        },
+        {
+          "address": "0x393670c",
+          "mnemonic": "ldr",
+          "operands": "w10, [x0, #0x30]"
+        },
+        {
+          "address": "0x3936710",
+          "mnemonic": "cmp",
+          "operands": "w10, w21"
+        },
+        {
+          "address": "0x3936718",
+          "mnemonic": "ldr",
+          "operands": "x27, [x8, #0x8]"
+        },
+        {
+          "address": "0x393671c",
+          "mnemonic": "cbz",
+          "operands": "x27, 0x393681c <lfs::field::FieldAnimator::addAnimationData(std::__ndk1::shared_ptr<lfs::field::FieldQuadTreeLeaf> const&, unsigned int, unsigned int, unsigned int, std::__ndk1::vector<cocos2d::Vec2, std::__ndk1::allocator<cocos2d::Vec2>> const&)+0x1fc>"
+        },
+        {
+          "address": "0x3936720",
+          "mnemonic": "add",
+          "operands": "x1, x27, #0x8"
+        },
+        {
+          "address": "0x3936724",
+          "mnemonic": "mov",
+          "operands": "x26, x0"
+        },
+        {
+          "address": "0x3936728",
+          "mnemonic": "mov",
+          "operands": "w0, #0x1                // =1"
+        },
+        {
+          "address": "0x393672c",
+          "mnemonic": "bl",
+          "operands": "0x5251260 <__emutls_get_address+0xb74>"
+        },
+        {
+          "address": "0x3936730",
+          "mnemonic": "mov",
+          "operands": "x0, x26"
+        },
+        {
+          "address": "0x3936734",
+          "mnemonic": "ldr",
+          "operands": "x26, [sp, #0x10]"
+        },
+        {
+          "address": "0x3936738",
+          "mnemonic": "stp",
+          "operands": "x0, x27, [sp, #0x8]"
+        },
+        {
+          "address": "0x393673c",
+          "mnemonic": "cbz",
+          "operands": "x26, 0x3936680 <lfs::field::FieldAnimator::addAnimationData(std::__ndk1::shared_ptr<lfs::field::FieldQuadTreeLeaf> const&, unsigned int, unsigned int, unsigned int, std::__ndk1::vector<cocos2d::Vec2, std::__ndk1::allocator<cocos2d::Vec2>> const&)+0x60>"
+        },
+        {
+          "address": "0x3936740",
+          "mnemonic": "add",
+          "operands": "x1, x26, #0x8"
+        },
+        {
+          "address": "0x3936744",
+          "mnemonic": "mov",
+          "operands": "x0, #-0x1               // =-1"
+        },
+        {
+          "address": "0x3936748",
+          "mnemonic": "bl",
+          "operands": "0x5251290 <__emutls_get_address+0xba4>"
+        },
+        {
+          "address": "0x393674c",
+          "mnemonic": "cbnz",
+          "operands": "x0, 0x3936678 <lfs::field::FieldAnimator::addAnimationData(std::__ndk1::shared_ptr<lfs::field::FieldQuadTreeLeaf> const&, unsigned int, unsigned int, unsigned int, std::__ndk1::vector<cocos2d::Vec2, std::__ndk1::allocator<cocos2d::Vec2>> const&)+0x58>"
+        },
+        {
+          "address": "0x3936750",
+          "mnemonic": "ldr",
+          "operands": "x8, [x26]"
+        },
+        {
+          "address": "0x3936754",
+          "mnemonic": "mov",
+          "operands": "x0, x26"
+        },
+        {
+          "address": "0x3936758",
+          "mnemonic": "ldr",
+          "operands": "x8, [x8, #0x10]"
+        },
+        {
+          "address": "0x393675c",
+          "mnemonic": "blr",
+          "operands": "x8"
+        },
+        {
+          "address": "0x3936760",
+          "mnemonic": "mov",
+          "operands": "x0, x26"
+        },
+        {
+          "address": "0x3936764",
+          "mnemonic": "bl",
+          "operands": "0x5256620 <_ZNSt6__ndk119__shared_weak_count14__release_weakEv@plt>"
+        },
+        {
+          "address": "0x3936768",
+          "mnemonic": "b",
+          "operands": "0x3936678 <lfs::field::FieldAnimator::addAnimationData(std::__ndk1::shared_ptr<lfs::field::FieldQuadTreeLeaf> const&, unsigned int, unsigned int, unsigned int, std::__ndk1::vector<cocos2d::Vec2, std::__ndk1::allocator<cocos2d::Vec2>> const&)+0x58>"
+        },
+        {
+          "address": "0x393676c",
+          "mnemonic": "mov",
+          "operands": "w0, w21"
+        },
+        {
+          "address": "0x3936770",
+          "mnemonic": "bl",
+          "operands": "0x529a690 <_ZN3lfs5field21ChipAnimatorScheduler6createEj@plt>"
+        },
+        {
+          "address": "0x3936774",
+          "mnemonic": "mov",
+          "operands": "x26, x0"
+        },
+        {
+          "address": "0x3936778",
+          "mnemonic": "mov",
+          "operands": "w0, #0x20               // =32"
+        },
+        {
+          "address": "0x393677c",
+          "mnemonic": "bl",
+          "operands": "0x52554a0 <_Znwm@plt>"
+        },
+        {
+          "address": "0x3936780",
+          "mnemonic": "adrp",
+          "operands": "x8, 0x570a000"
+        },
+        {
+          "address": "0x3936784",
+          "mnemonic": "ldr",
+          "operands": "x8, [x8, #0xbe0]"
+        },
+        {
+          "address": "0x3936788",
+          "mnemonic": "ldr",
+          "operands": "x27, [sp, #0x10]"
+        },
+        {
+          "address": "0x393678c",
+          "mnemonic": "stp",
+          "operands": "xzr, x26, [x0, #0x10]"
+        },
+        {
+          "address": "0x3936790",
+          "mnemonic": "stp",
+          "operands": "x26, x0, [sp, #0x8]"
+        },
+        {
+          "address": "0x3936794",
+          "mnemonic": "add",
+          "operands": "x8, x8, #0x10"
+        },
+        {
+          "address": "0x3936798",
+          "mnemonic": "stp",
+          "operands": "x8, xzr, [x0]"
+        },
+        {
+          "address": "0x393679c",
+          "mnemonic": "cbz",
+          "operands": "x27, 0x39367cc <lfs::field::FieldAnimator::addAnimationData(std::__ndk1::shared_ptr<lfs::field::FieldQuadTreeLeaf> const&, unsigned int, unsigned int, unsigned int, std::__ndk1::vector<cocos2d::Vec2, std::__ndk1::allocator<cocos2d::Vec2>> const&)+0x1ac>"
+        },
+        {
+          "address": "0x39367a0",
+          "mnemonic": "add",
+          "operands": "x1, x27, #0x8"
+        },
+        {
+          "address": "0x39367a4",
+          "mnemonic": "mov",
+          "operands": "x0, #-0x1               // =-1"
+        },
+        {
+          "address": "0x39367a8",
+          "mnemonic": "bl",
+          "operands": "0x5251290 <__emutls_get_address+0xba4>"
+        },
+        {
+          "address": "0x39367ac",
+          "mnemonic": "cbnz",
+          "operands": "x0, 0x39367c8 <lfs::field::FieldAnimator::addAnimationData(std::__ndk1::shared_ptr<lfs::field::FieldQuadTreeLeaf> const&, unsigned int, unsigned int, unsigned int, std::__ndk1::vector<cocos2d::Vec2, std::__ndk1::allocator<cocos2d::Vec2>> const&)+0x1a8>"
+        },
+        {
+          "address": "0x39367b0",
+          "mnemonic": "ldr",
+          "operands": "x8, [x27]"
+        },
+        {
+          "address": "0x39367b4",
+          "mnemonic": "mov",
+          "operands": "x0, x27"
+        },
+        {
+          "address": "0x39367b8",
+          "mnemonic": "ldr",
+          "operands": "x8, [x8, #0x10]"
+        },
+        {
+          "address": "0x39367bc",
+          "mnemonic": "blr",
+          "operands": "x8"
+        },
+        {
+          "address": "0x39367c0",
+          "mnemonic": "mov",
+          "operands": "x0, x27"
+        },
+        {
+          "address": "0x39367c4",
+          "mnemonic": "bl",
+          "operands": "0x5256620 <_ZNSt6__ndk119__shared_weak_count14__release_weakEv@plt>"
+        },
+        {
+          "address": "0x39367c8",
+          "mnemonic": "ldr",
+          "operands": "x26, [sp, #0x8]"
+        },
+        {
+          "address": "0x39367cc",
+          "mnemonic": "cbz",
+          "operands": "x26, 0x3936698 <lfs::field::FieldAnimator::addAnimationData(std::__ndk1::shared_ptr<lfs::field::FieldQuadTreeLeaf> const&, unsigned int, unsigned int, unsigned int, std::__ndk1::vector<cocos2d::Vec2, std::__ndk1::allocator<cocos2d::Vec2>> const&)+0x78>"
+        },
+        {
+          "address": "0x39367d0",
+          "mnemonic": "ldp",
+          "operands": "x27, x8, [x24, #0x10]"
+        },
+        {
+          "address": "0x39367d4",
+          "mnemonic": "cmp",
+          "operands": "x27, x8"
+        },
+        {
+          "address": "0x39367dc",
+          "mnemonic": "ldr",
+          "operands": "x8, [sp, #0x10]"
+        },
+        {
+          "address": "0x39367e0",
+          "mnemonic": "stp",
+          "operands": "x26, x8, [x27]"
+        },
+        {
+          "address": "0x39367e4",
+          "mnemonic": "cbz",
+          "operands": "x8, 0x39367f4 <lfs::field::FieldAnimator::addAnimationData(std::__ndk1::shared_ptr<lfs::field::FieldQuadTreeLeaf> const&, unsigned int, unsigned int, unsigned int, std::__ndk1::vector<cocos2d::Vec2, std::__ndk1::allocator<cocos2d::Vec2>> const&)+0x1d4>"
+        },
+        {
+          "address": "0x39367e8",
+          "mnemonic": "add",
+          "operands": "x1, x8, #0x8"
+        },
+        {
+          "address": "0x39367ec",
+          "mnemonic": "mov",
+          "operands": "w0, #0x1                // =1"
+        },
+        {
+          "address": "0x39367f0",
+          "mnemonic": "bl",
+          "operands": "0x5251260 <__emutls_get_address+0xb74>"
+        },
+        {
+          "address": "0x39367f4",
+          "mnemonic": "add",
+          "operands": "x8, x27, #0x10"
+        },
+        {
+          "address": "0x39367f8",
+          "mnemonic": "b",
+          "operands": "0x393680c <lfs::field::FieldAnimator::addAnimationData(std::__ndk1::shared_ptr<lfs::field::FieldQuadTreeLeaf> const&, unsigned int, unsigned int, unsigned int, std::__ndk1::vector<cocos2d::Vec2, std::__ndk1::allocator<cocos2d::Vec2>> const&)+0x1ec>"
+        },
+        {
+          "address": "0x39367fc",
+          "mnemonic": "add",
+          "operands": "x1, sp, #0x8"
+        },
+        {
+          "address": "0x3936800",
+          "mnemonic": "mov",
+          "operands": "x0, x25"
+        },
+        {
+          "address": "0x3936804",
+          "mnemonic": "bl",
+          "operands": "0x529a740 <_ZNSt6__ndk16vectorINS_10shared_ptrIN3lfs5field21ChipAnimatorSchedulerEEENS_9allocatorIS5_EEE21__push_back_slow_pathIRKS5_EEPS5_OT_@plt>"
+        },
+        {
+          "address": "0x3936808",
+          "mnemonic": "mov",
+          "operands": "x8, x0"
+        },
+        {
+          "address": "0x393680c",
+          "mnemonic": "ldr",
+          "operands": "x0, [sp, #0x8]"
+        },
+        {
+          "address": "0x3936810",
+          "mnemonic": "str",
+          "operands": "x8, [x24, #0x10]"
+        },
+        {
+          "address": "0x3936814",
+          "mnemonic": "cbnz",
+          "operands": "x0, 0x3936680 <lfs::field::FieldAnimator::addAnimationData(std::__ndk1::shared_ptr<lfs::field::FieldQuadTreeLeaf> const&, unsigned int, unsigned int, unsigned int, std::__ndk1::vector<cocos2d::Vec2, std::__ndk1::allocator<cocos2d::Vec2>> const&)+0x60>"
+        },
+        {
+          "address": "0x3936818",
+          "mnemonic": "b",
+          "operands": "0x3936698 <lfs::field::FieldAnimator::addAnimationData(std::__ndk1::shared_ptr<lfs::field::FieldQuadTreeLeaf> const&, unsigned int, unsigned int, unsigned int, std::__ndk1::vector<cocos2d::Vec2, std::__ndk1::allocator<cocos2d::Vec2>> const&)+0x78>"
+        },
+        {
+          "address": "0x393681c",
+          "mnemonic": "stp",
+          "operands": "x0, x27, [sp, #0x8]"
+        },
+        {
+          "address": "0x3936820",
+          "mnemonic": "b",
+          "operands": "0x3936680 <lfs::field::FieldAnimator::addAnimationData(std::__ndk1::shared_ptr<lfs::field::FieldQuadTreeLeaf> const&, unsigned int, unsigned int, unsigned int, std::__ndk1::vector<cocos2d::Vec2, std::__ndk1::allocator<cocos2d::Vec2>> const&)+0x60>"
+        },
+        {
+          "address": "0x3936824",
+          "mnemonic": "mov",
+          "operands": "x19, x0"
+        },
+        {
+          "address": "0x3936828",
+          "mnemonic": "cbz",
+          "operands": "x26, 0x3936848 <lfs::field::FieldAnimator::addAnimationData(std::__ndk1::shared_ptr<lfs::field::FieldQuadTreeLeaf> const&, unsigned int, unsigned int, unsigned int, std::__ndk1::vector<cocos2d::Vec2, std::__ndk1::allocator<cocos2d::Vec2>> const&)+0x228>"
+        },
+        {
+          "address": "0x393682c",
+          "mnemonic": "ldr",
+          "operands": "x8, [x26]"
+        },
+        {
+          "address": "0x3936830",
+          "mnemonic": "mov",
+          "operands": "x0, x26"
+        },
+        {
+          "address": "0x3936834",
+          "mnemonic": "ldr",
+          "operands": "x8, [x8, #0x8]"
+        },
+        {
+          "address": "0x3936838",
+          "mnemonic": "blr",
+          "operands": "x8"
+        },
+        {
+          "address": "0x393683c",
+          "mnemonic": "b",
+          "operands": "0x3936848 <lfs::field::FieldAnimator::addAnimationData(std::__ndk1::shared_ptr<lfs::field::FieldQuadTreeLeaf> const&, unsigned int, unsigned int, unsigned int, std::__ndk1::vector<cocos2d::Vec2, std::__ndk1::allocator<cocos2d::Vec2>> const&)+0x228>"
+        },
+        {
+          "address": "0x3936840",
+          "mnemonic": "b",
+          "operands": "0x3936844 <lfs::field::FieldAnimator::addAnimationData(std::__ndk1::shared_ptr<lfs::field::FieldQuadTreeLeaf> const&, unsigned int, unsigned int, unsigned int, std::__ndk1::vector<cocos2d::Vec2, std::__ndk1::allocator<cocos2d::Vec2>> const&)+0x224>"
+        },
+        {
+          "address": "0x3936844",
+          "mnemonic": "mov",
+          "operands": "x19, x0"
+        },
+        {
+          "address": "0x3936848",
+          "mnemonic": "add",
+          "operands": "x0, sp, #0x8"
+        },
+        {
+          "address": "0x393684c",
+          "mnemonic": "bl",
+          "operands": "0x393686c <lfs::field::FieldAnimator::addAnimationData(std::__ndk1::shared_ptr<lfs::field::FieldQuadTreeLeaf> const&, unsigned int, unsigned int, unsigned int, std::__ndk1::vector<cocos2d::Vec2, std::__ndk1::allocator<cocos2d::Vec2>> const&)+0x24c>"
+        },
+        {
+          "address": "0x3936850",
+          "mnemonic": "ldr",
+          "operands": "x8, [x28, #0x28]"
+        },
+        {
+          "address": "0x3936854",
+          "mnemonic": "ldur",
+          "operands": "x9, [x29, #-0x8]"
+        },
+        {
+          "address": "0x3936858",
+          "mnemonic": "cmp",
+          "operands": "x8, x9"
+        },
+        {
+          "address": "0x3936860",
+          "mnemonic": "mov",
+          "operands": "x0, x19"
+        },
+        {
+          "address": "0x3936864",
+          "mnemonic": "bl",
+          "operands": "0x52514ec <__emutls_get_address+0xe00>"
+        },
+        {
+          "address": "0x3936868",
+          "mnemonic": "bl",
+          "operands": "0x5255460 <__stack_chk_fail@plt>"
+        },
+        {
+          "address": "0x393686c",
+          "mnemonic": "stp",
+          "operands": "x29, x30, [sp, #-0x20]!"
+        },
+        {
+          "address": "0x3936870",
+          "mnemonic": "str",
+          "operands": "x19, [sp, #0x10]"
+        },
+        {
+          "address": "0x3936874",
+          "mnemonic": "mov",
+          "operands": "x29, sp"
+        },
+        {
+          "address": "0x3936878",
+          "mnemonic": "ldr",
+          "operands": "x19, [x0, #0x8]"
+        },
+        {
+          "address": "0x393687c",
+          "mnemonic": "cbz",
+          "operands": "x19, 0x3936890 <lfs::field::FieldAnimator::addAnimationData(std::__ndk1::shared_ptr<lfs::field::FieldQuadTreeLeaf> const&, unsigned int, unsigned int, unsigned int, std::__ndk1::vector<cocos2d::Vec2, std::__ndk1::allocator<cocos2d::Vec2>> const&)+0x270>"
+        },
+        {
+          "address": "0x3936880",
+          "mnemonic": "add",
+          "operands": "x1, x19, #0x8"
+        },
+        {
+          "address": "0x3936884",
+          "mnemonic": "mov",
+          "operands": "x0, #-0x1               // =-1"
+        },
+        {
+          "address": "0x3936888",
+          "mnemonic": "bl",
+          "operands": "0x5251290 <__emutls_get_address+0xba4>"
+        },
+        {
+          "address": "0x393688c",
+          "mnemonic": "cbz",
+          "operands": "x0, 0x393689c <lfs::field::FieldAnimator::addAnimationData(std::__ndk1::shared_ptr<lfs::field::FieldQuadTreeLeaf> const&, unsigned int, unsigned int, unsigned int, std::__ndk1::vector<cocos2d::Vec2, std::__ndk1::allocator<cocos2d::Vec2>> const&)+0x27c>"
+        },
+        {
+          "address": "0x3936890",
+          "mnemonic": "ldr",
+          "operands": "x19, [sp, #0x10]"
+        },
+        {
+          "address": "0x3936894",
+          "mnemonic": "ldp",
+          "operands": "x29, x30, [sp], #0x20"
+        },
+        {
+          "address": "0x3936898",
+          "mnemonic": "ret",
+          "operands": ""
+        },
+        {
+          "address": "0x393689c",
+          "mnemonic": "ldr",
+          "operands": "x8, [x19]"
+        },
+        {
+          "address": "0x39368a0",
+          "mnemonic": "mov",
+          "operands": "x0, x19"
+        },
+        {
+          "address": "0x39368a4",
+          "mnemonic": "ldr",
+          "operands": "x8, [x8, #0x10]"
+        },
+        {
+          "address": "0x39368a8",
+          "mnemonic": "blr",
+          "operands": "x8"
+        },
+        {
+          "address": "0x39368ac",
+          "mnemonic": "mov",
+          "operands": "x0, x19"
+        },
+        {
+          "address": "0x39368b0",
+          "mnemonic": "ldr",
+          "operands": "x19, [sp, #0x10]"
+        },
+        {
+          "address": "0x39368b4",
+          "mnemonic": "ldp",
+          "operands": "x29, x30, [sp], #0x20"
+        },
+        {
+          "address": "0x39368b8",
+          "mnemonic": "b",
+          "operands": "0x5256620 <_ZNSt6__ndk119__shared_weak_count14__release_weakEv@plt>"
+        }
+      ],
+      "label": "anim_add",
+      "name": "lfs::field::FieldAnimator::addAnimationData(std::__ndk1::shared_ptr<lfs::field::FieldQuadTreeLeaf> const&, unsigned int, unsigned int, unsigned int, std::__ndk1::vector<cocos2d::Vec2, std::__ndk1::allocator<cocos2d::Vec2> > const&)",
+      "summary": {
+        "calls": [
+          {
+            "address": "0x3936694",
+            "mnemonic": "bl",
+            "operands": "0x529a6b0 <_ZN3lfs5field21ChipAnimatorScheduler15addChipAnimatorERKNSt6__ndk110shared_ptrINS0_17FieldQuadTreeLeafEEEjjRKNS2_6vectorIN7cocos2d4Vec2ENS2_9allocatorISA_EEEEj@plt>"
+          },
+          {
+            "address": "0x39366a8",
+            "mnemonic": "bl",
+            "operands": "0x5251290 <__emutls_get_address+0xba4>"
+          },
+          {
+            "address": "0x39366bc",
+            "mnemonic": "blr",
+            "operands": "x8"
+          },
+          {
+            "address": "0x39366c4",
+            "mnemonic": "bl",
+            "operands": "0x5256620 <_ZNSt6__ndk119__shared_weak_count14__release_weakEv@plt>"
+          },
+          {
+            "address": "0x393672c",
+            "mnemonic": "bl",
+            "operands": "0x5251260 <__emutls_get_address+0xb74>"
+          },
+          {
+            "address": "0x3936748",
+            "mnemonic": "bl",
+            "operands": "0x5251290 <__emutls_get_address+0xba4>"
+          },
+          {
+            "address": "0x393675c",
+            "mnemonic": "blr",
+            "operands": "x8"
+          },
+          {
+            "address": "0x3936764",
+            "mnemonic": "bl",
+            "operands": "0x5256620 <_ZNSt6__ndk119__shared_weak_count14__release_weakEv@plt>"
+          },
+          {
+            "address": "0x3936770",
+            "mnemonic": "bl",
+            "operands": "0x529a690 <_ZN3lfs5field21ChipAnimatorScheduler6createEj@plt>"
+          },
+          {
+            "address": "0x393677c",
+            "mnemonic": "bl",
+            "operands": "0x52554a0 <_Znwm@plt>"
+          },
+          {
+            "address": "0x39367a8",
+            "mnemonic": "bl",
+            "operands": "0x5251290 <__emutls_get_address+0xba4>"
+          },
+          {
+            "address": "0x39367bc",
+            "mnemonic": "blr",
+            "operands": "x8"
+          },
+          {
+            "address": "0x39367c4",
+            "mnemonic": "bl",
+            "operands": "0x5256620 <_ZNSt6__ndk119__shared_weak_count14__release_weakEv@plt>"
+          },
+          {
+            "address": "0x39367f0",
+            "mnemonic": "bl",
+            "operands": "0x5251260 <__emutls_get_address+0xb74>"
+          },
+          {
+            "address": "0x3936804",
+            "mnemonic": "bl",
+            "operands": "0x529a740 <_ZNSt6__ndk16vectorINS_10shared_ptrIN3lfs5field21ChipAnimatorSchedulerEEENS_9allocatorIS5_EEE21__push_back_slow_pathIRKS5_EEPS5_OT_@plt>"
+          },
+          {
+            "address": "0x3936838",
+            "mnemonic": "blr",
+            "operands": "x8"
+          },
+          {
+            "address": "0x393684c",
+            "mnemonic": "bl",
+            "operands": "0x393686c <lfs::field::FieldAnimator::addAnimationData(std::__ndk1::shared_ptr<lfs::field::FieldQuadTreeLeaf> const&, unsigned int, unsigned int, unsigned int, std::__ndk1::vector<cocos2d::Vec2, std::__ndk1::allocator<cocos2d::Vec2>> const&)+0x24c>"
+          },
+          {
+            "address": "0x3936864",
+            "mnemonic": "bl",
+            "operands": "0x52514ec <__emutls_get_address+0xe00>"
+          },
+          {
+            "address": "0x3936868",
+            "mnemonic": "bl",
+            "operands": "0x5255460 <__stack_chk_fail@plt>"
+          },
+          {
+            "address": "0x3936888",
+            "mnemonic": "bl",
+            "operands": "0x5251290 <__emutls_get_address+0xba4>"
+          },
+          {
+            "address": "0x39368a8",
+            "mnemonic": "blr",
+            "operands": "x8"
+          }
+        ],
+        "immediates": [
+          "#0x80",
+          "#0x20",
+          "#0x30",
+          "#0x40",
+          "#0x50",
+          "#0x60",
+          "#0x70",
+          "#0x28",
+          "#-0x8",
+          "#0x8",
+          "#0x10",
+          "#-0x1",
+          "#0x1",
+          "#0xbe0",
+          "#-0x20"
+        ],
+        "mnemonic_counts": {
+          "add": 13,
+          "adrp": 1,
+          "b": 7,
+          "bl": 16,
+          "blr": 5,
+          "cbnz": 4,
+          "cbz": 11,
+          "cmp": 6,
+          "ldp": 10,
+          "ldr": 27,
+          "ldur": 2,
+          "mov": 38,
+          "ret": 2,
+          "stp": 14,
+          "str": 2,
+          "stur": 1,
+          "sub": 1
+        }
+      }
+    },
+    {
+      "address": "0x3938068",
+      "bounded_bytes": 272,
+      "bounded_stop": "0x3938178",
+      "instruction_count": 67,
+      "instructions": [
+        {
+          "address": "0x3938068",
+          "mnemonic": "stp",
+          "operands": "x29, x30, [sp, #-0x30]!"
+        },
+        {
+          "address": "0x393806c",
+          "mnemonic": "stp",
+          "operands": "x22, x21, [sp, #0x10]"
+        },
+        {
+          "address": "0x3938070",
+          "mnemonic": "stp",
+          "operands": "x20, x19, [sp, #0x20]"
+        },
+        {
+          "address": "0x3938074",
+          "mnemonic": "mov",
+          "operands": "x29, sp"
+        },
+        {
+          "address": "0x3938078",
+          "mnemonic": "cbz",
+          "operands": "x1, 0x3938110 <lfs::field::Field::addNodeToTerrainLayer(cocos2d::Node*, lfs::field::TerrainLayerTag const&)+0xa8>"
+        },
+        {
+          "address": "0x393807c",
+          "mnemonic": "ldr",
+          "operands": "x0, [x0, #0x50]"
+        },
+        {
+          "address": "0x3938080",
+          "mnemonic": "cbz",
+          "operands": "x0, 0x39380e8 <lfs::field::Field::addNodeToTerrainLayer(cocos2d::Node*, lfs::field::TerrainLayerTag const&)+0x80>"
+        },
+        {
+          "address": "0x3938084",
+          "mnemonic": "ldr",
+          "operands": "x8, [x0]"
+        },
+        {
+          "address": "0x3938088",
+          "mnemonic": "mov",
+          "operands": "x20, x1"
+        },
+        {
+          "address": "0x393808c",
+          "mnemonic": "mov",
+          "operands": "w1, #0x64               // =100"
+        },
+        {
+          "address": "0x3938090",
+          "mnemonic": "mov",
+          "operands": "x19, x2"
+        },
+        {
+          "address": "0x3938094",
+          "mnemonic": "ldr",
+          "operands": "x8, [x8, #0x200]"
+        },
+        {
+          "address": "0x3938098",
+          "mnemonic": "blr",
+          "operands": "x8"
+        },
+        {
+          "address": "0x393809c",
+          "mnemonic": "cbz",
+          "operands": "x0, 0x39380e8 <lfs::field::Field::addNodeToTerrainLayer(cocos2d::Node*, lfs::field::TerrainLayerTag const&)+0x80>"
+        },
+        {
+          "address": "0x39380a0",
+          "mnemonic": "ldr",
+          "operands": "w2, [x19]"
+        },
+        {
+          "address": "0x39380a4",
+          "mnemonic": "cmp",
+          "operands": "w2, #0x4"
+        },
+        {
+          "address": "0x39380ac",
+          "mnemonic": "cbnz",
+          "operands": "w2, 0x3938158 <lfs::field::Field::addNodeToTerrainLayer(cocos2d::Node*, lfs::field::TerrainLayerTag const&)+0xf0>"
+        },
+        {
+          "address": "0x39380b0",
+          "mnemonic": "mov",
+          "operands": "x21, x0"
+        },
+        {
+          "address": "0x39380b4",
+          "mnemonic": "bl",
+          "operands": "0x529a900 <_ZN3lfs5field21DepthTestEnabledLayer6createEv@plt>"
+        },
+        {
+          "address": "0x39380b8",
+          "mnemonic": "ldr",
+          "operands": "x8, [x0]"
+        },
+        {
+          "address": "0x39380bc",
+          "mnemonic": "mov",
+          "operands": "x1, x20"
+        },
+        {
+          "address": "0x39380c0",
+          "mnemonic": "mov",
+          "operands": "x22, x0"
+        },
+        {
+          "address": "0x39380c4",
+          "mnemonic": "ldr",
+          "operands": "x8, [x8, #0x1e0]"
+        },
+        {
+          "address": "0x39380c8",
+          "mnemonic": "blr",
+          "operands": "x8"
+        },
+        {
+          "address": "0x39380cc",
+          "mnemonic": "ldr",
+          "operands": "x8, [x21]"
+        },
+        {
+          "address": "0x39380d0",
+          "mnemonic": "ldr",
+          "operands": "w3, [x19]"
+        },
+        {
+          "address": "0x39380d4",
+          "mnemonic": "mov",
+          "operands": "x0, x21"
+        },
+        {
+          "address": "0x39380d8",
+          "mnemonic": "mov",
+          "operands": "x1, x22"
+        },
+        {
+          "address": "0x39380dc",
+          "mnemonic": "ldr",
+          "operands": "x4, [x8, #0x1f0]"
+        },
+        {
+          "address": "0x39380e0",
+          "mnemonic": "mov",
+          "operands": "w2, wzr"
+        },
+        {
+          "address": "0x39380e4",
+          "mnemonic": "b",
+          "operands": "0x3938168 <lfs::field::Field::addNodeToTerrainLayer(cocos2d::Node*, lfs::field::TerrainLayerTag const&)+0x100>"
+        },
+        {
+          "address": "0x39380e8",
+          "mnemonic": "adrp",
+          "operands": "x2, 0x2125000"
+        },
+        {
+          "address": "0x39380ec",
+          "mnemonic": "add",
+          "operands": "x2, x2, #0xfca"
+        },
+        {
+          "address": "0x39380f0",
+          "mnemonic": "adrp",
+          "operands": "x3, 0x213e000"
+        },
+        {
+          "address": "0x39380f4",
+          "mnemonic": "add",
+          "operands": "x3, x3, #0xf17"
+        },
+        {
+          "address": "0x39380f8",
+          "mnemonic": "mov",
+          "operands": "w0, #0x1                // =1"
+        },
+        {
+          "address": "0x39380fc",
+          "mnemonic": "mov",
+          "operands": "w1, #0x6                // =6"
+        },
+        {
+          "address": "0x3938100",
+          "mnemonic": "ldp",
+          "operands": "x20, x19, [sp, #0x20]"
+        },
+        {
+          "address": "0x3938104",
+          "mnemonic": "ldp",
+          "operands": "x22, x21, [sp, #0x10]"
+        },
+        {
+          "address": "0x3938108",
+          "mnemonic": "ldp",
+          "operands": "x29, x30, [sp], #0x30"
+        },
+        {
+          "address": "0x393810c",
+          "mnemonic": "b",
+          "operands": "0x52573b0 <_ZN3lfs3log4pushENS0_7ChannelENS0_13SeverityLevelEPKcz@plt>"
+        },
+        {
+          "address": "0x3938110",
+          "mnemonic": "ldp",
+          "operands": "x20, x19, [sp, #0x20]"
+        },
+        {
+          "address": "0x3938114",
+          "mnemonic": "ldp",
+          "operands": "x22, x21, [sp, #0x10]"
+        },
+        {
+          "address": "0x3938118",
+          "mnemonic": "ldp",
+          "operands": "x29, x30, [sp], #0x30"
+        },
+        {
+          "address": "0x393811c",
+          "mnemonic": "ret",
+          "operands": ""
+        },
+        {
+          "address": "0x3938120",
+          "mnemonic": "mov",
+          "operands": "x21, x0"
+        },
+        {
+          "address": "0x3938124",
+          "mnemonic": "bl",
+          "operands": "0x529a910 <_ZN3lfs5field22DepthTestDisabledLayer6createEv@plt>"
+        },
+        {
+          "address": "0x3938128",
+          "mnemonic": "ldr",
+          "operands": "x8, [x0]"
+        },
+        {
+          "address": "0x393812c",
+          "mnemonic": "mov",
+          "operands": "x1, x20"
+        },
+        {
+          "address": "0x3938130",
+          "mnemonic": "mov",
+          "operands": "x22, x0"
+        },
+        {
+          "address": "0x3938134",
+          "mnemonic": "ldr",
+          "operands": "x8, [x8, #0x1e0]"
+        },
+        {
+          "address": "0x3938138",
+          "mnemonic": "blr",
+          "operands": "x8"
+        },
+        {
+          "address": "0x393813c",
+          "mnemonic": "ldr",
+          "operands": "x8, [x21]"
+        },
+        {
+          "address": "0x3938140",
+          "mnemonic": "ldr",
+          "operands": "w3, [x19]"
+        },
+        {
+          "address": "0x3938144",
+          "mnemonic": "mov",
+          "operands": "x0, x21"
+        },
+        {
+          "address": "0x3938148",
+          "mnemonic": "mov",
+          "operands": "x1, x22"
+        },
+        {
+          "address": "0x393814c",
+          "mnemonic": "ldr",
+          "operands": "x4, [x8, #0x1f0]"
+        },
+        {
+          "address": "0x3938150",
+          "mnemonic": "mov",
+          "operands": "w2, #0x4                // =4"
+        },
+        {
+          "address": "0x3938154",
+          "mnemonic": "b",
+          "operands": "0x3938168 <lfs::field::Field::addNodeToTerrainLayer(cocos2d::Node*, lfs::field::TerrainLayerTag const&)+0x100>"
+        },
+        {
+          "address": "0x3938158",
+          "mnemonic": "ldr",
+          "operands": "x8, [x0]"
+        },
+        {
+          "address": "0x393815c",
+          "mnemonic": "mov",
+          "operands": "x1, x20"
+        },
+        {
+          "address": "0x3938160",
+          "mnemonic": "ldr",
+          "operands": "x4, [x8, #0x1f0]"
+        },
+        {
+          "address": "0x3938164",
+          "mnemonic": "mov",
+          "operands": "w3, w2"
+        },
+        {
+          "address": "0x3938168",
+          "mnemonic": "ldp",
+          "operands": "x20, x19, [sp, #0x20]"
+        },
+        {
+          "address": "0x393816c",
+          "mnemonic": "ldp",
+          "operands": "x22, x21, [sp, #0x10]"
+        },
+        {
+          "address": "0x3938170",
+          "mnemonic": "ldp",
+          "operands": "x29, x30, [sp], #0x30"
+        },
+        {
+          "address": "0x3938174",
+          "mnemonic": "br",
+          "operands": "x4"
+        }
+      ],
+      "label": "terrain_layer",
+      "name": "lfs::field::Field::addNodeToTerrainLayer(cocos2d::Node*, lfs::field::TerrainLayerTag const&)",
+      "summary": {
+        "calls": [
+          {
+            "address": "0x3938098",
+            "mnemonic": "blr",
+            "operands": "x8"
+          },
+          {
+            "address": "0x39380b4",
+            "mnemonic": "bl",
+            "operands": "0x529a900 <_ZN3lfs5field21DepthTestEnabledLayer6createEv@plt>"
+          },
+          {
+            "address": "0x39380c8",
+            "mnemonic": "blr",
+            "operands": "x8"
+          },
+          {
+            "address": "0x3938124",
+            "mnemonic": "bl",
+            "operands": "0x529a910 <_ZN3lfs5field22DepthTestDisabledLayer6createEv@plt>"
+          },
+          {
+            "address": "0x3938138",
+            "mnemonic": "blr",
+            "operands": "x8"
+          }
+        ],
+        "immediates": [
+          "#-0x30",
+          "#0x10",
+          "#0x20",
+          "#0x50",
+          "#0x64",
+          "#0x200",
+          "#0x4",
+          "#0x1e0",
+          "#0x1f0",
+          "#0xfca",
+          "#0xf17",
+          "#0x1",
+          "#0x6",
+          "#0x30"
+        ],
+        "mnemonic_counts": {
+          "add": 2,
+          "adrp": 2,
+          "b": 3,
+          "bl": 2,
+          "blr": 3,
+          "br": 1,
+          "cbnz": 1,
+          "cbz": 3,
+          "cmp": 1,
+          "ldp": 9,
+          "ldr": 16,
+          "mov": 20,
+          "ret": 1,
+          "stp": 3
+        }
+      }
+    }
+  ]
+}

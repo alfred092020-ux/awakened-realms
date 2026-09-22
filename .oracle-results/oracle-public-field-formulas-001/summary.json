@@ -1,0 +1,10 @@
+{
+  "duration_seconds": 5.69,
+  "error": null,
+  "exit_code": 0,
+  "job_id": "oracle-public-field-formulas-001",
+  "kind": "python",
+  "schema": 1,
+  "source_sha": "fd02e72a4f408495eb09a53e2835afe6ecb6694b",
+  "status": "success"
+}
