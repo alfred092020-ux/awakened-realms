@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "job_id": "oracle-public-setupentities-vectors-001",
+  "source_sha": "1cfed1ba2e7beb48e4e259ae094244526bd9fbf2",
+  "kind": "python",
+  "script": "scripts/logres/inspect_public_setupentities_vectors.py",
+  "args": [
+    "--url",
+    "https://d.apkpure.net/b/XAPK/jp.MarvelousAQL.logres?version=latest",
+    "--output",
+    "@OUTPUT@/public-setupentities-vectors.json"
+  ],
+  "timeout_seconds": 1800
+}
