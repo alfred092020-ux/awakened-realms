@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "job_id": "oracle-private-tutorial-evidence-001",
+  "source_sha": "e8193bdfd2ed3bb6857a1842491f95bb04b3276f",
+  "kind": "python",
+  "script": "scripts/logres/inspect_private_tutorial_evidence.py",
+  "args": [
+    "@PRIVATE_ARCHIVE@",
+    "--output",
+    "@OUTPUT@/tutorial-evidence.json"
+  ],
+  "timeout_seconds": 1800
+}
