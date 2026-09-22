@@ -1,0 +1,8 @@
+{
+  "commit": "5db592058a9f58cdb95e08c3939d040a1da11b29",
+  "job_id": "merge-logres-field-renderer-symbol-inspector-001",
+  "job_type": "MERGE",
+  "status": "SUCCESS",
+  "target_branch": "feat/logres-reconstruction",
+  "written_at": "2026-09-22T05:22:12.567829+00:00"
+}
