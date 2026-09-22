@@ -1,0 +1,8 @@
+{
+  "commit": "aaee164b02c11a1bf96d69b18bc2ceed5be25bc9",
+  "job_id": "merge-logres-runtime-map-decoder-002",
+  "job_type": "MERGE",
+  "status": "SUCCESS",
+  "target_branch": "feat/logres-reconstruction",
+  "written_at": "2026-09-22T08:14:00.240563+00:00"
+}
