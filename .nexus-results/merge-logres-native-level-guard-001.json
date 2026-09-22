@@ -1,0 +1,8 @@
+{
+  "commit": "1a8d1d968683ed464c245d7ae47113901c2c107c",
+  "job_id": "merge-logres-native-level-guard-001",
+  "job_type": "MERGE",
+  "status": "SUCCESS",
+  "target_branch": "feat/logres-reconstruction",
+  "written_at": "2026-09-22T16:13:11.067464+00:00"
+}
