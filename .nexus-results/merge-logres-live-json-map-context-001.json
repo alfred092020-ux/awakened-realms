@@ -1,0 +1,8 @@
+{
+  "commit": "c2ffe32108ba08594a9f56e392fa597a911cca47",
+  "job_id": "merge-logres-live-json-map-context-001",
+  "job_type": "MERGE",
+  "status": "SUCCESS",
+  "target_branch": "feat/logres-reconstruction",
+  "written_at": "2026-09-22T07:02:54.277578+00:00"
+}
