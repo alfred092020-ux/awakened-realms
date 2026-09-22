@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "job_id": "oracle-public-field-projection-001",
+  "source_sha": "43859eb057364dbf022f6f2a3e5dd589b1ae473d",
+  "kind": "python",
+  "script": "scripts/logres/inspect_public_field_projection.py",
+  "args": [
+    "--url",
+    "https://d.apkpure.net/b/XAPK/jp.MarvelousAQL.logres?version=latest",
+    "--output",
+    "@OUTPUT@/public-field-projection.json"
+  ],
+  "timeout_seconds": 1800
+}
