@@ -1,0 +1,10 @@
+{
+  "duration_seconds": 5.974,
+  "error": null,
+  "exit_code": 0,
+  "job_id": "oracle-live-map-dds-format-001",
+  "kind": "python",
+  "schema": 1,
+  "source_sha": "e27bd879d28d108c8b4eac8f7f2ef10d878791b0",
+  "status": "success"
+}
