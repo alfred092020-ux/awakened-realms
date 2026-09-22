@@ -1,0 +1,8 @@
+{
+  "commit": "bf2dc28bb8a74b805c57e4ea265b0bfd0beeb96f",
+  "job_id": "merge-logres-patch-filelist-inspector-001",
+  "job_type": "MERGE",
+  "status": "SUCCESS",
+  "target_branch": "feat/logres-reconstruction",
+  "written_at": "2026-09-22T05:31:50.926971+00:00"
+}
