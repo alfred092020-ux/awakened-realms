@@ -40,10 +40,14 @@ function coordKey(col: number, row: number): string {
  * CONFIRMED ORIGINAL data only.
  *
  * Builds a lookup over decoded Grid.Col/Grid.Row while preserving raw
- * Prohibition/Attribute/PathwayIndex/BorderID/BlendAdjacence/ColorIndex values.
- * Their gameplay meaning remains UNRESOLVED until native movement/pathfinding
- * evidence establishes the exact semantics.
+ * navigation values.
  *
+ * CONFIRMED ORIGINAL native field wiring:
+ * - Prohibition is the tile blocked flag
+ * - PathwayIndex is stored as the native region/pathway ID
+ * - Attribute is stored as the native tile attribute
+ *
+ * BorderID/BlendAdjacence/ColorIndex gameplay semantics remain UNRESOLVED.
  * Duplicate coordinates are preserved instead of assuming one grid per coord.
  */
 export function createLogresFieldGridIndex(
