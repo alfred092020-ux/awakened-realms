@@ -1,0 +1,143 @@
+{
+  "apk": "config.arm64_v8a.apk",
+  "disassembler": "llvm-objdump",
+  "download": {
+    "sha256": "7803989f3a02d2662f83cefe25e648e04e7d529f650a70ca7911d7b98972c76c",
+    "size": 125559968
+  },
+  "libgame": {
+    "sha256": "1564f02b23c9909adc0d26636adfc8e72a7ed9363655af0d1ae22635e55acbeb",
+    "size": 91934656
+  },
+  "policy": "Bounded current-public native instruction metadata for DataParser::generateConvexhullToVertices only. The stopping condition is the direct Z-argument handoff into addConvexhullVertices.",
+  "provenance": "PUBLIC_CURRENT_JP_TERRAIN_Z_METADATA",
+  "target_count": 1,
+  "targets": [
+    {
+      "add_convexhull_call_count": 0,
+      "add_convexhull_call_sites": [],
+      "address": "0x394c2cc",
+      "bounded_bytes": 100,
+      "bounded_stop": "0x394c330",
+      "instruction_count": 23,
+      "instructions": [
+        {
+          "address": "0x394c2cc",
+          "mnemonic": "stp",
+          "operands": "x29, x30, [sp, #-0x40]!"
+        },
+        {
+          "address": "0x394c2d0",
+          "mnemonic": "str",
+          "operands": "x23, [sp, #0x10]"
+        },
+        {
+          "address": "0x394c2d4",
+          "mnemonic": "stp",
+          "operands": "x22, x21, [sp, #0x20]"
+        },
+        {
+          "address": "0x394c2d8",
+          "mnemonic": "stp",
+          "operands": "x20, x19, [sp, #0x30]"
+        },
+        {
+          "address": "0x394c2dc",
+          "mnemonic": "mov",
+          "operands": "x29, sp"
+        },
+        {
+          "address": "0x394c2e0",
+          "mnemonic": "ldp",
+          "operands": "x22, x23, [x2]"
+        },
+        {
+          "address": "0x394c2e4",
+          "mnemonic": "cmp",
+          "operands": "x22, x23"
+        },
+        {
+          "address": "0x394c2ec",
+          "mnemonic": "mov",
+          "operands": "x19, x4"
+        },
+        {
+          "address": "0x394c2f0",
+          "mnemonic": "mov",
+          "operands": "x20, x3"
+        },
+        {
+          "address": "0x394c2f4",
+          "mnemonic": "mov",
+          "operands": "x21, x1"
+        },
+        {
+          "address": "0x394c2f8",
+          "mnemonic": "ldr",
+          "operands": "x2, [x22, #0x8]"
+        },
+        {
+          "address": "0x394c2fc",
+          "mnemonic": "ldr",
+          "operands": "s0, [x22, #0x4]"
+        },
+        {
+          "address": "0x394c300",
+          "mnemonic": "mov",
+          "operands": "x1, x21"
+        },
+        {
+          "address": "0x394c304",
+          "mnemonic": "ldr",
+          "operands": "w3, [x22], #0x10"
+        },
+        {
+          "address": "0x394c308",
+          "mnemonic": "mov",
+          "operands": "x4, x20"
+        },
+        {
+          "address": "0x394c30c",
+          "mnemonic": "mov",
+          "operands": "x5, x19"
+        },
+        {
+          "address": "0x394c310",
+          "mnemonic": "bl",
+          "operands": "0x529b510 <_ZN3lfs5field10DataParser21addConvexhullVerticesERKNSt6__ndk110shared_ptrINS0_17FieldQuadTreeLeafEEERKNS2_6vectorINS0_11FieldVertexENS2_9allocatorIS9_EEEEfjRNS0_23TerrainNodeVerticesInfoERKNS3_INS0_13FieldAnimatorEEE@plt>"
+        },
+        {
+          "address": "0x394c314",
+          "mnemonic": "cmp",
+          "operands": "x22, x23"
+        },
+        {
+          "address": "0x394c31c",
+          "mnemonic": "ldp",
+          "operands": "x20, x19, [sp, #0x30]"
+        },
+        {
+          "address": "0x394c320",
+          "mnemonic": "ldr",
+          "operands": "x23, [sp, #0x10]"
+        },
+        {
+          "address": "0x394c324",
+          "mnemonic": "ldp",
+          "operands": "x22, x21, [sp, #0x20]"
+        },
+        {
+          "address": "0x394c328",
+          "mnemonic": "ldp",
+          "operands": "x29, x30, [sp], #0x40"
+        },
+        {
+          "address": "0x394c32c",
+          "mnemonic": "ret",
+          "operands": ""
+        }
+      ],
+      "name": "lfs::field::DataParser::generateConvexhullToVertices(std::__ndk1::shared_ptr<lfs::field::FieldQuadTreeLeaf> const&, std::__ndk1::vector<lfs::field::Convexhull, std::__ndk1::allocator<lfs::field::Convexhull> > const&, lfs::field::TerrainNodeVerticesInfo&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)"
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "duration_seconds": 3.919,
+  "error": null,
+  "exit_code": 0,
+  "job_id": "oracle-public-terrain-z-001",
+  "kind": "python",
+  "schema": 1,
+  "source_sha": "fd39753a859c18a4e0af5263e05870deaac2d3b4",
+  "status": "success"
+}
