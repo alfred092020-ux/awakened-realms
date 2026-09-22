@@ -1,0 +1,130 @@
+{
+  "packages": {
+    "001_000_00002": {
+      "Chips": 9237,
+      "Chips_vertices": 51261,
+      "Obj": 321,
+      "ObjAnimated": 1,
+      "Obj_vertices": 5577,
+      "grid_count": 5465,
+      "map_sha256": "71f204a84cac4cb11f5e1d40cd31ffc226c1c33bcea8487c596d2930bc5da007",
+      "quadtree_count": 151,
+      "root": {
+        "FieldQuadUnitCol": 8,
+        "FieldQuadUnitRow": 8,
+        "Height": 120,
+        "UpdateDate": 9861257442030806433,
+        "Version": 1,
+        "Width": 120
+      },
+      "unique_col_row_count": 5465,
+      "unique_depth_order_count": 5465,
+      "unknown_fields": {},
+      "uv_pose_counts": {
+        "Chips:1": 44233,
+        "Chips:6": 7028,
+        "Obj:1": 5577
+      }
+    },
+    "001_000_00200": {
+      "Chips": 7151,
+      "Chips_vertices": 48594,
+      "Obj": 102,
+      "Obj_vertices": 1526,
+      "grid_count": 3898,
+      "map_sha256": "23e4fa0c7a88bd09116f0205703bf640e53243ba062e1f24a82ebc3c15ab274c",
+      "quadtree_count": 112,
+      "root": {
+        "FieldQuadUnitCol": 8,
+        "FieldQuadUnitRow": 8,
+        "Height": 120,
+        "UpdateDate": 9860954029884379004,
+        "Version": 1,
+        "Width": 120
+      },
+      "unique_col_row_count": 3898,
+      "unique_depth_order_count": 3898,
+      "unknown_fields": {},
+      "uv_pose_counts": {
+        "Chips:1": 48062,
+        "Chips:6": 532,
+        "Obj:1": 1526
+      }
+    },
+    "001_000_00700": {
+      "Chips": 1071,
+      "Chips_vertices": 8001,
+      "Obj": 9,
+      "ObjAnimated": 2,
+      "Obj_vertices": 170,
+      "grid_count": 881,
+      "map_sha256": "f2669308776f3d826ed900248018b83d486718ef45a6c158cc148b305ec16494",
+      "quadtree_count": 31,
+      "root": {
+        "FieldQuadUnitCol": 8,
+        "FieldQuadUnitRow": 8,
+        "Height": 120,
+        "UpdateDate": 9860119557627696477,
+        "Version": 1,
+        "Width": 120
+      },
+      "unique_col_row_count": 881,
+      "unique_depth_order_count": 881,
+      "unknown_fields": {},
+      "uv_pose_counts": {
+        "Chips:1": 8001,
+        "Obj:1": 170
+      }
+    },
+    "002_000_00001": {
+      "Chips": 3363,
+      "Chips_vertices": 15582,
+      "Obj": 21,
+      "Obj_vertices": 568,
+      "grid_count": 1380,
+      "map_sha256": "a2ce7b5cc5f45e6063c0e02bee3bd8d7ff8a063a20b8173b05814ad61c89c9f1",
+      "quadtree_count": 62,
+      "root": {
+        "FieldQuadUnitCol": 8,
+        "FieldQuadUnitRow": 8,
+        "Height": 120,
+        "UpdateDate": 9860119557213125619,
+        "Version": 1,
+        "Width": 120
+      },
+      "unique_col_row_count": 1380,
+      "unique_depth_order_count": 1380,
+      "unknown_fields": {},
+      "uv_pose_counts": {
+        "Chips:1": 15582,
+        "Obj:1": 568
+      }
+    },
+    "002_000_00003": {
+      "Chips": 9452,
+      "Chips_vertices": 39996,
+      "Obj": 49,
+      "Obj_vertices": 1135,
+      "grid_count": 3337,
+      "map_sha256": "29ea282e9c8337ada966c0d6bd9090efaf80406db18b001b7c417903b18f1604",
+      "quadtree_count": 110,
+      "root": {
+        "FieldQuadUnitCol": 8,
+        "FieldQuadUnitRow": 8,
+        "Height": 120,
+        "UpdateDate": 9860119557621363354,
+        "Version": 1,
+        "Width": 120
+      },
+      "unique_col_row_count": 3337,
+      "unique_depth_order_count": 3337,
+      "unknown_fields": {},
+      "uv_pose_counts": {
+        "Chips:1": 29070,
+        "Chips:6": 10926,
+        "Obj:1": 1135
+      }
+    }
+  },
+  "provenance": "GLOBAL_SCHEMA_VALIDATED_AGAINST_PRIVATE_JAPANESE_CACHE"
+}

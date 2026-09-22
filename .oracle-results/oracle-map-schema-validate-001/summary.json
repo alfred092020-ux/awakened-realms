@@ -1,0 +1,10 @@
+{
+  "duration_seconds": 2.862,
+  "error": null,
+  "exit_code": 0,
+  "job_id": "oracle-map-schema-validate-001",
+  "kind": "python",
+  "schema": 1,
+  "source_sha": "6fd4a56336390f855b3ed826450b2056b60ca5ff",
+  "status": "success"
+}
