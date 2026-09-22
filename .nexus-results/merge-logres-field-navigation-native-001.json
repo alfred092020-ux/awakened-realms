@@ -1,0 +1,8 @@
+{
+  "commit": "e8a0af5dd7f6d7416c1b423c33801c35d5eaec45",
+  "job_id": "merge-logres-field-navigation-native-001",
+  "job_type": "MERGE",
+  "status": "SUCCESS",
+  "target_branch": "feat/logres-reconstruction",
+  "written_at": "2026-09-22T13:33:03.348823+00:00"
+}
