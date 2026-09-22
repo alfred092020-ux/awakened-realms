@@ -1,0 +1,8 @@
+{
+  "commit": "cda80bc4c11e1b4b290995536e524311ec472ddd",
+  "job_id": "merge-logres-terrain-primitives-002",
+  "job_type": "MERGE",
+  "status": "SUCCESS",
+  "target_branch": "feat/logres-reconstruction",
+  "written_at": "2026-09-22T09:20:52.087242+00:00"
+}
