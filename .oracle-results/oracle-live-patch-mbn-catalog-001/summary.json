@@ -1,0 +1,10 @@
+{
+  "duration_seconds": 3.71,
+  "error": null,
+  "exit_code": 0,
+  "job_id": "oracle-live-patch-mbn-catalog-001",
+  "kind": "python",
+  "schema": 1,
+  "source_sha": "cdb9091239c247b033e25cc9f5e7ba438b97065b",
+  "status": "success"
+}
