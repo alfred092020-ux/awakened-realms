@@ -1,0 +1,10 @@
+{
+  "duration_seconds": 0.061,
+  "error": null,
+  "exit_code": 0,
+  "job_id": "oracle-live-json-map-context-001",
+  "kind": "python",
+  "schema": 1,
+  "source_sha": "c2ffe32108ba08594a9f56e392fa597a911cca47",
+  "status": "success"
+}

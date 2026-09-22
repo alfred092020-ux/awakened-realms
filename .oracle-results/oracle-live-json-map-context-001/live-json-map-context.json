@@ -1,0 +1,20 @@
+{
+  "parse_errors": [],
+  "parsed_json_entries": 1,
+  "policy": "Structural metadata only. String values are never exported.",
+  "provenance": "PUBLIC_LIVE_JP_JSON_MAP_REFERENCE_STRUCTURE",
+  "reference_count": 1,
+  "references": [
+    {
+      "ancestor_context_keys": [
+        "popUp_tutorial_texts"
+      ],
+      "entry": "popUp_tutorial_texts.json",
+      "kind": "value",
+      "map_id": "100_001_00002",
+      "pointer": "/popUp_tutorial_texts/soundID",
+      "value_length": 13
+    }
+  ],
+  "target_map_id": "100_001_00002"
+}
