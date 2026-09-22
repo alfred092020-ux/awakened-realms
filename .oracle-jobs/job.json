@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "job_id": "oracle-public-convexhull-source-001",
+  "source_sha": "9a9bf7f446b792a8384d4444489b083d4b764a6c",
+  "kind": "python",
+  "script": "scripts/logres/inspect_public_convexhull_source.py",
+  "args": [
+    "--url",
+    "https://d.apkpure.net/b/XAPK/jp.MarvelousAQL.logres?version=latest",
+    "--output",
+    "@OUTPUT@/public-convexhull-source.json"
+  ],
+  "timeout_seconds": 1800
+}
