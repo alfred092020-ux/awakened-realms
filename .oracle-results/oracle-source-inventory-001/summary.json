@@ -1,0 +1,10 @@
+{
+  "duration_seconds": 1.69,
+  "error": null,
+  "exit_code": 0,
+  "job_id": "oracle-source-inventory-001",
+  "kind": "python",
+  "schema": 1,
+  "source_sha": "ab4fe110f5e4edd49543323272d8b78e0917a7fa",
+  "status": "success"
+}
