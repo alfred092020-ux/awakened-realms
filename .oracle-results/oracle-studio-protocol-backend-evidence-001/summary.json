@@ -1,0 +1,10 @@
+{
+  "duration_seconds": 3.16,
+  "error": null,
+  "exit_code": 0,
+  "job_id": "oracle-studio-protocol-backend-evidence-001",
+  "kind": "python",
+  "schema": 1,
+  "source_sha": "a56ddc2d5d10c67e6a80ac9e77b110b8364d49f1",
+  "status": "success"
+}
