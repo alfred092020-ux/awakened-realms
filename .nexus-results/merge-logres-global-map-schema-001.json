@@ -1,0 +1,8 @@
+{
+  "commit": "6fd4a56336390f855b3ed826450b2056b60ca5ff",
+  "job_id": "merge-logres-global-map-schema-001",
+  "job_type": "MERGE",
+  "status": "SUCCESS",
+  "target_branch": "feat/logres-reconstruction",
+  "written_at": "2026-09-22T04:55:31.077282+00:00"
+}
