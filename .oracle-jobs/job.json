@@ -1,0 +1,11 @@
+{
+  "schema": 1,
+  "job_id": "oracle-smoke-001",
+  "source_sha": "fa211b1046decae5482c8d0215a2b795f6d14c19",
+  "kind": "python",
+  "script": "scripts/logres/oracle_worker.py",
+  "args": [
+    "--self-test"
+  ],
+  "timeout_seconds": 300
+}
