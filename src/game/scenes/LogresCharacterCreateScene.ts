@@ -14,6 +14,11 @@ import {
   logresDevMs,
 } from '../logres/LogresDevSettings'
 
+import {
+  submitCharacterCreateToReplacementServer,
+  type ReconstructedCharacterCreateResponse,
+} from '../logres/server/LogresReplacementServer'
+
 type CharacterSex =
   | 'man'
   | 'woman'
@@ -43,6 +48,12 @@ export class LogresCharacterCreateScene
 
   private okButton?:
     Phaser.GameObjects.Image
+
+  private createFadeComplete =
+    false
+
+  private characterCreateResponse?:
+    ReconstructedCharacterCreateResponse
 
   constructor() {
     super(
@@ -223,6 +234,14 @@ export class LogresCharacterCreateScene
 
       duration:
         logresDevMs(500),
+
+      onComplete:
+        () => {
+          this.createFadeComplete =
+            true
+
+          this.tryEnterTutorialField()
+        },
     })
 
     const texts =
@@ -295,6 +314,75 @@ export class LogresCharacterCreateScene
     console.info(
       'C_GMCL_CHAR_CREATE_REQ',
       request,
+    )
+
+    /*
+     * The historical server response body has
+     * not been recovered. Route the request
+     * through the explicitly RECONSTRUCTED
+     * replacement-server emulator instead of
+     * letting the OK button change scenes.
+     *
+     * Historical client-facing evidence places
+     * tutorial field play after the initial
+     * world / gender selection sequence.
+     */
+    void submitCharacterCreateToReplacementServer(
+      request,
+    )
+      .then(
+        (response) => {
+          this.characterCreateResponse =
+            response
+
+          this.registry.set(
+            'logres.server.characterCreateResponse',
+            response,
+          )
+
+          this.tryEnterTutorialField()
+        },
+      )
+      .catch(
+        (error: unknown) => {
+          console.error(
+            'RECONSTRUCTED character-create authority rejected request',
+            error,
+          )
+
+          this.registry.set(
+            'logres.server.characterCreateError',
+            error instanceof Error
+              ? error.message
+              : String(error),
+          )
+        },
+      )
+  }
+
+  private tryEnterTutorialField() {
+    if (
+      !this.createFadeComplete ||
+      !this.characterCreateResponse
+        ?.accepted
+    ) {
+      return
+    }
+
+    this.registry.set(
+      'logres.server.characterCreateProvenance',
+      this.characterCreateResponse
+        .provenance,
+    )
+
+    this.registry.set(
+      'logres.server.characterCreateNextState',
+      this.characterCreateResponse
+        .nextState,
+    )
+
+    this.scene.start(
+      'LogresFieldScene',
     )
   }
 
