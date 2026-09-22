@@ -1,0 +1,8 @@
+{
+  "commit": "d8d5a1bae2e0661ecfe87af372f0d28f3c8940ed",
+  "job_id": "merge-logres-field-native-levels-001",
+  "job_type": "MERGE",
+  "status": "SUCCESS",
+  "target_branch": "feat/logres-reconstruction",
+  "written_at": "2026-09-22T15:49:58.145082+00:00"
+}
