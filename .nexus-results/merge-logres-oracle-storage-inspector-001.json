@@ -1,0 +1,8 @@
+{
+  "commit": "f90ca841379de6cfb60d2bf1d3bb171a6aebe85a",
+  "job_id": "merge-logres-oracle-storage-inspector-001",
+  "job_type": "MERGE",
+  "status": "SUCCESS",
+  "target_branch": "feat/logres-reconstruction",
+  "written_at": "2026-09-22T06:23:34.717847+00:00"
+}
