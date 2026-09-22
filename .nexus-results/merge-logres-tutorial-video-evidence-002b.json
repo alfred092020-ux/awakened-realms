@@ -1,0 +1,8 @@
+{
+  "commit": "c6a9a9ef9f617ae4fc1865bdae6bcde24350dc00",
+  "job_id": "merge-logres-tutorial-video-evidence-002b",
+  "job_type": "MERGE",
+  "status": "SUCCESS",
+  "target_branch": "feat/logres-reconstruction",
+  "written_at": "2026-09-22T12:18:30.738888+00:00"
+}
