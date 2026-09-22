@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "job_id": "oracle-public-hostentry-001",
+  "source_sha": "a60fdb17188df7027a95d3234ea62462cc3370e3",
+  "kind": "python",
+  "script": "scripts/logres/inspect_public_hostentry.py",
+  "args": [
+    "--version",
+    "12101",
+    "--platform",
+    "release-and",
+    "--output",
+    "@OUTPUT@/hostentry.json"
+  ],
+  "timeout_seconds": 300
+}
