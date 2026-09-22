@@ -1,0 +1,10 @@
+{
+  "duration_seconds": 2.883,
+  "error": null,
+  "exit_code": 0,
+  "job_id": "oracle-studio-ui-evidence-002",
+  "kind": "python",
+  "schema": 1,
+  "source_sha": "e27bd879d28d108c8b4eac8f7f2ef10d878791b0",
+  "status": "success"
+}
