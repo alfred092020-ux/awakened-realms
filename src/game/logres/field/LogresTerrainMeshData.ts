@@ -4,11 +4,6 @@ import type {
   LogresTerrainTextureKind,
 } from './LogresTerrainPrimitives'
 
-export interface LogresTerrainAtlasSize {
-  width: number
-  height: number
-}
-
 export interface LogresTerrainMeshUvPolicy {
   /** UNRESOLVED until native texture-orientation evidence is complete. */
   origin: 'top-left' | 'bottom-left'
@@ -33,24 +28,9 @@ export const LOGRES_RENDERER_PROOF_ATLAS_SIZE = Object.freeze({
   obj: Object.freeze({ width: 2048, height: 1934 }),
 })
 
-function requireAtlas(size: LogresTerrainAtlasSize, label: string): void {
-  if (
-    !Number.isFinite(size.width) ||
-    !Number.isFinite(size.height) ||
-    size.width <= 0 ||
-    size.height <= 0
-  ) {
-    throw new Error(`${label} atlas dimensions must be positive finite values`)
-  }
-}
-
-function uv(
-  value: number,
-  size: number,
-  label: string,
-): number {
+function uv(value: number, label: string): number {
   if (!Number.isFinite(value)) throw new Error(`${label} must be finite`)
-  return value / size
+  return value
 }
 
 function emptyGroup(texture: LogresTerrainTextureKind): LogresTerrainMeshGroup {
@@ -60,7 +40,6 @@ function emptyGroup(texture: LogresTerrainTextureKind): LogresTerrainMeshGroup {
 function appendPrimitive(
   group: LogresTerrainMeshGroup,
   primitive: LogresTerrainPrimitive,
-  atlas: LogresTerrainAtlasSize,
   policy: LogresTerrainMeshUvPolicy,
 ): void {
   const baseVertex = group.vertices.length / 2
@@ -68,8 +47,8 @@ function appendPrimitive(
     group.vertices.push(vertex.VertexPos.PosX, vertex.VertexPos.PosY)
     const pose = vertex.UvPoses[0]
     if (!pose) throw new Error('Terrain primitive vertex is missing initial UV pose')
-    const u = uv(pose.UvX, atlas.width, 'UvX')
-    const sourceV = uv(pose.UvY, atlas.height, 'UvY')
+    const u = uv(pose.UvX, 'UvX')
+    const sourceV = uv(pose.UvY, 'UvY')
     const v = policy.origin === 'top-left' ? sourceV : 1 - sourceV
     group.uvs.push(u, v)
   })
@@ -91,9 +70,8 @@ function appendPrimitive(
  *
  * CONFIRMED ORIGINAL:
  * - vertex positions
- * - first UV pose
+ * - first UV pose, already normalized (native copyVertex copies it directly)
  * - convex-hull strip ordering
- * - renderer-proof atlas dimensions
  *
  * UNRESOLVED and therefore caller-supplied:
  * - texture V origin
@@ -104,11 +82,7 @@ function appendPrimitive(
 export function buildLogresTerrainMeshData(
   terrain: LogresTerrainPrimitiveSet,
   policy: LogresTerrainMeshUvPolicy,
-  atlas = LOGRES_RENDERER_PROOF_ATLAS_SIZE,
 ): LogresTerrainMeshData {
-  requireAtlas(atlas.chip, 'CHIP')
-  requireAtlas(atlas.obj, 'OBJ')
-
   const result: LogresTerrainMeshData = {
     chip: emptyGroup('chip'),
     obj: emptyGroup('obj'),
@@ -118,7 +92,6 @@ export function buildLogresTerrainMeshData(
     appendPrimitive(
       result[primitive.texture],
       primitive,
-      atlas[primitive.texture],
       policy,
     )
   }

@@ -18,15 +18,15 @@ const terrain: LogresTerrainPrimitiveSet = {
     stripOrder: [0, 3, 1, 2],
     vertices: [
       { VertexPos: { PosX: 0, PosY: 0 }, UvPoses: [{ UvX: 0, UvY: 0 }] },
-      { VertexPos: { PosX: 10, PosY: 0 }, UvPoses: [{ UvX: 718, UvY: 0 }] },
-      { VertexPos: { PosX: 10, PosY: 10 }, UvPoses: [{ UvX: 718, UvY: 1938 }] },
-      { VertexPos: { PosX: 0, PosY: 10 }, UvPoses: [{ UvX: 0, UvY: 1938 }] },
+      { VertexPos: { PosX: 10, PosY: 0 }, UvPoses: [{ UvX: 1, UvY: 0 }] },
+      { VertexPos: { PosX: 10, PosY: 10 }, UvPoses: [{ UvX: 1, UvY: 1 }] },
+      { VertexPos: { PosX: 0, PosY: 10 }, UvPoses: [{ UvX: 0, UvY: 1 }] },
     ],
   }],
 }
 
 describe('Logres terrain mesh data', () => {
-  it('triangulates the confirmed native strip order and normalizes pixel UVs', () => {
+  it('triangulates the confirmed native strip order and preserves normalized UVs', () => {
     const mesh = buildLogresTerrainMeshData(terrain, { origin: 'top-left' })
     expect(mesh.chip.vertices).toEqual([0,0, 10,0, 10,10, 0,10])
     expect(mesh.chip.uvs).toEqual([0,0, 1,0, 1,1, 0,1])
@@ -47,4 +47,14 @@ describe('Logres terrain mesh data', () => {
       obj: { width: 2048, height: 1934 },
     })
   })
+})
+
+// Recovered current-JP CHIP atlas edge values: 2/718 and 5/1938.
+it('does not divide recovered normalized UVs by atlas size a second time', () => {
+  const normalized = { UvX: 0.002785515272989869, UvY: 0.0025799793656915426 }
+  const source = structuredClone(terrain)
+  const first = source.primitives[0]!
+  const input = { ...source, primitives: [{ ...first, vertices: [{ ...first.vertices[0]!, UvPoses: [normalized] }, ...first.vertices.slice(1)] }] }
+  expect(buildLogresTerrainMeshData(input, { origin: 'top-left' }).chip.uvs.slice(0, 2)).toEqual([normalized.UvX, normalized.UvY])
+  expect(buildLogresTerrainMeshData(input, { origin: 'bottom-left' }).chip.uvs.slice(0, 2)).toEqual([normalized.UvX, 1 - normalized.UvY])
 })
