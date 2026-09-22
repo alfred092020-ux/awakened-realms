@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "job_id": "oracle-public-hostentry-buildcode-matrix-001",
+  "source_sha": "4a965e783a4cc313d7522f2b5d65f292d250cb00",
+  "kind": "python",
+  "script": "scripts/logres/inspect_public_hostentry.py",
+  "args": [
+    "--version",
+    "12101",
+    "--output",
+    "@OUTPUT@/hostentry-buildcode-matrix.json"
+  ],
+  "timeout_seconds": 300
+}
