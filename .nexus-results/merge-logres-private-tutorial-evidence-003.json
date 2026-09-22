@@ -1,0 +1,8 @@
+{
+  "commit": "e8193bdfd2ed3bb6857a1842491f95bb04b3276f",
+  "job_id": "merge-logres-private-tutorial-evidence-003",
+  "job_type": "MERGE",
+  "status": "SUCCESS",
+  "target_branch": "feat/logres-reconstruction",
+  "written_at": "2026-09-22T05:14:45.517356+00:00"
+}
