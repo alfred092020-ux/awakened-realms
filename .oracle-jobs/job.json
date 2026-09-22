@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "job_id": "oracle-patch-filelist-zlib-001",
+  "source_sha": "243204571622ce06faea1bace5731c77054eafed",
+  "kind": "python",
+  "script": "scripts/logres/inspect_private_patch_filelist_zlib.py",
+  "args": [
+    "@PRIVATE_ARCHIVE@",
+    "--output",
+    "@OUTPUT@/patch-filelist-zlib.json"
+  ],
+  "timeout_seconds": 1800
+}
