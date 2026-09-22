@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "job_id": "oracle-storage-check-001",
+  "source_sha": "f90ca841379de6cfb60d2bf1d3bb171a6aebe85a",
+  "kind": "python",
+  "script": "scripts/logres/inspect_oracle_storage.py",
+  "args": [
+    "--anchor",
+    "@PRIVATE_ARCHIVE@",
+    "--required-bytes",
+    "6093432146",
+    "--output",
+    "@OUTPUT@/storage.json"
+  ],
+  "timeout_seconds": 300
+}
