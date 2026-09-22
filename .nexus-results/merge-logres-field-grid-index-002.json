@@ -1,0 +1,8 @@
+{
+  "commit": "db34468f5aa6799657213d55e6c6ba52768cb2a6",
+  "job_id": "merge-logres-field-grid-index-002",
+  "job_type": "MERGE",
+  "status": "SUCCESS",
+  "target_branch": "feat/logres-reconstruction",
+  "written_at": "2026-09-22T12:21:22.102993+00:00"
+}
