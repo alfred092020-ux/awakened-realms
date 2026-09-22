@@ -1,0 +1,8 @@
+{
+  "commit": "ff1753d15234c8c0c659ee5ce0289a59e8f26475",
+  "job_id": "merge-logres-terrain-mesh-data-001",
+  "job_type": "MERGE",
+  "status": "SUCCESS",
+  "target_branch": "feat/logres-reconstruction",
+  "written_at": "2026-09-22T10:48:47.308580+00:00"
+}
