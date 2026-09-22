@@ -1,0 +1,10 @@
+{
+  "duration_seconds": 0.199,
+  "error": null,
+  "exit_code": 0,
+  "job_id": "oracle-public-patch-object-proof-001",
+  "kind": "python",
+  "schema": 1,
+  "source_sha": "b24e8d7c7302c734ed33d6cacf9195bf553a325e",
+  "status": "success"
+}

@@ -1,0 +1,28 @@
+{
+  "base": "https://prd-cdn.mmo-logres.com/patch/1789742711/android/",
+  "provenance": "PUBLIC_LOGRES_PATCH_CDN_PROBE",
+  "results": [
+    {
+      "content_type": null,
+      "final_url": "https://prd-cdn.mmo-logres.com/patch/1789742711/android/avacolle/bg/bg_010_001_001_000.mbn",
+      "header_hex": "00000000c60000005b7b226e616d6522",
+      "path": "avacolle/bg/bg_010_001_001_000.mbn",
+      "sha1": "548229135c9dcfa30facd947e180a73901521eb9",
+      "sha256": "9da74f90b4437fcc1ac7faa3174f6cdf5ef1c9d199702cd0f5b5e7ef8c2d9d32",
+      "size": 40387,
+      "status": 200,
+      "url": "https://prd-cdn.mmo-logres.com/patch/1789742711/android/avacolle/bg/bg_010_001_001_000.mbn"
+    },
+    {
+      "content_type": null,
+      "final_url": "https://prd-cdn.mmo-logres.com/patch/1789742711/android/gui/up_date/banner/menu_banner52.mbn",
+      "header_hex": "00000000590000005b7b226e616d6522",
+      "path": "gui/up_date/banner/menu_banner52.mbn",
+      "sha1": "c67eddc26f838faa1c4ee119af4c15cbb18f55b4",
+      "sha256": "9efcf455a2ed5e91e2b91d540b4416d1d732e232d87187e1052f75b619a0f700",
+      "size": 91259,
+      "status": 200,
+      "url": "https://prd-cdn.mmo-logres.com/patch/1789742711/android/gui/up_date/banner/menu_banner52.mbn"
+    }
+  ]
+}
