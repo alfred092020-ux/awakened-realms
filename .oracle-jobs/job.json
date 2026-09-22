@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "job_id": "oracle-source-inventory-001",
+  "source_sha": "ab4fe110f5e4edd49543323272d8b78e0917a7fa",
+  "kind": "python",
+  "script": "scripts/logres/inspect_private_sources.py",
+  "args": [
+    "@PRIVATE_ARCHIVE@",
+    "--output",
+    "@OUTPUT@/source-inventory.json"
+  ],
+  "timeout_seconds": 1800
+}
