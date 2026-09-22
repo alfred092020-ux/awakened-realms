@@ -1,0 +1,1624 @@
+{
+  "apk": "config.arm64_v8a.apk",
+  "category_counts": {
+    "animator": 39,
+    "camera": 22,
+    "depth_path": 9,
+    "map_data": 0,
+    "parser": 12,
+    "terrain": 97
+  },
+  "download": {
+    "sha256": "7803989f3a02d2662f83cefe25e648e04e7d529f650a70ca7911d7b98972c76c",
+    "size": 125559968
+  },
+  "libgame": {
+    "sha256": "1564f02b23c9909adc0d26636adfc8e72a7ed9363655af0d1ae22635e55acbeb",
+    "size": 91934656
+  },
+  "matching_symbol_count": 200,
+  "policy": "Public libgame derived symbol/call metadata only. Function ranges are bounded and based on neighboring filtered symbols, so call lists are discovery evidence rather than complete control-flow recovery.",
+  "provenance": "PUBLIC_CURRENT_JP_FIELD_NATIVE_METADATA",
+  "symbols": [
+    {
+      "address": 36521915,
+      "address_hex": "0x00000000022d47bb",
+      "bounded_span_bytes": 54,
+      "calls": [],
+      "name": "typeinfo name for lfs::field::FieldTerrainDrawer",
+      "type": "R"
+    },
+    {
+      "address": 36521969,
+      "address_hex": "0x00000000022d47f1",
+      "bounded_span_bytes": 31,
+      "calls": [],
+      "name": "typeinfo name for lfs::field::FieldTerrainNode",
+      "type": "R"
+    },
+    {
+      "address": 36522000,
+      "address_hex": "0x00000000022d4810",
+      "bounded_span_bytes": 145,
+      "calls": [],
+      "name": "typeinfo name for std::__ndk1::__shared_ptr_pointer<lfs::field::FieldTerrainNode*, lfs::cc_make_shared<lfs::field::FieldTerrainNode>(lfs::field::FieldTerrainNode*)::{lambda(lfs::field::FieldTerrainNode*)#1}, std::__ndk1::allocator<lfs::field::FieldTerrainNode> >",
+      "type": "V"
+    },
+    {
+      "address": 36522145,
+      "address_hex": "0x00000000022d48a1",
+      "bounded_span_bytes": 94,
+      "calls": [],
+      "name": "typeinfo name for lfs::cc_make_shared<lfs::field::FieldTerrainNode>(lfs::field::FieldTerrainNode*)::{lambda(lfs::field::FieldTerrainNode*)#1}",
+      "type": "V"
+    },
+    {
+      "address": 36522239,
+      "address_hex": "0x00000000022d48ff",
+      "bounded_span_bytes": 110,
+      "calls": [],
+      "name": "typeinfo name for std::__ndk1::__function::__func<std::__ndk1::__bind<void (lfs::field::FieldTerrainNode::*)(), lfs::field::FieldTerrainNode*>, std::__ndk1::allocator<std::__ndk1::__bind<void (lfs::field::FieldTerrainNode::*)(), lfs::field::FieldTerrainNode*> >, void ()>",
+      "type": "V"
+    },
+    {
+      "address": 36522349,
+      "address_hex": "0x00000000022d496d",
+      "bounded_span_bytes": 62,
+      "calls": [],
+      "name": "typeinfo name for std::__ndk1::__bind<void (lfs::field::FieldTerrainNode::*)(), lfs::field::FieldTerrainNode*>",
+      "type": "V"
+    },
+    {
+      "address": 36522411,
+      "address_hex": "0x00000000022d49ab",
+      "bounded_span_bytes": 69,
+      "calls": [],
+      "name": "typeinfo name for std::__ndk1::__weak_result_type<void (lfs::field::FieldTerrainNode::*)()>",
+      "type": "V"
+    },
+    {
+      "address": 36522480,
+      "address_hex": "0x00000000022d49f0",
+      "bounded_span_bytes": 1928,
+      "calls": [],
+      "name": "typeinfo name for std::__ndk1::__unary_function_keep_layout_base<lfs::field::FieldTerrainNode*, void>",
+      "type": "V"
+    },
+    {
+      "address": 36524408,
+      "address_hex": "0x00000000022d5178",
+      "bounded_span_bytes": 275,
+      "calls": [],
+      "name": "typeinfo name for lfs::field::FieldAnimator",
+      "type": "R"
+    },
+    {
+      "address": 36524683,
+      "address_hex": "0x00000000022d528b",
+      "bounded_span_bytes": 4096,
+      "calls": [],
+      "name": "typeinfo name for lfs::field::DrawNode",
+      "type": "R"
+    },
+    {
+      "address": 36531368,
+      "address_hex": "0x00000000022d6ca8",
+      "bounded_span_bytes": 503,
+      "calls": [],
+      "name": "typeinfo name for lfs::field::FieldTerrain",
+      "type": "R"
+    },
+    {
+      "address": 36531871,
+      "address_hex": "0x00000000022d6e9f",
+      "bounded_span_bytes": 138,
+      "calls": [],
+      "name": "typeinfo name for std::__ndk1::__shared_ptr_pointer<lfs::field::DataParser*, std::__ndk1::shared_ptr<lfs::field::DataParser>::__shared_ptr_default_delete<lfs::field::DataParser, lfs::field::DataParser>, std::__ndk1::allocator<lfs::field::DataParser> >",
+      "type": "V"
+    },
+    {
+      "address": 36532009,
+      "address_hex": "0x00000000022d6f29",
+      "bounded_span_bytes": 364,
+      "calls": [],
+      "name": "typeinfo name for std::__ndk1::shared_ptr<lfs::field::DataParser>::__shared_ptr_default_delete<lfs::field::DataParser, lfs::field::DataParser>",
+      "type": "V"
+    },
+    {
+      "address": 36532373,
+      "address_hex": "0x00000000022d7095",
+      "bounded_span_bytes": 141,
+      "calls": [],
+      "name": "typeinfo name for std::__ndk1::__shared_ptr_pointer<lfs::field::FieldAnimator*, std::__ndk1::shared_ptr<lfs::field::FieldAnimator>::__shared_ptr_default_delete<lfs::field::FieldAnimator, lfs::field::FieldAnimator>, std::__ndk1::allocator<lfs::field::FieldAnimator> >",
+      "type": "V"
+    },
+    {
+      "address": 36532514,
+      "address_hex": "0x00000000022d7122",
+      "bounded_span_bytes": 4096,
+      "calls": [],
+      "name": "typeinfo name for std::__ndk1::shared_ptr<lfs::field::FieldAnimator>::__shared_ptr_default_delete<lfs::field::FieldAnimator, lfs::field::FieldAnimator>",
+      "type": "V"
+    },
+    {
+      "address": 37718351,
+      "address_hex": "0x00000000023f894f",
+      "bounded_span_bytes": 140,
+      "calls": [],
+      "name": "typeinfo name for std::__ndk1::__shared_ptr_pointer<lfs::field::FieldTerrain*, std::__ndk1::shared_ptr<lfs::field::FieldTerrain>::__shared_ptr_default_delete<lfs::field::FieldTerrain, lfs::field::FieldTerrain>, std::__ndk1::allocator<lfs::field::FieldTerrain> >",
+      "type": "V"
+    },
+    {
+      "address": 37718491,
+      "address_hex": "0x00000000023f89db",
+      "bounded_span_bytes": 89,
+      "calls": [],
+      "name": "typeinfo name for std::__ndk1::shared_ptr<lfs::field::FieldTerrain>::__shared_ptr_default_delete<lfs::field::FieldTerrain, lfs::field::FieldTerrain>",
+      "type": "V"
+    },
+    {
+      "address": 37718580,
+      "address_hex": "0x00000000023f8a34",
+      "bounded_span_bytes": 293,
+      "calls": [],
+      "name": "typeinfo name for std::__ndk1::__function::__func<std::__ndk1::__bind<void (lfs::MapTerrainResource::*)(std::__ndk1::shared_ptr<cocos2d::Node> const&, std::__ndk1::shared_ptr<cocos2d::Node> const&, std::__ndk1::shared_ptr<lfs::field::FieldQuadTreeBase> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&), lfs::MapTerrainResource*, std::__ndk1::placeholders::__ph<1> const&, std::__ndk1::placeholders::__ph<2> const&, std::__ndk1::placeholders::__ph<3> const&, std::__ndk1::placeholder",
+      "type": "V"
+    },
+    {
+      "address": 37718873,
+      "address_hex": "0x00000000023f8b59",
+      "bounded_span_bytes": 137,
+      "calls": [],
+      "name": "typeinfo name for std::__ndk1::__function::__base<void (std::__ndk1::shared_ptr<cocos2d::Node>, std::__ndk1::shared_ptr<cocos2d::Node>, std::__ndk1::shared_ptr<lfs::field::FieldQuadTreeBase>, std::__ndk1::shared_ptr<lfs::field::FieldAnimator>)>",
+      "type": "V"
+    },
+    {
+      "address": 37719010,
+      "address_hex": "0x00000000023f8be2",
+      "bounded_span_bytes": 233,
+      "calls": [],
+      "name": "typeinfo name for std::__ndk1::__bind<void (lfs::MapTerrainResource::*)(std::__ndk1::shared_ptr<cocos2d::Node> const&, std::__ndk1::shared_ptr<cocos2d::Node> const&, std::__ndk1::shared_ptr<lfs::field::FieldQuadTreeBase> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&), lfs::MapTerrainResource*, std::__ndk1::placeholders::__ph<1> const&, std::__ndk1::placeholders::__ph<2> const&, std::__ndk1::placeholders::__ph<3> const&, std::__ndk1::placeholders::__ph<4> const&>",
+      "type": "V"
+    },
+    {
+      "address": 37719243,
+      "address_hex": "0x00000000023f8ccb",
+      "bounded_span_bytes": 265,
+      "calls": [],
+      "name": "typeinfo name for std::__ndk1::__weak_result_type<void (lfs::MapTerrainResource::*)(std::__ndk1::shared_ptr<cocos2d::Node> const&, std::__ndk1::shared_ptr<cocos2d::Node> const&, std::__ndk1::shared_ptr<lfs::field::FieldQuadTreeBase> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)>",
+      "type": "V"
+    },
+    {
+      "address": 37719508,
+      "address_hex": "0x00000000023f8dd4",
+      "bounded_span_bytes": 12,
+      "calls": [],
+      "name": "map::data::Object::kDepthOrderFieldNumber",
+      "type": "R"
+    },
+    {
+      "address": 37719520,
+      "address_hex": "0x00000000023f8de0",
+      "bounded_span_bytes": 12,
+      "calls": [],
+      "name": "map::data::ObjectAnimated::kDepthOrderFieldNumber",
+      "type": "R"
+    },
+    {
+      "address": 37719532,
+      "address_hex": "0x00000000023f8dec",
+      "bounded_span_bytes": 4,
+      "calls": [],
+      "name": "map::data::Grid::kDepthOrderFieldNumber",
+      "type": "R"
+    },
+    {
+      "address": 37719536,
+      "address_hex": "0x00000000023f8df0",
+      "bounded_span_bytes": 8,
+      "calls": [],
+      "name": "map::data::Grid::kProhibitionFieldNumber",
+      "type": "R"
+    },
+    {
+      "address": 37719544,
+      "address_hex": "0x00000000023f8df8",
+      "bounded_span_bytes": 4096,
+      "calls": [],
+      "name": "map::data::Grid::kPathwayIndexFieldNumber",
+      "type": "R"
+    },
+    {
+      "address": 37766096,
+      "address_hex": "0x00000000024043d0",
+      "bounded_span_bytes": 213,
+      "calls": [],
+      "name": "typeinfo name for std::__ndk1::__function::__func<lfs::character::DistanceFromFieldCamera, std::__ndk1::allocator<lfs::character::DistanceFromFieldCamera>, float (std::__ndk1::shared_ptr<lfs::character::Character> const&)>",
+      "type": "V"
+    },
+    {
+      "address": 37766309,
+      "address_hex": "0x00000000024044a5",
+      "bounded_span_bytes": 4096,
+      "calls": [],
+      "name": "typeinfo name for lfs::character::DistanceFromFieldCamera",
+      "type": "V"
+    },
+    {
+      "address": 54173108,
+      "address_hex": "0x00000000033a9db4",
+      "bounded_span_bytes": 4096,
+      "calls": [],
+      "name": "lfs::character::DistanceFromFieldCamera::operator()(std::__ndk1::shared_ptr<lfs::character::Character> const&) const",
+      "type": "T"
+    },
+    {
+      "address": 59972296,
+      "address_hex": "0x0000000003931ac8",
+      "bounded_span_bytes": 104,
+      "calls": [],
+      "name": "lfs::field::FieldTerrainDrawer::create(std::__ndk1::shared_ptr<cocos2d::Node> const&, std::__ndk1::shared_ptr<cocos2d::Node> const&, std::__ndk1::shared_ptr<lfs::field::FieldQuadTreeBase> const&)",
+      "type": "T"
+    },
+    {
+      "address": 59972400,
+      "address_hex": "0x0000000003931b30",
+      "bounded_span_bytes": 364,
+      "calls": [],
+      "name": "lfs::field::FieldTerrainDrawer::initialize(std::__ndk1::shared_ptr<cocos2d::Node> const&, std::__ndk1::shared_ptr<cocos2d::Node> const&, std::__ndk1::shared_ptr<lfs::field::FieldQuadTreeBase> const&)",
+      "type": "T"
+    },
+    {
+      "address": 59972764,
+      "address_hex": "0x0000000003931c9c",
+      "bounded_span_bytes": 204,
+      "calls": [],
+      "name": "lfs::field::FieldTerrainDrawer::FieldTerrainDrawer()",
+      "type": "T"
+    },
+    {
+      "address": 59972764,
+      "address_hex": "0x0000000003931c9c",
+      "bounded_span_bytes": 204,
+      "calls": [],
+      "name": "lfs::field::FieldTerrainDrawer::FieldTerrainDrawer()",
+      "type": "T"
+    },
+    {
+      "address": 59972968,
+      "address_hex": "0x0000000003931d68",
+      "bounded_span_bytes": 212,
+      "calls": [],
+      "name": "lfs::field::FieldTerrainDrawer::~FieldTerrainDrawer()",
+      "type": "T"
+    },
+    {
+      "address": 59972968,
+      "address_hex": "0x0000000003931d68",
+      "bounded_span_bytes": 212,
+      "calls": [],
+      "name": "lfs::field::FieldTerrainDrawer::~FieldTerrainDrawer()",
+      "type": "T"
+    },
+    {
+      "address": 59973180,
+      "address_hex": "0x0000000003931e3c",
+      "bounded_span_bytes": 36,
+      "calls": [],
+      "name": "lfs::field::FieldTerrainDrawer::~FieldTerrainDrawer()",
+      "type": "T"
+    },
+    {
+      "address": 59973216,
+      "address_hex": "0x0000000003931e60",
+      "bounded_span_bytes": 88,
+      "calls": [],
+      "name": "lfs::field::FieldTerrainDrawer::setVisible(bool)",
+      "type": "T"
+    },
+    {
+      "address": 59973304,
+      "address_hex": "0x0000000003931eb8",
+      "bounded_span_bytes": 8,
+      "calls": [],
+      "name": "lfs::field::FieldTerrainDrawer::getTerrainNode()",
+      "type": "T"
+    },
+    {
+      "address": 59973312,
+      "address_hex": "0x0000000003931ec0",
+      "bounded_span_bytes": 8,
+      "calls": [],
+      "name": "lfs::field::FieldTerrainDrawer::getStructureNode()",
+      "type": "T"
+    },
+    {
+      "address": 59973320,
+      "address_hex": "0x0000000003931ec8",
+      "bounded_span_bytes": 24,
+      "calls": [],
+      "name": "lfs::field::FieldTerrainDrawer::inheritAnimatedObjects(cocos2d::Node*)",
+      "type": "T"
+    },
+    {
+      "address": 59973344,
+      "address_hex": "0x0000000003931ee0",
+      "bounded_span_bytes": 116,
+      "calls": [],
+      "name": "lfs::field::FieldTerrainDrawer::removeFromParent()",
+      "type": "T"
+    },
+    {
+      "address": 59973460,
+      "address_hex": "0x0000000003931f54",
+      "bounded_span_bytes": 24,
+      "calls": [],
+      "name": "lfs::field::FieldTerrainDrawer::update(cocos2d::Rect const&)",
+      "type": "T"
+    },
+    {
+      "address": 59973484,
+      "address_hex": "0x0000000003931f6c",
+      "bounded_span_bytes": 24,
+      "calls": [],
+      "name": "lfs::field::FieldTerrainDrawer::updateQuadTrees(cocos2d::Rect const&)",
+      "type": "T"
+    },
+    {
+      "address": 59973508,
+      "address_hex": "0x0000000003931f84",
+      "bounded_span_bytes": 8,
+      "calls": [],
+      "name": "lfs::field::FieldTerrainDrawer::build(lfs::IFieldDrawable const&)",
+      "type": "W"
+    },
+    {
+      "address": 59973516,
+      "address_hex": "0x0000000003931f8c",
+      "bounded_span_bytes": 12,
+      "calls": [],
+      "name": "lfs::field::FieldTerrainDrawer::getBoundingBox() const",
+      "type": "W"
+    },
+    {
+      "address": 59973528,
+      "address_hex": "0x0000000003931f98",
+      "bounded_span_bytes": 248,
+      "calls": [],
+      "name": "lfs::field::FieldTerrainNode::create(std::__ndk1::shared_ptr<lfs::TextureResource> const&)",
+      "type": "T"
+    },
+    {
+      "address": 59973776,
+      "address_hex": "0x0000000003932090",
+      "bounded_span_bytes": 140,
+      "calls": [],
+      "name": "std::__ndk1::shared_ptr<lfs::field::FieldTerrainNode> lfs::cc_make_shared<lfs::field::FieldTerrainNode>(lfs::field::FieldTerrainNode*)",
+      "type": "W"
+    },
+    {
+      "address": 59973916,
+      "address_hex": "0x000000000393211c",
+      "bounded_span_bytes": 248,
+      "calls": [],
+      "name": "lfs::field::FieldTerrainNode::setTextureResource(std::__ndk1::shared_ptr<lfs::TextureResource> const&)",
+      "type": "T"
+    },
+    {
+      "address": 59974164,
+      "address_hex": "0x0000000003932214",
+      "bounded_span_bytes": 616,
+      "calls": [],
+      "name": "lfs::field::FieldTerrainNode::FieldTerrainNode()",
+      "type": "T"
+    },
+    {
+      "address": 59974164,
+      "address_hex": "0x0000000003932214",
+      "bounded_span_bytes": 616,
+      "calls": [],
+      "name": "lfs::field::FieldTerrainNode::FieldTerrainNode()",
+      "type": "T"
+    },
+    {
+      "address": 59974780,
+      "address_hex": "0x000000000393247c",
+      "bounded_span_bytes": 1080,
+      "calls": [],
+      "name": "lfs::field::FieldTerrainNode::onDraw()",
+      "type": "T"
+    },
+    {
+      "address": 59975860,
+      "address_hex": "0x00000000039328b4",
+      "bounded_span_bytes": 428,
+      "calls": [],
+      "name": "lfs::field::FieldTerrainNode::~FieldTerrainNode()",
+      "type": "T"
+    },
+    {
+      "address": 59975860,
+      "address_hex": "0x00000000039328b4",
+      "bounded_span_bytes": 428,
+      "calls": [],
+      "name": "lfs::field::FieldTerrainNode::~FieldTerrainNode()",
+      "type": "T"
+    },
+    {
+      "address": 59976288,
+      "address_hex": "0x0000000003932a60",
+      "bounded_span_bytes": 36,
+      "calls": [],
+      "name": "lfs::field::FieldTerrainNode::~FieldTerrainNode()",
+      "type": "T"
+    },
+    {
+      "address": 59976324,
+      "address_hex": "0x0000000003932a84",
+      "bounded_span_bytes": 260,
+      "calls": [],
+      "name": "lfs::field::FieldTerrainNode::setupShader()",
+      "type": "T"
+    },
+    {
+      "address": 59976584,
+      "address_hex": "0x0000000003932b88",
+      "bounded_span_bytes": 320,
+      "calls": [],
+      "name": "lfs::field::FieldTerrainNode::addVertices(lfs::field::TerrainNodeVerticesInfo*)",
+      "type": "T"
+    },
+    {
+      "address": 59976904,
+      "address_hex": "0x0000000003932cc8",
+      "bounded_span_bytes": 140,
+      "calls": [],
+      "name": "lfs::field::FieldTerrainNode::draw(cocos2d::Renderer*, cocos2d::Mat4 const&, unsigned int)",
+      "type": "T"
+    },
+    {
+      "address": 59977044,
+      "address_hex": "0x0000000003932d54",
+      "bounded_span_bytes": 108,
+      "calls": [],
+      "name": "lfs::field::FieldTerrainNode::flipAnimationFrame(unsigned int, unsigned int, float, float)",
+      "type": "T"
+    },
+    {
+      "address": 59977152,
+      "address_hex": "0x0000000003932dc0",
+      "bounded_span_bytes": 100,
+      "calls": [],
+      "name": "std::__ndk1::__shared_ptr_pointer<lfs::field::FieldTerrainNode*, lfs::cc_make_shared<lfs::field::FieldTerrainNode>(lfs::field::FieldTerrainNode*)::{lambda(lfs::field::FieldTerrainNode*)#1}, std::__ndk1::allocator<lfs::field::FieldTerrainNode> >::~__shared_ptr_pointer()",
+      "type": "W"
+    },
+    {
+      "address": 59977252,
+      "address_hex": "0x0000000003932e24",
+      "bounded_span_bytes": 4096,
+      "calls": [],
+      "name": "std::__ndk1::__function::__func<std::__ndk1::__bind<void (lfs::field::FieldTerrainNode::*)(), lfs::field::FieldTerrainNode*>, std::__ndk1::allocator<std::__ndk1::__bind<void (lfs::field::FieldTerrainNode::*)(), lfs::field::FieldTerrainNode*> >, void ()>::~__func()",
+      "type": "W"
+    },
+    {
+      "address": 59990984,
+      "address_hex": "0x00000000039363c8",
+      "bounded_span_bytes": 28,
+      "calls": [],
+      "name": "lfs::field::FieldAnimator::FieldAnimator()",
+      "type": "T"
+    },
+    {
+      "address": 59990984,
+      "address_hex": "0x00000000039363c8",
+      "bounded_span_bytes": 28,
+      "calls": [],
+      "name": "lfs::field::FieldAnimator::FieldAnimator()",
+      "type": "T"
+    },
+    {
+      "address": 59991012,
+      "address_hex": "0x00000000039363e4",
+      "bounded_span_bytes": 252,
+      "calls": [],
+      "name": "lfs::field::FieldAnimator::~FieldAnimator()",
+      "type": "T"
+    },
+    {
+      "address": 59991012,
+      "address_hex": "0x00000000039363e4",
+      "bounded_span_bytes": 252,
+      "calls": [],
+      "name": "lfs::field::FieldAnimator::~FieldAnimator()",
+      "type": "T"
+    },
+    {
+      "address": 59991264,
+      "address_hex": "0x00000000039364e0",
+      "bounded_span_bytes": 112,
+      "calls": [],
+      "name": "lfs::field::FieldAnimator::terminate()",
+      "type": "T"
+    },
+    {
+      "address": 59991376,
+      "address_hex": "0x0000000003936550",
+      "bounded_span_bytes": 36,
+      "calls": [],
+      "name": "lfs::field::FieldAnimator::~FieldAnimator()",
+      "type": "T"
+    },
+    {
+      "address": 59991412,
+      "address_hex": "0x0000000003936574",
+      "bounded_span_bytes": 64,
+      "calls": [],
+      "name": "lfs::field::FieldAnimator::create()",
+      "type": "T"
+    },
+    {
+      "address": 59991476,
+      "address_hex": "0x00000000039365b4",
+      "bounded_span_bytes": 8,
+      "calls": [],
+      "name": "lfs::field::FieldAnimator::init()",
+      "type": "T"
+    },
+    {
+      "address": 59991484,
+      "address_hex": "0x00000000039365bc",
+      "bounded_span_bytes": 100,
+      "calls": [],
+      "name": "lfs::field::FieldAnimator::updateFieldAnimations()",
+      "type": "T"
+    },
+    {
+      "address": 59991584,
+      "address_hex": "0x0000000003936620",
+      "bounded_span_bytes": 668,
+      "calls": [],
+      "name": "lfs::field::FieldAnimator::addAnimationData(std::__ndk1::shared_ptr<lfs::field::FieldQuadTreeLeaf> const&, unsigned int, unsigned int, unsigned int, std::__ndk1::vector<cocos2d::Vec2, std::__ndk1::allocator<cocos2d::Vec2> > const&)",
+      "type": "T"
+    },
+    {
+      "address": 59992252,
+      "address_hex": "0x00000000039368bc",
+      "bounded_span_bytes": 228,
+      "calls": [],
+      "name": "lfs::field::FieldAnimator::setAnimationEnabled(bool)",
+      "type": "T"
+    },
+    {
+      "address": 59992480,
+      "address_hex": "0x00000000039369a0",
+      "bounded_span_bytes": 684,
+      "calls": [],
+      "name": "lfs::field::FieldAnimator::resetAnimations()",
+      "type": "T"
+    },
+    {
+      "address": 59993164,
+      "address_hex": "0x0000000003936c4c",
+      "bounded_span_bytes": 84,
+      "calls": [],
+      "name": "lfs::field::DrawNode::DrawNode()",
+      "type": "T"
+    },
+    {
+      "address": 59993164,
+      "address_hex": "0x0000000003936c4c",
+      "bounded_span_bytes": 84,
+      "calls": [],
+      "name": "lfs::field::DrawNode::DrawNode()",
+      "type": "T"
+    },
+    {
+      "address": 59993248,
+      "address_hex": "0x0000000003936ca0",
+      "bounded_span_bytes": 4,
+      "calls": [],
+      "name": "lfs::field::DrawNode::~DrawNode()",
+      "type": "T"
+    },
+    {
+      "address": 59993248,
+      "address_hex": "0x0000000003936ca0",
+      "bounded_span_bytes": 4,
+      "calls": [],
+      "name": "lfs::field::DrawNode::~DrawNode()",
+      "type": "T"
+    },
+    {
+      "address": 59993252,
+      "address_hex": "0x0000000003936ca4",
+      "bounded_span_bytes": 8,
+      "calls": [],
+      "name": "non-virtual thunk to lfs::field::DrawNode::~DrawNode()",
+      "type": "T"
+    },
+    {
+      "address": 59993260,
+      "address_hex": "0x0000000003936cac",
+      "bounded_span_bytes": 36,
+      "calls": [],
+      "name": "lfs::field::DrawNode::~DrawNode()",
+      "type": "T"
+    },
+    {
+      "address": 59993296,
+      "address_hex": "0x0000000003936cd0",
+      "bounded_span_bytes": 40,
+      "calls": [],
+      "name": "non-virtual thunk to lfs::field::DrawNode::~DrawNode()",
+      "type": "T"
+    },
+    {
+      "address": 59993336,
+      "address_hex": "0x0000000003936cf8",
+      "bounded_span_bytes": 232,
+      "calls": [],
+      "name": "lfs::field::DrawNode::draw(lfs::field::IDrawable&)",
+      "type": "T"
+    },
+    {
+      "address": 59993568,
+      "address_hex": "0x0000000003936de0",
+      "bounded_span_bytes": 232,
+      "calls": [],
+      "name": "non-virtual thunk to lfs::field::DrawNode::draw(lfs::field::IDrawable&)",
+      "type": "T"
+    },
+    {
+      "address": 59993800,
+      "address_hex": "0x0000000003936ec8",
+      "bounded_span_bytes": 12,
+      "calls": [],
+      "name": "lfs::field::DrawNode::signature() const",
+      "type": "W"
+    },
+    {
+      "address": 59993812,
+      "address_hex": "0x0000000003936ed4",
+      "bounded_span_bytes": 1668,
+      "calls": [],
+      "name": "non-virtual thunk to lfs::field::DrawNode::signature() const",
+      "type": "W"
+    },
+    {
+      "address": 59995480,
+      "address_hex": "0x0000000003937558",
+      "bounded_span_bytes": 1284,
+      "calls": [],
+      "name": "lfs::field::Field::getTerrainNode() const",
+      "type": "T"
+    },
+    {
+      "address": 59996764,
+      "address_hex": "0x0000000003937a5c",
+      "bounded_span_bytes": 1548,
+      "calls": [],
+      "name": "lfs::field::Field::setTerrainNode(cocos2d::Node*, int)",
+      "type": "T"
+    },
+    {
+      "address": 59998312,
+      "address_hex": "0x0000000003938068",
+      "bounded_span_bytes": 4096,
+      "calls": [],
+      "name": "lfs::field::Field::addNodeToTerrainLayer(cocos2d::Node*, lfs::field::TerrainLayerTag const&)",
+      "type": "T"
+    },
+    {
+      "address": 60045500,
+      "address_hex": "0x00000000039438bc",
+      "bounded_span_bytes": 4096,
+      "calls": [],
+      "name": "lfs::FieldBlockBase::getDepthOrder() const",
+      "type": "W"
+    },
+    {
+      "address": 60049932,
+      "address_hex": "0x0000000003944a0c",
+      "bounded_span_bytes": 1592,
+      "calls": [],
+      "name": "lfs::field::FieldPlayer::getDepthOrder() const",
+      "type": "T"
+    },
+    {
+      "address": 60051524,
+      "address_hex": "0x0000000003945044",
+      "bounded_span_bytes": 124,
+      "calls": [],
+      "name": "lfs::field::FieldTerrain::create()",
+      "type": "T"
+    },
+    {
+      "address": 60051648,
+      "address_hex": "0x00000000039450c0",
+      "bounded_span_bytes": 96,
+      "calls": [],
+      "name": "lfs::field::FieldTerrain::initialize()",
+      "type": "T"
+    },
+    {
+      "address": 60051744,
+      "address_hex": "0x0000000003945120",
+      "bounded_span_bytes": 344,
+      "calls": [],
+      "name": "lfs::field::FieldTerrain::FieldTerrain()",
+      "type": "T"
+    },
+    {
+      "address": 60051744,
+      "address_hex": "0x0000000003945120",
+      "bounded_span_bytes": 344,
+      "calls": [],
+      "name": "lfs::field::FieldTerrain::FieldTerrain()",
+      "type": "T"
+    },
+    {
+      "address": 60052088,
+      "address_hex": "0x0000000003945278",
+      "bounded_span_bytes": 264,
+      "calls": [],
+      "name": "lfs::field::FieldTerrain::~FieldTerrain()",
+      "type": "T"
+    },
+    {
+      "address": 60052088,
+      "address_hex": "0x0000000003945278",
+      "bounded_span_bytes": 264,
+      "calls": [],
+      "name": "lfs::field::FieldTerrain::~FieldTerrain()",
+      "type": "T"
+    },
+    {
+      "address": 60052352,
+      "address_hex": "0x0000000003945380",
+      "bounded_span_bytes": 84,
+      "calls": [],
+      "name": "lfs::field::FieldTerrain::terminate()",
+      "type": "T"
+    },
+    {
+      "address": 60052436,
+      "address_hex": "0x00000000039453d4",
+      "bounded_span_bytes": 8,
+      "calls": [],
+      "name": "non-virtual thunk to lfs::field::FieldTerrain::~FieldTerrain()",
+      "type": "T"
+    },
+    {
+      "address": 60052444,
+      "address_hex": "0x00000000039453dc",
+      "bounded_span_bytes": 36,
+      "calls": [],
+      "name": "lfs::field::FieldTerrain::~FieldTerrain()",
+      "type": "T"
+    },
+    {
+      "address": 60052480,
+      "address_hex": "0x0000000003945400",
+      "bounded_span_bytes": 40,
+      "calls": [],
+      "name": "non-virtual thunk to lfs::field::FieldTerrain::~FieldTerrain()",
+      "type": "T"
+    },
+    {
+      "address": 60052520,
+      "address_hex": "0x0000000003945428",
+      "bounded_span_bytes": 168,
+      "calls": [],
+      "name": "lfs::field::FieldTerrain::build()",
+      "type": "T"
+    },
+    {
+      "address": 60052688,
+      "address_hex": "0x00000000039454d0",
+      "bounded_span_bytes": 152,
+      "calls": [],
+      "name": "lfs::field::FieldTerrain::tileContains(cocos2d::Vec2 const&) const",
+      "type": "T"
+    },
+    {
+      "address": 60052840,
+      "address_hex": "0x0000000003945568",
+      "bounded_span_bytes": 48,
+      "calls": [],
+      "name": "lfs::field::FieldTerrain::tileAt(unsigned int) const",
+      "type": "T"
+    },
+    {
+      "address": 60052888,
+      "address_hex": "0x0000000003945598",
+      "bounded_span_bytes": 80,
+      "calls": [],
+      "name": "lfs::field::FieldTerrain::tileAt(lfs::Coord const&) const",
+      "type": "T"
+    },
+    {
+      "address": 60052968,
+      "address_hex": "0x00000000039455e8",
+      "bounded_span_bytes": 132,
+      "calls": [],
+      "name": "lfs::field::FieldTerrain::tileAt(lfs::Vector3 const&) const",
+      "type": "T"
+    },
+    {
+      "address": 60053100,
+      "address_hex": "0x000000000394566c",
+      "bounded_span_bytes": 60,
+      "calls": [],
+      "name": "lfs::field::FieldTerrain::addActor(std::__ndk1::shared_ptr<lfs::Actor> const&)",
+      "type": "T"
+    },
+    {
+      "address": 60053160,
+      "address_hex": "0x00000000039456a8",
+      "bounded_span_bytes": 1132,
+      "calls": [],
+      "name": "lfs::field::FieldTerrain::adjustActorToTerrain(std::__ndk1::shared_ptr<lfs::Actor> const&)",
+      "type": "T"
+    },
+    {
+      "address": 60054292,
+      "address_hex": "0x0000000003945b14",
+      "bounded_span_bytes": 20,
+      "calls": [],
+      "name": "lfs::field::FieldTerrain::removeActor(std::__ndk1::shared_ptr<lfs::Actor> const&)",
+      "type": "T"
+    },
+    {
+      "address": 60054312,
+      "address_hex": "0x0000000003945b28",
+      "bounded_span_bytes": 56,
+      "calls": [],
+      "name": "lfs::field::FieldTerrain::update(float)",
+      "type": "T"
+    },
+    {
+      "address": 60054368,
+      "address_hex": "0x0000000003945b60",
+      "bounded_span_bytes": 480,
+      "calls": [],
+      "name": "lfs::field::FieldTerrain::getScreeningTile(lfs::field::FieldTile const*) const",
+      "type": "T"
+    },
+    {
+      "address": 60054848,
+      "address_hex": "0x0000000003945d40",
+      "bounded_span_bytes": 208,
+      "calls": [],
+      "name": "lfs::field::FieldTerrain::checkScreeningTile(lfs::field::FieldTile const*) const",
+      "type": "T"
+    },
+    {
+      "address": 60055056,
+      "address_hex": "0x0000000003945e10",
+      "bounded_span_bytes": 8,
+      "calls": [],
+      "name": "lfs::field::FieldTerrain::isStatic() const",
+      "type": "W"
+    },
+    {
+      "address": 60055064,
+      "address_hex": "0x0000000003945e18",
+      "bounded_span_bytes": 360,
+      "calls": [],
+      "name": "lfs::field::FieldTerrain::addEntity(lfs::IFieldEntity*)",
+      "type": "W"
+    },
+    {
+      "address": 60055424,
+      "address_hex": "0x0000000003945f80",
+      "bounded_span_bytes": 8,
+      "calls": [],
+      "name": "lfs::field::FieldTerrain::getEntities() const",
+      "type": "W"
+    },
+    {
+      "address": 60055432,
+      "address_hex": "0x0000000003945f88",
+      "bounded_span_bytes": 8,
+      "calls": [],
+      "name": "lfs::field::FieldTerrain::getEntityType() const",
+      "type": "W"
+    },
+    {
+      "address": 60055440,
+      "address_hex": "0x0000000003945f90",
+      "bounded_span_bytes": 12,
+      "calls": [],
+      "name": "lfs::field::FieldTerrain::getPosition() const",
+      "type": "W"
+    },
+    {
+      "address": 60055452,
+      "address_hex": "0x0000000003945f9c",
+      "bounded_span_bytes": 8,
+      "calls": [],
+      "name": "lfs::field::FieldTerrain::getCoord() const",
+      "type": "W"
+    },
+    {
+      "address": 60055460,
+      "address_hex": "0x0000000003945fa4",
+      "bounded_span_bytes": 8,
+      "calls": [],
+      "name": "lfs::field::FieldTerrain::getSize() const",
+      "type": "W"
+    },
+    {
+      "address": 60055468,
+      "address_hex": "0x0000000003945fac",
+      "bounded_span_bytes": 8,
+      "calls": [],
+      "name": "lfs::field::FieldTerrain::getLevel() const",
+      "type": "W"
+    },
+    {
+      "address": 60055476,
+      "address_hex": "0x0000000003945fb4",
+      "bounded_span_bytes": 8,
+      "calls": [],
+      "name": "lfs::field::FieldTerrain::getDepthOrder() const",
+      "type": "W"
+    },
+    {
+      "address": 60055484,
+      "address_hex": "0x0000000003945fbc",
+      "bounded_span_bytes": 8,
+      "calls": [],
+      "name": "lfs::field::FieldTerrain::mapFileID() const",
+      "type": "W"
+    },
+    {
+      "address": 60055492,
+      "address_hex": "0x0000000003945fc4",
+      "bounded_span_bytes": 8,
+      "calls": [],
+      "name": "lfs::field::FieldTerrain::entities() const",
+      "type": "W"
+    },
+    {
+      "address": 60055500,
+      "address_hex": "0x0000000003945fcc",
+      "bounded_span_bytes": 8,
+      "calls": [],
+      "name": "non-virtual thunk to lfs::field::FieldTerrain::mapFileID() const",
+      "type": "W"
+    },
+    {
+      "address": 60055508,
+      "address_hex": "0x0000000003945fd4",
+      "bounded_span_bytes": 8,
+      "calls": [],
+      "name": "non-virtual thunk to lfs::field::FieldTerrain::entities() const",
+      "type": "W"
+    },
+    {
+      "address": 60055516,
+      "address_hex": "0x0000000003945fdc",
+      "bounded_span_bytes": 4096,
+      "calls": [],
+      "name": "non-virtual thunk to lfs::field::FieldTerrain::getSize() const",
+      "type": "W"
+    },
+    {
+      "address": 60060492,
+      "address_hex": "0x000000000394734c",
+      "bounded_span_bytes": 8,
+      "calls": [],
+      "name": "lfs::field::FieldTile::getLinkNodeNum() const",
+      "type": "T"
+    },
+    {
+      "address": 60060500,
+      "address_hex": "0x0000000003947354",
+      "bounded_span_bytes": 8,
+      "calls": [],
+      "name": "non-virtual thunk to lfs::field::FieldTile::getLinkNodeNum() const",
+      "type": "T"
+    },
+    {
+      "address": 60060508,
+      "address_hex": "0x000000000394735c",
+      "bounded_span_bytes": 396,
+      "calls": [],
+      "name": "lfs::field::FieldTile::getLinkNode(int) const",
+      "type": "T"
+    },
+    {
+      "address": 60060904,
+      "address_hex": "0x00000000039474e8",
+      "bounded_span_bytes": 8,
+      "calls": [],
+      "name": "non-virtual thunk to lfs::field::FieldTile::getLinkNode(int) const",
+      "type": "T"
+    },
+    {
+      "address": 60060912,
+      "address_hex": "0x00000000039474f0",
+      "bounded_span_bytes": 124,
+      "calls": [],
+      "name": "lfs::field::FieldTile::calculateLinkNodeCost(lfs::pathfinding::Node const&) const",
+      "type": "T"
+    },
+    {
+      "address": 60061036,
+      "address_hex": "0x000000000394756c",
+      "bounded_span_bytes": 248,
+      "calls": [],
+      "name": "non-virtual thunk to lfs::field::FieldTile::calculateLinkNodeCost(lfs::pathfinding::Node const&) const",
+      "type": "T"
+    },
+    {
+      "address": 60061284,
+      "address_hex": "0x0000000003947664",
+      "bounded_span_bytes": 8,
+      "calls": [],
+      "name": "lfs::field::FieldTile::getDepthOrder() const",
+      "type": "W"
+    },
+    {
+      "address": 60061292,
+      "address_hex": "0x000000000394766c",
+      "bounded_span_bytes": 16,
+      "calls": [],
+      "name": "lfs::field::FieldTile::getNodePos() const",
+      "type": "W"
+    },
+    {
+      "address": 60061308,
+      "address_hex": "0x000000000394767c",
+      "bounded_span_bytes": 2808,
+      "calls": [],
+      "name": "non-virtual thunk to lfs::field::FieldTile::getNodePos() const",
+      "type": "W"
+    },
+    {
+      "address": 60064116,
+      "address_hex": "0x0000000003948174",
+      "bounded_span_bytes": 3148,
+      "calls": [],
+      "name": "lfs::field::FieldQuadTree::addQuadTreeNode(std::__ndk1::shared_ptr<lfs::field::FieldQuadTreeBase>)",
+      "type": "T"
+    },
+    {
+      "address": 60067264,
+      "address_hex": "0x0000000003948dc0",
+      "bounded_span_bytes": 4096,
+      "calls": [],
+      "name": "lfs::field::FieldQuadTreeLeaf::setupEntities(std::__ndk1::vector<lfs::IFieldEntity*, std::__ndk1::allocator<lfs::IFieldEntity*> > const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)",
+      "type": "T"
+    },
+    {
+      "address": 60072036,
+      "address_hex": "0x000000000394a064",
+      "bounded_span_bytes": 748,
+      "calls": [],
+      "name": "std::__ndk1::__shared_ptr_pointer<lfs::field::DataParser*, std::__ndk1::shared_ptr<lfs::field::DataParser>::__shared_ptr_default_delete<lfs::field::DataParser, lfs::field::DataParser>, std::__ndk1::allocator<lfs::field::DataParser> >::~__shared_ptr_pointer()",
+      "type": "W"
+    },
+    {
+      "address": 60072784,
+      "address_hex": "0x000000000394a350",
+      "bounded_span_bytes": 372,
+      "calls": [],
+      "name": "lfs::field::FieldQuadTreeStream::create(map::data::QuadTree const&, std::__ndk1::shared_ptr<lfs::field::FieldTerrain>, std::__ndk1::function<void (std::__ndk1::shared_ptr<cocos2d::Node>, std::__ndk1::shared_ptr<cocos2d::Node>, std::__ndk1::shared_ptr<lfs::field::FieldQuadTreeBase>, std::__ndk1::shared_ptr<lfs::field::FieldAnimator>)> const&)",
+      "type": "T"
+    },
+    {
+      "address": 60073156,
+      "address_hex": "0x000000000394a4c4",
+      "bounded_span_bytes": 804,
+      "calls": [],
+      "name": "lfs::field::FieldQuadTreeStream::init(std::__ndk1::shared_ptr<lfs::field::FieldTerrain>, std::__ndk1::function<void (std::__ndk1::shared_ptr<cocos2d::Node>, std::__ndk1::shared_ptr<cocos2d::Node>, std::__ndk1::shared_ptr<lfs::field::FieldQuadTreeBase>, std::__ndk1::shared_ptr<lfs::field::FieldAnimator>)> const&)",
+      "type": "T"
+    },
+    {
+      "address": 60073960,
+      "address_hex": "0x000000000394a7e8",
+      "bounded_span_bytes": 124,
+      "calls": [],
+      "name": "lfs::field::FieldQuadTreeStream::initTerrain(std::__ndk1::shared_ptr<lfs::field::FieldTerrain>)",
+      "type": "T"
+    },
+    {
+      "address": 60074084,
+      "address_hex": "0x000000000394a864",
+      "bounded_span_bytes": 4096,
+      "calls": [],
+      "name": "lfs::field::FieldQuadTreeStream::initCallback(std::__ndk1::function<void (std::__ndk1::shared_ptr<cocos2d::Node>, std::__ndk1::shared_ptr<cocos2d::Node>, std::__ndk1::shared_ptr<lfs::field::FieldQuadTreeBase>, std::__ndk1::shared_ptr<lfs::field::FieldAnimator>)> const&)",
+      "type": "T"
+    },
+    {
+      "address": 60080012,
+      "address_hex": "0x000000000394bf8c",
+      "bounded_span_bytes": 276,
+      "calls": [],
+      "name": "std::__ndk1::__shared_ptr_pointer<lfs::field::FieldAnimator*, std::__ndk1::shared_ptr<lfs::field::FieldAnimator>::__shared_ptr_default_delete<lfs::field::FieldAnimator, lfs::field::FieldAnimator>, std::__ndk1::allocator<lfs::field::FieldAnimator> >::~__shared_ptr_pointer()",
+      "type": "W"
+    },
+    {
+      "address": 60080288,
+      "address_hex": "0x000000000394c0a0",
+      "bounded_span_bytes": 556,
+      "calls": [],
+      "name": "lfs::field::DataParser::DataParser(std::__ndk1::shared_ptr<lfs::field::FieldQuadTreeLeaf> const&, std::__ndk1::vector<lfs::field::Convexhull, std::__ndk1::allocator<lfs::field::Convexhull> >&, std::__ndk1::vector<lfs::field::Convexhull, std::__ndk1::allocator<lfs::field::Convexhull> >&, std::__ndk1::vector<lfs::field::FieldAnimatedStructureInfo, std::__ndk1::allocator<lfs::field::FieldAnimatedStructureInfo> > const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)",
+      "type": "T"
+    },
+    {
+      "address": 60080288,
+      "address_hex": "0x000000000394c0a0",
+      "bounded_span_bytes": 556,
+      "calls": [],
+      "name": "lfs::field::DataParser::DataParser(std::__ndk1::shared_ptr<lfs::field::FieldQuadTreeLeaf> const&, std::__ndk1::vector<lfs::field::Convexhull, std::__ndk1::allocator<lfs::field::Convexhull> >&, std::__ndk1::vector<lfs::field::Convexhull, std::__ndk1::allocator<lfs::field::Convexhull> >&, std::__ndk1::vector<lfs::field::FieldAnimatedStructureInfo, std::__ndk1::allocator<lfs::field::FieldAnimatedStructureInfo> > const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)",
+      "type": "T"
+    },
+    {
+      "address": 60080844,
+      "address_hex": "0x000000000394c2cc",
+      "bounded_span_bytes": 100,
+      "calls": [],
+      "name": "lfs::field::DataParser::generateConvexhullToVertices(std::__ndk1::shared_ptr<lfs::field::FieldQuadTreeLeaf> const&, std::__ndk1::vector<lfs::field::Convexhull, std::__ndk1::allocator<lfs::field::Convexhull> > const&, lfs::field::TerrainNodeVerticesInfo&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)",
+      "type": "T"
+    },
+    {
+      "address": 60080944,
+      "address_hex": "0x000000000394c330",
+      "bounded_span_bytes": 328,
+      "calls": [],
+      "name": "lfs::field::TerrainNodeVerticesInfo::~TerrainNodeVerticesInfo()",
+      "type": "W"
+    },
+    {
+      "address": 60081272,
+      "address_hex": "0x000000000394c478",
+      "bounded_span_bytes": 200,
+      "calls": [],
+      "name": "lfs::field::DataParser::~DataParser()",
+      "type": "T"
+    },
+    {
+      "address": 60081272,
+      "address_hex": "0x000000000394c478",
+      "bounded_span_bytes": 200,
+      "calls": [],
+      "name": "lfs::field::DataParser::~DataParser()",
+      "type": "T"
+    },
+    {
+      "address": 60081472,
+      "address_hex": "0x000000000394c540",
+      "bounded_span_bytes": 1800,
+      "calls": [],
+      "name": "lfs::field::DataParser::addConvexhullVertices(std::__ndk1::shared_ptr<lfs::field::FieldQuadTreeLeaf> const&, std::__ndk1::vector<lfs::field::FieldVertex, std::__ndk1::allocator<lfs::field::FieldVertex> > const&, float, unsigned int, lfs::field::TerrainNodeVerticesInfo&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)",
+      "type": "T"
+    },
+    {
+      "address": 60083272,
+      "address_hex": "0x000000000394cc48",
+      "bounded_span_bytes": 4096,
+      "calls": [],
+      "name": "lfs::field::DataParser::copyVertex(cocos2d::Vec3&, cocos2d::Color4B&, cocos2d::Tex2F&, lfs::field::FieldVertex const&, float)",
+      "type": "T"
+    },
+    {
+      "address": 66942308,
+      "address_hex": "0x0000000003fd7564",
+      "bounded_span_bytes": 4096,
+      "calls": [],
+      "name": "lfs::LandscapeAccessor::setTerrain(std::__ndk1::shared_ptr<lfs::field::FieldTerrain> const&)",
+      "type": "T"
+    },
+    {
+      "address": 72163860,
+      "address_hex": "0x00000000044d2214",
+      "bounded_span_bytes": 488,
+      "calls": [],
+      "name": "lfs::MapTerrainResource::onTerrainGenerated(std::__ndk1::shared_ptr<cocos2d::Node> const&, std::__ndk1::shared_ptr<cocos2d::Node> const&, std::__ndk1::shared_ptr<lfs::field::FieldQuadTreeBase> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)",
+      "type": "T"
+    },
+    {
+      "address": 72164348,
+      "address_hex": "0x00000000044d23fc",
+      "bounded_span_bytes": 96,
+      "calls": [],
+      "name": "std::__ndk1::__shared_ptr_pointer<lfs::field::FieldTerrain*, std::__ndk1::shared_ptr<lfs::field::FieldTerrain>::__shared_ptr_default_delete<lfs::field::FieldTerrain, lfs::field::FieldTerrain>, std::__ndk1::allocator<lfs::field::FieldTerrain> >::~__shared_ptr_pointer()",
+      "type": "W"
+    },
+    {
+      "address": 72164444,
+      "address_hex": "0x00000000044d245c",
+      "bounded_span_bytes": 4096,
+      "calls": [],
+      "name": "std::__ndk1::__function::__func<std::__ndk1::__bind<void (lfs::MapTerrainResource::*)(std::__ndk1::shared_ptr<cocos2d::Node> const&, std::__ndk1::shared_ptr<cocos2d::Node> const&, std::__ndk1::shared_ptr<lfs::field::FieldQuadTreeBase> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&), lfs::MapTerrainResource*, std::__ndk1::placeholders::__ph<1> const&, std::__ndk1::placeholders::__ph<2> const&, std::__ndk1::placeholders::__ph<3> const&, std::__ndk1::placeholders::__ph<4> const&>",
+      "type": "W"
+    },
+    {
+      "address": 72550748,
+      "address_hex": "0x000000000453095c",
+      "bounded_span_bytes": 4096,
+      "calls": [],
+      "name": "lfs::character::DistanceFromFieldCamera::~DistanceFromFieldCamera()",
+      "type": "W"
+    },
+    {
+      "address": 72564400,
+      "address_hex": "0x0000000004533eb0",
+      "bounded_span_bytes": 96,
+      "calls": [],
+      "name": "std::__ndk1::__function::__func<lfs::character::DistanceFromFieldCamera, std::__ndk1::allocator<lfs::character::DistanceFromFieldCamera>, float (std::__ndk1::shared_ptr<lfs::character::Character> const&)>::~__func()",
+      "type": "W"
+    },
+    {
+      "address": 72564496,
+      "address_hex": "0x0000000004533f10",
+      "bounded_span_bytes": 4096,
+      "calls": [],
+      "name": "std::__ndk1::__function::__func<lfs::character::DistanceFromFieldCamera, std::__ndk1::allocator<lfs::character::DistanceFromFieldCamera>, float (std::__ndk1::shared_ptr<lfs::character::Character> const&)>::~__func()",
+      "type": "W"
+    },
+    {
+      "address": 80396236,
+      "address_hex": "0x0000000004cabfcc",
+      "bounded_span_bytes": 4096,
+      "calls": [],
+      "name": "cocos2d::GridBase::set2DProjection()",
+      "type": "T"
+    },
+    {
+      "address": 80909576,
+      "address_hex": "0x0000000004d29508",
+      "bounded_span_bytes": 4096,
+      "calls": [],
+      "name": "cocos2d::Console::commandProjection(int, std::__ndk1::basic_string<char, std::__ndk1::char_traits<char>, std::__ndk1::allocator<char> > const&)",
+      "type": "T"
+    },
+    {
+      "address": 80940864,
+      "address_hex": "0x0000000004d30f40",
+      "bounded_span_bytes": 4096,
+      "calls": [],
+      "name": "cocos2d::Director::setProjection(cocos2d::Director::Projection)",
+      "type": "T"
+    },
+    {
+      "address": 81165572,
+      "address_hex": "0x0000000004d67d04",
+      "bounded_span_bytes": 4096,
+      "calls": [],
+      "name": "cocos2d::GL::setProjectionMatrixDirty()",
+      "type": "T"
+    },
+    {
+      "address": 81443196,
+      "address_hex": "0x0000000004dab97c",
+      "bounded_span_bytes": 36,
+      "calls": [],
+      "name": "cocos2d::kmMat4PerspectiveProjection(cocos2d::Mat4*, float, float, float, float)",
+      "type": "T"
+    },
+    {
+      "address": 81443232,
+      "address_hex": "0x0000000004dab9a0",
+      "bounded_span_bytes": 4096,
+      "calls": [],
+      "name": "cocos2d::kmMat4OrthographicProjection(cocos2d::Mat4*, float, float, float, float, float, float)",
+      "type": "T"
+    },
+    {
+      "address": 81646748,
+      "address_hex": "0x0000000004ddd49c",
+      "bounded_span_bytes": 4096,
+      "calls": [],
+      "name": "lua_cocos2dx_Director_setProjection(lua_State*)",
+      "type": "T"
+    },
+    {
+      "address": 81917516,
+      "address_hex": "0x0000000004e1f64c",
+      "bounded_span_bytes": 4096,
+      "calls": [],
+      "name": "lua_cocos2dx_GridBase_set2DProjection(lua_State*)",
+      "type": "T"
+    },
+    {
+      "address": 83469892,
+      "address_hex": "0x0000000004f9a644",
+      "bounded_span_bytes": 120,
+      "calls": [],
+      "name": "EC_POINT_set_Jprojective_coordinates_GFp",
+      "type": "T"
+    },
+    {
+      "address": 83470012,
+      "address_hex": "0x0000000004f9a6bc",
+      "bounded_span_bytes": 4096,
+      "calls": [],
+      "name": "EC_POINT_get_Jprojective_coordinates_GFp",
+      "type": "T"
+    },
+    {
+      "address": 83513068,
+      "address_hex": "0x0000000004fa4eec",
+      "bounded_span_bytes": 372,
+      "calls": [],
+      "name": "ec_GFp_simple_set_Jprojective_coordinates_GFp",
+      "type": "T"
+    },
+    {
+      "address": 83513440,
+      "address_hex": "0x0000000004fa5060",
+      "bounded_span_bytes": 4096,
+      "calls": [],
+      "name": "ec_GFp_simple_get_Jprojective_coordinates_GFp",
+      "type": "T"
+    },
+    {
+      "address": 88739656,
+      "address_hex": "0x00000000054a0f48",
+      "bounded_span_bytes": 112,
+      "calls": [],
+      "name": "vtable for lfs::field::FieldTerrainDrawer",
+      "type": "D"
+    },
+    {
+      "address": 88739768,
+      "address_hex": "0x00000000054a0fb8",
+      "bounded_span_bytes": 24,
+      "calls": [],
+      "name": "typeinfo for lfs::field::FieldTerrainDrawer",
+      "type": "D"
+    },
+    {
+      "address": 88739792,
+      "address_hex": "0x00000000054a0fd0",
+      "bounded_span_bytes": 1264,
+      "calls": [],
+      "name": "vtable for lfs::field::FieldTerrainNode",
+      "type": "D"
+    },
+    {
+      "address": 88741056,
+      "address_hex": "0x00000000054a14c0",
+      "bounded_span_bytes": 24,
+      "calls": [],
+      "name": "typeinfo for lfs::field::FieldTerrainNode",
+      "type": "D"
+    },
+    {
+      "address": 88741080,
+      "address_hex": "0x00000000054a14d8",
+      "bounded_span_bytes": 56,
+      "calls": [],
+      "name": "vtable for std::__ndk1::__shared_ptr_pointer<lfs::field::FieldTerrainNode*, lfs::cc_make_shared<lfs::field::FieldTerrainNode>(lfs::field::FieldTerrainNode*)::{lambda(lfs::field::FieldTerrainNode*)#1}, std::__ndk1::allocator<lfs::field::FieldTerrainNode> >",
+      "type": "V"
+    },
+    {
+      "address": 88741136,
+      "address_hex": "0x00000000054a1510",
+      "bounded_span_bytes": 24,
+      "calls": [],
+      "name": "typeinfo for std::__ndk1::__shared_ptr_pointer<lfs::field::FieldTerrainNode*, lfs::cc_make_shared<lfs::field::FieldTerrainNode>(lfs::field::FieldTerrainNode*)::{lambda(lfs::field::FieldTerrainNode*)#1}, std::__ndk1::allocator<lfs::field::FieldTerrainNode> >",
+      "type": "V"
+    },
+    {
+      "address": 88741160,
+      "address_hex": "0x00000000054a1528",
+      "bounded_span_bytes": 88,
+      "calls": [],
+      "name": "vtable for std::__ndk1::__function::__func<std::__ndk1::__bind<void (lfs::field::FieldTerrainNode::*)(), lfs::field::FieldTerrainNode*>, std::__ndk1::allocator<std::__ndk1::__bind<void (lfs::field::FieldTerrainNode::*)(), lfs::field::FieldTerrainNode*> >, void ()>",
+      "type": "V"
+    },
+    {
+      "address": 88741248,
+      "address_hex": "0x00000000054a1580",
+      "bounded_span_bytes": 24,
+      "calls": [],
+      "name": "typeinfo for std::__ndk1::__function::__func<std::__ndk1::__bind<void (lfs::field::FieldTerrainNode::*)(), lfs::field::FieldTerrainNode*>, std::__ndk1::allocator<std::__ndk1::__bind<void (lfs::field::FieldTerrainNode::*)(), lfs::field::FieldTerrainNode*> >, void ()>",
+      "type": "V"
+    },
+    {
+      "address": 88741272,
+      "address_hex": "0x00000000054a1598",
+      "bounded_span_bytes": 16,
+      "calls": [],
+      "name": "typeinfo for std::__ndk1::__unary_function_keep_layout_base<lfs::field::FieldTerrainNode*, void>",
+      "type": "V"
+    },
+    {
+      "address": 88741288,
+      "address_hex": "0x00000000054a15a8",
+      "bounded_span_bytes": 24,
+      "calls": [],
+      "name": "typeinfo for std::__ndk1::__weak_result_type<void (lfs::field::FieldTerrainNode::*)()>",
+      "type": "V"
+    },
+    {
+      "address": 88741312,
+      "address_hex": "0x00000000054a15c0",
+      "bounded_span_bytes": 2112,
+      "calls": [],
+      "name": "typeinfo for std::__ndk1::__bind<void (lfs::field::FieldTerrainNode::*)(), lfs::field::FieldTerrainNode*>",
+      "type": "V"
+    },
+    {
+      "address": 88743424,
+      "address_hex": "0x00000000054a1e00",
+      "bounded_span_bytes": 32,
+      "calls": [],
+      "name": "vtable for lfs::field::FieldAnimator",
+      "type": "D"
+    },
+    {
+      "address": 88743456,
+      "address_hex": "0x00000000054a1e20",
+      "bounded_span_bytes": 96,
+      "calls": [],
+      "name": "typeinfo for lfs::field::FieldAnimator",
+      "type": "D"
+    },
+    {
+      "address": 88743552,
+      "address_hex": "0x00000000054a1e80",
+      "bounded_span_bytes": 1344,
+      "calls": [],
+      "name": "vtable for lfs::field::DrawNode",
+      "type": "D"
+    },
+    {
+      "address": 88744896,
+      "address_hex": "0x00000000054a23c0",
+      "bounded_span_bytes": 4096,
+      "calls": [],
+      "name": "typeinfo for lfs::field::DrawNode",
+      "type": "D"
+    },
+    {
+      "address": 88754496,
+      "address_hex": "0x00000000054a4940",
+      "bounded_span_bytes": 200,
+      "calls": [],
+      "name": "vtable for lfs::field::FieldTerrain",
+      "type": "D"
+    },
+    {
+      "address": 88754696,
+      "address_hex": "0x00000000054a4a08",
+      "bounded_span_bytes": 1600,
+      "calls": [],
+      "name": "typeinfo for lfs::field::FieldTerrain",
+      "type": "D"
+    },
+    {
+      "address": 88756296,
+      "address_hex": "0x00000000054a5048",
+      "bounded_span_bytes": 56,
+      "calls": [],
+      "name": "vtable for std::__ndk1::__shared_ptr_pointer<lfs::field::DataParser*, std::__ndk1::shared_ptr<lfs::field::DataParser>::__shared_ptr_default_delete<lfs::field::DataParser, lfs::field::DataParser>, std::__ndk1::allocator<lfs::field::DataParser> >",
+      "type": "V"
+    },
+    {
+      "address": 88756352,
+      "address_hex": "0x00000000054a5080",
+      "bounded_span_bytes": 152,
+      "calls": [],
+      "name": "typeinfo for std::__ndk1::__shared_ptr_pointer<lfs::field::DataParser*, std::__ndk1::shared_ptr<lfs::field::DataParser>::__shared_ptr_default_delete<lfs::field::DataParser, lfs::field::DataParser>, std::__ndk1::allocator<lfs::field::DataParser> >",
+      "type": "V"
+    },
+    {
+      "address": 88756504,
+      "address_hex": "0x00000000054a5118",
+      "bounded_span_bytes": 56,
+      "calls": [],
+      "name": "vtable for std::__ndk1::__shared_ptr_pointer<lfs::field::FieldAnimator*, std::__ndk1::shared_ptr<lfs::field::FieldAnimator>::__shared_ptr_default_delete<lfs::field::FieldAnimator, lfs::field::FieldAnimator>, std::__ndk1::allocator<lfs::field::FieldAnimator> >",
+      "type": "V"
+    },
+    {
+      "address": 88756560,
+      "address_hex": "0x00000000054a5150",
+      "bounded_span_bytes": 4096,
+      "calls": [],
+      "name": "typeinfo for std::__ndk1::__shared_ptr_pointer<lfs::field::FieldAnimator*, std::__ndk1::shared_ptr<lfs::field::FieldAnimator>::__shared_ptr_default_delete<lfs::field::FieldAnimator, lfs::field::FieldAnimator>, std::__ndk1::allocator<lfs::field::FieldAnimator> >",
+      "type": "V"
+    },
+    {
+      "address": 90361744,
+      "address_hex": "0x000000000562cf90",
+      "bounded_span_bytes": 56,
+      "calls": [],
+      "name": "vtable for std::__ndk1::__shared_ptr_pointer<lfs::field::FieldTerrain*, std::__ndk1::shared_ptr<lfs::field::FieldTerrain>::__shared_ptr_default_delete<lfs::field::FieldTerrain, lfs::field::FieldTerrain>, std::__ndk1::allocator<lfs::field::FieldTerrain> >",
+      "type": "V"
+    },
+    {
+      "address": 90361800,
+      "address_hex": "0x000000000562cfc8",
+      "bounded_span_bytes": 24,
+      "calls": [],
+      "name": "typeinfo for std::__ndk1::__shared_ptr_pointer<lfs::field::FieldTerrain*, std::__ndk1::shared_ptr<lfs::field::FieldTerrain>::__shared_ptr_default_delete<lfs::field::FieldTerrain, lfs::field::FieldTerrain>, std::__ndk1::allocator<lfs::field::FieldTerrain> >",
+      "type": "V"
+    },
+    {
+      "address": 90361824,
+      "address_hex": "0x000000000562cfe0",
+      "bounded_span_bytes": 88,
+      "calls": [],
+      "name": "vtable for std::__ndk1::__function::__func<std::__ndk1::__bind<void (lfs::MapTerrainResource::*)(std::__ndk1::shared_ptr<cocos2d::Node> const&, std::__ndk1::shared_ptr<cocos2d::Node> const&, std::__ndk1::shared_ptr<lfs::field::FieldQuadTreeBase> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&), lfs::MapTerrainResource*, std::__ndk1::placeholders::__ph<1> const&, std::__ndk1::placeholders::__ph<2> const&, std::__ndk1::placeholders::__ph<3> const&, std::__ndk1::placeholders::__ph",
+      "type": "V"
+    },
+    {
+      "address": 90361912,
+      "address_hex": "0x000000000562d038",
+      "bounded_span_bytes": 16,
+      "calls": [],
+      "name": "typeinfo for std::__ndk1::__function::__base<void (std::__ndk1::shared_ptr<cocos2d::Node>, std::__ndk1::shared_ptr<cocos2d::Node>, std::__ndk1::shared_ptr<lfs::field::FieldQuadTreeBase>, std::__ndk1::shared_ptr<lfs::field::FieldAnimator>)>",
+      "type": "V"
+    },
+    {
+      "address": 90361928,
+      "address_hex": "0x000000000562d048",
+      "bounded_span_bytes": 24,
+      "calls": [],
+      "name": "typeinfo for std::__ndk1::__function::__func<std::__ndk1::__bind<void (lfs::MapTerrainResource::*)(std::__ndk1::shared_ptr<cocos2d::Node> const&, std::__ndk1::shared_ptr<cocos2d::Node> const&, std::__ndk1::shared_ptr<lfs::field::FieldQuadTreeBase> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&), lfs::MapTerrainResource*, std::__ndk1::placeholders::__ph<1> const&, std::__ndk1::placeholders::__ph<2> const&, std::__ndk1::placeholders::__ph<3> const&, std::__ndk1::placeholders::__",
+      "type": "V"
+    },
+    {
+      "address": 90361952,
+      "address_hex": "0x000000000562d060",
+      "bounded_span_bytes": 16,
+      "calls": [],
+      "name": "typeinfo for std::__ndk1::__weak_result_type<void (lfs::MapTerrainResource::*)(std::__ndk1::shared_ptr<cocos2d::Node> const&, std::__ndk1::shared_ptr<cocos2d::Node> const&, std::__ndk1::shared_ptr<lfs::field::FieldQuadTreeBase> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&)>",
+      "type": "V"
+    },
+    {
+      "address": 90361968,
+      "address_hex": "0x000000000562d070",
+      "bounded_span_bytes": 4096,
+      "calls": [],
+      "name": "typeinfo for std::__ndk1::__bind<void (lfs::MapTerrainResource::*)(std::__ndk1::shared_ptr<cocos2d::Node> const&, std::__ndk1::shared_ptr<cocos2d::Node> const&, std::__ndk1::shared_ptr<lfs::field::FieldQuadTreeBase> const&, std::__ndk1::shared_ptr<lfs::field::FieldAnimator> const&), lfs::MapTerrainResource*, std::__ndk1::placeholders::__ph<1> const&, std::__ndk1::placeholders::__ph<2> const&, std::__ndk1::placeholders::__ph<3> const&, std::__ndk1::placeholders::__ph<4> const&>",
+      "type": "V"
+    },
+    {
+      "address": 90390048,
+      "address_hex": "0x0000000005633e20",
+      "bounded_span_bytes": 104,
+      "calls": [],
+      "name": "vtable for std::__ndk1::__function::__func<lfs::character::DistanceFromFieldCamera, std::__ndk1::allocator<lfs::character::DistanceFromFieldCamera>, float (std::__ndk1::shared_ptr<lfs::character::Character> const&)>",
+      "type": "V"
+    },
+    {
+      "address": 90390152,
+      "address_hex": "0x0000000005633e88",
+      "bounded_span_bytes": 24,
+      "calls": [],
+      "name": "typeinfo for std::__ndk1::__function::__func<lfs::character::DistanceFromFieldCamera, std::__ndk1::allocator<lfs::character::DistanceFromFieldCamera>, float (std::__ndk1::shared_ptr<lfs::character::Character> const&)>",
+      "type": "V"
+    },
+    {
+      "address": 90390176,
+      "address_hex": "0x0000000005633ea0",
+      "bounded_span_bytes": 4096,
+      "calls": [],
+      "name": "typeinfo for lfs::character::DistanceFromFieldCamera",
+      "type": "V"
+    },
+    {
+      "address": 91867944,
+      "address_hex": "0x000000000579cb28",
+      "bounded_span_bytes": 4096,
+      "calls": [],
+      "name": "cocos2d::Director::EVENT_PROJECTION_CHANGED",
+      "type": "D"
+    },
+    {
+      "address": 92005432,
+      "address_hex": "0x00000000057be438",
+      "bounded_span_bytes": 4096,
+      "calls": [],
+      "name": "lfs::field::DrawNode::s_signature",
+      "type": "B"
+    }
+  ]
+}

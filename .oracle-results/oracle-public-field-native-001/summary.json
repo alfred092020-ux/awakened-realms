@@ -1,0 +1,10 @@
+{
+  "duration_seconds": 10.851,
+  "error": null,
+  "exit_code": 0,
+  "job_id": "oracle-public-field-native-001",
+  "kind": "python",
+  "schema": 1,
+  "source_sha": "ee7120ae4398b666df09e05ae89abd021ad64096",
+  "status": "success"
+}
