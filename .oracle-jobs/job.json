@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "job_id": "oracle-map-schema-validate-001",
+  "source_sha": "6fd4a56336390f855b3ed826450b2056b60ca5ff",
+  "kind": "python",
+  "script": "scripts/logres/decode_private_map.py",
+  "args": [
+    "@PRIVATE_ARCHIVE@",
+    "--output",
+    "@OUTPUT@/map-schema-validation.json"
+  ],
+  "timeout_seconds": 1800
+}
