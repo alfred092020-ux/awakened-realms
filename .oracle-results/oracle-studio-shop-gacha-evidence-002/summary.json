@@ -1,0 +1,10 @@
+{
+  "duration_seconds": 3.013,
+  "error": null,
+  "exit_code": 0,
+  "job_id": "oracle-studio-shop-gacha-evidence-002",
+  "kind": "python",
+  "schema": 1,
+  "source_sha": "e62db8e6d801d554cd1bf769af2b5c2b7cc2f237",
+  "status": "success"
+}
