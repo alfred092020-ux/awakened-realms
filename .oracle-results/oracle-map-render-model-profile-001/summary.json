@@ -1,0 +1,10 @@
+{
+  "duration_seconds": 3.062,
+  "error": null,
+  "exit_code": 0,
+  "job_id": "oracle-map-render-model-profile-001",
+  "kind": "python",
+  "schema": 1,
+  "source_sha": "da200b5d1353a83f8cde76284f260cb0611d9e05",
+  "status": "success"
+}
