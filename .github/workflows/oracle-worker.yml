@@ -1,0 +1,43 @@
+name: Oracle Logres Worker
+
+on:
+  push:
+    branches:
+      - oracle-dispatch
+    paths:
+      - .oracle-jobs/job.json
+
+permissions:
+  contents: read
+
+concurrency:
+  group: logres-oracle-worker
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: [self-hosted, linux, x64, logres-oracle]
+    timeout-minutes: 360
+
+    steps:
+      - name: Checkout dispatch branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run guarded Oracle job
+        run: |
+          python3 -B scripts/logres/oracle_worker.py \
+            .oracle-jobs/job.json \
+            --repo-root "$GITHUB_WORKSPACE" \
+            --archive "$HOME/logres/private/logres-private-cache.zip" \
+            --artifact-root "$RUNNER_TEMP/logres-oracle-results"
+
+      - name: Upload text-only results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: logres-oracle-${{ github.sha }}
+          path: ${{ runner.temp }}/logres-oracle-results
+          if-no-files-found: warn
+          retention-days: 14
