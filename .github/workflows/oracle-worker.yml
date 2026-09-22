@@ -4,11 +4,12 @@ on:
   push:
     branches:
       - oracle-dispatch
+      - 'agent/oracle-job-*'
     paths:
       - .oracle-jobs/job.json
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: logres-oracle-worker
@@ -25,10 +26,15 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Preserve dispatch manifest
+        run: cp .oracle-jobs/job.json "$RUNNER_TEMP/oracle-job.json"
+
       - name: Run guarded Oracle job
+        id: worker
+        continue-on-error: true
         run: |
           python3 -B scripts/logres/oracle_worker.py \
-            .oracle-jobs/job.json \
+            "$RUNNER_TEMP/oracle-job.json" \
             --repo-root "$GITHUB_WORKSPACE" \
             --archive "$HOME/logres/private/logres-private-cache.zip" \
             --artifact-root "$RUNNER_TEMP/logres-oracle-results"
@@ -41,3 +47,27 @@ jobs:
           path: ${{ runner.temp }}/logres-oracle-results
           if-no-files-found: warn
           retention-days: 14
+
+      - name: Publish validated text results
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          git checkout -B "$GITHUB_REF_NAME" "origin/$GITHUB_REF_NAME"
+          rm -rf .oracle-results
+          mkdir -p .oracle-results
+          if [ -d "$RUNNER_TEMP/logres-oracle-results" ]; then
+            cp -a "$RUNNER_TEMP/logres-oracle-results/." .oracle-results/
+          fi
+          git config user.name "logres-oracle-worker"
+          git config user.email "logres-oracle-worker@users.noreply.github.com"
+          git add .oracle-results
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m "oracle results: $GITHUB_SHA"
+          git push origin "HEAD:$GITHUB_REF_NAME"
+
+      - name: Propagate worker failure
+        if: steps.worker.outcome == 'failure'
+        run: exit 1
