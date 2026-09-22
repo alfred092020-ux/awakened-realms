@@ -1,0 +1,8 @@
+{
+  "commit": "9a9bf7f446b792a8384d4444489b083d4b764a6c",
+  "job_id": "merge-logres-public-convexhull-source-001",
+  "job_type": "MERGE",
+  "status": "SUCCESS",
+  "target_branch": "feat/logres-reconstruction",
+  "written_at": "2026-09-22T11:00:22.779103+00:00"
+}
