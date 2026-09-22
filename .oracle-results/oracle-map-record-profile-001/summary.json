@@ -1,0 +1,10 @@
+{
+  "duration_seconds": 0.983,
+  "error": null,
+  "exit_code": 0,
+  "job_id": "oracle-map-record-profile-001",
+  "kind": "python",
+  "schema": 1,
+  "source_sha": "4ef5bea009b507b2749390aa78186c17700adb9e",
+  "status": "success"
+}
