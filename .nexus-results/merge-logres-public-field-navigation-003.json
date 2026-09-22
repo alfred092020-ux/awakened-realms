@@ -1,0 +1,8 @@
+{
+  "commit": "60eb3359ee79c9e155982ef7a5c11019d244f86c",
+  "job_id": "merge-logres-public-field-navigation-003",
+  "job_type": "MERGE",
+  "status": "SUCCESS",
+  "target_branch": "feat/logres-reconstruction",
+  "written_at": "2026-09-22T12:59:14.406229+00:00"
+}
