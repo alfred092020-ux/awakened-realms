@@ -1,0 +1,8 @@
+{
+  "commit": "a56ddc2d5d10c67e6a80ac9e77b110b8364d49f1",
+  "job_id": "merge-logres-live-term-inspector-001",
+  "job_type": "MERGE",
+  "status": "SUCCESS",
+  "target_branch": "feat/logres-reconstruction",
+  "written_at": "2026-09-22T08:05:15.679149+00:00"
+}
