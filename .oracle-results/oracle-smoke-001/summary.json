@@ -1,0 +1,10 @@
+{
+  "duration_seconds": 0.054,
+  "error": null,
+  "exit_code": 0,
+  "job_id": "oracle-smoke-001",
+  "kind": "python",
+  "schema": 1,
+  "source_sha": "fa211b1046decae5482c8d0215a2b795f6d14c19",
+  "status": "success"
+}
