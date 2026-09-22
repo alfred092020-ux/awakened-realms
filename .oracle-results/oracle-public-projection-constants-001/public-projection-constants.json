@@ -1,0 +1,390 @@
+{
+  "apk": "config.arm64_v8a.apk",
+  "disassembler": "llvm-objdump",
+  "download": {
+    "sha256": "7803989f3a02d2662f83cefe25e648e04e7d529f650a70ca7911d7b98972c76c",
+    "size": 125559968
+  },
+  "libgame": {
+    "sha256": "1564f02b23c9909adc0d26636adfc8e72a7ed9363655af0d1ae22635e55acbeb",
+    "size": 91934656
+  },
+  "missing_labels": [],
+  "policy": "Exact float32 words referenced by an explicit projection/coordinate helper allowlist. Values are read from file-backed PT_LOAD segments only. No binary payload or unrelated static data is exported.",
+  "provenance": "PUBLIC_CURRENT_JP_FIELD_PROJECTION_CONSTANTS",
+  "target_count": 4,
+  "targets": [
+    {
+      "address": "0x3941c74",
+      "bounded_stop": "0x3941cc0",
+      "float_references": [
+        {
+          "destination": "s1",
+          "instruction_address": "0x3941c7c",
+          "virtual_address": "0x57be4c0",
+          "word": null
+        },
+        {
+          "destination": "s3",
+          "instruction_address": "0x3941c88",
+          "virtual_address": "0x57be4c4",
+          "word": null
+        },
+        {
+          "destination": "s6",
+          "instruction_address": "0x3941c98",
+          "virtual_address": "0x57be4b8",
+          "word": null
+        },
+        {
+          "destination": "s5",
+          "instruction_address": "0x3941cac",
+          "virtual_address": "0x57be4bc",
+          "word": null
+        }
+      ],
+      "instruction_count": 19,
+      "instructions": [
+        {
+          "address": "0x3941c74",
+          "mnemonic": "adrp",
+          "operands": "x9, 0x57be000 <lfs::event_point::accumulation::RewardRecord::s_recordSize>"
+        },
+        {
+          "address": "0x3941c78",
+          "mnemonic": "ldp",
+          "operands": "s0, s5, [x0]"
+        },
+        {
+          "address": "0x3941c7c",
+          "mnemonic": "ldr",
+          "operands": "s1, [x9, #0x4c0]"
+        },
+        {
+          "address": "0x3941c80",
+          "mnemonic": "adrp",
+          "operands": "x9, 0x57be000 <lfs::event_point::accumulation::RewardRecord::s_recordSize>"
+        },
+        {
+          "address": "0x3941c84",
+          "mnemonic": "ldr",
+          "operands": "s4, [x0, #0x8]"
+        },
+        {
+          "address": "0x3941c88",
+          "mnemonic": "ldr",
+          "operands": "s3, [x9, #0x4c4]"
+        },
+        {
+          "address": "0x3941c8c",
+          "mnemonic": "adrp",
+          "operands": "x9, 0x57be000 <lfs::event_point::accumulation::RewardRecord::s_recordSize>"
+        },
+        {
+          "address": "0x3941c90",
+          "mnemonic": "mov",
+          "operands": "x0, x8"
+        },
+        {
+          "address": "0x3941c94",
+          "mnemonic": "fnmul",
+          "operands": "s2, s0, s1"
+        },
+        {
+          "address": "0x3941c98",
+          "mnemonic": "ldr",
+          "operands": "s6, [x9, #0x4b8]"
+        },
+        {
+          "address": "0x3941c9c",
+          "mnemonic": "fmul",
+          "operands": "s1, s4, s1"
+        },
+        {
+          "address": "0x3941ca0",
+          "mnemonic": "adrp",
+          "operands": "x9, 0x57be000 <lfs::event_point::accumulation::RewardRecord::s_recordSize>"
+        },
+        {
+          "address": "0x3941ca4",
+          "mnemonic": "fmadd",
+          "operands": "s2, s4, s3, s2"
+        },
+        {
+          "address": "0x3941ca8",
+          "mnemonic": "fneg",
+          "operands": "s4, s5"
+        },
+        {
+          "address": "0x3941cac",
+          "mnemonic": "ldr",
+          "operands": "s5, [x9, #0x4bc]"
+        },
+        {
+          "address": "0x3941cb0",
+          "mnemonic": "fmadd",
+          "operands": "s0, s0, s3, s1"
+        },
+        {
+          "address": "0x3941cb4",
+          "mnemonic": "fnmul",
+          "operands": "s2, s2, s6"
+        },
+        {
+          "address": "0x3941cb8",
+          "mnemonic": "fnmadd",
+          "operands": "s1, s4, s5, s2"
+        },
+        {
+          "address": "0x3941cbc",
+          "mnemonic": "b",
+          "operands": "0x5259190 <_ZN7cocos2d4Vec2C1Eff@plt>"
+        }
+      ],
+      "label": "map_to_screen",
+      "name": "lfs::Isometric::mapToScreen(lfs::Vector3 const&)",
+      "returned_pointer_words": []
+    },
+    {
+      "address": "0x3941cc0",
+      "bounded_stop": "0x3941d08",
+      "float_references": [
+        {
+          "destination": "s1",
+          "instruction_address": "0x3941cc8",
+          "virtual_address": "0x57be4d0",
+          "word": null
+        },
+        {
+          "destination": "s3",
+          "instruction_address": "0x3941cd0",
+          "virtual_address": "0x57be4c8",
+          "word": null
+        },
+        {
+          "destination": "s2",
+          "instruction_address": "0x3941ce0",
+          "virtual_address": "0x57be4d4",
+          "word": null
+        },
+        {
+          "destination": "s0",
+          "instruction_address": "0x3941cf4",
+          "virtual_address": "0x57be4c0",
+          "word": null
+        }
+      ],
+      "instruction_count": 18,
+      "instructions": [
+        {
+          "address": "0x3941cc0",
+          "mnemonic": "adrp",
+          "operands": "x9, 0x57be000 <lfs::event_point::accumulation::RewardRecord::s_recordSize>"
+        },
+        {
+          "address": "0x3941cc4",
+          "mnemonic": "ldr",
+          "operands": "s0, [x0, #0x4]"
+        },
+        {
+          "address": "0x3941cc8",
+          "mnemonic": "ldr",
+          "operands": "s1, [x9, #0x4d0]"
+        },
+        {
+          "address": "0x3941ccc",
+          "mnemonic": "adrp",
+          "operands": "x9, 0x57be000 <lfs::event_point::accumulation::RewardRecord::s_recordSize>"
+        },
+        {
+          "address": "0x3941cd0",
+          "mnemonic": "ldr",
+          "operands": "s3, [x9, #0x4c8]"
+        },
+        {
+          "address": "0x3941cd4",
+          "mnemonic": "adrp",
+          "operands": "x9, 0x57be000 <lfs::event_point::accumulation::RewardRecord::s_recordSize>"
+        },
+        {
+          "address": "0x3941cd8",
+          "mnemonic": "fmul",
+          "operands": "s0, s0, s1"
+        },
+        {
+          "address": "0x3941cdc",
+          "mnemonic": "ldr",
+          "operands": "s1, [x0]"
+        },
+        {
+          "address": "0x3941ce0",
+          "mnemonic": "ldr",
+          "operands": "s2, [x9, #0x4d4]"
+        },
+        {
+          "address": "0x3941ce4",
+          "mnemonic": "adrp",
+          "operands": "x9, 0x57be000 <lfs::event_point::accumulation::RewardRecord::s_recordSize>"
+        },
+        {
+          "address": "0x3941ce8",
+          "mnemonic": "mov",
+          "operands": "x0, x8"
+        },
+        {
+          "address": "0x3941cec",
+          "mnemonic": "fmadd",
+          "operands": "s0, s1, s3, s0"
+        },
+        {
+          "address": "0x3941cf0",
+          "mnemonic": "fmul",
+          "operands": "s2, s2, s0"
+        },
+        {
+          "address": "0x3941cf4",
+          "mnemonic": "ldr",
+          "operands": "s0, [x9, #0x4c0]"
+        },
+        {
+          "address": "0x3941cf8",
+          "mnemonic": "fmsub",
+          "operands": "s0, s2, s0, s1"
+        },
+        {
+          "address": "0x3941cfc",
+          "mnemonic": "movi",
+          "operands": "d1, #0000000000000000"
+        },
+        {
+          "address": "0x3941d00",
+          "mnemonic": "fmul",
+          "operands": "s0, s3, s0"
+        },
+        {
+          "address": "0x3941d04",
+          "mnemonic": "b",
+          "operands": "0x5278040 <_ZN3lfs7Vector3C1Efff@plt>"
+        }
+      ],
+      "label": "screen_to_map",
+      "name": "lfs::Isometric::screenToMap(cocos2d::Vec2 const&)",
+      "returned_pointer_words": []
+    },
+    {
+      "address": "0x393b634",
+      "bounded_stop": "0x393b668",
+      "float_references": [
+        {
+          "destination": "s2",
+          "instruction_address": "0x393b644",
+          "virtual_address": "0x57be478",
+          "word": null
+        },
+        {
+          "destination": "s3",
+          "instruction_address": "0x393b648",
+          "virtual_address": "0x57be480",
+          "word": null
+        }
+      ],
+      "instruction_count": 13,
+      "instructions": [
+        {
+          "address": "0x393b634",
+          "mnemonic": "ldr",
+          "operands": "s0, [x0, #0x8]"
+        },
+        {
+          "address": "0x393b638",
+          "mnemonic": "adrp",
+          "operands": "x8, 0x57be000 <lfs::event_point::accumulation::RewardRecord::s_recordSize>"
+        },
+        {
+          "address": "0x393b63c",
+          "mnemonic": "add",
+          "operands": "x8, x8, #0x478"
+        },
+        {
+          "address": "0x393b640",
+          "mnemonic": "ldr",
+          "operands": "s1, [x0]"
+        },
+        {
+          "address": "0x393b644",
+          "mnemonic": "ldr",
+          "operands": "s2, [x8]"
+        },
+        {
+          "address": "0x393b648",
+          "mnemonic": "ldr",
+          "operands": "s3, [x8, #0x8]"
+        },
+        {
+          "address": "0x393b64c",
+          "mnemonic": "fabs",
+          "operands": "s0, s0"
+        },
+        {
+          "address": "0x393b650",
+          "mnemonic": "fmul",
+          "operands": "s1, s1, s2"
+        },
+        {
+          "address": "0x393b654",
+          "mnemonic": "fmul",
+          "operands": "s0, s0, s3"
+        },
+        {
+          "address": "0x393b658",
+          "mnemonic": "fcvtzs",
+          "operands": "w8, s1"
+        },
+        {
+          "address": "0x393b65c",
+          "mnemonic": "fcvtzs",
+          "operands": "w9, s0"
+        },
+        {
+          "address": "0x393b660",
+          "mnemonic": "orr",
+          "operands": "x0, x8, x9, lsl #32"
+        },
+        {
+          "address": "0x393b664",
+          "mnemonic": "ret",
+          "operands": ""
+        }
+      ],
+      "label": "position_to_coord3",
+      "name": "lfs::FieldConstant::positionToCoord3(lfs::Vector3 const&)",
+      "returned_pointer_words": []
+    },
+    {
+      "address": "0x393b1e8",
+      "bounded_stop": "0x393b1f4",
+      "float_references": [],
+      "instruction_count": 3,
+      "instructions": [
+        {
+          "address": "0x393b1e8",
+          "mnemonic": "adrp",
+          "operands": "x0, 0x57be000 <lfs::event_point::accumulation::RewardRecord::s_recordSize>"
+        },
+        {
+          "address": "0x393b1ec",
+          "mnemonic": "add",
+          "operands": "x0, x0, #0x46c"
+        },
+        {
+          "address": "0x393b1f0",
+          "mnemonic": "ret",
+          "operands": ""
+        }
+      ],
+      "label": "grid_size_half",
+      "name": "lfs::FieldConstant::gridSizeHalf()",
+      "returned_pointer_words": []
+    }
+  ]
+}

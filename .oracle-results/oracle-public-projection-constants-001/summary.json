@@ -1,0 +1,10 @@
+{
+  "duration_seconds": 3.963,
+  "error": null,
+  "exit_code": 0,
+  "job_id": "oracle-public-projection-constants-001",
+  "kind": "python",
+  "schema": 1,
+  "source_sha": "2904363299957aaee71f10d6e729af122325c06d",
+  "status": "success"
+}
