@@ -1,0 +1,8 @@
+{
+  "commit": "e62db8e6d801d554cd1bf769af2b5c2b7cc2f237",
+  "job_id": "merge-logres-live-map-variants-003",
+  "job_type": "MERGE",
+  "status": "SUCCESS",
+  "target_branch": "feat/logres-reconstruction",
+  "written_at": "2026-09-22T08:17:00.082707+00:00"
+}
