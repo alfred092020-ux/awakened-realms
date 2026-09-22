@@ -1,0 +1,752 @@
+{
+  "missing": [],
+  "policy": "Exports only file-list structure, safe path/hash prefixes, selected printable metadata and aggregate matching. No resource payloads, dialogue, images, geometry or textures are exported.",
+  "provenance": "PRIVATE_CACHE_PATCH_FILELIST_FORMAT_METADATA",
+  "sample_patch_member_match": {
+    "files/cache/download_binfilelist.txt": {
+      "sample_exact_patch_member_matches": 24,
+      "sample_path_field_count": 24
+    },
+    "files/cache/download_extra_filelist.txt": {
+      "sample_exact_patch_member_matches": 0,
+      "sample_path_field_count": 1
+    },
+    "files/cache/download_filelist.txt": {
+      "sample_exact_patch_member_matches": 0,
+      "sample_path_field_count": 24
+    }
+  },
+  "targets": {
+    "files/cache/download_binfilelist.txt": {
+      "dominant_delimiter": "TAB",
+      "extensions": {
+        ".astc": 2493,
+        ".bss": 360,
+        ".dds": 1901,
+        ".gif": 2,
+        ".json": 22197,
+        ".lfla": 363,
+        ".mbn": 2000,
+        ".png": 21957,
+        ".psd": 2
+      },
+      "line_count": 22702,
+      "line_shapes": {
+        "PATH|PATH|PATH|EMPTY": 1037,
+        "PATH|PATH|PATH|PATH|PATH|EMPTY": 311,
+        "PATH|PATH|PATH|PATH|PATH|PATH|EMPTY": 46,
+        "PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|EMPTY": 9,
+        "PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|EMPTY": 28,
+        "PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|EMPTY": 13,
+        "PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|EMPTY": 38,
+        "PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|EMPTY": 13,
+        "PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|EMPTY": 21,
+        "PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|EMPTY": 123,
+        "PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|EMPTY": 10,
+        "PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|EMPTY": 20,
+        "PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|EMPTY": 115,
+        "PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|EMPTY": 10,
+        "PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|EMPTY": 35,
+        "PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|PATH|EMPTY": 14
+      },
+      "member": "files/cache/download_binfilelist.txt",
+      "path_prefixes": {
+        "bg_500_000_000_000_thumb.dds": 2,
+        "bod_192_f_ard_000.json": 2,
+        "bod_192_f_ard_000.png": 2,
+        "bod_192_f_ard_002.json": 2,
+        "bod_192_f_ard_002.png": 2,
+        "bod_192_f_ard_020.json": 2,
+        "bod_192_f_ard_020.png": 2,
+        "bod_192_f_ard_022.json": 2,
+        "bod_192_f_ard_022.png": 2,
+        "bod_192_f_aru_000.json": 2,
+        "bod_192_f_aru_000.png": 2,
+        "bod_192_f_aru_002.json": 2,
+        "efc_500_004_008_000_obj.lfla": 2,
+        "obj_040_010_001_001_obj.lfla": 2,
+        "obj_500_003_075_001_thumb.astc": 2,
+        "png.astc": 89,
+        "png.bss": 360,
+        "png.dds": 221,
+        "png.png": 50,
+        "slice_info.json": 3
+      },
+      "sample_records": [
+        [
+          "avacolle/bg/bg_010_001_001_000.mbn",
+          "bg_010_001_001_000_obj.dds",
+          "bg_010_001_001_000_thumb.dds",
+          ""
+        ],
+        [
+          "avacolle/bg/bg_010_001_001_002.mbn",
+          "bg_010_001_001_002_obj.dds",
+          "bg_010_001_001_002_thumb.dds",
+          ""
+        ],
+        [
+          "avacolle/bg/bg_010_001_001_005.mbn",
+          "bg_010_001_001_005_obj.dds",
+          "bg_010_001_001_005_thumb.dds",
+          ""
+        ],
+        [
+          "avacolle/bg/bg_010_001_001_012.mbn",
+          "bg_010_001_001_012_obj.dds",
+          "bg_010_001_001_012_thumb.dds",
+          ""
+        ],
+        [
+          "avacolle/bg/bg_010_001_004_004.mbn",
+          "bg_010_001_004_004_obj.png",
+          "bg_010_001_004_004_thumb.png",
+          ""
+        ],
+        [
+          "avacolle/bg/bg_010_001_004_005.mbn",
+          "bg_010_001_004_005_obj.astc",
+          "bg_010_001_004_005_thumb.astc",
+          ""
+        ],
+        [
+          "avacolle/bg/bg_010_002_002_001.mbn",
+          "bg_010_002_002_001_obj.png",
+          "bg_010_002_002_001_thumb.png",
+          ""
+        ],
+        [
+          "avacolle/bg/bg_010_002_003_000.mbn",
+          "bg_010_002_003_000_obj.astc",
+          "bg_010_002_003_000_thumb.astc",
+          ""
+        ],
+        [
+          "avacolle/bg/bg_010_002_004_000.mbn",
+          "bg_010_002_004_000_obj.dds",
+          "bg_010_002_004_000_thumb.dds",
+          ""
+        ],
+        [
+          "avacolle/bg/bg_010_002_103_000.mbn",
+          "bg_010_002_103_000_obj.dds",
+          "bg_010_002_103_000_thumb.dds",
+          ""
+        ],
+        [
+          "avacolle/bg/bg_010_003_001_001.mbn",
+          "bg_010_003_001_001_obj.astc",
+          "bg_010_003_001_001_thumb.astc",
+          ""
+        ],
+        [
+          "avacolle/bg/bg_010_003_002_000.mbn",
+          "bg_010_003_002_000_obj.dds",
+          "bg_010_003_002_000_thumb.dds",
+          ""
+        ],
+        [
+          "avacolle/bg/bg_010_004_002_000.mbn",
+          "bg_010_004_002_000_obj.dds",
+          "bg_010_004_002_000_thumb.dds",
+          ""
+        ],
+        [
+          "avacolle/bg/bg_010_004_002_001.mbn",
+          "bg_010_004_002_001_obj.astc",
+          "bg_010_004_002_001_thumb.astc",
+          ""
+        ],
+        [
+          "avacolle/bg/bg_010_005_002_001.mbn",
+          "bg_010_005_002_001_obj.astc",
+          "bg_010_005_002_001_thumb.astc",
+          ""
+        ],
+        [
+          "avacolle/bg/bg_010_006_001_000.mbn",
+          "bg_010_006_001_000_obj.dds",
+          "bg_010_006_001_000_thumb.dds",
+          ""
+        ],
+        [
+          "avacolle/bg/bg_010_006_001_001.mbn",
+          "bg_010_006_001_001_obj.dds",
+          "bg_010_006_001_001_thumb.dds",
+          ""
+        ],
+        [
+          "avacolle/bg/bg_010_007_001_000.mbn",
+          "bg_010_007_001_000_obj.astc",
+          "bg_010_007_001_000_thumb.astc",
+          ""
+        ],
+        [
+          "avacolle/bg/bg_010_012_000_000.mbn",
+          "bg_010_012_000_000_obj.dds",
+          "bg_010_012_000_000_thumb.dds",
+          ""
+        ],
+        [
+          "avacolle/bg/bg_010_250_001_000.mbn",
+          "bg_010_250_001_000_obj.astc",
+          "bg_010_250_001_000_thumb.astc",
+          ""
+        ],
+        [
+          "avacolle/bg/bg_020_101_000_000.mbn",
+          "bg_020_101_000_000_obj.dds",
+          "bg_020_101_000_000_thumb.dds",
+          ""
+        ],
+        [
+          "avacolle/bg/bg_020_105_000_000.mbn",
+          "bg_020_105_000_000_obj.dds",
+          "bg_020_105_000_000_thumb.dds",
+          ""
+        ],
+        [
+          "avacolle/bg/bg_020_302_000_000.mbn",
+          "bg_020_302_000_000_obj.dds",
+          "bg_020_302_000_000_thumb.dds",
+          ""
+        ],
+        [
+          "avacolle/bg/bg_020_302_102_000.mbn",
+          "bg_020_302_102_000_obj.astc",
+          "bg_020_302_102_000_thumb.astc",
+          ""
+        ]
+      ],
+      "sha256": "7d27b2e65089d6219d6e14c33a3871282e6d566abc0744c7388a72bb35f9eec7",
+      "size": 10364476,
+      "url_hosts": {}
+    },
+    "files/cache/download_extra_filelist.txt": {
+      "dominant_delimiter": null,
+      "extensions": {
+        ".mbn": 1
+      },
+      "line_count": 1,
+      "line_shapes": {
+        "HEX40|INT|PATH|INT": 1
+      },
+      "member": "files/cache/download_extra_filelist.txt",
+      "path_prefixes": {
+        "./gui/up_date": 1
+      },
+      "sample_records": [
+        [
+          {
+            "kind": "HEX40",
+            "length": 40,
+            "prefix": "c67eddc26f83"
+          },
+          91259,
+          "./gui/up_date/banner/menu_banner52.mbn",
+          1789464663
+        ]
+      ],
+      "sha256": "aaff07b41c012aa74380a1bbc282c5c7379fa8cf369919261df00a00aecead86",
+      "size": 97,
+      "url_hosts": {}
+    },
+    "files/cache/download_filelist.txt": {
+      "dominant_delimiter": null,
+      "extensions": {
+        ".mbn": 2000
+      },
+      "line_count": 23155,
+      "line_shapes": {
+        "HEX40|INT|PATH|INT": 2000
+      },
+      "member": "files/cache/download_filelist.txt",
+      "path_prefixes": {
+        "./avacolle/bg": 314,
+        "./avacolle/efc": 66,
+        "./avacolle/eye.mbn": 1,
+        "./avacolle/eye_color.mbn": 1,
+        "./avacolle/frame": 455,
+        "./avacolle/hair.mbn": 1,
+        "./avacolle/hair_color.mbn": 1,
+        "./avacolle/obj": 563,
+        "./avacolle/skin_color.mbn": 1,
+        "./avatar.mbn": 1,
+        "./avatar/bod_001_f.mbn": 1,
+        "./avatar/bod_001_m.mbn": 1,
+        "./avatar/bod_002_f.mbn": 1,
+        "./avatar/bod_002_m.mbn": 1,
+        "./avatar/bod_003_f.mbn": 1,
+        "./avatar/bod_003_m.mbn": 1,
+        "./avatar/bod_004_f.mbn": 1,
+        "./avatar/bod_004_m.mbn": 1,
+        "./avatar/bod_005_f.mbn": 1,
+        "./avatar/bod_005_m.mbn": 1
+      },
+      "sample_records": [
+        [
+          {
+            "kind": "HEX40",
+            "length": 40,
+            "prefix": "548229135c9d"
+          },
+          40387,
+          "./avacolle/bg/bg_010_001_001_000.mbn",
+          1519646909
+        ],
+        [
+          {
+            "kind": "HEX40",
+            "length": 40,
+            "prefix": "bb807d256c87"
+          },
+          29606,
+          "./avacolle/bg/bg_010_001_001_002.mbn",
+          1626865496
+        ],
+        [
+          {
+            "kind": "HEX40",
+            "length": 40,
+            "prefix": "0f877817fe32"
+          },
+          32865,
+          "./avacolle/bg/bg_010_001_001_005.mbn",
+          1519646909
+        ],
+        [
+          {
+            "kind": "HEX40",
+            "length": 40,
+            "prefix": "786ee486a3df"
+          },
+          167211,
+          "./avacolle/bg/bg_010_001_001_012.mbn",
+          1647227117
+        ],
+        [
+          {
+            "kind": "HEX40",
+            "length": 40,
+            "prefix": "9c77b2d18d82"
+          },
+          138953,
+          "./avacolle/bg/bg_010_001_004_004.mbn",
+          1728540303
+        ],
+        [
+          {
+            "kind": "HEX40",
+            "length": 40,
+            "prefix": "c47d62392461"
+          },
+          76993,
+          "./avacolle/bg/bg_010_001_004_005.mbn",
+          1714440645
+        ],
+        [
+          {
+            "kind": "HEX40",
+            "length": 40,
+            "prefix": "a5337231bc6a"
+          },
+          241051,
+          "./avacolle/bg/bg_010_002_002_001.mbn",
+          1773322264
+        ],
+        [
+          {
+            "kind": "HEX40",
+            "length": 40,
+            "prefix": "f5d677d398ec"
+          },
+          49666,
+          "./avacolle/bg/bg_010_002_003_000.mbn",
+          1681968654
+        ],
+        [
+          {
+            "kind": "HEX40",
+            "length": 40,
+            "prefix": "004e7905b15b"
+          },
+          32215,
+          "./avacolle/bg/bg_010_002_004_000.mbn",
+          1593583483
+        ],
+        [
+          {
+            "kind": "HEX40",
+            "length": 40,
+            "prefix": "adcaa6578c95"
+          },
+          29208,
+          "./avacolle/bg/bg_010_002_103_000.mbn",
+          1600394682
+        ],
+        [
+          {
+            "kind": "HEX40",
+            "length": 40,
+            "prefix": "bfb600590b47"
+          },
+          84054,
+          "./avacolle/bg/bg_010_003_001_001.mbn",
+          1628136297
+        ],
+        [
+          {
+            "kind": "HEX40",
+            "length": 40,
+            "prefix": "c31dedb3a49f"
+          },
+          26500,
+          "./avacolle/bg/bg_010_003_002_000.mbn",
+          1519646909
+        ],
+        [
+          {
+            "kind": "HEX40",
+            "length": 40,
+            "prefix": "3ccadb1c1032"
+          },
+          37250,
+          "./avacolle/bg/bg_010_004_002_000.mbn",
+          1519646909
+        ],
+        [
+          {
+            "kind": "HEX40",
+            "length": 40,
+            "prefix": "2eacaa2101d5"
+          },
+          59214,
+          "./avacolle/bg/bg_010_004_002_001.mbn",
+          1686204305
+        ],
+        [
+          {
+            "kind": "HEX40",
+            "length": 40,
+            "prefix": "64199afefec1"
+          },
+          86452,
+          "./avacolle/bg/bg_010_005_002_001.mbn",
+          1721280651
+        ],
+        [
+          {
+            "kind": "HEX40",
+            "length": 40,
+            "prefix": "4cce3f9197fa"
+          },
+          22473,
+          "./avacolle/bg/bg_010_006_001_000.mbn",
+          1519646909
+        ],
+        [
+          {
+            "kind": "HEX40",
+            "length": 40,
+            "prefix": "9badbe2b53f1"
+          },
+          22026,
+          "./avacolle/bg/bg_010_006_001_001.mbn",
+          1519646909
+        ],
+        [
+          {
+            "kind": "HEX40",
+            "length": 40,
+            "prefix": "65d45412e4a4"
+          },
+          85639,
+          "./avacolle/bg/bg_010_007_001_000.mbn",
+          1599103852
+        ],
+        [
+          {
+            "kind": "HEX40",
+            "length": 40,
+            "prefix": "3a0b8dc59c36"
+          },
+          105777,
+          "./avacolle/bg/bg_010_012_000_000.mbn",
+          1519646909
+        ],
+        [
+          {
+            "kind": "HEX40",
+            "length": 40,
+            "prefix": "fa558b499dd5"
+          },
+          49530,
+          "./avacolle/bg/bg_010_250_001_000.mbn",
+          1759989910
+        ],
+        [
+          {
+            "kind": "HEX40",
+            "length": 40,
+            "prefix": "7949c6d753c5"
+          },
+          22684,
+          "./avacolle/bg/bg_020_101_000_000.mbn",
+          1539235236
+        ],
+        [
+          {
+            "kind": "HEX40",
+            "length": 40,
+            "prefix": "c3369ee067de"
+          },
+          24888,
+          "./avacolle/bg/bg_020_105_000_000.mbn",
+          1600394682
+        ],
+        [
+          {
+            "kind": "HEX40",
+            "length": 40,
+            "prefix": "d4fcb9d38e2f"
+          },
+          25206,
+          "./avacolle/bg/bg_020_302_000_000.mbn",
+          1539235236
+        ],
+        [
+          {
+            "kind": "HEX40",
+            "length": 40,
+            "prefix": "156662798fd4"
+          },
+          20972,
+          "./avacolle/bg/bg_020_302_102_000.mbn",
+          1665642682
+        ]
+      ],
+      "sha256": "46328a5a5ab44511a73779d0794fefae8056afc2ec79f61c03c0f20c3dd21ff3",
+      "size": 2086795,
+      "url_hosts": {}
+    },
+    "files/cache/extra_filelist.bin": {
+      "extensions": {},
+      "header_hex": "789c25c6310e80200c00c0dd57f00249b12df01ad396621c24c6c8ff1dbce98cb3b766897bd94a17014377802a1d0dc854a17422c55021510d6b3ce619e7bd37",
+      "host_strings": [],
+      "mbn_ascii_count": 0,
+      "member": "files/cache/extra_filelist.bin",
+      "path_strings": [],
+      "printable_byte_ratio": 0.0,
+      "printable_string_count": 0,
+      "sha256": "2bc83a91acb435249da893b2c1d3cd9481e2504a4f7ca84fcdf0dd60bf69799d",
+      "size": 91,
+      "term_tokens": [],
+      "urls": [],
+      "zero_byte_ratio": 0.010989
+    },
+    "files/cache/extra_filelistbin.hash": {
+      "dominant_delimiter": null,
+      "extensions": {},
+      "line_count": 1,
+      "line_shapes": {
+        "HEX40": 1
+      },
+      "member": "files/cache/extra_filelistbin.hash",
+      "path_prefixes": {},
+      "sample_records": [
+        [
+          {
+            "kind": "HEX40",
+            "length": 40,
+            "prefix": "f849e1b7419b"
+          }
+        ]
+      ],
+      "sha256": "a3c9cda19813e50b75018fb4fca61efa3b786469dd0921cd50aa02654ddf9f75",
+      "size": 41,
+      "url_hosts": {}
+    },
+    "files/cache/filelist.bin": {
+      "extensions": {
+        ".%l": 1,
+        ".&z": 1,
+        ".(": 1,
+        ".+": 1,
+        ".>t": 1,
+        ".@": 1,
+        ".^{": 1,
+        ".a": 1,
+        ".e": 1,
+        ".f": 1,
+        ".m": 1,
+        ".p": 1,
+        ".pd": 1,
+        ".t": 1,
+        ".|": 1
+      },
+      "header_hex": "789c8c9d59b22439b25cff6315b18247ccc36a5a30f2877cfca008d7cfa3718718ae8747567755655666020687c14c15b02186e25cb53e8e3ac76edeec36660d",
+      "host_strings": [
+        "0.vd",
+        "p.lj",
+        "em9v.zfz",
+        "b.li",
+        "t.bs",
+        "q.tt",
+        "m.vg",
+        "ecpp.io",
+        "d.inn",
+        "t3.tl",
+        "x.lw",
+        "1w.rw",
+        "p.lr",
+        "kh.kz",
+        "4.rd",
+        "v.dnq",
+        "f.pc",
+        "m.tk",
+        "m.gl",
+        "2l.idk",
+        "c.xv",
+        "67z.hp",
+        "z.iy",
+        "c.yyy"
+      ],
+      "mbn_ascii_count": 0,
+      "member": "files/cache/filelist.bin",
+      "path_strings": [
+        "wHW/",
+        "C<\\.",
+        "/RM[",
+        "\\s{J",
+        "Ha/!",
+        "[^\\`(",
+        "/[lLsJ",
+        "//sI",
+        "1\\ts\"",
+        "jLN/",
+        "TI/gTf",
+        "d\\1d",
+        "pQ5:lW\\",
+        "9y*./",
+        ".6\\N",
+        " \\Ue",
+        "u\\YBqj",
+        ":X\\o",
+        "sDU\\rUIu",
+        "~\\k>X",
+        "/)tVq",
+        "s\\s,.",
+        "MY\\H",
+        "q2CG\\I'"
+      ],
+      "printable_byte_ratio": 0.055198,
+      "printable_string_count": 13573,
+      "sha256": "7299d18e6e85d1caa1012b27b3358d172a2c2e973e64a25cb302d5c304b3a8f6",
+      "size": 1132885,
+      "term_tokens": [
+        ")cdN"
+      ],
+      "urls": [],
+      "zero_byte_ratio": 0.004022
+    },
+    "files/cache/filelistbin.hash": {
+      "dominant_delimiter": null,
+      "extensions": {},
+      "line_count": 1,
+      "line_shapes": {
+        "HEX40": 1
+      },
+      "member": "files/cache/filelistbin.hash",
+      "path_prefixes": {},
+      "sample_records": [
+        [
+          {
+            "kind": "HEX40",
+            "length": 40,
+            "prefix": "050a518792a9"
+          }
+        ]
+      ],
+      "sha256": "6c2148b7fb860d8765bd2171cb00fa8c540167c65f322b0b5c0e3209c0b24c0d",
+      "size": 41,
+      "url_hosts": {}
+    },
+    "files/cache/patch/binfilelist.bin": {
+      "extensions": {
+        ".!pq": 1,
+        ".\"": 1,
+        ".\"#": 1,
+        ".&": 3,
+        ".'": 1,
+        ".)": 1,
+        ".2#": 2,
+        ".4": 1,
+        ".;": 1,
+        ".@hn": 1,
+        ".a": 5,
+        ".b": 1,
+        ".f": 1,
+        ".kpk": 1,
+        ".lf": 1,
+        ".n": 1,
+        ".o": 4,
+        ".p": 1,
+        ".u": 1,
+        ".}": 1
+      },
+      "header_hex": "789cecbdd192e5368e2dfa7cefbf4c4f899444ea6b326cb7ddedbea6abc3d57d4ef8ef6fe5d64e910017d60694f3724e74c478ba1284b8004a04162492fb87ff",
+      "host_strings": [
+        "d.se",
+        "p.nkft",
+        "o.cg",
+        "w.kv",
+        "n.hh",
+        "n.lm",
+        "l.kg",
+        "e.vv",
+        "g.ni",
+        "t.jx",
+        "ubp1t.rm",
+        "y.bt",
+        "m.zz",
+        "bw.vs",
+        "l.fk"
+      ],
+      "mbn_ascii_count": 0,
+      "member": "files/cache/patch/binfilelist.bin",
+      "path_strings": [
+        "-;p\\_",
+        "e\\bl",
+        "[t\\#p",
+        " /]b",
+        "/n\\bb",
+        "\\bq.",
+        "vK/V",
+        "-\\0i4",
+        "22?/#",
+        "o#/9",
+        ":0\\r",
+        "\\>uG",
+        "/#y~",
+        "zH/9",
+        "ufxW&nXS\\",
+        ")/Xy",
+        "J\\G?",
+        "wZ/r:",
+        "/ry_",
+        "\\77p",
+        "'Ru/A",
+        "'Ru/",
+        "wu/A",
+        "geww/"
+      ],
+      "printable_byte_ratio": 0.052932,
+      "printable_string_count": 13521,
+      "sha256": "c325a36d6a3814075ccee7c09cab8ee3038ce9a39d79dc108d5bcac43d766ed2",
+      "size": 1190298,
+      "term_tokens": [],
+      "urls": [],
+      "zero_byte_ratio": 0.004351
+    }
+  }
+}

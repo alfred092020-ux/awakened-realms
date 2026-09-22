@@ -1,0 +1,10 @@
+{
+  "duration_seconds": 0.423,
+  "error": null,
+  "exit_code": 0,
+  "job_id": "oracle-patch-filelist-inspector-001",
+  "kind": "python",
+  "schema": 1,
+  "source_sha": "bf2dc28bb8a74b805c57e4ea265b0bfd0beeb96f",
+  "status": "success"
+}
