@@ -1,0 +1,8 @@
+{
+  "commit": "fa211b1046decae5482c8d0215a2b795f6d14c19",
+  "job_id": "merge-logres-oracle-dispatch-bridge-001",
+  "job_type": "MERGE",
+  "status": "SUCCESS",
+  "target_branch": "feat/logres-reconstruction",
+  "written_at": "2026-09-22T04:22:18.401661+00:00"
+}
