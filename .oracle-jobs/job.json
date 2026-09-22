@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "job_id": "oracle-map-render-model-profile-001",
+  "source_sha": "da200b5d1353a83f8cde76284f260cb0611d9e05",
+  "kind": "python",
+  "script": "scripts/logres/profile_private_map_render_model.py",
+  "args": [
+    "@PRIVATE_ARCHIVE@",
+    "--output",
+    "@OUTPUT@/map-render-model.json"
+  ],
+  "timeout_seconds": 1800
+}
