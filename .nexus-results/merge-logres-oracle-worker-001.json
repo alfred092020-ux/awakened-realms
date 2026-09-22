@@ -1,0 +1,8 @@
+{
+  "commit": "6f258204c68474acb654daad94e569a346853307",
+  "job_id": "merge-logres-oracle-worker-001",
+  "job_type": "MERGE",
+  "status": "SUCCESS",
+  "target_branch": "feat/logres-reconstruction",
+  "written_at": "2026-09-22T04:15:42.614289+00:00"
+}
