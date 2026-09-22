@@ -1,0 +1,8 @@
+{
+  "commit": "a60fdb17188df7027a95d3234ea62462cc3370e3",
+  "job_id": "merge-logres-public-hostentry-inspector-002",
+  "job_type": "MERGE",
+  "status": "SUCCESS",
+  "target_branch": "feat/logres-reconstruction",
+  "written_at": "2026-09-22T06:04:33.811057+00:00"
+}
