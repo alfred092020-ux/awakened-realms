@@ -1,0 +1,5883 @@
+{
+  "errors": [
+    {
+      "member": "files/cache/patch/avacolle/bg/bg_020_302_102_001.mbn",
+      "reason": "ValueError"
+    },
+    {
+      "member": "files/cache/patch/avacolle/bg/bg_030_001_000_000.mbn",
+      "reason": "ValueError"
+    }
+  ],
+  "evidence_source_count": 81,
+  "evidence_sources": [
+    {
+      "binary_context": {
+        "contextual_resource_ref_count": 3,
+        "contextual_resource_refs": [
+          {
+            "distance": 14,
+            "keyword_offset": 636,
+            "nearest_keyword": "battle",
+            "offset": 650,
+            "resource_id": "000_000_00001"
+          },
+          {
+            "distance": 14,
+            "keyword_offset": 1006,
+            "nearest_keyword": "battle",
+            "offset": 1020,
+            "resource_id": "000_000_00001"
+          },
+          {
+            "distance": 14,
+            "keyword_offset": 1382,
+            "nearest_keyword": "battle",
+            "offset": 1396,
+            "resource_id": "000_000_00001"
+          }
+        ],
+        "keyword_counts": {
+          "battle": 6,
+          "pos": 7,
+          "position": 3
+        }
+      },
+      "container": "files/cache/patch/gui/Battle.mbn",
+      "entry": "battle_hud_shield_layout.lua",
+      "format": "lua",
+      "sha256": "290954367756ae5a221608b3f8fcebec3c1aba18b6d26187f9158c5eee4716e1",
+      "size": 4784
+    },
+    {
+      "binary_context": {
+        "contextual_resource_ref_count": 3,
+        "contextual_resource_refs": [
+          {
+            "distance": 330,
+            "keyword_offset": 318,
+            "nearest_keyword": "pos",
+            "offset": 648,
+            "resource_id": "000_000_00001"
+          },
+          {
+            "distance": 64,
+            "keyword_offset": 1093,
+            "nearest_keyword": "pos",
+            "offset": 1029,
+            "resource_id": "000_000_00001"
+          },
+          {
+            "distance": 317,
+            "keyword_offset": 1093,
+            "nearest_keyword": "pos",
+            "offset": 1410,
+            "resource_id": "000_000_00001"
+          }
+        ],
+        "keyword_counts": {
+          "battle": 3,
+          "pos": 7,
+          "position": 3
+        }
+      },
+      "container": "files/cache/patch/gui/Battle.mbn",
+      "entry": "battle_hud_shield_rcb_layout.lua",
+      "format": "lua",
+      "sha256": "41eb03b741420aaca9ddc8c09fe3eeb1c3ff01d9f7804467b5d161775e6536d3",
+      "size": 4725
+    },
+    {
+      "binary_context": {
+        "contextual_resource_ref_count": 3,
+        "contextual_resource_refs": [
+          {
+            "distance": 25,
+            "keyword_offset": 1091,
+            "nearest_keyword": "battle",
+            "offset": 1116,
+            "resource_id": "000_000_00001"
+          },
+          {
+            "distance": 39,
+            "keyword_offset": 1091,
+            "nearest_keyword": "battle",
+            "offset": 1130,
+            "resource_id": "000_000_00001"
+          },
+          {
+            "distance": 25,
+            "keyword_offset": 2048,
+            "nearest_keyword": "battle",
+            "offset": 2073,
+            "resource_id": "000_000_00001"
+          }
+        ],
+        "keyword_counts": {
+          "battle": 22
+        }
+      },
+      "container": "files/cache/patch/gui/Battle/additional_skill.mbn",
+      "entry": "additional_skill_counter_layout.lua",
+      "format": "lua",
+      "sha256": "929b392071026f51a525721f9c2e942a3dd5d084ff1adcfe283001e1a2d76498",
+      "size": 3007
+    },
+    {
+      "container": "files/cache/patch/gui/Battle/additional_skill.mbn",
+      "entry": "select_additional_skill_setting.json",
+      "format": "json",
+      "json_context": {
+        "context_scalar_count": 4,
+        "context_scalars": [
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "pos_x",
+            "pointer": "/background_setting/pos_x",
+            "value": 52.5
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "pos_y",
+            "pointer": "/background_setting/pos_y",
+            "value": 35.0
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "pos_x",
+            "pointer": "/sword_icon_setting/pos_x",
+            "value": 10.0
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "pos_y",
+            "pointer": "/sword_icon_setting/pos_y",
+            "value": 50.0
+          }
+        ],
+        "resource_ref_count": 0,
+        "resource_refs": []
+      },
+      "sha256": "03b70069eab4aeb8daddbb19b3527b5ea3d2711e8a023717f8f85ec610f5d14a",
+      "size": 669
+    },
+    {
+      "container": "files/cache/patch/gui/Battle/buff_icon.mbn",
+      "entry": "buff_icon_view_setting.json",
+      "format": "json",
+      "json_context": {
+        "context_scalar_count": 1,
+        "context_scalars": [
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "begin_position_x",
+            "pointer": "/default/begin_position_x",
+            "value": 700
+          }
+        ],
+        "resource_ref_count": 0,
+        "resource_refs": []
+      },
+      "sha256": "6ca9992505abe4f9d28ee78bfb536450427c9dac3321b1b81689dd6cbb82b5b4",
+      "size": 656
+    },
+    {
+      "container": "files/cache/patch/gui/Battle/damage_bonus.mbn",
+      "entry": "gui_battle_damage_bonus_parameter.json",
+      "format": "json",
+      "json_context": {
+        "context_scalar_count": 2,
+        "context_scalars": [
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "offsetPosX",
+            "pointer": "/offsetPosX",
+            "value": 0.0
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "offsetPosY",
+            "pointer": "/offsetPosY",
+            "value": 250.0
+          }
+        ],
+        "resource_ref_count": 0,
+        "resource_refs": []
+      },
+      "sha256": "d019097c86511b85b7cf49e72fcb301f48f26e6cc26173ecd1f8c8c5af5057ae",
+      "size": 1357
+    },
+    {
+      "container": "files/cache/patch/gui/Battle/effect.mbn",
+      "entry": "TargetGlowEffectSetting.json",
+      "format": "json",
+      "json_context": {
+        "context_scalar_count": 4,
+        "context_scalars": [
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "posX",
+            "pointer": "/hp/posX",
+            "value": 0
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "posY",
+            "pointer": "/hp/posY",
+            "value": -2
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "posX",
+            "pointer": "/shield/posX",
+            "value": 0
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "posY",
+            "pointer": "/shield/posY",
+            "value": -5
+          }
+        ],
+        "resource_ref_count": 0,
+        "resource_refs": []
+      },
+      "sha256": "1175b9dce2677aa7113bfaf29bfd2ccd272af41ae81383c2f96a5676846c2825",
+      "size": 287
+    },
+    {
+      "container": "files/cache/patch/gui/Battle/enemy_ep.mbn",
+      "entry": "enemy_ep_setting.json",
+      "format": "json",
+      "json_context": {
+        "context_scalar_count": 2,
+        "context_scalars": [
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "offsetPosX",
+            "pointer": "/offsetPosX",
+            "value": 53.0
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "offsetPosY",
+            "pointer": "/offsetPosY",
+            "value": -13.0
+          }
+        ],
+        "resource_ref_count": 0,
+        "resource_refs": []
+      },
+      "sha256": "7e13dd17d2ee77a85da08ef793e76ddb4a81d909a2bfdeac9bb93f1dbf1407f5",
+      "size": 56
+    },
+    {
+      "container": "files/cache/patch/gui/Battle/gauge/ancient_gauge.mbn",
+      "entry": "ancient_gauge_param_setting.json",
+      "format": "json",
+      "json_context": {
+        "context_scalar_count": 18,
+        "context_scalars": [
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "x",
+            "pointer": "/appearance_effect/position/x",
+            "value": -78
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "y",
+            "pointer": "/appearance_effect/position/y",
+            "value": -87
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "x",
+            "pointer": "/gauge_accumulate_effect_list/0/position/x",
+            "value": -78
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "y",
+            "pointer": "/gauge_accumulate_effect_list/0/position/y",
+            "value": -87
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "x",
+            "pointer": "/gauge_position_offset/x",
+            "value": 47
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "y",
+            "pointer": "/gauge_position_offset/y",
+            "value": 2
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "x",
+            "pointer": "/second_energy_point_status_icon_setting_info/position/x",
+            "value": -14
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "y",
+            "pointer": "/second_energy_point_status_icon_setting_info/position/y",
+            "value": 0
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "x",
+            "pointer": "/skill_reserve_icon_setting_info/position/x",
+            "value": 17
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "y",
+            "pointer": "/skill_reserve_icon_setting_info/position/y",
+            "value": 15
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "x",
+            "pointer": "/skill_reserving_effect/position/x",
+            "value": -78
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "y",
+            "pointer": "/skill_reserving_effect/position/y",
+            "value": -87
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "x",
+            "pointer": "/skill_select_effect/position/x",
+            "value": -78
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "y",
+            "pointer": "/skill_select_effect/position/y",
+            "value": -87
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "x",
+            "pointer": "/usable_gauge_effect_list/0/position/x",
+            "value": -78
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "y",
+            "pointer": "/usable_gauge_effect_list/0/position/y",
+            "value": -87
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "x",
+            "pointer": "/using_gauge_frame_effect_list/0/position/x",
+            "value": -78
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "y",
+            "pointer": "/using_gauge_frame_effect_list/0/position/y",
+            "value": -87
+          }
+        ],
+        "resource_ref_count": 4,
+        "resource_refs": [
+          {
+            "contexts": [
+              "encounter"
+            ],
+            "pointer": "/soundIDs/accumulate_list/0",
+            "resource_id": "100_002_00065"
+          },
+          {
+            "contexts": [
+              "encounter"
+            ],
+            "pointer": "/soundIDs/accumulate_list/1",
+            "resource_id": "100_002_00062"
+          },
+          {
+            "contexts": [
+              "encounter"
+            ],
+            "pointer": "/soundIDs/accumulate_list/2",
+            "resource_id": "100_002_00091"
+          },
+          {
+            "contexts": [
+              "encounter"
+            ],
+            "pointer": "/soundIDs/appearance",
+            "resource_id": "000_000_00000"
+          }
+        ]
+      },
+      "sha256": "fcbaa98663c57fdba34a9052abd70037a56b09398b213da01b9d6180f017ab51",
+      "size": 2338
+    },
+    {
+      "container": "files/cache/patch/gui/Battle/gauge/burst_gauge_lump.mbn",
+      "entry": "burst_gauge_param_setting.json",
+      "format": "json",
+      "json_context": {
+        "context_scalar_count": 30,
+        "context_scalars": [
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "x",
+            "pointer": "/appearance_effect/position/x",
+            "value": -59
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "y",
+            "pointer": "/appearance_effect/position/y",
+            "value": -95
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "x",
+            "pointer": "/gauge_accumulate_effect_list/0/position/x",
+            "value": -58
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "y",
+            "pointer": "/gauge_accumulate_effect_list/0/position/y",
+            "value": -95
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "x",
+            "pointer": "/gauge_accumulate_effect_list/1/position/x",
+            "value": -58
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "y",
+            "pointer": "/gauge_accumulate_effect_list/1/position/y",
+            "value": -95
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "x",
+            "pointer": "/gauge_accumulate_effect_list/2/position/x",
+            "value": -58
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "y",
+            "pointer": "/gauge_accumulate_effect_list/2/position/y",
+            "value": -95
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "x",
+            "pointer": "/gauge_position_offset/x",
+            "value": 10
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "y",
+            "pointer": "/gauge_position_offset/y",
+            "value": 0
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "x",
+            "pointer": "/second_energy_point_status_icon_setting_info/position/x",
+            "value": 0
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "y",
+            "pointer": "/second_energy_point_status_icon_setting_info/position/y",
+            "value": 0
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "x",
+            "pointer": "/skill_reserve_icon_setting_info/position/x",
+            "value": 32
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "y",
+            "pointer": "/skill_reserve_icon_setting_info/position/y",
+            "value": 5
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "x",
+            "pointer": "/skill_reserving_effect/position/x",
+            "value": -58
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "y",
+            "pointer": "/skill_reserving_effect/position/y",
+            "value": -95
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "x",
+            "pointer": "/skill_select_effect/position/x",
+            "value": -58
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "y",
+            "pointer": "/skill_select_effect/position/y",
+            "value": -95
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "x",
+            "pointer": "/usable_gauge_effect_list/0/position/x",
+            "value": -58
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "y",
+            "pointer": "/usable_gauge_effect_list/0/position/y",
+            "value": -95
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "x",
+            "pointer": "/usable_gauge_effect_list/1/position/x",
+            "value": -58
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "y",
+            "pointer": "/usable_gauge_effect_list/1/position/y",
+            "value": -95
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "x",
+            "pointer": "/usable_gauge_effect_list/2/position/x",
+            "value": -58
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "y",
+            "pointer": "/usable_gauge_effect_list/2/position/y",
+            "value": -95
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "x",
+            "pointer": "/using_gauge_frame_effect_list/0/position/x",
+            "value": -58
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "y",
+            "pointer": "/using_gauge_frame_effect_list/0/position/y",
+            "value": -95
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "x",
+            "pointer": "/using_gauge_frame_effect_list/1/position/x",
+            "value": -58
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "y",
+            "pointer": "/using_gauge_frame_effect_list/1/position/y",
+            "value": -95
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "x",
+            "pointer": "/using_gauge_frame_effect_list/2/position/x",
+            "value": -58
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "y",
+            "pointer": "/using_gauge_frame_effect_list/2/position/y",
+            "value": -95
+          }
+        ],
+        "resource_ref_count": 4,
+        "resource_refs": [
+          {
+            "contexts": [
+              "encounter"
+            ],
+            "pointer": "/soundIDs/accumulate_list/0",
+            "resource_id": "100_002_00065"
+          },
+          {
+            "contexts": [
+              "encounter"
+            ],
+            "pointer": "/soundIDs/accumulate_list/1",
+            "resource_id": "100_002_00062"
+          },
+          {
+            "contexts": [
+              "encounter"
+            ],
+            "pointer": "/soundIDs/accumulate_list/2",
+            "resource_id": "100_002_00091"
+          },
+          {
+            "contexts": [
+              "encounter"
+            ],
+            "pointer": "/soundIDs/appearance",
+            "resource_id": "000_000_00000"
+          }
+        ]
+      },
+      "sha256": "0c609daaee415fdac3f0b4633166b1010127eadd65885c7bd156263f4c3ded01",
+      "size": 3604
+    },
+    {
+      "container": "files/cache/patch/gui/Battle/gauge/crusader_gauge.mbn",
+      "entry": "crusader_gauge_param_setting.json",
+      "format": "json",
+      "json_context": {
+        "context_scalar_count": 30,
+        "context_scalars": [
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "x",
+            "pointer": "/appearance_effect/position/x",
+            "value": -51
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "y",
+            "pointer": "/appearance_effect/position/y",
+            "value": -105
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "x",
+            "pointer": "/gauge_accumulate_effect_list/0/position/x",
+            "value": -62.5
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "y",
+            "pointer": "/gauge_accumulate_effect_list/0/position/y",
+            "value": -94
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "x",
+            "pointer": "/gauge_accumulate_effect_list/1/position/x",
+            "value": -62.5
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "y",
+            "pointer": "/gauge_accumulate_effect_list/1/position/y",
+            "value": -94
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "x",
+            "pointer": "/gauge_accumulate_effect_list/2/position/x",
+            "value": -62.5
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "y",
+            "pointer": "/gauge_accumulate_effect_list/2/position/y",
+            "value": -94
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "x",
+            "pointer": "/gauge_position_offset/x",
+            "value": 10
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "y",
+            "pointer": "/gauge_position_offset/y",
+            "value": 5
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "x",
+            "pointer": "/second_energy_point_status_icon_setting_info/position/x",
+            "value": 14
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "y",
+            "pointer": "/second_energy_point_status_icon_setting_info/position/y",
+            "value": 0
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "x",
+            "pointer": "/skill_reserve_icon_setting_info/position/x",
+            "value": 42
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "y",
+            "pointer": "/skill_reserve_icon_setting_info/position/y",
+            "value": 0
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "x",
+            "pointer": "/skill_reserving_effect/position/x",
+            "value": -58
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "y",
+            "pointer": "/skill_reserving_effect/position/y",
+            "value": -95
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "x",
+            "pointer": "/skill_select_effect/position/x",
+            "value": -58
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "y",
+            "pointer": "/skill_select_effect/position/y",
+            "value": -95
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "x",
+            "pointer": "/usable_gauge_effect_list/0/position/x",
+            "value": -62.5
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "y",
+            "pointer": "/usable_gauge_effect_list/0/position/y",
+            "value": -94
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "x",
+            "pointer": "/usable_gauge_effect_list/1/position/x",
+            "value": -62.5
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "y",
+            "pointer": "/usable_gauge_effect_list/1/position/y",
+            "value": -94
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "x",
+            "pointer": "/usable_gauge_effect_list/2/position/x",
+            "value": -62.5
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "y",
+            "pointer": "/usable_gauge_effect_list/2/position/y",
+            "value": -94
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "x",
+            "pointer": "/using_gauge_frame_effect_list/0/position/x",
+            "value": -62.5
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "y",
+            "pointer": "/using_gauge_frame_effect_list/0/position/y",
+            "value": -94
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "x",
+            "pointer": "/using_gauge_frame_effect_list/1/position/x",
+            "value": -62.5
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "y",
+            "pointer": "/using_gauge_frame_effect_list/1/position/y",
+            "value": -94
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "x",
+            "pointer": "/using_gauge_frame_effect_list/2/position/x",
+            "value": -62.5
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "y",
+            "pointer": "/using_gauge_frame_effect_list/2/position/y",
+            "value": -94
+          }
+        ],
+        "resource_ref_count": 4,
+        "resource_refs": [
+          {
+            "contexts": [
+              "encounter"
+            ],
+            "pointer": "/soundIDs/accumulate_list/0",
+            "resource_id": "100_002_00065"
+          },
+          {
+            "contexts": [
+              "encounter"
+            ],
+            "pointer": "/soundIDs/accumulate_list/1",
+            "resource_id": "100_002_00062"
+          },
+          {
+            "contexts": [
+              "encounter"
+            ],
+            "pointer": "/soundIDs/accumulate_list/2",
+            "resource_id": "100_002_00091"
+          },
+          {
+            "contexts": [
+              "encounter"
+            ],
+            "pointer": "/soundIDs/appearance",
+            "resource_id": "000_000_00000"
+          }
+        ]
+      },
+      "sha256": "8e251300bfce1bc0bbc27799fe78034e8184cfc2918a617166a34ddf3a0ce53c",
+      "size": 3614
+    },
+    {
+      "container": "files/cache/patch/gui/Battle/gauge/kenki_gauge.mbn",
+      "entry": "kenki_gauge_param_setting.json",
+      "format": "json",
+      "json_context": {
+        "context_scalar_count": 30,
+        "context_scalars": [
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "x",
+            "pointer": "/appearance_effect/position/x",
+            "value": -62.5
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "y",
+            "pointer": "/appearance_effect/position/y",
+            "value": -94
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "x",
+            "pointer": "/gauge_accumulate_effect_list/0/position/x",
+            "value": -62.5
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "y",
+            "pointer": "/gauge_accumulate_effect_list/0/position/y",
+            "value": -94
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "x",
+            "pointer": "/gauge_accumulate_effect_list/1/position/x",
+            "value": -62.5
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "y",
+            "pointer": "/gauge_accumulate_effect_list/1/position/y",
+            "value": -94
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "x",
+            "pointer": "/gauge_accumulate_effect_list/2/position/x",
+            "value": -62.5
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "y",
+            "pointer": "/gauge_accumulate_effect_list/2/position/y",
+            "value": -94
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "x",
+            "pointer": "/gauge_position_offset/x",
+            "value": 10
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "y",
+            "pointer": "/gauge_position_offset/y",
+            "value": 0
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "x",
+            "pointer": "/second_energy_point_status_icon_setting_info/position/x",
+            "value": -4
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "y",
+            "pointer": "/second_energy_point_status_icon_setting_info/position/y",
+            "value": 0
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "x",
+            "pointer": "/skill_reserve_icon_setting_info/position/x",
+            "value": 27
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "y",
+            "pointer": "/skill_reserve_icon_setting_info/position/y",
+            "value": 0
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "x",
+            "pointer": "/skill_reserving_effect/position/x",
+            "value": -58
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "y",
+            "pointer": "/skill_reserving_effect/position/y",
+            "value": -95
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "x",
+            "pointer": "/skill_select_effect/position/x",
+            "value": -58
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "y",
+            "pointer": "/skill_select_effect/position/y",
+            "value": -95
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "x",
+            "pointer": "/usable_gauge_effect_list/0/position/x",
+            "value": -62.5
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "y",
+            "pointer": "/usable_gauge_effect_list/0/position/y",
+            "value": -94
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "x",
+            "pointer": "/usable_gauge_effect_list/1/position/x",
+            "value": -62.5
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "y",
+            "pointer": "/usable_gauge_effect_list/1/position/y",
+            "value": -94
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "x",
+            "pointer": "/usable_gauge_effect_list/2/position/x",
+            "value": -62.5
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "y",
+            "pointer": "/usable_gauge_effect_list/2/position/y",
+            "value": -94
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "x",
+            "pointer": "/using_gauge_frame_effect_list/0/position/x",
+            "value": -62.5
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "y",
+            "pointer": "/using_gauge_frame_effect_list/0/position/y",
+            "value": -94
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "x",
+            "pointer": "/using_gauge_frame_effect_list/1/position/x",
+            "value": -62.5
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "y",
+            "pointer": "/using_gauge_frame_effect_list/1/position/y",
+            "value": -94
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "x",
+            "pointer": "/using_gauge_frame_effect_list/2/position/x",
+            "value": -62.5
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "y",
+            "pointer": "/using_gauge_frame_effect_list/2/position/y",
+            "value": -94
+          }
+        ],
+        "resource_ref_count": 4,
+        "resource_refs": [
+          {
+            "contexts": [
+              "encounter"
+            ],
+            "pointer": "/soundIDs/accumulate_list/0",
+            "resource_id": "100_002_00065"
+          },
+          {
+            "contexts": [
+              "encounter"
+            ],
+            "pointer": "/soundIDs/accumulate_list/1",
+            "resource_id": "100_002_00062"
+          },
+          {
+            "contexts": [
+              "encounter"
+            ],
+            "pointer": "/soundIDs/accumulate_list/2",
+            "resource_id": "100_002_00091"
+          },
+          {
+            "contexts": [
+              "encounter"
+            ],
+            "pointer": "/soundIDs/appearance",
+            "resource_id": "000_000_00000"
+          }
+        ]
+      },
+      "sha256": "b6c76383331e4676aa6d7de3d686b718393e74901ac0fb02a12ee28be68ed172",
+      "size": 3531
+    },
+    {
+      "container": "files/cache/patch/gui/Battle/gauge/rebellion_gauge.mbn",
+      "entry": "rebellion_gauge_param_setting.json",
+      "format": "json",
+      "json_context": {
+        "context_scalar_count": 30,
+        "context_scalars": [
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "x",
+            "pointer": "/appearance_effect/position/x",
+            "value": -72
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "y",
+            "pointer": "/appearance_effect/position/y",
+            "value": -104
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "x",
+            "pointer": "/gauge_accumulate_effect_list/0/position/x",
+            "value": -72
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "y",
+            "pointer": "/gauge_accumulate_effect_list/0/position/y",
+            "value": -105
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "x",
+            "pointer": "/gauge_accumulate_effect_list/1/position/x",
+            "value": -72
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "y",
+            "pointer": "/gauge_accumulate_effect_list/1/position/y",
+            "value": -105
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "x",
+            "pointer": "/gauge_accumulate_effect_list/2/position/x",
+            "value": -122
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "y",
+            "pointer": "/gauge_accumulate_effect_list/2/position/y",
+            "value": -105
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "x",
+            "pointer": "/gauge_position_offset/x",
+            "value": 10
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "y",
+            "pointer": "/gauge_position_offset/y",
+            "value": 0
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "x",
+            "pointer": "/second_energy_point_status_icon_setting_info/position/x",
+            "value": -8
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "y",
+            "pointer": "/second_energy_point_status_icon_setting_info/position/y",
+            "value": 0
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "x",
+            "pointer": "/skill_reserve_icon_setting_info/position/x",
+            "value": 22
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "y",
+            "pointer": "/skill_reserve_icon_setting_info/position/y",
+            "value": 0
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "x",
+            "pointer": "/skill_reserving_effect/position/x",
+            "value": -68
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "y",
+            "pointer": "/skill_reserving_effect/position/y",
+            "value": -105
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "x",
+            "pointer": "/skill_select_effect/position/x",
+            "value": -68
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "y",
+            "pointer": "/skill_select_effect/position/y",
+            "value": -105
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "x",
+            "pointer": "/usable_gauge_effect_list/0/position/x",
+            "value": -72
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "y",
+            "pointer": "/usable_gauge_effect_list/0/position/y",
+            "value": -105
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "x",
+            "pointer": "/usable_gauge_effect_list/1/position/x",
+            "value": -72
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "y",
+            "pointer": "/usable_gauge_effect_list/1/position/y",
+            "value": -105
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "x",
+            "pointer": "/usable_gauge_effect_list/2/position/x",
+            "value": -72
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "y",
+            "pointer": "/usable_gauge_effect_list/2/position/y",
+            "value": -105
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "x",
+            "pointer": "/using_gauge_frame_effect_list/0/position/x",
+            "value": -72
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "y",
+            "pointer": "/using_gauge_frame_effect_list/0/position/y",
+            "value": -105
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "x",
+            "pointer": "/using_gauge_frame_effect_list/1/position/x",
+            "value": -72
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "y",
+            "pointer": "/using_gauge_frame_effect_list/1/position/y",
+            "value": -105
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "x",
+            "pointer": "/using_gauge_frame_effect_list/2/position/x",
+            "value": -72
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "y",
+            "pointer": "/using_gauge_frame_effect_list/2/position/y",
+            "value": -105
+          }
+        ],
+        "resource_ref_count": 4,
+        "resource_refs": [
+          {
+            "contexts": [
+              "encounter"
+            ],
+            "pointer": "/soundIDs/accumulate_list/0",
+            "resource_id": "100_002_00065"
+          },
+          {
+            "contexts": [
+              "encounter"
+            ],
+            "pointer": "/soundIDs/accumulate_list/1",
+            "resource_id": "100_002_00062"
+          },
+          {
+            "contexts": [
+              "encounter"
+            ],
+            "pointer": "/soundIDs/accumulate_list/2",
+            "resource_id": "100_002_00091"
+          },
+          {
+            "contexts": [
+              "encounter"
+            ],
+            "pointer": "/soundIDs/appearance",
+            "resource_id": "000_000_00000"
+          }
+        ]
+      },
+      "sha256": "14e9067e355a2215a09e4f323551b059c8dd6d0293d5d1533f5bff930f48b642",
+      "size": 3716
+    },
+    {
+      "container": "files/cache/patch/gui/Battle/gauge/reiatsu_gauge.mbn",
+      "entry": "reiatsu_gauge_param_setting.json",
+      "format": "json",
+      "json_context": {
+        "context_scalar_count": 30,
+        "context_scalars": [
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "x",
+            "pointer": "/appearance_effect/position/x",
+            "value": -62.5
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "y",
+            "pointer": "/appearance_effect/position/y",
+            "value": -94
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "x",
+            "pointer": "/gauge_accumulate_effect_list/0/position/x",
+            "value": -62.5
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "y",
+            "pointer": "/gauge_accumulate_effect_list/0/position/y",
+            "value": -94
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "x",
+            "pointer": "/gauge_accumulate_effect_list/1/position/x",
+            "value": -62.5
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "y",
+            "pointer": "/gauge_accumulate_effect_list/1/position/y",
+            "value": -94
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "x",
+            "pointer": "/gauge_accumulate_effect_list/2/position/x",
+            "value": -62.5
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "y",
+            "pointer": "/gauge_accumulate_effect_list/2/position/y",
+            "value": -94
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "x",
+            "pointer": "/gauge_position_offset/x",
+            "value": 10
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "y",
+            "pointer": "/gauge_position_offset/y",
+            "value": 0
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "x",
+            "pointer": "/second_energy_point_status_icon_setting_info/position/x",
+            "value": -4
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "y",
+            "pointer": "/second_energy_point_status_icon_setting_info/position/y",
+            "value": 0
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "x",
+            "pointer": "/skill_reserve_icon_setting_info/position/x",
+            "value": 27
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "y",
+            "pointer": "/skill_reserve_icon_setting_info/position/y",
+            "value": 0
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "x",
+            "pointer": "/skill_reserving_effect/position/x",
+            "value": -58
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "y",
+            "pointer": "/skill_reserving_effect/position/y",
+            "value": -95
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "x",
+            "pointer": "/skill_select_effect/position/x",
+            "value": -58
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "y",
+            "pointer": "/skill_select_effect/position/y",
+            "value": -95
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "x",
+            "pointer": "/usable_gauge_effect_list/0/position/x",
+            "value": -62.5
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "y",
+            "pointer": "/usable_gauge_effect_list/0/position/y",
+            "value": -94
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "x",
+            "pointer": "/usable_gauge_effect_list/1/position/x",
+            "value": -62.5
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "y",
+            "pointer": "/usable_gauge_effect_list/1/position/y",
+            "value": -94
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "x",
+            "pointer": "/usable_gauge_effect_list/2/position/x",
+            "value": -62.5
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "y",
+            "pointer": "/usable_gauge_effect_list/2/position/y",
+            "value": -94
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "x",
+            "pointer": "/using_gauge_frame_effect_list/0/position/x",
+            "value": -62.5
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "y",
+            "pointer": "/using_gauge_frame_effect_list/0/position/y",
+            "value": -94
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "x",
+            "pointer": "/using_gauge_frame_effect_list/1/position/x",
+            "value": -62.5
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "y",
+            "pointer": "/using_gauge_frame_effect_list/1/position/y",
+            "value": -94
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "x",
+            "pointer": "/using_gauge_frame_effect_list/2/position/x",
+            "value": -62.5
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "y",
+            "pointer": "/using_gauge_frame_effect_list/2/position/y",
+            "value": -94
+          }
+        ],
+        "resource_ref_count": 4,
+        "resource_refs": [
+          {
+            "contexts": [
+              "encounter"
+            ],
+            "pointer": "/soundIDs/accumulate_list/0",
+            "resource_id": "100_002_00065"
+          },
+          {
+            "contexts": [
+              "encounter"
+            ],
+            "pointer": "/soundIDs/accumulate_list/1",
+            "resource_id": "100_002_00062"
+          },
+          {
+            "contexts": [
+              "encounter"
+            ],
+            "pointer": "/soundIDs/accumulate_list/2",
+            "resource_id": "100_002_00091"
+          },
+          {
+            "contexts": [
+              "encounter"
+            ],
+            "pointer": "/soundIDs/appearance",
+            "resource_id": "000_000_00000"
+          }
+        ]
+      },
+      "sha256": "73695887253191991a00cda5a9a4ced372c304feaf33a4a59b9fd15a91cf4a25",
+      "size": 3583
+    },
+    {
+      "container": "files/cache/patch/gui/Battle/rcb/slot.mbn",
+      "entry": "slot_se_setting.json",
+      "format": "json",
+      "json_context": {
+        "context_scalar_count": 0,
+        "context_scalars": [],
+        "resource_ref_count": 3,
+        "resource_refs": [
+          {
+            "contexts": [
+              "encounter"
+            ],
+            "pointer": "/hit_message/default_se",
+            "resource_id": "100_000_00005"
+          },
+          {
+            "contexts": [
+              "encounter"
+            ],
+            "pointer": "/hit_message/special_se_list/0/production_id",
+            "resource_id": "200_001_00001"
+          },
+          {
+            "contexts": [
+              "encounter",
+              "start"
+            ],
+            "pointer": "/start_slot",
+            "resource_id": "100_000_00006"
+          }
+        ]
+      },
+      "sha256": "f9467e60240fabcbf4bc11d461d4d100d806e714df82d957b6cb2f982e5356ea",
+      "size": 310
+    },
+    {
+      "binary_context": {
+        "contextual_resource_ref_count": 2,
+        "contextual_resource_refs": [
+          {
+            "distance": 26,
+            "keyword_offset": 6573,
+            "nearest_keyword": "battle",
+            "offset": 6599,
+            "resource_id": "200_002_00001"
+          },
+          {
+            "distance": 40,
+            "keyword_offset": 6573,
+            "nearest_keyword": "battle",
+            "offset": 6613,
+            "resource_id": "200_002_00001"
+          }
+        ],
+        "keyword_counts": {
+          "battle": 5,
+          "pos": 17,
+          "position": 17,
+          "start": 3
+        }
+      },
+      "container": "files/cache/patch/gui/Battle/rcb/slot.mbn",
+      "entry": "slot_ui.lua",
+      "format": "lua",
+      "sha256": "7885691ee8a3a081bdfea6735d5553180e4c60b6b5584f4c841dd1be255d1f4a",
+      "size": 9871
+    },
+    {
+      "binary_context": {
+        "contextual_resource_ref_count": 4,
+        "contextual_resource_refs": [
+          {
+            "distance": 19,
+            "keyword_offset": 683,
+            "nearest_keyword": "battle",
+            "offset": 702,
+            "resource_id": "000_000_00000"
+          },
+          {
+            "distance": 13,
+            "keyword_offset": 976,
+            "nearest_keyword": "battle",
+            "offset": 989,
+            "resource_id": "000_000_00001"
+          },
+          {
+            "distance": 19,
+            "keyword_offset": 1311,
+            "nearest_keyword": "battle",
+            "offset": 1330,
+            "resource_id": "000_000_00000"
+          },
+          {
+            "distance": 13,
+            "keyword_offset": 1640,
+            "nearest_keyword": "battle",
+            "offset": 1653,
+            "resource_id": "000_000_00001"
+          }
+        ],
+        "keyword_counts": {
+          "battle": 4
+        }
+      },
+      "container": "files/cache/patch/gui/Battle/stack.mbn",
+      "entry": "battle_token_element.lua",
+      "format": "lua",
+      "sha256": "850d72e80f3d2391d3b3917944a0d5402c27619f9fecce03437e26845a3c8641",
+      "size": 3298
+    },
+    {
+      "binary_context": {
+        "contextual_resource_ref_count": 6,
+        "contextual_resource_refs": [
+          {
+            "distance": 132,
+            "keyword_offset": 4417,
+            "nearest_keyword": "pos",
+            "offset": 4285,
+            "resource_id": "000_000_00000"
+          },
+          {
+            "distance": 132,
+            "keyword_offset": 5425,
+            "nearest_keyword": "pos",
+            "offset": 5293,
+            "resource_id": "000_000_00001"
+          },
+          {
+            "distance": 132,
+            "keyword_offset": 6428,
+            "nearest_keyword": "pos",
+            "offset": 6296,
+            "resource_id": "000_000_00002"
+          },
+          {
+            "distance": 132,
+            "keyword_offset": 7438,
+            "nearest_keyword": "pos",
+            "offset": 7306,
+            "resource_id": "000_000_00003"
+          },
+          {
+            "distance": 132,
+            "keyword_offset": 8442,
+            "nearest_keyword": "pos",
+            "offset": 8310,
+            "resource_id": "000_000_00004"
+          },
+          {
+            "distance": 132,
+            "keyword_offset": 9452,
+            "nearest_keyword": "pos",
+            "offset": 9320,
+            "resource_id": "000_000_00005"
+          }
+        ],
+        "keyword_counts": {
+          "pos": 20,
+          "position": 20
+        }
+      },
+      "container": "files/cache/patch/gui/Equipment.mbn",
+      "entry": "character_growth_skill_list.lua",
+      "format": "lua",
+      "sha256": "ab51f52e8ac13fdf84f077ee30e8897ca3f8aa852f4eb0286aa312fcad536688",
+      "size": 9875
+    },
+    {
+      "binary_context": {
+        "contextual_resource_ref_count": 1,
+        "contextual_resource_refs": [
+          {
+            "distance": 428,
+            "keyword_offset": 5843,
+            "nearest_keyword": "pos",
+            "offset": 6271,
+            "resource_id": "001_001_00002"
+          }
+        ],
+        "keyword_counts": {
+          "battle": 1,
+          "character": 1,
+          "pos": 15,
+          "position": 15
+        }
+      },
+      "container": "files/cache/patch/gui/Equipment.mbn",
+      "entry": "equipment_job_ability_detail_row.lua",
+      "format": "lua",
+      "sha256": "b141b2bce3935eed718cdb5ed04f6d14b23f2fc1d2c903f38c7dbc338f6fa5db",
+      "size": 9997
+    },
+    {
+      "binary_context": {
+        "contextual_resource_ref_count": 2,
+        "contextual_resource_refs": [
+          {
+            "distance": 791,
+            "keyword_offset": 2639,
+            "nearest_keyword": "pos",
+            "offset": 1848,
+            "resource_id": "000_000_00008"
+          },
+          {
+            "distance": 762,
+            "keyword_offset": 2639,
+            "nearest_keyword": "pos",
+            "offset": 1877,
+            "resource_id": "000_000_00008"
+          }
+        ],
+        "keyword_counts": {
+          "pos": 1
+        }
+      },
+      "container": "files/cache/patch/gui/Equipment.mbn",
+      "entry": "event_material_sold_count.lua",
+      "format": "lua",
+      "sha256": "44f8d320601273d02311cfef4838bddc69986fc65ed27088e6880bc2093c7e68",
+      "size": 3050
+    },
+    {
+      "container": "files/cache/patch/gui/Equipment/icon/efc/auxiliary.mbn",
+      "entry": "effect_settings.json",
+      "format": "json",
+      "json_context": {
+        "context_scalar_count": 10,
+        "context_scalars": [
+          {
+            "contexts": [
+              "position"
+            ],
+            "key": "posx",
+            "pointer": "/settings/0/posx",
+            "value": 68.0
+          },
+          {
+            "contexts": [
+              "position"
+            ],
+            "key": "posy",
+            "pointer": "/settings/0/posy",
+            "value": 65.0
+          },
+          {
+            "contexts": [
+              "position"
+            ],
+            "key": "posx",
+            "pointer": "/settings/1/posx",
+            "value": 60.0
+          },
+          {
+            "contexts": [
+              "position"
+            ],
+            "key": "posy",
+            "pointer": "/settings/1/posy",
+            "value": 30.0
+          },
+          {
+            "contexts": [
+              "position"
+            ],
+            "key": "posx",
+            "pointer": "/settings/2/posx",
+            "value": 23.0
+          },
+          {
+            "contexts": [
+              "position"
+            ],
+            "key": "posy",
+            "pointer": "/settings/2/posy",
+            "value": 65.0
+          },
+          {
+            "contexts": [
+              "position"
+            ],
+            "key": "posx",
+            "pointer": "/settings/3/posx",
+            "value": 24.0
+          },
+          {
+            "contexts": [
+              "position"
+            ],
+            "key": "posy",
+            "pointer": "/settings/3/posy",
+            "value": 23.0
+          },
+          {
+            "contexts": [
+              "position"
+            ],
+            "key": "posx",
+            "pointer": "/settings/4/posx",
+            "value": 64.0
+          },
+          {
+            "contexts": [
+              "position"
+            ],
+            "key": "posy",
+            "pointer": "/settings/4/posy",
+            "value": 17.0
+          }
+        ],
+        "resource_ref_count": 0,
+        "resource_refs": []
+      },
+      "sha256": "0fbdf8c263d7d54f7767fe99538fa4b1fc3be0f271f8c345056f7f82db690c44",
+      "size": 2256
+    },
+    {
+      "binary_context": {
+        "contextual_resource_ref_count": 1,
+        "contextual_resource_refs": [
+          {
+            "distance": 13,
+            "keyword_offset": 458,
+            "nearest_keyword": "battle",
+            "offset": 471,
+            "resource_id": "001_000_00001"
+          }
+        ],
+        "keyword_counts": {
+          "battle": 1,
+          "pos": 1,
+          "position": 1
+        }
+      },
+      "container": "files/cache/patch/gui/HUD/field_gimmick_battle_token.mbn",
+      "entry": "field_gimmick_battle_token_icon.lua",
+      "format": "lua",
+      "sha256": "4a3248c0a02891500a0172c597fa71026a8a7f5e2573565d594a39799c5ac6e9",
+      "size": 1416
+    },
+    {
+      "binary_context": {
+        "contextual_resource_ref_count": 1,
+        "contextual_resource_refs": [
+          {
+            "distance": 85,
+            "keyword_offset": 2739,
+            "nearest_keyword": "pos",
+            "offset": 2654,
+            "resource_id": "001_002_00001"
+          }
+        ],
+        "keyword_counts": {
+          "pos": 10,
+          "position": 10
+        }
+      },
+      "container": "files/cache/patch/gui/activity.mbn",
+      "entry": "mercenaryActivityInfo.lua",
+      "format": "lua",
+      "sha256": "25a2e59acaf6024e0504bee94024d9ec6c60a4f7a6573f9ee7f459a07d16e749",
+      "size": 6175
+    },
+    {
+      "binary_context": {
+        "contextual_resource_ref_count": 0,
+        "contextual_resource_refs": [],
+        "keyword_counts": {
+          "pos": 8,
+          "position": 8,
+          "tutorial": 1
+        }
+      },
+      "container": "files/cache/patch/gui/alt_money/material/material_list.mbn",
+      "entry": "MaterialListTutorialNotifyWindow.lua",
+      "format": "lua",
+      "sha256": "21306958dadff4fbd3a62ccda4155e78f71628eea66c7763b39cbabf15464be2",
+      "size": 3886
+    },
+    {
+      "binary_context": {
+        "contextual_resource_ref_count": 2,
+        "contextual_resource_refs": [
+          {
+            "distance": 160,
+            "keyword_offset": 1654,
+            "nearest_keyword": "pos",
+            "offset": 1494,
+            "resource_id": "000_000_00001"
+          },
+          {
+            "distance": 146,
+            "keyword_offset": 1654,
+            "nearest_keyword": "pos",
+            "offset": 1508,
+            "resource_id": "000_000_00001"
+          }
+        ],
+        "keyword_counts": {
+          "pos": 12,
+          "position": 12
+        }
+      },
+      "container": "files/cache/patch/gui/artifact.mbn",
+      "entry": "artifact_icon.lua",
+      "format": "lua",
+      "sha256": "546e4a70399d58a93d09efc8f84ca0f8b0b746778315514ab12fe26b731d4113",
+      "size": 9727
+    },
+    {
+      "binary_context": {
+        "contextual_resource_ref_count": 6,
+        "contextual_resource_refs": [
+          {
+            "distance": 121,
+            "keyword_offset": 7133,
+            "nearest_keyword": "pos",
+            "offset": 7012,
+            "resource_id": "000_000_00000"
+          },
+          {
+            "distance": 121,
+            "keyword_offset": 8184,
+            "nearest_keyword": "pos",
+            "offset": 8063,
+            "resource_id": "000_000_00001"
+          },
+          {
+            "distance": 144,
+            "keyword_offset": 9258,
+            "nearest_keyword": "pos",
+            "offset": 9114,
+            "resource_id": "000_000_00002"
+          },
+          {
+            "distance": 121,
+            "keyword_offset": 10309,
+            "nearest_keyword": "pos",
+            "offset": 10188,
+            "resource_id": "000_000_00003"
+          },
+          {
+            "distance": 144,
+            "keyword_offset": 11383,
+            "nearest_keyword": "pos",
+            "offset": 11239,
+            "resource_id": "000_000_00004"
+          },
+          {
+            "distance": 144,
+            "keyword_offset": 12457,
+            "nearest_keyword": "pos",
+            "offset": 12313,
+            "resource_id": "000_000_00005"
+          }
+        ],
+        "keyword_counts": {
+          "character": 10,
+          "pos": 20,
+          "position": 20
+        }
+      },
+      "container": "files/cache/patch/gui/character_growth.mbn",
+      "entry": "character_growth_pop_window.lua",
+      "format": "lua",
+      "sha256": "c4a37559103e3a3ebe1a9fa7247d1d59676f01411db9b1b4bbd79b14deaee18f",
+      "size": 12916
+    },
+    {
+      "binary_context": {
+        "contextual_resource_ref_count": 1,
+        "contextual_resource_refs": [
+          {
+            "distance": 806,
+            "keyword_offset": 1251,
+            "nearest_keyword": "pos",
+            "offset": 2057,
+            "resource_id": "002_001_10000"
+          }
+        ],
+        "keyword_counts": {
+          "pos": 14,
+          "position": 14
+        }
+      },
+      "container": "files/cache/patch/gui/clan/room/inventory.mbn",
+      "entry": "ClanRoomInventoryItem.lua",
+      "format": "lua",
+      "sha256": "83ee2baf5b451311545eee2eb7979f8b112ff5d3d6595dc69b9246269c64d40e",
+      "size": 12652
+    },
+    {
+      "binary_context": {
+        "contextual_resource_ref_count": 1,
+        "contextual_resource_refs": [
+          {
+            "distance": 922,
+            "keyword_offset": 5671,
+            "nearest_keyword": "pos",
+            "offset": 6593,
+            "resource_id": "002_001_10000"
+          }
+        ],
+        "keyword_counts": {
+          "pos": 17,
+          "position": 17
+        }
+      },
+      "container": "files/cache/patch/gui/clan/room/inventory.mbn",
+      "entry": "ClanRoomInventoryPreviewWindow.lua",
+      "format": "lua",
+      "sha256": "b06aa80d9ae05f32b2a75ab41fdbc5755e42779387d0509f5834a4619b3cb54a",
+      "size": 14424
+    },
+    {
+      "binary_context": {
+        "contextual_resource_ref_count": 1,
+        "contextual_resource_refs": [
+          {
+            "distance": 925,
+            "keyword_offset": 8004,
+            "nearest_keyword": "pos",
+            "offset": 8929,
+            "resource_id": "002_001_10000"
+          }
+        ],
+        "keyword_counts": {
+          "pos": 39,
+          "position": 39,
+          "quest": 8
+        }
+      },
+      "container": "files/cache/patch/gui/clan/room/shop.mbn",
+      "entry": "ClanRoomShopConfirmWindow.lua",
+      "format": "lua",
+      "sha256": "79f117b8017ef55502da619b04654eb8e0d2fbfefce1022ebff3f447f8cf77a4",
+      "size": 30529
+    },
+    {
+      "binary_context": {
+        "contextual_resource_ref_count": 1,
+        "contextual_resource_refs": [
+          {
+            "distance": 808,
+            "keyword_offset": 2109,
+            "nearest_keyword": "pos",
+            "offset": 2917,
+            "resource_id": "002_001_10000"
+          }
+        ],
+        "keyword_counts": {
+          "pos": 31,
+          "position": 31,
+          "quest": 4
+        }
+      },
+      "container": "files/cache/patch/gui/clan/room/shop.mbn",
+      "entry": "ClanRoomShopItem.lua",
+      "format": "lua",
+      "sha256": "2309548c8b229e9190887000684047e8f1800d17b2ec21b91ff4b2d0e03bae4b",
+      "size": 20095
+    },
+    {
+      "binary_context": {
+        "contextual_resource_ref_count": 1,
+        "contextual_resource_refs": [
+          {
+            "distance": 922,
+            "keyword_offset": 5911,
+            "nearest_keyword": "pos",
+            "offset": 6833,
+            "resource_id": "002_001_10000"
+          }
+        ],
+        "keyword_counts": {
+          "pos": 17,
+          "position": 17
+        }
+      },
+      "container": "files/cache/patch/gui/clan/room/shop.mbn",
+      "entry": "ClanRoomShopPreviewWindow.lua",
+      "format": "lua",
+      "sha256": "5462d30e6ff1905b31d796190b6f3335947acf7dc03d2bdddb3533734932e873",
+      "size": 12916
+    },
+    {
+      "binary_context": {
+        "contextual_resource_ref_count": 1,
+        "contextual_resource_refs": [
+          {
+            "distance": 663,
+            "keyword_offset": 5303,
+            "nearest_keyword": "pos",
+            "offset": 4640,
+            "resource_id": "002_001_10000"
+          }
+        ],
+        "keyword_counts": {
+          "pos": 16,
+          "position": 16
+        }
+      },
+      "container": "files/cache/patch/gui/clan/room/shop.mbn",
+      "entry": "ClanRoomShopResultWindow.lua",
+      "format": "lua",
+      "sha256": "f197e20def15d6bc782845ab66bd6add719fe107480351f2f290046b1bed33c0",
+      "size": 9941
+    },
+    {
+      "binary_context": {
+        "contextual_resource_ref_count": 1,
+        "contextual_resource_refs": [
+          {
+            "distance": 183,
+            "keyword_offset": 8543,
+            "nearest_keyword": "pos",
+            "offset": 8360,
+            "resource_id": "001_001_00001"
+          }
+        ],
+        "keyword_counts": {
+          "pos": 10,
+          "position": 10
+        }
+      },
+      "container": "files/cache/patch/gui/clan/skill/layout.mbn",
+      "entry": "active_skill_record.lua",
+      "format": "lua",
+      "sha256": "59f360c9599f89c15551db01de110487b0560327e6da012573e210cddeceea21",
+      "size": 11470
+    },
+    {
+      "binary_context": {
+        "contextual_resource_ref_count": 1,
+        "contextual_resource_refs": [
+          {
+            "distance": 107,
+            "keyword_offset": 5176,
+            "nearest_keyword": "pos",
+            "offset": 5069,
+            "resource_id": "001_001_00001"
+          }
+        ],
+        "keyword_counts": {
+          "battle": 1,
+          "pos": 28,
+          "position": 28
+        }
+      },
+      "container": "files/cache/patch/gui/clan/skill/layout.mbn",
+      "entry": "clan_skill_active_detail_window.lua",
+      "format": "lua",
+      "sha256": "d598357fc864e3fce13c4fb73611a2a57de6b10a9b14ce1a5bd49d3177db41eb",
+      "size": 19580
+    },
+    {
+      "binary_context": {
+        "contextual_resource_ref_count": 1,
+        "contextual_resource_refs": [
+          {
+            "distance": 107,
+            "keyword_offset": 5138,
+            "nearest_keyword": "pos",
+            "offset": 5031,
+            "resource_id": "001_001_00001"
+          }
+        ],
+        "keyword_counts": {
+          "battle": 1,
+          "pos": 18,
+          "position": 18
+        }
+      },
+      "container": "files/cache/patch/gui/clan/skill/layout.mbn",
+      "entry": "clan_skill_error_window.lua",
+      "format": "lua",
+      "sha256": "78aabba8e8bb52b4768bcb11537a554f75a0066627b7ae8c7fe0cbb025d18dc1",
+      "size": 12780
+    },
+    {
+      "binary_context": {
+        "contextual_resource_ref_count": 2,
+        "contextual_resource_refs": [
+          {
+            "distance": 3344,
+            "keyword_offset": 8568,
+            "nearest_keyword": "battle",
+            "offset": 5224,
+            "resource_id": "001_001_01011"
+          },
+          {
+            "distance": 1000,
+            "keyword_offset": 8568,
+            "nearest_keyword": "battle",
+            "offset": 7568,
+            "resource_id": "001_001_01011"
+          }
+        ],
+        "keyword_counts": {
+          "battle": 2,
+          "field": 1,
+          "pos": 1,
+          "position": 1
+        }
+      },
+      "container": "files/cache/patch/gui/clan/skill/layout.mbn",
+      "entry": "clan_skill_icon.lua",
+      "format": "lua",
+      "sha256": "621635cf8f03a8aff67aa17b07041645ce7ab6b94fa52a4b75d1908e1e27e5cb",
+      "size": 9243
+    },
+    {
+      "binary_context": {
+        "contextual_resource_ref_count": 1,
+        "contextual_resource_refs": [
+          {
+            "distance": 183,
+            "keyword_offset": 2281,
+            "nearest_keyword": "pos",
+            "offset": 2098,
+            "resource_id": "001_001_00001"
+          }
+        ],
+        "keyword_counts": {
+          "pos": 3,
+          "position": 3
+        }
+      },
+      "container": "files/cache/patch/gui/clan/skill/layout.mbn",
+      "entry": "confirm_inheritance_record.lua",
+      "format": "lua",
+      "sha256": "8475fa8fad834d747ae0cb0723746755d7f02a0bd7f1733f27d183ae9f1d3b04",
+      "size": 5170
+    },
+    {
+      "binary_context": {
+        "contextual_resource_ref_count": 2,
+        "contextual_resource_refs": [
+          {
+            "distance": 95,
+            "keyword_offset": 1327,
+            "nearest_keyword": "pos",
+            "offset": 1232,
+            "resource_id": "000_000_00001"
+          },
+          {
+            "distance": 74,
+            "keyword_offset": 1327,
+            "nearest_keyword": "pos",
+            "offset": 1253,
+            "resource_id": "000_000_00001"
+          }
+        ],
+        "keyword_counts": {
+          "pos": 8,
+          "position": 8
+        }
+      },
+      "container": "files/cache/patch/gui/emblem.mbn",
+      "entry": "emblem_icon.lua",
+      "format": "lua",
+      "sha256": "434c9edd4fdaf08e6bee62b33228153baef8f924bcc129b1553e53489a4e53cb",
+      "size": 4225
+    },
+    {
+      "binary_context": {
+        "contextual_resource_ref_count": 3,
+        "contextual_resource_refs": [
+          {
+            "distance": 110,
+            "keyword_offset": 653,
+            "nearest_keyword": "pos",
+            "offset": 543,
+            "resource_id": "000_000_00000"
+          },
+          {
+            "distance": 84,
+            "keyword_offset": 653,
+            "nearest_keyword": "pos",
+            "offset": 569,
+            "resource_id": "000_000_00000"
+          },
+          {
+            "distance": 140,
+            "keyword_offset": 11548,
+            "nearest_keyword": "pos",
+            "offset": 11408,
+            "resource_id": "000_000_00001"
+          }
+        ],
+        "keyword_counts": {
+          "pos": 77,
+          "position": 77
+        }
+      },
+      "container": "files/cache/patch/gui/gacha.mbn",
+      "entry": "box_gacha_detail.lua",
+      "format": "lua",
+      "sha256": "b9ee72d369d69d60a968dbd5099fa044e1d78b136688b6f1108281146ca2a9a3",
+      "size": 45459
+    },
+    {
+      "container": "files/cache/patch/gui/menu/top/DamageRanking.mbn",
+      "entry": "RecordUIConfig.json",
+      "format": "json",
+      "json_context": {
+        "context_scalar_count": 7,
+        "context_scalars": [
+          {
+            "contexts": [
+              "position"
+            ],
+            "key": "name_label_adjust_pos_y",
+            "pointer": "/punctuation/0/name_label_adjust_pos_y",
+            "value": 7
+          },
+          {
+            "contexts": [
+              "position"
+            ],
+            "key": "name_label_adjust_pos_y",
+            "pointer": "/punctuation/1/name_label_adjust_pos_y",
+            "value": 7
+          },
+          {
+            "contexts": [
+              "position"
+            ],
+            "key": "name_label_adjust_pos_y",
+            "pointer": "/punctuation/2/name_label_adjust_pos_y",
+            "value": 7
+          },
+          {
+            "contexts": [
+              "position"
+            ],
+            "key": "name_label_adjust_pos_y",
+            "pointer": "/punctuation/3/name_label_adjust_pos_y",
+            "value": 5
+          },
+          {
+            "contexts": [
+              "position"
+            ],
+            "key": "name_label_adjust_pos_y",
+            "pointer": "/punctuation/4/name_label_adjust_pos_y",
+            "value": 5
+          },
+          {
+            "contexts": [
+              "position"
+            ],
+            "key": "name_label_adjust_pos_y",
+            "pointer": "/punctuation/5/name_label_adjust_pos_y",
+            "value": 5
+          },
+          {
+            "contexts": [
+              "position"
+            ],
+            "key": "name_label_adjust_pos_y",
+            "pointer": "/punctuation/6/name_label_adjust_pos_y",
+            "value": 5
+          }
+        ],
+        "resource_ref_count": 0,
+        "resource_refs": []
+      },
+      "sha256": "00874f53d6b43a8af64e744c67685c2e3dcc0c40fde6c9d3642b49f00368dc0e",
+      "size": 2673
+    },
+    {
+      "container": "files/cache/patch/gui/menu/top/ranking.mbn",
+      "entry": "RecordCommonUIConfig.json",
+      "format": "json",
+      "json_context": {
+        "context_scalar_count": 40,
+        "context_scalars": [
+          {
+            "contexts": [
+              "position"
+            ],
+            "key": "face_icon_adjust_pos_x",
+            "pointer": "/punctuation/0/face_icon_adjust_pos_x",
+            "value": 203
+          },
+          {
+            "contexts": [
+              "position"
+            ],
+            "key": "face_icon_adjust_pos_y",
+            "pointer": "/punctuation/0/face_icon_adjust_pos_y",
+            "value": 86
+          },
+          {
+            "contexts": [
+              "position"
+            ],
+            "key": "lower_label_adjust_pos_y",
+            "pointer": "/punctuation/0/lower_label_adjust_pos_y",
+            "value": 18
+          },
+          {
+            "contexts": [
+              "position"
+            ],
+            "key": "name_label_adjust_pos_x",
+            "pointer": "/punctuation/0/name_label_adjust_pos_x",
+            "value": 270
+          },
+          {
+            "contexts": [
+              "position"
+            ],
+            "key": "pick_up_face_icon_adjust_pos_x",
+            "pointer": "/punctuation/0/pick_up_face_icon_adjust_pos_x",
+            "value": 200
+          },
+          {
+            "contexts": [
+              "position"
+            ],
+            "key": "face_icon_adjust_pos_x",
+            "pointer": "/punctuation/1/face_icon_adjust_pos_x",
+            "value": 203
+          },
+          {
+            "contexts": [
+              "position"
+            ],
+            "key": "face_icon_adjust_pos_y",
+            "pointer": "/punctuation/1/face_icon_adjust_pos_y",
+            "value": 86
+          },
+          {
+            "contexts": [
+              "position"
+            ],
+            "key": "lower_label_adjust_pos_y",
+            "pointer": "/punctuation/1/lower_label_adjust_pos_y",
+            "value": 15
+          },
+          {
+            "contexts": [
+              "position"
+            ],
+            "key": "name_label_adjust_pos_x",
+            "pointer": "/punctuation/1/name_label_adjust_pos_x",
+            "value": 270
+          },
+          {
+            "contexts": [
+              "position"
+            ],
+            "key": "pick_up_face_icon_adjust_pos_x",
+            "pointer": "/punctuation/1/pick_up_face_icon_adjust_pos_x",
+            "value": 200
+          },
+          {
+            "contexts": [
+              "position"
+            ],
+            "key": "face_icon_adjust_pos_x",
+            "pointer": "/punctuation/2/face_icon_adjust_pos_x",
+            "value": 203
+          },
+          {
+            "contexts": [
+              "position"
+            ],
+            "key": "face_icon_adjust_pos_y",
+            "pointer": "/punctuation/2/face_icon_adjust_pos_y",
+            "value": 86
+          },
+          {
+            "contexts": [
+              "position"
+            ],
+            "key": "lower_label_adjust_pos_y",
+            "pointer": "/punctuation/2/lower_label_adjust_pos_y",
+            "value": 15
+          },
+          {
+            "contexts": [
+              "position"
+            ],
+            "key": "name_label_adjust_pos_x",
+            "pointer": "/punctuation/2/name_label_adjust_pos_x",
+            "value": 270
+          },
+          {
+            "contexts": [
+              "position"
+            ],
+            "key": "pick_up_face_icon_adjust_pos_x",
+            "pointer": "/punctuation/2/pick_up_face_icon_adjust_pos_x",
+            "value": 200
+          },
+          {
+            "contexts": [
+              "position"
+            ],
+            "key": "face_icon_adjust_pos_x",
+            "pointer": "/punctuation/3/face_icon_adjust_pos_x",
+            "value": 203
+          },
+          {
+            "contexts": [
+              "position"
+            ],
+            "key": "face_icon_adjust_pos_y",
+            "pointer": "/punctuation/3/face_icon_adjust_pos_y",
+            "value": 86
+          },
+          {
+            "contexts": [
+              "position"
+            ],
+            "key": "lower_label_adjust_pos_y",
+            "pointer": "/punctuation/3/lower_label_adjust_pos_y",
+            "value": 15
+          },
+          {
+            "contexts": [
+              "position"
+            ],
+            "key": "name_label_adjust_pos_x",
+            "pointer": "/punctuation/3/name_label_adjust_pos_x",
+            "value": 270
+          },
+          {
+            "contexts": [
+              "position"
+            ],
+            "key": "pick_up_face_icon_adjust_pos_x",
+            "pointer": "/punctuation/3/pick_up_face_icon_adjust_pos_x",
+            "value": 200
+          },
+          {
+            "contexts": [
+              "position"
+            ],
+            "key": "face_icon_adjust_pos_x",
+            "pointer": "/punctuation/4/face_icon_adjust_pos_x",
+            "value": 197
+          },
+          {
+            "contexts": [
+              "position"
+            ],
+            "key": "face_icon_adjust_pos_y",
+            "pointer": "/punctuation/4/face_icon_adjust_pos_y",
+            "value": 68
+          },
+          {
+            "contexts": [
+              "position"
+            ],
+            "key": "lower_label_adjust_pos_y",
+            "pointer": "/punctuation/4/lower_label_adjust_pos_y",
+            "value": 7
+          },
+          {
+            "contexts": [
+              "position"
+            ],
+            "key": "name_label_adjust_pos_x",
+            "pointer": "/punctuation/4/name_label_adjust_pos_x",
+            "value": 260
+          },
+          {
+            "contexts": [
+              "position"
+            ],
+            "key": "pick_up_face_icon_adjust_pos_x",
+            "pointer": "/punctuation/4/pick_up_face_icon_adjust_pos_x",
+            "value": 197
+          },
+          {
+            "contexts": [
+              "position"
+            ],
+            "key": "face_icon_adjust_pos_x",
+            "pointer": "/punctuation/5/face_icon_adjust_pos_x",
+            "value": 198
+          },
+          {
+            "contexts": [
+              "position"
+            ],
+            "key": "face_icon_adjust_pos_y",
+            "pointer": "/punctuation/5/face_icon_adjust_pos_y",
+            "value": 65
+          },
+          {
+            "contexts": [
+              "position"
+            ],
+            "key": "lower_label_adjust_pos_y",
+            "pointer": "/punctuation/5/lower_label_adjust_pos_y",
+            "value": 7
+          },
+          {
+            "contexts": [
+              "position"
+            ],
+            "key": "name_label_adjust_pos_x",
+            "pointer": "/punctuation/5/name_label_adjust_pos_x",
+            "value": 260
+          },
+          {
+            "contexts": [
+              "position"
+            ],
+            "key": "pick_up_face_icon_adjust_pos_x",
+            "pointer": "/punctuation/5/pick_up_face_icon_adjust_pos_x",
+            "value": 197
+          },
+          {
+            "contexts": [
+              "position"
+            ],
+            "key": "face_icon_adjust_pos_x",
+            "pointer": "/punctuation/6/face_icon_adjust_pos_x",
+            "value": 197
+          },
+          {
+            "contexts": [
+              "position"
+            ],
+            "key": "face_icon_adjust_pos_y",
+            "pointer": "/punctuation/6/face_icon_adjust_pos_y",
+            "value": 65
+          },
+          {
+            "contexts": [
+              "position"
+            ],
+            "key": "lower_label_adjust_pos_y",
+            "pointer": "/punctuation/6/lower_label_adjust_pos_y",
+            "value": 7
+          },
+          {
+            "contexts": [
+              "position"
+            ],
+            "key": "name_label_adjust_pos_x",
+            "pointer": "/punctuation/6/name_label_adjust_pos_x",
+            "value": 260
+          },
+          {
+            "contexts": [
+              "position"
+            ],
+            "key": "pick_up_face_icon_adjust_pos_x",
+            "pointer": "/punctuation/6/pick_up_face_icon_adjust_pos_x",
+            "value": 197
+          },
+          {
+            "contexts": [
+              "position"
+            ],
+            "key": "face_icon_adjust_pos_x",
+            "pointer": "/punctuation/7/face_icon_adjust_pos_x",
+            "value": 197
+          },
+          {
+            "contexts": [
+              "position"
+            ],
+            "key": "face_icon_adjust_pos_y",
+            "pointer": "/punctuation/7/face_icon_adjust_pos_y",
+            "value": 65
+          },
+          {
+            "contexts": [
+              "position"
+            ],
+            "key": "lower_label_adjust_pos_y",
+            "pointer": "/punctuation/7/lower_label_adjust_pos_y",
+            "value": 7
+          },
+          {
+            "contexts": [
+              "position"
+            ],
+            "key": "name_label_adjust_pos_x",
+            "pointer": "/punctuation/7/name_label_adjust_pos_x",
+            "value": 260
+          },
+          {
+            "contexts": [
+              "position"
+            ],
+            "key": "pick_up_face_icon_adjust_pos_x",
+            "pointer": "/punctuation/7/pick_up_face_icon_adjust_pos_x",
+            "value": 197
+          }
+        ],
+        "resource_ref_count": 0,
+        "resource_refs": []
+      },
+      "sha256": "ce6f246537b06d85cf7d687f0d1b276c11b69e90af9cc76f7cc79ac180160669",
+      "size": 4393
+    },
+    {
+      "container": "files/cache/patch/gui/menu/top/ranking/DamageRanking.mbn",
+      "entry": "RecordUIConfig.json",
+      "format": "json",
+      "json_context": {
+        "context_scalar_count": 7,
+        "context_scalars": [
+          {
+            "contexts": [
+              "position"
+            ],
+            "key": "name_label_adjust_pos_y",
+            "pointer": "/punctuation/0/name_label_adjust_pos_y",
+            "value": 7
+          },
+          {
+            "contexts": [
+              "position"
+            ],
+            "key": "name_label_adjust_pos_y",
+            "pointer": "/punctuation/1/name_label_adjust_pos_y",
+            "value": 7
+          },
+          {
+            "contexts": [
+              "position"
+            ],
+            "key": "name_label_adjust_pos_y",
+            "pointer": "/punctuation/2/name_label_adjust_pos_y",
+            "value": 7
+          },
+          {
+            "contexts": [
+              "position"
+            ],
+            "key": "name_label_adjust_pos_y",
+            "pointer": "/punctuation/3/name_label_adjust_pos_y",
+            "value": 5
+          },
+          {
+            "contexts": [
+              "position"
+            ],
+            "key": "name_label_adjust_pos_y",
+            "pointer": "/punctuation/4/name_label_adjust_pos_y",
+            "value": 5
+          },
+          {
+            "contexts": [
+              "position"
+            ],
+            "key": "name_label_adjust_pos_y",
+            "pointer": "/punctuation/5/name_label_adjust_pos_y",
+            "value": 5
+          },
+          {
+            "contexts": [
+              "position"
+            ],
+            "key": "name_label_adjust_pos_y",
+            "pointer": "/punctuation/6/name_label_adjust_pos_y",
+            "value": 5
+          }
+        ],
+        "resource_ref_count": 0,
+        "resource_refs": []
+      },
+      "sha256": "52309f77a1a7a2298be77755e0ac5effa2bbe80f33d45b55bf545df5367ac596",
+      "size": 2673
+    },
+    {
+      "binary_context": {
+        "contextual_resource_ref_count": 2,
+        "contextual_resource_refs": [
+          {
+            "distance": 23,
+            "keyword_offset": 2255,
+            "nearest_keyword": "quest",
+            "offset": 2278,
+            "resource_id": "000_000_00000"
+          },
+          {
+            "distance": 43,
+            "keyword_offset": 2255,
+            "nearest_keyword": "quest",
+            "offset": 2298,
+            "resource_id": "000_000_00000"
+          }
+        ],
+        "keyword_counts": {
+          "pos": 7,
+          "position": 7,
+          "quest": 10
+        }
+      },
+      "container": "files/cache/patch/gui/quest/board.mbn",
+      "entry": "guiQuestAcceptNextStampRewardNotice.lua",
+      "format": "lua",
+      "sha256": "23595bac96ac559ea68bed8c8186dc5180665c4525baad44c69d35020c27e17d",
+      "size": 3873
+    },
+    {
+      "binary_context": {
+        "contextual_resource_ref_count": 2,
+        "contextual_resource_refs": [
+          {
+            "distance": 23,
+            "keyword_offset": 5474,
+            "nearest_keyword": "quest",
+            "offset": 5497,
+            "resource_id": "000_000_00000"
+          },
+          {
+            "distance": 43,
+            "keyword_offset": 5474,
+            "nearest_keyword": "quest",
+            "offset": 5517,
+            "resource_id": "000_000_00000"
+          }
+        ],
+        "keyword_counts": {
+          "battle": 3,
+          "pos": 2,
+          "position": 2,
+          "quest": 39
+        }
+      },
+      "container": "files/cache/patch/gui/quest/board.mbn",
+      "entry": "guiQuestBoardListItem.lua",
+      "format": "lua",
+      "sha256": "735f93536e7c0c81097d659c2e0c25372245acc9b36bcc468552da9216a1367b",
+      "size": 24868
+    },
+    {
+      "binary_context": {
+        "contextual_resource_ref_count": 2,
+        "contextual_resource_refs": [
+          {
+            "distance": 23,
+            "keyword_offset": 3340,
+            "nearest_keyword": "quest",
+            "offset": 3363,
+            "resource_id": "000_000_00000"
+          },
+          {
+            "distance": 43,
+            "keyword_offset": 3340,
+            "nearest_keyword": "quest",
+            "offset": 3383,
+            "resource_id": "000_000_00000"
+          }
+        ],
+        "keyword_counts": {
+          "pos": 4,
+          "position": 4,
+          "quest": 11
+        }
+      },
+      "container": "files/cache/patch/gui/quest/board.mbn",
+      "entry": "guiQuestChapterListItem.lua",
+      "format": "lua",
+      "sha256": "1d33f7621404890de124d98f4e1e4410e6056eb6df6036707d6a86b57bf07280",
+      "size": 7735
+    },
+    {
+      "binary_context": {
+        "contextual_resource_ref_count": 2,
+        "contextual_resource_refs": [
+          {
+            "distance": 23,
+            "keyword_offset": 3686,
+            "nearest_keyword": "quest",
+            "offset": 3709,
+            "resource_id": "000_000_00000"
+          },
+          {
+            "distance": 43,
+            "keyword_offset": 3686,
+            "nearest_keyword": "quest",
+            "offset": 3729,
+            "resource_id": "000_000_00000"
+          }
+        ],
+        "keyword_counts": {
+          "pos": 2,
+          "position": 2,
+          "quest": 23
+        }
+      },
+      "container": "files/cache/patch/gui/quest/board.mbn",
+      "entry": "guiQuestChapterRecordBanner.lua",
+      "format": "lua",
+      "sha256": "275070d38a3945e1afe35738e72f933279c532e128a118ddc71b90122156c823",
+      "size": 8527
+    },
+    {
+      "binary_context": {
+        "contextual_resource_ref_count": 2,
+        "contextual_resource_refs": [
+          {
+            "distance": 23,
+            "keyword_offset": 5750,
+            "nearest_keyword": "quest",
+            "offset": 5773,
+            "resource_id": "000_000_00000"
+          },
+          {
+            "distance": 43,
+            "keyword_offset": 5750,
+            "nearest_keyword": "quest",
+            "offset": 5793,
+            "resource_id": "000_000_00000"
+          }
+        ],
+        "keyword_counts": {
+          "pos": 5,
+          "position": 5,
+          "quest": 23
+        }
+      },
+      "container": "files/cache/patch/gui/quest/board.mbn",
+      "entry": "guiQuestChapterRecordGauge.lua",
+      "format": "lua",
+      "sha256": "dc3347239f29bf87ed0c0ca07b0a4d7807f5da114c9dbebcb1ff0ac48467c87b",
+      "size": 10803
+    },
+    {
+      "binary_context": {
+        "contextual_resource_ref_count": 2,
+        "contextual_resource_refs": [
+          {
+            "distance": 23,
+            "keyword_offset": 4760,
+            "nearest_keyword": "quest",
+            "offset": 4783,
+            "resource_id": "000_000_00000"
+          },
+          {
+            "distance": 43,
+            "keyword_offset": 4760,
+            "nearest_keyword": "quest",
+            "offset": 4803,
+            "resource_id": "000_000_00000"
+          }
+        ],
+        "keyword_counts": {
+          "pos": 4,
+          "position": 4,
+          "quest": 20
+        }
+      },
+      "container": "files/cache/patch/gui/quest/board.mbn",
+      "entry": "guiQuestChapterRecordNormal.lua",
+      "format": "lua",
+      "sha256": "d5e1d129c60f525d3c9e75b8e3ce1037239fb05d73347089f22da4c56eca0bc5",
+      "size": 9621
+    },
+    {
+      "binary_context": {
+        "contextual_resource_ref_count": 2,
+        "contextual_resource_refs": [
+          {
+            "distance": 82,
+            "keyword_offset": 930,
+            "nearest_keyword": "pos",
+            "offset": 848,
+            "resource_id": "001_002_00001"
+          },
+          {
+            "distance": 81,
+            "keyword_offset": 1868,
+            "nearest_keyword": "pos",
+            "offset": 1787,
+            "resource_id": "001_003_00001"
+          }
+        ],
+        "keyword_counts": {
+          "battle": 3,
+          "pos": 11,
+          "position": 11,
+          "quest": 1
+        }
+      },
+      "container": "files/cache/patch/gui/quest/board/event.mbn",
+      "entry": "event_point_reward_icon.lua",
+      "format": "lua",
+      "sha256": "b36bbbc9d065a0f026ef458f7055c9b233528e87f5a009914ce26dc1f0a69089",
+      "size": 5340
+    },
+    {
+      "binary_context": {
+        "contextual_resource_ref_count": 2,
+        "contextual_resource_refs": [
+          {
+            "distance": 2062,
+            "keyword_offset": 1620,
+            "nearest_keyword": "quest",
+            "offset": 3682,
+            "resource_id": "000_000_00001"
+          },
+          {
+            "distance": 3351,
+            "keyword_offset": 1620,
+            "nearest_keyword": "quest",
+            "offset": 4971,
+            "resource_id": "000_000_00001"
+          }
+        ],
+        "keyword_counts": {
+          "quest": 1
+        }
+      },
+      "container": "files/cache/patch/gui/quest/board/event.mbn",
+      "entry": "event_point_step_list_window.lua",
+      "format": "lua",
+      "sha256": "a959300f4f7b2793ae5a74eb79a3be08829de6f2edd16cf20bbd51e8b15d1c4e",
+      "size": 9672
+    },
+    {
+      "binary_context": {
+        "contextual_resource_ref_count": 3,
+        "contextual_resource_refs": [
+          {
+            "distance": 25,
+            "keyword_offset": 574,
+            "nearest_keyword": "quest",
+            "offset": 599,
+            "resource_id": "000_002_00001"
+          },
+          {
+            "distance": 25,
+            "keyword_offset": 15257,
+            "nearest_keyword": "quest",
+            "offset": 15282,
+            "resource_id": "000_002_00001"
+          },
+          {
+            "distance": 25,
+            "keyword_offset": 16178,
+            "nearest_keyword": "quest",
+            "offset": 16203,
+            "resource_id": "000_002_00001"
+          }
+        ],
+        "keyword_counts": {
+          "pos": 1,
+          "quest": 8
+        }
+      },
+      "container": "files/cache/patch/gui/quest/board/event/layout/000_002_00001.mbn",
+      "entry": "event_point_reward_board.lua",
+      "format": "lua",
+      "sha256": "46053f210efc06f84bbba7bb66197d94975eed451b4139890f5a76f2d604841d",
+      "size": 16964
+    },
+    {
+      "binary_context": {
+        "contextual_resource_ref_count": 4,
+        "contextual_resource_refs": [
+          {
+            "distance": 25,
+            "keyword_offset": 359,
+            "nearest_keyword": "quest",
+            "offset": 384,
+            "resource_id": "000_002_00001"
+          },
+          {
+            "distance": 25,
+            "keyword_offset": 1534,
+            "nearest_keyword": "quest",
+            "offset": 1559,
+            "resource_id": "000_002_00001"
+          },
+          {
+            "distance": 25,
+            "keyword_offset": 2021,
+            "nearest_keyword": "quest",
+            "offset": 2046,
+            "resource_id": "000_002_00001"
+          },
+          {
+            "distance": 25,
+            "keyword_offset": 2495,
+            "nearest_keyword": "quest",
+            "offset": 2520,
+            "resource_id": "000_002_00001"
+          }
+        ],
+        "keyword_counts": {
+          "pos": 3,
+          "position": 3,
+          "quest": 4
+        }
+      },
+      "container": "files/cache/patch/gui/quest/board/event/layout/000_002_00001.mbn",
+      "entry": "event_point_stepup_reward_board.lua",
+      "format": "lua",
+      "sha256": "28df5fd12475115723bd89a25b4976edb7e82f2554dd9adeed23a6cd66a9413e",
+      "size": 3222
+    },
+    {
+      "binary_context": {
+        "contextual_resource_ref_count": 1,
+        "contextual_resource_refs": [
+          {
+            "distance": 25,
+            "keyword_offset": 1484,
+            "nearest_keyword": "quest",
+            "offset": 1509,
+            "resource_id": "000_004_00000"
+          }
+        ],
+        "keyword_counts": {
+          "pos": 2,
+          "position": 2,
+          "quest": 12
+        }
+      },
+      "container": "files/cache/patch/gui/quest/board/event/layout/000_004_00000.mbn",
+      "entry": "event_point_exchange_count_select.lua",
+      "format": "lua",
+      "sha256": "f7c74ae45223e026c14f491e507ee70f2c27caac2e834ecb59d88b0c9d7dedff",
+      "size": 32750
+    },
+    {
+      "binary_context": {
+        "contextual_resource_ref_count": 4,
+        "contextual_resource_refs": [
+          {
+            "distance": 25,
+            "keyword_offset": 1274,
+            "nearest_keyword": "quest",
+            "offset": 1299,
+            "resource_id": "000_004_00000"
+          },
+          {
+            "distance": 25,
+            "keyword_offset": 1916,
+            "nearest_keyword": "quest",
+            "offset": 1941,
+            "resource_id": "000_004_00000"
+          },
+          {
+            "distance": 1820,
+            "keyword_offset": 1916,
+            "nearest_keyword": "quest",
+            "offset": 3736,
+            "resource_id": "000_000_00001"
+          },
+          {
+            "distance": 3109,
+            "keyword_offset": 1916,
+            "nearest_keyword": "quest",
+            "offset": 5025,
+            "resource_id": "000_000_00001"
+          }
+        ],
+        "keyword_counts": {
+          "quest": 3
+        }
+      },
+      "container": "files/cache/patch/gui/quest/board/event/layout/000_004_00000.mbn",
+      "entry": "event_point_step_list_window.lua",
+      "format": "lua",
+      "sha256": "3900bbf4fa164a5e55325f1cb94391ccafe07c65aa00e66c95885eaa0e0e2839",
+      "size": 9726
+    },
+    {
+      "binary_context": {
+        "contextual_resource_ref_count": 3,
+        "contextual_resource_refs": [
+          {
+            "distance": 25,
+            "keyword_offset": 558,
+            "nearest_keyword": "quest",
+            "offset": 583,
+            "resource_id": "000_002_00001"
+          },
+          {
+            "distance": 25,
+            "keyword_offset": 11883,
+            "nearest_keyword": "quest",
+            "offset": 11908,
+            "resource_id": "000_002_00001"
+          },
+          {
+            "distance": 25,
+            "keyword_offset": 12819,
+            "nearest_keyword": "quest",
+            "offset": 12844,
+            "resource_id": "000_002_00001"
+          }
+        ],
+        "keyword_counts": {
+          "pos": 1,
+          "quest": 7
+        }
+      },
+      "container": "files/cache/patch/gui/quest/board/event/layout/event_material.mbn",
+      "entry": "event_point_reward_board.lua",
+      "format": "lua",
+      "sha256": "9bc447608b99d0d54ed641b1d1928a893ca89e63c84f7d59176844ebca333363",
+      "size": 13203
+    },
+    {
+      "binary_context": {
+        "contextual_resource_ref_count": 4,
+        "contextual_resource_refs": [
+          {
+            "distance": 25,
+            "keyword_offset": 359,
+            "nearest_keyword": "quest",
+            "offset": 384,
+            "resource_id": "000_002_00001"
+          },
+          {
+            "distance": 25,
+            "keyword_offset": 1547,
+            "nearest_keyword": "quest",
+            "offset": 1572,
+            "resource_id": "000_002_00001"
+          },
+          {
+            "distance": 25,
+            "keyword_offset": 2034,
+            "nearest_keyword": "quest",
+            "offset": 2059,
+            "resource_id": "000_002_00001"
+          },
+          {
+            "distance": 25,
+            "keyword_offset": 2508,
+            "nearest_keyword": "quest",
+            "offset": 2533,
+            "resource_id": "000_002_00001"
+          }
+        ],
+        "keyword_counts": {
+          "pos": 3,
+          "position": 3,
+          "quest": 4
+        }
+      },
+      "container": "files/cache/patch/gui/quest/board/event/layout/event_material.mbn",
+      "entry": "event_point_stepup_reward_board.lua",
+      "format": "lua",
+      "sha256": "71f192d0e644c42995cd89f4d8156242df0e2d0a7b3c0aff34fbe24958e5f8f9",
+      "size": 3214
+    },
+    {
+      "binary_context": {
+        "contextual_resource_ref_count": 4,
+        "contextual_resource_refs": [
+          {
+            "distance": 117,
+            "keyword_offset": 820,
+            "nearest_keyword": "pos",
+            "offset": 703,
+            "resource_id": "000_000_00001"
+          },
+          {
+            "distance": 92,
+            "keyword_offset": 820,
+            "nearest_keyword": "pos",
+            "offset": 728,
+            "resource_id": "000_000_00001"
+          },
+          {
+            "distance": 105,
+            "keyword_offset": 1280,
+            "nearest_keyword": "pos",
+            "offset": 1175,
+            "resource_id": "000_000_00001"
+          },
+          {
+            "distance": 86,
+            "keyword_offset": 1280,
+            "nearest_keyword": "pos",
+            "offset": 1194,
+            "resource_id": "000_000_00001"
+          }
+        ],
+        "keyword_counts": {
+          "pos": 4,
+          "position": 4
+        }
+      },
+      "container": "files/cache/patch/gui/quest/gacha.mbn",
+      "entry": "gacha_point_icon.lua",
+      "format": "lua",
+      "sha256": "673bfb5b7ac32fa6ba6e36abc85bc16d275f97c6c0caed0100e4d40912e0359f",
+      "size": 2482
+    },
+    {
+      "binary_context": {
+        "contextual_resource_ref_count": 2,
+        "contextual_resource_refs": [
+          {
+            "distance": 245,
+            "keyword_offset": 700,
+            "nearest_keyword": "field",
+            "offset": 945,
+            "resource_id": "000_000_00001"
+          },
+          {
+            "distance": 264,
+            "keyword_offset": 700,
+            "nearest_keyword": "field",
+            "offset": 964,
+            "resource_id": "000_000_00001"
+          }
+        ],
+        "keyword_counts": {
+          "field": 1,
+          "quest": 2
+        }
+      },
+      "container": "files/cache/patch/gui/quest/gacha/hud.mbn",
+      "entry": "gacha_point_field_info_view.lua",
+      "format": "lua",
+      "sha256": "6be38d506c37bc544b6df6119e1f4921e844f359e8b634c1f20abf1cceb20af5",
+      "size": 1827
+    },
+    {
+      "binary_context": {
+        "contextual_resource_ref_count": 2,
+        "contextual_resource_refs": [
+          {
+            "distance": 267,
+            "keyword_offset": 1166,
+            "nearest_keyword": "quest",
+            "offset": 1433,
+            "resource_id": "000_000_00001"
+          },
+          {
+            "distance": 286,
+            "keyword_offset": 1166,
+            "nearest_keyword": "quest",
+            "offset": 1452,
+            "resource_id": "000_000_00001"
+          }
+        ],
+        "keyword_counts": {
+          "pos": 1,
+          "position": 1,
+          "quest": 6
+        }
+      },
+      "container": "files/cache/patch/gui/quest/gacha/quest_board.mbn",
+      "entry": "gacha_point_have_point_view.lua",
+      "format": "lua",
+      "sha256": "d928188c9d110534ce467ae18e59aa09d9351eed3ba5bbeb2e6dcf434bf5534b",
+      "size": 3343
+    },
+    {
+      "binary_context": {
+        "contextual_resource_ref_count": 2,
+        "contextual_resource_refs": [
+          {
+            "distance": 23,
+            "keyword_offset": 22730,
+            "nearest_keyword": "quest",
+            "offset": 22753,
+            "resource_id": "000_000_00000"
+          },
+          {
+            "distance": 43,
+            "keyword_offset": 22730,
+            "nearest_keyword": "quest",
+            "offset": 22773,
+            "resource_id": "000_000_00000"
+          }
+        ],
+        "keyword_counts": {
+          "pos": 42,
+          "position": 42,
+          "quest": 32
+        }
+      },
+      "container": "files/cache/patch/gui/quest/result.mbn",
+      "entry": "guiQuestResult.lua",
+      "format": "lua",
+      "sha256": "5429ac626313448fc985346183277a471fc3f18b0edddb3667794be12403e6a3",
+      "size": 23753
+    },
+    {
+      "binary_context": {
+        "contextual_resource_ref_count": 4,
+        "contextual_resource_refs": [
+          {
+            "distance": 23,
+            "keyword_offset": 5411,
+            "nearest_keyword": "quest",
+            "offset": 5434,
+            "resource_id": "000_000_00000"
+          },
+          {
+            "distance": 43,
+            "keyword_offset": 5411,
+            "nearest_keyword": "quest",
+            "offset": 5454,
+            "resource_id": "000_000_00000"
+          },
+          {
+            "distance": 23,
+            "keyword_offset": 5893,
+            "nearest_keyword": "quest",
+            "offset": 5916,
+            "resource_id": "000_000_00000"
+          },
+          {
+            "distance": 43,
+            "keyword_offset": 5893,
+            "nearest_keyword": "quest",
+            "offset": 5936,
+            "resource_id": "000_000_00000"
+          }
+        ],
+        "keyword_counts": {
+          "pos": 41,
+          "position": 41,
+          "quest": 30
+        }
+      },
+      "container": "files/cache/patch/gui/quest/stamp.mbn",
+      "entry": "QuestResultStamp.lua",
+      "format": "lua",
+      "sha256": "c1d1c175926989d8510f92cfcb0152e4891c602b10b2b4204485f6c44e331b35",
+      "size": 22316
+    },
+    {
+      "binary_context": {
+        "contextual_resource_ref_count": 4,
+        "contextual_resource_refs": [
+          {
+            "distance": 23,
+            "keyword_offset": 4200,
+            "nearest_keyword": "quest",
+            "offset": 4223,
+            "resource_id": "000_000_00000"
+          },
+          {
+            "distance": 43,
+            "keyword_offset": 4200,
+            "nearest_keyword": "quest",
+            "offset": 4243,
+            "resource_id": "000_000_00000"
+          },
+          {
+            "distance": 23,
+            "keyword_offset": 4567,
+            "nearest_keyword": "quest",
+            "offset": 4590,
+            "resource_id": "000_000_00000"
+          },
+          {
+            "distance": 43,
+            "keyword_offset": 4567,
+            "nearest_keyword": "quest",
+            "offset": 4610,
+            "resource_id": "000_000_00000"
+          }
+        ],
+        "keyword_counts": {
+          "pos": 9,
+          "position": 9,
+          "quest": 7
+        }
+      },
+      "container": "files/cache/patch/gui/quest/stamp.mbn",
+      "entry": "QuestStampOne.lua",
+      "format": "lua",
+      "sha256": "c25f132636e3f4f8de2f6fb2b24575b156c2dfe770c766912cc4a76a0da3b1af",
+      "size": 5385
+    },
+    {
+      "binary_context": {
+        "contextual_resource_ref_count": 1,
+        "contextual_resource_refs": [
+          {
+            "distance": 93,
+            "keyword_offset": 1971,
+            "nearest_keyword": "pos",
+            "offset": 1878,
+            "resource_id": "001_003_00001"
+          }
+        ],
+        "keyword_counts": {
+          "pos": 15,
+          "position": 15
+        }
+      },
+      "container": "files/cache/patch/gui/shop.mbn",
+      "entry": "shop_objProduct.lua",
+      "format": "lua",
+      "sha256": "ef3ba14628d18fff79ebf5cd35dd823942f9c2ef272387814193701c56993e1d",
+      "size": 6957
+    },
+    {
+      "container": "files/cache/patch/json_resource.mbn",
+      "entry": "battle_boost_setting.json",
+      "format": "json",
+      "json_context": {
+        "context_scalar_count": 0,
+        "context_scalars": [],
+        "resource_ref_count": 1,
+        "resource_refs": [
+          {
+            "contexts": [
+              "encounter"
+            ],
+            "pointer": "/battle_boost_production_sound",
+            "resource_id": "100_002_00110"
+          }
+        ]
+      },
+      "sha256": "887f467fb166836bcb14298aa210159779aca2ec5420b83161e71047b719e7c4",
+      "size": 845
+    },
+    {
+      "container": "files/cache/patch/json_resource.mbn",
+      "entry": "battle_texts.json",
+      "format": "json",
+      "json_context": {
+        "context_scalar_count": 12,
+        "context_scalars": [
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "offsetPosX",
+            "pointer": "/battle_raid/offsetPosX",
+            "value": 0.0
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "offsetPosY",
+            "pointer": "/battle_raid/offsetPosY",
+            "value": 40.0
+          },
+          {
+            "contexts": [
+              "character",
+              "encounter",
+              "position"
+            ],
+            "key": "position_y_counting",
+            "pointer": "/character_tap_hint/position_y_counting",
+            "value": 100
+          },
+          {
+            "contexts": [
+              "character",
+              "encounter",
+              "position"
+            ],
+            "key": "position_y_standby",
+            "pointer": "/character_tap_hint/position_y_standby",
+            "value": 250
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "x",
+            "pointer": "/death_limit_counter/position/x",
+            "value": 414
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "y",
+            "pointer": "/death_limit_counter/position/y",
+            "value": 40
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "x",
+            "pointer": "/death_limit_counter/rcb_position/x",
+            "value": 320
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "y",
+            "pointer": "/death_limit_counter/rcb_position/y",
+            "value": 30
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "x",
+            "pointer": "/remaining_lives_counter/position/x",
+            "value": 414
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "y",
+            "pointer": "/remaining_lives_counter/position/y",
+            "value": 40
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "x",
+            "pointer": "/remaining_lives_counter/rcb_position/x",
+            "value": 320
+          },
+          {
+            "contexts": [
+              "encounter",
+              "position"
+            ],
+            "key": "y",
+            "pointer": "/remaining_lives_counter/rcb_position/y",
+            "value": 30
+          }
+        ],
+        "resource_ref_count": 0,
+        "resource_refs": []
+      },
+      "sha256": "38cc8cf0c0b568b8eb7e8cf1b07f6135176e864f1eb4d07e1286a6732ed6d8b4",
+      "size": 4635
+    },
+    {
+      "container": "files/cache/patch/json_resource.mbn",
+      "entry": "bout_character_view_info_setting.json",
+      "format": "json",
+      "json_context": {
+        "context_scalar_count": 24,
+        "context_scalars": [
+          {
+            "contexts": [
+              "character"
+            ],
+            "key": "hp_gauge_color",
+            "pointer": "/enemy/hp_gauge_color/0",
+            "value": 221
+          },
+          {
+            "contexts": [
+              "character"
+            ],
+            "key": "hp_gauge_color",
+            "pointer": "/enemy/hp_gauge_color/1",
+            "value": 0
+          },
+          {
+            "contexts": [
+              "character"
+            ],
+            "key": "hp_gauge_color",
+            "pointer": "/enemy/hp_gauge_color/2",
+            "value": 0
+          },
+          {
+            "contexts": [
+              "character"
+            ],
+            "key": "hp_gauge_color",
+            "pointer": "/gimmick_enemy/hp_gauge_color/0",
+            "value": 221
+          },
+          {
+            "contexts": [
+              "character"
+            ],
+            "key": "hp_gauge_color",
+            "pointer": "/gimmick_enemy/hp_gauge_color/1",
+            "value": 0
+          },
+          {
+            "contexts": [
+              "character"
+            ],
+            "key": "hp_gauge_color",
+            "pointer": "/gimmick_enemy/hp_gauge_color/2",
+            "value": 0
+          },
+          {
+            "contexts": [
+              "character"
+            ],
+            "key": "hp_gauge_color",
+            "pointer": "/mercenary/hp_gauge_color/0",
+            "value": 221
+          },
+          {
+            "contexts": [
+              "character"
+            ],
+            "key": "hp_gauge_color",
+            "pointer": "/mercenary/hp_gauge_color/1",
+            "value": 0
+          },
+          {
+            "contexts": [
+              "character"
+            ],
+            "key": "hp_gauge_color",
+            "pointer": "/mercenary/hp_gauge_color/2",
+            "value": 0
+          },
+          {
+            "contexts": [
+              "character"
+            ],
+            "key": "hp_gauge_color",
+            "pointer": "/player/hp_gauge_color/0",
+            "value": 221
+          },
+          {
+            "contexts": [
+              "character"
+            ],
+            "key": "hp_gauge_color",
+            "pointer": "/player/hp_gauge_color/1",
+            "value": 0
+          },
+          {
+            "contexts": [
+              "character"
+            ],
+            "key": "hp_gauge_color",
+            "pointer": "/player/hp_gauge_color/2",
+            "value": 0
+          },
+          {
+            "contexts": [
+              "character"
+            ],
+            "key": "color",
+            "pointer": "/shield/000_000_00001/color/0",
+            "value": 255
+          },
+          {
+            "contexts": [
+              "character"
+            ],
+            "key": "color",
+            "pointer": "/shield/000_000_00001/color/1",
+            "value": 156
+          },
+          {
+            "contexts": [
+              "character"
+            ],
+            "key": "color",
+            "pointer": "/shield/000_000_00001/color/2",
+            "value": 0
+          },
+          {
+            "contexts": [
+              "character"
+            ],
+            "key": "color",
+            "pointer": "/shield/000_000_00002/color/0",
+            "value": 0
+          },
+          {
+            "contexts": [
+              "character"
+            ],
+            "key": "color",
+            "pointer": "/shield/000_000_00002/color/1",
+            "value": 153
+          },
+          {
+            "contexts": [
+              "character"
+            ],
+            "key": "color",
+            "pointer": "/shield/000_000_00002/color/2",
+            "value": 255
+          },
+          {
+            "contexts": [
+              "character"
+            ],
+            "key": "color",
+            "pointer": "/shield/000_000_00003/color/0",
+            "value": 51
+          },
+          {
+            "contexts": [
+              "character"
+            ],
+            "key": "color",
+            "pointer": "/shield/000_000_00003/color/1",
+            "value": 206
+          },
+          {
+            "contexts": [
+              "character"
+            ],
+            "key": "color",
+            "pointer": "/shield/000_000_00003/color/2",
+            "value": 0
+          },
+          {
+            "contexts": [
+              "character"
+            ],
+            "key": "color",
+            "pointer": "/shield/000_010_00001/color/0",
+            "value": 170
+          },
+          {
+            "contexts": [
+              "character"
+            ],
+            "key": "color",
+            "pointer": "/shield/000_010_00001/color/1",
+            "value": 23
+          },
+          {
+            "contexts": [
+              "character"
+            ],
+            "key": "color",
+            "pointer": "/shield/000_010_00001/color/2",
+            "value": 23
+          }
+        ],
+        "resource_ref_count": 0,
+        "resource_refs": []
+      },
+      "sha256": "f1c0e2b11cdb51c415a38831ebaee9d21d2294daa3f8b52042d53f1c9e7f5463",
+      "size": 1128
+    },
+    {
+      "container": "files/cache/patch/json_resource.mbn",
+      "entry": "character_growth_setting.json",
+      "format": "json",
+      "json_context": {
+        "context_scalar_count": 2,
+        "context_scalars": [
+          {
+            "contexts": [
+              "character"
+            ],
+            "key": "column_max",
+            "pointer": "/reward_list/column_max",
+            "value": 6
+          },
+          {
+            "contexts": [
+              "character"
+            ],
+            "key": "row_max",
+            "pointer": "/reward_list/row_max",
+            "value": 3
+          }
+        ],
+        "resource_ref_count": 1,
+        "resource_refs": [
+          {
+            "contexts": [
+              "character"
+            ],
+            "pointer": "/levelup_sound_id",
+            "resource_id": "100_000_00010"
+          }
+        ]
+      },
+      "sha256": "7e8950f827e54c08ad5d4c3008e4ae72c236b30cf1c32e7c85f449bd79bd294e",
+      "size": 343
+    },
+    {
+      "container": "files/cache/patch/json_resource.mbn",
+      "entry": "chat_option.json",
+      "format": "json",
+      "json_context": {
+        "context_scalar_count": 1,
+        "context_scalars": [
+          {
+            "contexts": [
+              "field"
+            ],
+            "key": "field_stamp_balloon_scale",
+            "pointer": "/chatOption/field_stamp_balloon_scale",
+            "value": 0.6
+          }
+        ],
+        "resource_ref_count": 0,
+        "resource_refs": []
+      },
+      "sha256": "d8b44faeecceab4d9cd348724cd1562eea8a6cb17d848e9a33ab4810a38341e5",
+      "size": 1400
+    },
+    {
+      "container": "files/cache/patch/json_resource.mbn",
+      "entry": "event_setting.json",
+      "format": "json",
+      "json_context": {
+        "context_scalar_count": 28,
+        "context_scalars": [
+          {
+            "contexts": [
+              "warp"
+            ],
+            "key": "warp_banner_rate",
+            "pointer": "/event_setting/setting_0/warp_banner_rate",
+            "value": 0
+          },
+          {
+            "contexts": [
+              "warp"
+            ],
+            "key": "warp_banner_rate",
+            "pointer": "/event_setting/setting_1/warp_banner_rate",
+            "value": 50
+          },
+          {
+            "contexts": [
+              "warp"
+            ],
+            "key": "warp_banner_rate",
+            "pointer": "/event_setting/setting_10/warp_banner_rate",
+            "value": 50
+          },
+          {
+            "contexts": [
+              "warp"
+            ],
+            "key": "warp_banner_rate",
+            "pointer": "/event_setting/setting_11/warp_banner_rate",
+            "value": 50
+          },
+          {
+            "contexts": [
+              "warp"
+            ],
+            "key": "warp_banner_rate",
+            "pointer": "/event_setting/setting_12/warp_banner_rate",
+            "value": 50
+          },
+          {
+            "contexts": [
+              "warp"
+            ],
+            "key": "warp_banner_rate",
+            "pointer": "/event_setting/setting_13/warp_banner_rate",
+            "value": 50
+          },
+          {
+            "contexts": [
+              "warp"
+            ],
+            "key": "warp_banner_rate",
+            "pointer": "/event_setting/setting_14/warp_banner_rate",
+            "value": 50
+          },
+          {
+            "contexts": [
+              "warp"
+            ],
+            "key": "warp_banner_rate",
+            "pointer": "/event_setting/setting_15/warp_banner_rate",
+            "value": 30
+          },
+          {
+            "contexts": [
+              "warp"
+            ],
+            "key": "warp_banner_rate",
+            "pointer": "/event_setting/setting_16/warp_banner_rate",
+            "value": 30
+          },
+          {
+            "contexts": [
+              "warp"
+            ],
+            "key": "warp_banner_rate",
+            "pointer": "/event_setting/setting_17/warp_banner_rate",
+            "value": 30
+          },
+          {
+            "contexts": [
+              "warp"
+            ],
+            "key": "warp_banner_rate",
+            "pointer": "/event_setting/setting_18/warp_banner_rate",
+            "value": 30
+          },
+          {
+            "contexts": [
+              "warp"
+            ],
+            "key": "warp_banner_rate",
+            "pointer": "/event_setting/setting_19/warp_banner_rate",
+            "value": 50
+          },
+          {
+            "contexts": [
+              "warp"
+            ],
+            "key": "warp_banner_rate",
+            "pointer": "/event_setting/setting_2/warp_banner_rate",
+            "value": 50
+          },
+          {
+            "contexts": [
+              "warp"
+            ],
+            "key": "warp_banner_rate",
+            "pointer": "/event_setting/setting_20/warp_banner_rate",
+            "value": 10
+          },
+          {
+            "contexts": [
+              "warp"
+            ],
+            "key": "warp_banner_rate",
+            "pointer": "/event_setting/setting_21/warp_banner_rate",
+            "value": 10
+          },
+          {
+            "contexts": [
+              "warp"
+            ],
+            "key": "warp_banner_rate",
+            "pointer": "/event_setting/setting_22/warp_banner_rate",
+            "value": 10
+          },
+          {
+            "contexts": [
+              "warp"
+            ],
+            "key": "warp_banner_rate",
+            "pointer": "/event_setting/setting_23/warp_banner_rate",
+            "value": 10
+          },
+          {
+            "contexts": [
+              "warp"
+            ],
+            "key": "warp_banner_rate",
+            "pointer": "/event_setting/setting_24/warp_banner_rate",
+            "value": 10
+          },
+          {
+            "contexts": [
+              "warp"
+            ],
+            "key": "warp_banner_rate",
+            "pointer": "/event_setting/setting_25/warp_banner_rate",
+            "value": 0
+          },
+          {
+            "contexts": [
+              "warp"
+            ],
+            "key": "warp_banner_rate",
+            "pointer": "/event_setting/setting_26/warp_banner_rate",
+            "value": 0
+          },
+          {
+            "contexts": [
+              "warp"
+            ],
+            "key": "warp_banner_rate",
+            "pointer": "/event_setting/setting_27/warp_banner_rate",
+            "value": 0
+          },
+          {
+            "contexts": [
+              "warp"
+            ],
+            "key": "warp_banner_rate",
+            "pointer": "/event_setting/setting_3/warp_banner_rate",
+            "value": 50
+          },
+          {
+            "contexts": [
+              "warp"
+            ],
+            "key": "warp_banner_rate",
+            "pointer": "/event_setting/setting_4/warp_banner_rate",
+            "value": 50
+          },
+          {
+            "contexts": [
+              "warp"
+            ],
+            "key": "warp_banner_rate",
+            "pointer": "/event_setting/setting_5/warp_banner_rate",
+            "value": 50
+          },
+          {
+            "contexts": [
+              "warp"
+            ],
+            "key": "warp_banner_rate",
+            "pointer": "/event_setting/setting_6/warp_banner_rate",
+            "value": 50
+          },
+          {
+            "contexts": [
+              "warp"
+            ],
+            "key": "warp_banner_rate",
+            "pointer": "/event_setting/setting_7/warp_banner_rate",
+            "value": 50
+          },
+          {
+            "contexts": [
+              "warp"
+            ],
+            "key": "warp_banner_rate",
+            "pointer": "/event_setting/setting_8/warp_banner_rate",
+            "value": 50
+          },
+          {
+            "contexts": [
+              "warp"
+            ],
+            "key": "warp_banner_rate",
+            "pointer": "/event_setting/setting_9/warp_banner_rate",
+            "value": 50
+          }
+        ],
+        "resource_ref_count": 2,
+        "resource_refs": [
+          {
+            "contexts": [
+              "quest"
+            ],
+            "pointer": "/event_setting/setting_3/buttons/button_0/quest_category_id",
+            "resource_id": "141_079_00200"
+          },
+          {
+            "contexts": [
+              "quest"
+            ],
+            "pointer": "/event_setting/setting_4/buttons/button_0/quest_category_id",
+            "resource_id": "193_002_00000"
+          }
+        ]
+      },
+      "sha256": "abb21f8be95ca0bafb89417cea29b9df1c7048beb4e0e8c8635c766e63aff28b",
+      "size": 12832
+    },
+    {
+      "container": "files/cache/patch/json_resource.mbn",
+      "entry": "field_settings.json",
+      "format": "json",
+      "json_context": {
+        "context_scalar_count": 2,
+        "context_scalars": [
+          {
+            "contexts": [
+              "encounter",
+              "field"
+            ],
+            "key": "field_list_icon_scale",
+            "pointer": "/battle_token_settings/field_list_icon_scale",
+            "value": 0.8
+          },
+          {
+            "contexts": [
+              "encounter",
+              "field"
+            ],
+            "key": "icon_columns",
+            "pointer": "/battle_token_settings/icon_columns",
+            "value": 9.0
+          }
+        ],
+        "resource_ref_count": 0,
+        "resource_refs": []
+      },
+      "sha256": "ffb36e10d6879a7c5758d15f046dffe64dda7112262aa711eee4eed51c7d9089",
+      "size": 1002
+    },
+    {
+      "container": "files/cache/patch/json_resource.mbn",
+      "entry": "popUp_tutorial_texts.json",
+      "format": "json",
+      "json_context": {
+        "context_scalar_count": 0,
+        "context_scalars": [],
+        "resource_ref_count": 1,
+        "resource_refs": [
+          {
+            "contexts": [
+              "tutorial"
+            ],
+            "pointer": "/popUp_tutorial_texts/soundID",
+            "resource_id": "100_001_00002"
+          }
+        ]
+      },
+      "sha256": "ffce0b850ca119e2f2f6a6d7891b2d64d5ef1d5bb45f184e151cf603ba93dc70",
+      "size": 1905
+    },
+    {
+      "container": "files/cache/patch/json_resource.mbn",
+      "entry": "quest_gacha_settings.json",
+      "format": "json",
+      "json_context": {
+        "context_scalar_count": 0,
+        "context_scalars": [],
+        "resource_ref_count": 1,
+        "resource_refs": [
+          {
+            "contexts": [
+              "quest"
+            ],
+            "pointer": "/production/sound_id",
+            "resource_id": "100_000_00006"
+          }
+        ]
+      },
+      "sha256": "79ad1d265636e4b8f4bf04556eab6465faba2ceb1d639b341819bd6ff07a98a7",
+      "size": 5441
+    },
+    {
+      "container": "files/cache/patch/json_resource.mbn",
+      "entry": "quest_texts.json",
+      "format": "json",
+      "json_context": {
+        "context_scalar_count": 0,
+        "context_scalars": [],
+        "resource_ref_count": 6,
+        "resource_refs": [
+          {
+            "contexts": [
+              "quest"
+            ],
+            "pointer": "/countdown_cancel/soundID",
+            "resource_id": "100_000_00002"
+          },
+          {
+            "contexts": [
+              "quest"
+            ],
+            "pointer": "/quest_bingo/se/cell_get",
+            "resource_id": "100_002_00119"
+          },
+          {
+            "contexts": [
+              "quest"
+            ],
+            "pointer": "/quest_bingo/se/line_complete",
+            "resource_id": "100_002_00110"
+          },
+          {
+            "contexts": [
+              "quest"
+            ],
+            "pointer": "/quest_bingo/se/line_reward_bingo",
+            "resource_id": "100_002_00054"
+          },
+          {
+            "contexts": [
+              "quest"
+            ],
+            "pointer": "/quest_skip_mercenary_chapterid/id",
+            "resource_id": "001_000_00001"
+          },
+          {
+            "contexts": [
+              "quest"
+            ],
+            "pointer": "/submission/icon/se/id",
+            "resource_id": "100_000_00005"
+          }
+        ]
+      },
+      "sha256": "21d25bc3a4be7890abf14c58b93dcd1fc650717f5d3e767b70dfd0c1ec2e490a",
+      "size": 49016
+    },
+    {
+      "container": "files/cache/patch/json_resource.mbn",
+      "entry": "raid_battle_texts.json",
+      "format": "json",
+      "json_context": {
+        "context_scalar_count": 0,
+        "context_scalars": [],
+        "resource_ref_count": 4,
+        "resource_refs": [
+          {
+            "contexts": [
+              "encounter"
+            ],
+            "pointer": "/production/sound_id",
+            "resource_id": "100_000_00006"
+          },
+          {
+            "contexts": [
+              "encounter"
+            ],
+            "pointer": "/telop_sound/begin_sign",
+            "resource_id": "100_001_00000"
+          },
+          {
+            "contexts": [
+              "encounter"
+            ],
+            "pointer": "/telop_sound/complete_sign",
+            "resource_id": "100_001_00001"
+          },
+          {
+            "contexts": [
+              "encounter"
+            ],
+            "pointer": "/telop_sound/fail_sign",
+            "resource_id": "100_001_00001"
+          }
+        ]
+      },
+      "sha256": "d0aec6cac679fdd0af99be8d2c6164a225d142cf21f6535d21f541f23df7c4c1",
+      "size": 10914
+    },
+    {
+      "container": "files/cache/patch/map/clan_room.mbn",
+      "entry": "tile_initial_position.json",
+      "format": "json",
+      "json_context": {
+        "context_scalar_count": 16,
+        "context_scalars": [
+          {
+            "contexts": [
+              "map",
+              "position",
+              "start"
+            ],
+            "key": "x",
+            "pointer": "/250_001_00000/x",
+            "value": 41
+          },
+          {
+            "contexts": [
+              "map",
+              "position",
+              "start"
+            ],
+            "key": "y",
+            "pointer": "/250_001_00000/y",
+            "value": 36
+          },
+          {
+            "contexts": [
+              "map",
+              "position",
+              "start"
+            ],
+            "key": "x",
+            "pointer": "/250_001_00001/x",
+            "value": 41
+          },
+          {
+            "contexts": [
+              "map",
+              "position",
+              "start"
+            ],
+            "key": "y",
+            "pointer": "/250_001_00001/y",
+            "value": 36
+          },
+          {
+            "contexts": [
+              "map",
+              "position",
+              "start"
+            ],
+            "key": "x",
+            "pointer": "/250_001_00002/x",
+            "value": 41
+          },
+          {
+            "contexts": [
+              "map",
+              "position",
+              "start"
+            ],
+            "key": "y",
+            "pointer": "/250_001_00002/y",
+            "value": 36
+          },
+          {
+            "contexts": [
+              "map",
+              "position",
+              "start"
+            ],
+            "key": "x",
+            "pointer": "/250_001_00003/x",
+            "value": 41
+          },
+          {
+            "contexts": [
+              "map",
+              "position",
+              "start"
+            ],
+            "key": "y",
+            "pointer": "/250_001_00003/y",
+            "value": 36
+          },
+          {
+            "contexts": [
+              "map",
+              "position",
+              "start"
+            ],
+            "key": "x",
+            "pointer": "/250_001_00004/x",
+            "value": 41
+          },
+          {
+            "contexts": [
+              "map",
+              "position",
+              "start"
+            ],
+            "key": "y",
+            "pointer": "/250_001_00004/y",
+            "value": 36
+          },
+          {
+            "contexts": [
+              "map",
+              "position",
+              "start"
+            ],
+            "key": "x",
+            "pointer": "/250_001_00005/x",
+            "value": 41
+          },
+          {
+            "contexts": [
+              "map",
+              "position",
+              "start"
+            ],
+            "key": "y",
+            "pointer": "/250_001_00005/y",
+            "value": 36
+          },
+          {
+            "contexts": [
+              "map",
+              "position",
+              "start"
+            ],
+            "key": "x",
+            "pointer": "/250_001_00006/x",
+            "value": 41
+          },
+          {
+            "contexts": [
+              "map",
+              "position",
+              "start"
+            ],
+            "key": "y",
+            "pointer": "/250_001_00006/y",
+            "value": 36
+          },
+          {
+            "contexts": [
+              "map",
+              "position",
+              "start"
+            ],
+            "key": "x",
+            "pointer": "/250_001_00007/x",
+            "value": 41
+          },
+          {
+            "contexts": [
+              "map",
+              "position",
+              "start"
+            ],
+            "key": "y",
+            "pointer": "/250_001_00007/y",
+            "value": 36
+          }
+        ],
+        "resource_ref_count": 0,
+        "resource_refs": []
+      },
+      "sha256": "e37078e5508cd342959ed113ea6cd971e4e72727ca9755b8a6f13a2b1a77fb4c",
+      "size": 579
+    },
+    {
+      "binary_context": {
+        "contextual_resource_ref_count": 1,
+        "contextual_resource_refs": [
+          {
+            "distance": 88,
+            "keyword_offset": 245,
+            "nearest_keyword": "start",
+            "offset": 333,
+            "resource_id": "100_002_00056"
+          }
+        ],
+        "keyword_counts": {
+          "start": 1
+        }
+      },
+      "container": "files/cache/patch/skitevent/A.mbn",
+      "entry": "../A_18_02_00/A_18_02_00_r.txt",
+      "format": "txt",
+      "sha256": "0912a490bbaf92d47edc7d000541cdd70e65b9d700d6a44b2c31120d9154473e",
+      "size": 5688
+    },
+    {
+      "binary_context": {
+        "contextual_resource_ref_count": 3,
+        "contextual_resource_refs": [
+          {
+            "distance": 178,
+            "keyword_offset": 1261,
+            "nearest_keyword": "battle",
+            "offset": 1439,
+            "resource_id": "100_002_00021"
+          },
+          {
+            "distance": 232,
+            "keyword_offset": 1261,
+            "nearest_keyword": "battle",
+            "offset": 1493,
+            "resource_id": "100_002_00021"
+          },
+          {
+            "distance": 286,
+            "keyword_offset": 1261,
+            "nearest_keyword": "battle",
+            "offset": 1547,
+            "resource_id": "100_002_00022"
+          }
+        ],
+        "keyword_counts": {
+          "battle": 1
+        }
+      },
+      "container": "files/cache/patch/skitevent/EV.mbn",
+      "entry": "../EV_14_00_00/EV_14_00_00_r.txt",
+      "format": "txt",
+      "sha256": "05ab7133eb44c53ce6f1cdab21ec9455cd84d09bb1f6fd6ff6ab093824d7eeeb",
+      "size": 2978
+    },
+    {
+      "binary_context": {
+        "contextual_resource_ref_count": 1,
+        "contextual_resource_refs": [
+          {
+            "distance": 1226,
+            "keyword_offset": 5979,
+            "nearest_keyword": "battle",
+            "offset": 4753,
+            "resource_id": "100_002_00044"
+          }
+        ],
+        "keyword_counts": {
+          "battle": 4
+        }
+      },
+      "container": "files/cache/patch/skitevent/EV_175_23_00.mbn",
+      "entry": "EV_175_23_00_r.txt",
+      "format": "txt",
+      "sha256": "483ce0fe99e61bb5484831c06828c5b31e8da7970964851caf9c4e37e6f37370",
+      "size": 6361
+    },
+    {
+      "container": "files/cache/patch/skitevent/PreSettings.mbn",
+      "entry": "preset_offset_positions.json",
+      "format": "json",
+      "json_context": {
+        "context_scalar_count": 14,
+        "context_scalars": [
+          {
+            "contexts": [
+              "position"
+            ],
+            "key": "X",
+            "pointer": "/0/X",
+            "value": 0
+          },
+          {
+            "contexts": [
+              "position"
+            ],
+            "key": "Y",
+            "pointer": "/0/Y",
+            "value": 0
+          },
+          {
+            "contexts": [
+              "position"
+            ],
+            "key": "X",
+            "pointer": "/1/X",
+            "value": 150
+          },
+          {
+            "contexts": [
+              "position"
+            ],
+            "key": "Y",
+            "pointer": "/1/Y",
+            "value": 0
+          },
+          {
+            "contexts": [
+              "position"
+            ],
+            "key": "X",
+            "pointer": "/2/X",
+            "value": -150
+          },
+          {
+            "contexts": [
+              "position"
+            ],
+            "key": "Y",
+            "pointer": "/2/Y",
+            "value": 0
+          },
+          {
+            "contexts": [
+              "position"
+            ],
+            "key": "X",
+            "pointer": "/3/X",
+            "value": 100
+          },
+          {
+            "contexts": [
+              "position"
+            ],
+            "key": "Y",
+            "pointer": "/3/Y",
+            "value": 0
+          },
+          {
+            "contexts": [
+              "position"
+            ],
+            "key": "X",
+            "pointer": "/4/X",
+            "value": 250
+          },
+          {
+            "contexts": [
+              "position"
+            ],
+            "key": "Y",
+            "pointer": "/4/Y",
+            "value": 0
+          },
+          {
+            "contexts": [
+              "position"
+            ],
+            "key": "X",
+            "pointer": "/5/X",
+            "value": -100
+          },
+          {
+            "contexts": [
+              "position"
+            ],
+            "key": "Y",
+            "pointer": "/5/Y",
+            "value": 0
+          },
+          {
+            "contexts": [
+              "position"
+            ],
+            "key": "X",
+            "pointer": "/6/X",
+            "value": -250
+          },
+          {
+            "contexts": [
+              "position"
+            ],
+            "key": "Y",
+            "pointer": "/6/Y",
+            "value": 0
+          }
+        ],
+        "resource_ref_count": 0,
+        "resource_refs": []
+      },
+      "sha256": "ec9c723d54f7b1ea719d11476780baa8e2ab7217e25670b77b05a150c8c068f5",
+      "size": 641
+    },
+    {
+      "binary_context": {
+        "contextual_resource_ref_count": 1,
+        "contextual_resource_refs": [
+          {
+            "distance": 88,
+            "keyword_offset": 251,
+            "nearest_keyword": "start",
+            "offset": 339,
+            "resource_id": "100_002_00056"
+          }
+        ],
+        "keyword_counts": {
+          "start": 1
+        }
+      },
+      "container": "files/cache/patch/skitevent/RCB.mbn",
+      "entry": "../RCB_01_00_00/RCB_01_00_00_r.txt",
+      "format": "txt",
+      "sha256": "9371f0347f99c07df719a4b4bf40728cc8600e852eebe94c05d9e91b632f2081",
+      "size": 5694
+    },
+    {
+      "binary_context": {
+        "contextual_resource_ref_count": 2,
+        "contextual_resource_refs": [
+          {
+            "distance": 63,
+            "keyword_offset": 211,
+            "nearest_keyword": "map",
+            "offset": 148,
+            "resource_id": "001_001_00630"
+          },
+          {
+            "distance": 1004,
+            "keyword_offset": 211,
+            "nearest_keyword": "map",
+            "offset": 1215,
+            "resource_id": "001_001_00730"
+          }
+        ],
+        "keyword_counts": {
+          "map": 1
+        }
+      },
+      "container": "files/cache/patch/skitevent/TEN.mbn",
+      "entry": "../TEN_03_01_00/TEN_03_01_00_r.txt",
+      "format": "txt",
+      "sha256": "6def4ee31577c3d41b59c7da767c7a20b1245f8619a4414fa2816cd8a4a34794",
+      "size": 5589
+    }
+  ],
+  "nearby_byte_limit": 4096,
+  "provenance": "PRIVATE_CACHE_TUTORIAL_CONTEXT_METADATA",
+  "recovered_map_package_ids": [
+    "001_000_00002",
+    "001_000_00200",
+    "001_000_00700",
+    "002_000_00001",
+    "002_000_00003",
+    "250_000_00000",
+    "250_000_00001",
+    "250_000_00002",
+    "250_000_00003"
+  ],
+  "resource_summary": {
+    "000_000_00000": {
+      "binary_context_ref_count": 28,
+      "contexts": [
+        {
+          "count": 22,
+          "name": "quest"
+        },
+        {
+          "count": 6,
+          "name": "encounter"
+        },
+        {
+          "count": 4,
+          "name": "pos"
+        },
+        {
+          "count": 2,
+          "name": "battle"
+        }
+      ],
+      "json_context_ref_count": 6,
+      "present_as_recovered_map_package": false,
+      "source_count": 19
+    },
+    "000_000_00001": {
+      "binary_context_ref_count": 30,
+      "contexts": [
+        {
+          "count": 14,
+          "name": "pos"
+        },
+        {
+          "count": 8,
+          "name": "battle"
+        },
+        {
+          "count": 6,
+          "name": "quest"
+        },
+        {
+          "count": 2,
+          "name": "field"
+        }
+      ],
+      "json_context_ref_count": 0,
+      "present_as_recovered_map_package": false,
+      "source_count": 14
+    },
+    "000_000_00002": {
+      "binary_context_ref_count": 2,
+      "contexts": [
+        {
+          "count": 2,
+          "name": "pos"
+        }
+      ],
+      "json_context_ref_count": 0,
+      "present_as_recovered_map_package": false,
+      "source_count": 2
+    },
+    "000_000_00003": {
+      "binary_context_ref_count": 2,
+      "contexts": [
+        {
+          "count": 2,
+          "name": "pos"
+        }
+      ],
+      "json_context_ref_count": 0,
+      "present_as_recovered_map_package": false,
+      "source_count": 2
+    },
+    "000_000_00004": {
+      "binary_context_ref_count": 2,
+      "contexts": [
+        {
+          "count": 2,
+          "name": "pos"
+        }
+      ],
+      "json_context_ref_count": 0,
+      "present_as_recovered_map_package": false,
+      "source_count": 2
+    },
+    "000_000_00005": {
+      "binary_context_ref_count": 2,
+      "contexts": [
+        {
+          "count": 2,
+          "name": "pos"
+        }
+      ],
+      "json_context_ref_count": 0,
+      "present_as_recovered_map_package": false,
+      "source_count": 2
+    },
+    "000_000_00008": {
+      "binary_context_ref_count": 2,
+      "contexts": [
+        {
+          "count": 2,
+          "name": "pos"
+        }
+      ],
+      "json_context_ref_count": 0,
+      "present_as_recovered_map_package": false,
+      "source_count": 1
+    },
+    "000_002_00001": {
+      "binary_context_ref_count": 14,
+      "contexts": [
+        {
+          "count": 14,
+          "name": "quest"
+        }
+      ],
+      "json_context_ref_count": 0,
+      "present_as_recovered_map_package": false,
+      "source_count": 4
+    },
+    "000_004_00000": {
+      "binary_context_ref_count": 3,
+      "contexts": [
+        {
+          "count": 3,
+          "name": "quest"
+        }
+      ],
+      "json_context_ref_count": 0,
+      "present_as_recovered_map_package": false,
+      "source_count": 2
+    },
+    "001_000_00001": {
+      "binary_context_ref_count": 1,
+      "contexts": [
+        {
+          "count": 1,
+          "name": "battle"
+        },
+        {
+          "count": 1,
+          "name": "quest"
+        }
+      ],
+      "json_context_ref_count": 1,
+      "present_as_recovered_map_package": false,
+      "source_count": 2
+    },
+    "001_001_00001": {
+      "binary_context_ref_count": 4,
+      "contexts": [
+        {
+          "count": 4,
+          "name": "pos"
+        }
+      ],
+      "json_context_ref_count": 0,
+      "present_as_recovered_map_package": false,
+      "source_count": 4
+    },
+    "001_001_00002": {
+      "binary_context_ref_count": 1,
+      "contexts": [
+        {
+          "count": 1,
+          "name": "pos"
+        }
+      ],
+      "json_context_ref_count": 0,
+      "present_as_recovered_map_package": false,
+      "source_count": 1
+    },
+    "001_001_00630": {
+      "binary_context_ref_count": 1,
+      "contexts": [
+        {
+          "count": 1,
+          "name": "map"
+        }
+      ],
+      "json_context_ref_count": 0,
+      "present_as_recovered_map_package": false,
+      "source_count": 1
+    },
+    "001_001_00730": {
+      "binary_context_ref_count": 1,
+      "contexts": [
+        {
+          "count": 1,
+          "name": "map"
+        }
+      ],
+      "json_context_ref_count": 0,
+      "present_as_recovered_map_package": false,
+      "source_count": 1
+    },
+    "001_001_01011": {
+      "binary_context_ref_count": 2,
+      "contexts": [
+        {
+          "count": 2,
+          "name": "battle"
+        }
+      ],
+      "json_context_ref_count": 0,
+      "present_as_recovered_map_package": false,
+      "source_count": 1
+    },
+    "001_002_00001": {
+      "binary_context_ref_count": 2,
+      "contexts": [
+        {
+          "count": 2,
+          "name": "pos"
+        }
+      ],
+      "json_context_ref_count": 0,
+      "present_as_recovered_map_package": false,
+      "source_count": 2
+    },
+    "001_003_00001": {
+      "binary_context_ref_count": 2,
+      "contexts": [
+        {
+          "count": 2,
+          "name": "pos"
+        }
+      ],
+      "json_context_ref_count": 0,
+      "present_as_recovered_map_package": false,
+      "source_count": 2
+    },
+    "002_001_10000": {
+      "binary_context_ref_count": 6,
+      "contexts": [
+        {
+          "count": 6,
+          "name": "pos"
+        }
+      ],
+      "json_context_ref_count": 0,
+      "present_as_recovered_map_package": false,
+      "source_count": 6
+    },
+    "100_000_00002": {
+      "binary_context_ref_count": 0,
+      "contexts": [
+        {
+          "count": 1,
+          "name": "quest"
+        }
+      ],
+      "json_context_ref_count": 1,
+      "present_as_recovered_map_package": false,
+      "source_count": 1
+    },
+    "100_000_00005": {
+      "binary_context_ref_count": 0,
+      "contexts": [
+        {
+          "count": 1,
+          "name": "encounter"
+        },
+        {
+          "count": 1,
+          "name": "quest"
+        }
+      ],
+      "json_context_ref_count": 2,
+      "present_as_recovered_map_package": false,
+      "source_count": 2
+    },
+    "100_000_00006": {
+      "binary_context_ref_count": 0,
+      "contexts": [
+        {
+          "count": 2,
+          "name": "encounter"
+        },
+        {
+          "count": 1,
+          "name": "start"
+        },
+        {
+          "count": 1,
+          "name": "quest"
+        }
+      ],
+      "json_context_ref_count": 3,
+      "present_as_recovered_map_package": false,
+      "source_count": 3
+    },
+    "100_000_00010": {
+      "binary_context_ref_count": 0,
+      "contexts": [
+        {
+          "count": 1,
+          "name": "character"
+        }
+      ],
+      "json_context_ref_count": 1,
+      "present_as_recovered_map_package": false,
+      "source_count": 1
+    },
+    "100_001_00000": {
+      "binary_context_ref_count": 0,
+      "contexts": [
+        {
+          "count": 1,
+          "name": "encounter"
+        }
+      ],
+      "json_context_ref_count": 1,
+      "present_as_recovered_map_package": false,
+      "source_count": 1
+    },
+    "100_001_00001": {
+      "binary_context_ref_count": 0,
+      "contexts": [
+        {
+          "count": 2,
+          "name": "encounter"
+        }
+      ],
+      "json_context_ref_count": 2,
+      "present_as_recovered_map_package": false,
+      "source_count": 1
+    },
+    "100_001_00002": {
+      "binary_context_ref_count": 0,
+      "contexts": [
+        {
+          "count": 1,
+          "name": "tutorial"
+        }
+      ],
+      "json_context_ref_count": 1,
+      "present_as_recovered_map_package": false,
+      "source_count": 1
+    },
+    "100_002_00021": {
+      "binary_context_ref_count": 2,
+      "contexts": [
+        {
+          "count": 2,
+          "name": "battle"
+        }
+      ],
+      "json_context_ref_count": 0,
+      "present_as_recovered_map_package": false,
+      "source_count": 1
+    },
+    "100_002_00022": {
+      "binary_context_ref_count": 1,
+      "contexts": [
+        {
+          "count": 1,
+          "name": "battle"
+        }
+      ],
+      "json_context_ref_count": 0,
+      "present_as_recovered_map_package": false,
+      "source_count": 1
+    },
+    "100_002_00044": {
+      "binary_context_ref_count": 1,
+      "contexts": [
+        {
+          "count": 1,
+          "name": "battle"
+        }
+      ],
+      "json_context_ref_count": 0,
+      "present_as_recovered_map_package": false,
+      "source_count": 1
+    },
+    "100_002_00054": {
+      "binary_context_ref_count": 0,
+      "contexts": [
+        {
+          "count": 1,
+          "name": "quest"
+        }
+      ],
+      "json_context_ref_count": 1,
+      "present_as_recovered_map_package": false,
+      "source_count": 1
+    },
+    "100_002_00056": {
+      "binary_context_ref_count": 2,
+      "contexts": [
+        {
+          "count": 2,
+          "name": "start"
+        }
+      ],
+      "json_context_ref_count": 0,
+      "present_as_recovered_map_package": false,
+      "source_count": 2
+    },
+    "100_002_00062": {
+      "binary_context_ref_count": 0,
+      "contexts": [
+        {
+          "count": 6,
+          "name": "encounter"
+        }
+      ],
+      "json_context_ref_count": 6,
+      "present_as_recovered_map_package": false,
+      "source_count": 6
+    },
+    "100_002_00065": {
+      "binary_context_ref_count": 0,
+      "contexts": [
+        {
+          "count": 6,
+          "name": "encounter"
+        }
+      ],
+      "json_context_ref_count": 6,
+      "present_as_recovered_map_package": false,
+      "source_count": 6
+    },
+    "100_002_00091": {
+      "binary_context_ref_count": 0,
+      "contexts": [
+        {
+          "count": 6,
+          "name": "encounter"
+        }
+      ],
+      "json_context_ref_count": 6,
+      "present_as_recovered_map_package": false,
+      "source_count": 6
+    },
+    "100_002_00110": {
+      "binary_context_ref_count": 0,
+      "contexts": [
+        {
+          "count": 1,
+          "name": "encounter"
+        },
+        {
+          "count": 1,
+          "name": "quest"
+        }
+      ],
+      "json_context_ref_count": 2,
+      "present_as_recovered_map_package": false,
+      "source_count": 2
+    },
+    "100_002_00119": {
+      "binary_context_ref_count": 0,
+      "contexts": [
+        {
+          "count": 1,
+          "name": "quest"
+        }
+      ],
+      "json_context_ref_count": 1,
+      "present_as_recovered_map_package": false,
+      "source_count": 1
+    },
+    "141_079_00200": {
+      "binary_context_ref_count": 0,
+      "contexts": [
+        {
+          "count": 1,
+          "name": "quest"
+        }
+      ],
+      "json_context_ref_count": 1,
+      "present_as_recovered_map_package": false,
+      "source_count": 1
+    },
+    "193_002_00000": {
+      "binary_context_ref_count": 0,
+      "contexts": [
+        {
+          "count": 1,
+          "name": "quest"
+        }
+      ],
+      "json_context_ref_count": 1,
+      "present_as_recovered_map_package": false,
+      "source_count": 1
+    },
+    "200_001_00001": {
+      "binary_context_ref_count": 0,
+      "contexts": [
+        {
+          "count": 1,
+          "name": "encounter"
+        }
+      ],
+      "json_context_ref_count": 1,
+      "present_as_recovered_map_package": false,
+      "source_count": 1
+    },
+    "200_002_00001": {
+      "binary_context_ref_count": 2,
+      "contexts": [
+        {
+          "count": 2,
+          "name": "battle"
+        }
+      ],
+      "json_context_ref_count": 0,
+      "present_as_recovered_map_package": false,
+      "source_count": 1
+    }
+  },
+  "semantic_policy": "Resource-ID syntax alone does not identify maps. A recovered map-package match is reported separately. JSON pointers and nearby keyword offsets are evidence locations, not semantic proof of tutorial selection."
+}
