@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "job_id": "oracle-public-xapk-patch-network-001",
+  "source_sha": "c0cdeb01b5e40c31c2b2a01ab56198b2f63592af",
+  "kind": "python",
+  "script": "scripts/logres/inspect_public_xapk_patch_network.py",
+  "args": [
+    "--url",
+    "https://d.apkpure.net/b/XAPK/jp.MarvelousAQL.logres?version=latest",
+    "--output",
+    "@OUTPUT@/public-xapk-patch-network.json"
+  ],
+  "timeout_seconds": 1800
+}
