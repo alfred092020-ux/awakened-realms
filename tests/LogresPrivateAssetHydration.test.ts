@@ -12,35 +12,54 @@ import {
   resolve,
 } from 'node:path'
 
+function runPythonSelfTest(
+  scriptName: string,
+) {
+  const script =
+    resolve(
+      process.cwd(),
+      'scripts/logres',
+      scriptName,
+    )
+
+  return execFileSync(
+    'python3',
+    [
+      script,
+      '--self-test',
+    ],
+    {
+      encoding:
+        'utf8',
+    },
+  )
+}
+
 describe(
-  'Logres private asset hydrator',
+  'Logres private extraction tooling',
   () => {
     it(
-      'passes its synthetic MBN / ASTC / KTX self-test',
+      'passes the MBN / ASTC / KTX hydrator self-test',
       () => {
-        const script =
-          resolve(
-            process.cwd(),
-            'scripts/logres/hydrate_private_assets.py',
-          )
-
-        const output =
-          execFileSync(
-            'python3',
-            [
-              script,
-              '--self-test',
-            ],
-            {
-              encoding:
-                'utf8',
-            },
-          )
-
         expect(
-          output,
+          runPythonSelfTest(
+            'hydrate_private_assets.py',
+          ),
         ).toContain(
           'Logres private asset hydrator self-test: PASS',
+        )
+      },
+    )
+
+    it(
+      'passes the raw map protobuf-wire inspector self-test',
+      () => {
+        expect(
+          runPythonSelfTest(
+            'inspect_private_map_packages.py',
+          ),
+        ).toContain(
+          'Logres private map package inspector self-test: PASS',
         )
       },
     )
