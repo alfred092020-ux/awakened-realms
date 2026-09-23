@@ -283,11 +283,17 @@ export class LogresWorldSelectScene
             )
           }
 
+          /*
+           * Phaser Container input-local coordinates use the display
+           * rectangle's top-left origin after setSize(). Keep the
+           * reconstructed tap target aligned with the visible 720x256
+           * WorldView artwork instead of shifting it by half a card.
+           */
           card
             .setInteractive(
               new Phaser.Geom.Rectangle(
-                -360,
-                -128,
+                0,
+                0,
                 720,
                 256,
               ),
