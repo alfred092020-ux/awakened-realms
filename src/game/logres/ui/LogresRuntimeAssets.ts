@@ -113,6 +113,30 @@ export const LOGRES_ASSETS = {
       '/__logres_ref/global/gui/Battle/bat_select_parts01.dds.png',
   },
 
+  tutorialParameterBar: {
+    key:
+      'logres-global-tutorial-parameter-bar',
+
+    url:
+      '/__logres_ref/global/tutorial-hud/hud/field_parameter.png',
+  },
+
+  tutorialQuestStartText: {
+    key:
+      'logres-global-tutorial-quest-start-text',
+
+    url:
+      '/__logres_ref/global/tutorial-hud/telop/quest_start.png',
+  },
+
+  tutorialQuestStartBackground: {
+    key:
+      'logres-global-tutorial-quest-start-background',
+
+    url:
+      '/__logres_ref/global/tutorial-hud/telop/quest_bg00.png',
+  },
+
   equipmentSkillBase: {
     key:
       'logres-global-equipment-skill-base',

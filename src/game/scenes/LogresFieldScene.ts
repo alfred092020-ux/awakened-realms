@@ -5,6 +5,16 @@ import {
   preloadLogresAssets,
 } from '../logres/ui/LogresRuntimeAssets'
 
+import {
+  LOGRES_TUTORIAL_HUD_RUNTIME_SELECTION,
+  LOGRES_TUTORIAL_PARAMETER_BAR_PLACEMENT,
+  LOGRES_TUTORIAL_QUEST_START_HIDE_EVENT,
+  LOGRES_TUTORIAL_QUEST_START_REJECTED_EVENT,
+  LOGRES_TUTORIAL_QUEST_START_SHOW_EVENT,
+  resolveLogresTutorialQuestStartPlacement,
+  type LogresTutorialQuestStartPlacement,
+} from '../logres/tutorial/LogresTutorialHudRuntime'
+
 interface EquipmentUiSettings {
   skill_equip_max_normal?:
     number
@@ -32,6 +42,18 @@ interface FieldSettings {
 
 export class LogresFieldScene
   extends Phaser.Scene {
+  private tutorialParameterBar:
+    Phaser.GameObjects.Image | null =
+      null
+
+  private tutorialQuestStartLayer:
+    Phaser.GameObjects.Container | null =
+      null
+
+  private tutorialQuestStartPlacement:
+    Readonly<LogresTutorialQuestStartPlacement> | null =
+      null
+
   constructor() {
     super('LogresFieldScene')
   }
@@ -249,5 +271,216 @@ export class LogresFieldScene
         ?.resource_path
         ?.default_background_image,
     )
+
+    this.createTutorialHud()
+  }
+
+  update() {
+    this.syncTutorialHudToCamera()
+  }
+
+  private createTutorialHud() {
+    this.tutorialParameterBar =
+      this.add
+        .image(
+          0,
+          0,
+          LOGRES_ASSETS
+            .tutorialParameterBar
+            .key,
+        )
+        .setDepth(
+          1000,
+        )
+
+    const questBackground =
+      this.add
+        .image(
+          0,
+          0,
+          LOGRES_ASSETS
+            .tutorialQuestStartBackground
+            .key,
+        )
+
+    const questText =
+      this.add
+        .image(
+          0,
+          0,
+          LOGRES_ASSETS
+            .tutorialQuestStartText
+            .key,
+        )
+
+    this.tutorialQuestStartLayer =
+      this.add
+        .container(
+          0,
+          0,
+          [
+            questBackground,
+            questText,
+          ],
+        )
+        .setDepth(
+          1010,
+        )
+        .setVisible(
+          false,
+        )
+
+    const showQuestStart =
+      (
+        placementValue:
+          unknown,
+      ) => {
+        try {
+          this.tutorialQuestStartPlacement =
+            resolveLogresTutorialQuestStartPlacement(
+              placementValue,
+            )
+
+          this.tutorialQuestStartLayer
+            ?.setVisible(
+              true,
+            )
+
+          this.syncTutorialHudToCamera()
+        } catch (
+          error
+        ) {
+          this.events.emit(
+            LOGRES_TUTORIAL_QUEST_START_REJECTED_EVENT,
+            {
+              message:
+                error instanceof
+                  Error
+                  ? error.message
+                  : String(
+                      error,
+                    ),
+            },
+          )
+        }
+      }
+
+    const hideQuestStart =
+      () => {
+        this.tutorialQuestStartPlacement =
+          null
+
+        this.tutorialQuestStartLayer
+          ?.setVisible(
+            false,
+          )
+      }
+
+    this.events.on(
+      LOGRES_TUTORIAL_QUEST_START_SHOW_EVENT,
+      showQuestStart,
+    )
+
+    this.events.on(
+      LOGRES_TUTORIAL_QUEST_START_HIDE_EVENT,
+      hideQuestStart,
+    )
+
+    this.events.once(
+      Phaser.Scenes.Events.SHUTDOWN,
+      () => {
+        this.events.off(
+          LOGRES_TUTORIAL_QUEST_START_SHOW_EVENT,
+          showQuestStart,
+        )
+
+        this.events.off(
+          LOGRES_TUTORIAL_QUEST_START_HIDE_EVENT,
+          hideQuestStart,
+        )
+      },
+    )
+
+    this.registry.set(
+      'logres.tutorialHud.parameterBar.sourceSha256',
+      LOGRES_TUTORIAL_HUD_RUNTIME_SELECTION
+        .parameterBar
+        .sourceSha256,
+    )
+
+    this.registry.set(
+      'logres.tutorialHud.parameterBar.placementEvidence',
+      LOGRES_TUTORIAL_PARAMETER_BAR_PLACEMENT
+        .evidenceLabel,
+    )
+
+    this.registry.set(
+      'logres.tutorialHud.questStart.positioning',
+      'EXPLICIT_CALLER_PLACEMENT_UNTIL_LFLA_TRANSFORM_IS_DECODED',
+    )
+
+    this.syncTutorialHudToCamera()
+  }
+
+  private syncTutorialHudToCamera() {
+    const camera =
+      this.cameras.main
+
+    const zoom =
+      camera.zoom
+
+    if (
+      !Number.isFinite(
+        zoom,
+      ) ||
+      zoom <= 0
+    ) {
+      return
+    }
+
+    if (
+      this.tutorialParameterBar
+    ) {
+      const worldPoint =
+        camera.getWorldPoint(
+          LOGRES_TUTORIAL_PARAMETER_BAR_PLACEMENT
+            .x,
+          LOGRES_TUTORIAL_PARAMETER_BAR_PLACEMENT
+            .y,
+        )
+
+      this.tutorialParameterBar
+        .setPosition(
+          worldPoint.x,
+          worldPoint.y,
+        )
+        .setScale(
+          1 /
+            zoom,
+        )
+    }
+
+    if (
+      this.tutorialQuestStartLayer &&
+      this.tutorialQuestStartPlacement
+    ) {
+      const worldPoint =
+        camera.getWorldPoint(
+          this.tutorialQuestStartPlacement
+            .centerX,
+          this.tutorialQuestStartPlacement
+            .centerY,
+        )
+
+      this.tutorialQuestStartLayer
+        .setPosition(
+          worldPoint.x,
+          worldPoint.y,
+        )
+        .setScale(
+          1 /
+            zoom,
+        )
+    }
   }
 }
