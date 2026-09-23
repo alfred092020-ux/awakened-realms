@@ -1,6 +1,10 @@
 import Phaser from 'phaser'
 
 import {
+  createLogresBattlePresentation,
+} from '../logres/battle/LogresBattlePresentation'
+
+import {
   LogresGlobalBattleKit,
   type LogresGlobalBattleKitInput,
 } from '../logres/battle/LogresGlobalBattleKit'
@@ -23,6 +27,9 @@ export interface LogresBattleSceneData
 
 export class LogresBattleScene
   extends Phaser.Scene {
+  private presentation:
+    ReturnType<typeof createLogresBattlePresentation> | null = null
+
   private battleKit:
     LogresGlobalBattleKit | null =
       null
@@ -62,6 +69,15 @@ export class LogresBattleScene
   init(
     data: LogresBattleSceneData,
   ) {
+    // Phaser reuses this scene after field return. Old display references
+    // must not suppress the next harness result/return controls.
+    this.weaponCover = null
+    this.epText = null
+    this.demoStatusText = null
+    this.demoResolveButton = null
+    this.demoReturnButton = null
+    this.presentation = null
+
     this.battleKit =
       new LogresGlobalBattleKit({
         weaponPanels:
@@ -94,9 +110,17 @@ export class LogresBattleScene
         0x101010,
       )
 
-    const snapshot =
-      this.battleKit
-        .snapshot()
+    this.presentation = createLogresBattlePresentation(
+      this.battleKit.snapshot(),
+      window.location.search,
+    )
+    this.registry.set('logres.battle.presentation', this.presentation)
+    // An old synthetic result must never describe a new live battle.
+    for (const key of ['logres.demo01.resolution', 'logres.demo01.rewardApplied']) {
+      this.registry.remove(key)
+    }
+    this.registry.set('logres.demo01.battleStatus', 'ACTIVE')
+    this.registry.set('logres.demo01.battleProvenance', 'RECONSTRUCTED')
 
     const spacing =
       112
@@ -109,7 +133,7 @@ export class LogresBattleScene
       this.scale.height -
       150
 
-    snapshot.weaponPanels
+    this.presentation.weaponPanels
       .forEach(
         (
           panel,
@@ -250,33 +274,26 @@ export class LogresBattleScene
       y,
     )
 
-    this.events.on(
-      'logres-request-normal-attack',
-      () => {
-        this.emitNormalAttack()
-      },
-    )
+    this.events.on('logres-request-normal-attack', this.emitNormalAttack, this)
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.events.off('logres-request-normal-attack', this.emitNormalAttack, this)
+    })
 
-    this.createDemo01ResolutionControls()
+    this.createBattleStatusLabel()
+    if (this.presentation.showDemoControls) {
+      this.createDemo01ResolutionControls()
+    }
   }
 
-  private createDemo01ResolutionControls() {
-    this.registry.set(
-      'logres.demo01.battleStatus',
-      'ACTIVE',
-    )
-
-    this.registry.set(
-      'logres.demo01.battleProvenance',
-      'RECONSTRUCTED',
-    )
-
+  private createBattleStatusLabel() {
     this.demoStatusText =
       this.add
         .text(
           24,
           24,
-          'DEMO 0.1 • RECONSTRUCTED BATTLE',
+          this.presentation?.showDemoControls
+            ? 'DEMO 0.1 • RECONSTRUCTED BATTLE'
+            : 'RECONSTRUCTED BATTLE',
           {
             fontFamily:
               'Arial, sans-serif',
@@ -298,6 +315,9 @@ export class LogresBattleScene
           100,
         )
 
+  }
+
+  private createDemo01ResolutionControls() {
     this.demoResolveButton =
       this.add
         .text(
@@ -341,6 +361,13 @@ export class LogresBattleScene
   }
 
   private resolveDemo01Battle() {
+    if (
+      !this.presentation?.showDemoControls ||
+      this.registry.get('logres.demo01.battleStatus') !== 'ACTIVE'
+    ) {
+      return
+    }
+
     const existingInventory =
       this.registry.get(
         'logres.demo01.inventory',
@@ -624,17 +651,11 @@ export class LogresBattleScene
       return
     }
 
-    const {
-      currentEp,
-      epCap,
-    } =
-      this.battleKit
-        .snapshot()
-
-    this.epText.setText(
-      epCap === null
-        ? `EP ${currentEp}`
-        : `EP ${currentEp}/${epCap}`,
+    this.presentation = createLogresBattlePresentation(
+      this.battleKit.snapshot(),
+      window.location.search,
     )
+    this.registry.set('logres.battle.presentation', this.presentation)
+    this.epText.setText(this.presentation.epLabel)
   }
 }
