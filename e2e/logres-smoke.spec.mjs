@@ -69,7 +69,25 @@ test(
   'diagnoses recovered title reveal before input',
   async ({
     page,
+    request,
   }) => {
+    const titleFieldAsset =
+      await request.get(
+        '/__logres_ref/global/gui/title/effect/png/field00.dds.png',
+      )
+
+    const titleFieldContentType =
+      titleFieldAsset.headers()[
+        'content-type'
+      ] ??
+      ''
+
+    const privateTitleEffectsPresent =
+      titleFieldAsset.ok() &&
+      titleFieldContentType.includes(
+        'image/',
+      )
+
     await page.goto('/')
 
     await waitForScene(
@@ -180,6 +198,95 @@ test(
           'UNRESOLVED_GLOBAL_LFLA',
       },
     })
+
+    const backgroundPresentation =
+      await page.evaluate(
+        () => {
+          const game =
+            window
+              .__AWAKENED_REALMS_GAME__
+
+          const scene =
+            game.scene.getScene(
+              'LogresTitleScene',
+            )
+
+          return {
+            provenance:
+              game.registry.get(
+                'logres.title.backgroundPresentation',
+              ),
+
+            textures: [
+              'logres-global-title-effect-sky',
+              'logres-global-title-effect-cloud-00',
+              'logres-global-title-effect-cloud-01',
+              'logres-global-title-effect-field-00',
+            ]
+              .filter(
+                (
+                  key,
+                ) =>
+                  scene.children.list.some(
+                    (
+                      child,
+                    ) =>
+                      child.texture
+                        ?.key ===
+                      key,
+                  ),
+              ),
+          }
+        },
+      )
+
+    if (
+      privateTitleEffectsPresent
+    ) {
+      expect(
+        backgroundPresentation,
+      ).toEqual({
+        provenance: {
+          status:
+            'READY',
+
+          layout:
+            'CONFIRMED_CURRENT_JP_NATIVE',
+
+          assetFamily:
+            'RECOVERED_TITLE_EFFECT_PACKAGE_BYTE_IDENTICAL_TO_LIVE_JP',
+
+          globalApplication:
+            'SUPPORTED_INFERENCE_CROSS_VERSION_TITLE_LAYOUT',
+
+          animation:
+            'STATIC_FRAME0_ONLY',
+        },
+
+        textures: [
+          'logres-global-title-effect-sky',
+          'logres-global-title-effect-cloud-00',
+          'logres-global-title-effect-cloud-01',
+          'logres-global-title-effect-field-00',
+        ],
+      })
+    } else {
+      expect(
+        backgroundPresentation
+          .provenance,
+      ).toEqual({
+        status:
+          'FALLBACK',
+
+        reason:
+          'PRIVATE_TITLE_EFFECT_ASSETS_UNAVAILABLE',
+      })
+
+      expect(
+        backgroundPresentation
+          .textures,
+      ).toEqual([])
+    }
 
     console.info(
       'TITLE_CONTROL_INITIAL',

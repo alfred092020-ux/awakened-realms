@@ -7,10 +7,17 @@ import {
 } from '../logres/ui/LogresRuntimeAssets'
 
 import {
+  LOGRES_TITLE_EFFECT_ASSETS,
+  preloadLogresTitleEffectAssets,
+} from '../logres/ui/LogresTitleEffectRuntimeAssets'
+
+import {
   logresDevMs,
 } from '../logres/LogresDevSettings'
 
 import {
+  LOGRES_TITLE_FRAME0_BACKGROUND_EVIDENCE,
+  LOGRES_TITLE_FRAME0_BACKGROUND_LAYOUT,
   LOGRES_TITLE_IDLE_LOGO_LAYOUT,
 } from '../logres/ui/LogresTitleEffectEvidence'
 
@@ -27,6 +34,10 @@ export class LogresTitleScene
 
   preload() {
     preloadLogresAssets(
+      this,
+    )
+
+    preloadLogresTitleEffectAssets(
       this,
     )
 
@@ -56,6 +67,79 @@ export class LogresTitleScene
           .titleBackground
           .key,
       )
+      .setDepth(
+        -1000,
+      )
+
+    const titleEffectReady =
+      Object.values(
+        LOGRES_TITLE_EFFECT_ASSETS,
+      )
+        .every(
+          (
+            asset,
+          ) =>
+            this.textures.exists(
+              asset.key,
+            ),
+        )
+
+    if (
+      titleEffectReady
+    ) {
+      LOGRES_TITLE_FRAME0_BACKGROUND_LAYOUT
+        .forEach(
+          (
+            layer,
+            index,
+          ) => {
+            const asset =
+              LOGRES_TITLE_EFFECT_ASSETS[
+                layer.asset
+              ]
+
+            this.add
+              .image(
+                layer.x,
+                layer.y,
+                asset.key,
+              )
+              .setOrigin(
+                0,
+                0,
+              )
+              .setScale(
+                layer.scaleX,
+                layer.scaleY,
+              )
+              .setDepth(
+                -900 +
+                  index,
+              )
+          },
+        )
+
+      this.registry.set(
+        'logres.title.backgroundPresentation',
+        {
+          status:
+            'READY',
+
+          ...LOGRES_TITLE_FRAME0_BACKGROUND_EVIDENCE,
+        },
+      )
+    } else {
+      this.registry.set(
+        'logres.title.backgroundPresentation',
+        {
+          status:
+            'FALLBACK',
+
+          reason:
+            'PRIVATE_TITLE_EFFECT_ASSETS_UNAVAILABLE',
+        },
+      )
+    }
 
     /*
      * The recovered Global logo00 artwork is 710 x 334, exactly matching the
@@ -79,6 +163,9 @@ export class LogresTitleScene
       .setOrigin(
         0.5,
         0.5,
+      )
+      .setDepth(
+        100,
       )
 
     this.registry.set(
@@ -120,6 +207,9 @@ export class LogresTitleScene
         )
         .setAlpha(
           0,
+        )
+        .setDepth(
+          200,
         )
         .setInteractive({
           useHandCursor:
