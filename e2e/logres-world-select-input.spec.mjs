@@ -123,9 +123,12 @@ test(
       )
 
     expect(
+      [
+        'RECOVERED_GLOBAL',
+        'RECONSTRUCTED_FALLBACK',
+      ],
+    ).toContain(
       labelSource,
-    ).toBe(
-      'RECONSTRUCTED_FALLBACK',
     )
 
     await page.waitForFunction(

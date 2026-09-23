@@ -6,6 +6,44 @@ import {
 } from '../logres/ui/LogresRuntimeAssets'
 
 import {
+  createTerrainProofRenderer,
+} from '../logres/field/LogresTerrainProofRenderer'
+
+import {
+  createLogresPlayableFieldRasterTransform,
+  loadLogresPlayableFieldRuntime,
+  LOGRES_PLAYABLE_FIELD_MAP_ID,
+  nearestLogresPlayableFieldTile,
+  projectLogresPlayableFieldTileToRaster,
+  type LoadedLogresPlayableFieldRuntime,
+  type LogresPlayableFieldRasterTransform,
+} from '../logres/field/LogresPlayableFieldRuntime'
+
+import {
+  logresRendererCandidateUrls,
+} from '../logres/field/LogresRendererCandidate'
+
+import {
+  findReconstructedLogresFieldPath,
+} from '../logres/field/LogresFieldPathfinder'
+
+import {
+  ReconstructedLogresEncounterAuthority,
+} from '../logres/encounter/ReconstructedLogresEncounterAuthority'
+
+import {
+  ReconstructedLogresBattleEntryBridge,
+} from '../logres/encounter/ReconstructedLogresBattleEntryBridge'
+
+import type {
+  LogresFieldNavigationTile,
+} from '../logres/field/LogresFieldNavigation'
+
+import {
+  logresDevMs,
+} from '../logres/LogresDevSettings'
+
+import {
   LOGRES_TUTORIAL_HUD_RUNTIME_SELECTION,
   LOGRES_TUTORIAL_PARAMETER_BAR_PLACEMENT,
   LOGRES_TUTORIAL_QUEST_START_HIDE_EVENT,
@@ -40,11 +78,58 @@ interface FieldSettings {
   }
 }
 
+const PLAYABLE_FIELD_CHIP_TEXTURE_KEY =
+  'logres-playable-field-chip'
+
+const PLAYABLE_FIELD_OBJECT_TEXTURE_KEY =
+  'logres-playable-field-object'
+
+const PLAYABLE_FIELD_RASTER_TEXTURE_KEY =
+  'logres-playable-field-raster'
+
+const RECONSTRUCTED_FIELD_STEP_MS =
+  90
+
 export class LogresFieldScene
   extends Phaser.Scene {
   private tutorialParameterBar:
     Phaser.GameObjects.Image | null =
       null
+
+  private fallbackBackdrop:
+    Phaser.GameObjects.TileSprite | null =
+      null
+
+  private playableFieldRuntime:
+    LoadedLogresPlayableFieldRuntime | null =
+      null
+
+  private playableFieldTransform:
+    Readonly<LogresPlayableFieldRasterTransform> | null =
+      null
+
+  private playablePlayer:
+    Phaser.GameObjects.Arc | null =
+      null
+
+  private playableCurrentTile:
+    Readonly<LogresFieldNavigationTile> | null =
+      null
+
+  private playableMoveTween:
+    Phaser.Tweens.Tween | null =
+      null
+
+  private playableEncounterTile:
+    Readonly<LogresFieldNavigationTile> | null =
+      null
+
+  private playableEncounterMarker:
+    Phaser.GameObjects.Arc | null =
+      null
+
+  private playableEncounterApproachActive =
+    false
 
   private tutorialQuestStartLayer:
     Phaser.GameObjects.Container | null =
@@ -60,6 +145,21 @@ export class LogresFieldScene
 
   preload() {
     preloadLogresAssets(this)
+
+    const playableFieldUrls =
+      logresRendererCandidateUrls(
+        LOGRES_PLAYABLE_FIELD_MAP_ID,
+      )
+
+    this.load.image(
+      PLAYABLE_FIELD_CHIP_TEXTURE_KEY,
+      playableFieldUrls.chipPng,
+    )
+
+    this.load.image(
+      PLAYABLE_FIELD_OBJECT_TEXTURE_KEY,
+      playableFieldUrls.objPng,
+    )
 
     this.load.json(
       'logres-equipment-settings',
@@ -125,16 +225,17 @@ export class LogresFieldScene
      * Logres client texture used only so the
      * reconstruction screen is visible.
      */
-    this.add
-      .tileSprite(
-        width / 2,
-        height / 2,
-        width,
-        height,
-        LOGRES_ASSETS
-          .titleBackground
-          .key,
-      )
+    this.fallbackBackdrop =
+      this.add
+        .tileSprite(
+          width / 2,
+          height / 2,
+          width,
+          height,
+          LOGRES_ASSETS
+            .titleBackground
+            .key,
+        )
 
     const equipment =
       this.cache.json.get(
@@ -273,10 +374,911 @@ export class LogresFieldScene
     )
 
     this.createTutorialHud()
+
+    this.registry.set(
+      'logres.playableField.status',
+      'LOADING',
+    )
+
+    void this.initializePlayableField()
   }
 
   update() {
     this.syncTutorialHudToCamera()
+  }
+
+  private async initializePlayableField() {
+    try {
+      const runtime =
+        await loadLogresPlayableFieldRuntime()
+
+      if (
+        !this.scene.isActive()
+      ) {
+        return
+      }
+
+      const chipSource =
+        this.textures
+          .get(
+            PLAYABLE_FIELD_CHIP_TEXTURE_KEY,
+          )
+          .getSourceImage() as
+          HTMLImageElement
+
+      const objectSource =
+        this.textures
+          .get(
+            PLAYABLE_FIELD_OBJECT_TEXTURE_KEY,
+          )
+          .getSourceImage() as
+          HTMLImageElement
+
+      if (
+        !chipSource ||
+        !objectSource
+      ) {
+        throw new Error(
+          'Recovered field atlases are unavailable',
+        )
+      }
+
+      const canvas =
+        document.createElement(
+          'canvas',
+        )
+
+      canvas.width =
+        1536
+
+      canvas.height =
+        1536
+
+      const renderer =
+        createTerrainProofRenderer(
+          canvas,
+          runtime.mesh,
+          {
+            chip:
+              chipSource,
+            obj:
+              objectSource,
+          },
+        )
+
+      renderer.render(
+        false,
+        'both',
+        1,
+        0,
+        0,
+      )
+
+      const transform =
+        createLogresPlayableFieldRasterTransform(
+          runtime.mesh,
+          canvas.width,
+          canvas.height,
+        )
+
+      /*
+       * Phaser CanvasTexture requires a 2D canvas. The terrain proof owns a
+       * WebGL context, and browsers do not allow that same canvas to acquire a
+       * second 2D context. Preserve the rendered frame into a separate 2D
+       * canvas before registering it with Phaser.
+       */
+      const rasterCanvas =
+        document.createElement(
+          'canvas',
+        )
+
+      rasterCanvas.width =
+        canvas.width
+
+      rasterCanvas.height =
+        canvas.height
+
+      const rasterContext =
+        rasterCanvas.getContext(
+          '2d',
+        )
+
+      if (!rasterContext) {
+        renderer.dispose()
+
+        throw new Error(
+          'Unable to create 2D playable field raster context',
+        )
+      }
+
+      rasterContext.drawImage(
+        canvas,
+        0,
+        0,
+      )
+
+      if (
+        this.textures.exists(
+          PLAYABLE_FIELD_RASTER_TEXTURE_KEY,
+        )
+      ) {
+        this.textures.remove(
+          PLAYABLE_FIELD_RASTER_TEXTURE_KEY,
+        )
+      }
+
+      const texture =
+        this.textures.addCanvas(
+          PLAYABLE_FIELD_RASTER_TEXTURE_KEY,
+          rasterCanvas,
+        )
+
+      if (!texture) {
+        renderer.dispose()
+
+        throw new Error(
+          'Unable to create playable field raster texture',
+        )
+      }
+
+      this.add
+        .image(
+          0,
+          0,
+          PLAYABLE_FIELD_RASTER_TEXTURE_KEY,
+        )
+        .setOrigin(
+          0,
+          0,
+        )
+        .setDepth(
+          -100,
+        )
+
+      renderer.dispose()
+
+      this.fallbackBackdrop
+        ?.destroy()
+
+      this.fallbackBackdrop =
+        null
+
+      this.playableFieldRuntime =
+        runtime
+
+      this.playableFieldTransform =
+        transform
+
+      this.playableCurrentTile =
+        runtime.spawn
+
+      const spawnPoint =
+        projectLogresPlayableFieldTileToRaster(
+          runtime.spawn,
+          transform,
+        )
+
+      this.playablePlayer =
+        this.add
+          .circle(
+            spawnPoint.x,
+            spawnPoint.y,
+            12,
+            0xffffff,
+            0.95,
+          )
+          .setStrokeStyle(
+            3,
+            0x111111,
+            1,
+          )
+          .setDepth(
+            900,
+          )
+
+      this.cameras.main
+        .setBounds(
+          0,
+          0,
+          transform.width,
+          transform.height,
+        )
+        .centerOn(
+          spawnPoint.x,
+          spawnPoint.y,
+        )
+        .startFollow(
+          this.playablePlayer,
+          true,
+          0.12,
+          0.12,
+        )
+
+      this.createReconstructedEncounterMarker()
+
+      const onPointerDown =
+        (
+          pointer:
+            Phaser.Input.Pointer,
+        ) => {
+          this.movePlayablePlayerToPointer(
+            pointer,
+          )
+        }
+
+      this.input.on(
+        'pointerdown',
+        onPointerDown,
+      )
+
+      this.events.once(
+        Phaser.Scenes.Events.SHUTDOWN,
+        () => {
+          this.input.off(
+            'pointerdown',
+            onPointerDown,
+          )
+
+          this.playableMoveTween
+            ?.stop()
+
+          this.playableMoveTween =
+            null
+        },
+      )
+
+      this.registry.set(
+        'logres.playableField.status',
+        'READY',
+      )
+
+      this.registry.set(
+        'logres.playableField.mapId',
+        runtime.mapId,
+      )
+
+      this.registry.set(
+        'logres.playableField.mapBindingProvenance',
+        runtime.mapBindingProvenance,
+      )
+
+      this.registry.set(
+        'logres.playableField.projectionEvidence',
+        runtime.projectionEvidence,
+      )
+
+      this.registry.set(
+        'logres.playableField.movementSurfaceComplete',
+        runtime.movement
+          .movementSurfaceComplete,
+      )
+
+      this.registry.set(
+        'logres.playableField.tileCount',
+        runtime.movement
+          .tiles
+          .length,
+      )
+
+      this.registry.set(
+        'logres.playableField.spawnProvenance',
+        'RECONSTRUCTED',
+      )
+
+      this.registry.set(
+        'logres.playableField.movementTiming',
+        `RECONSTRUCTED_${RECONSTRUCTED_FIELD_STEP_MS}MS_PER_GRAPH_STEP`,
+      )
+
+      this.syncPlayableFieldRegistry()
+    } catch (
+      error
+    ) {
+      if (
+        !this.scene.isActive()
+      ) {
+        return
+      }
+
+      const message =
+        error instanceof
+          Error
+          ? error.message
+          : String(
+              error,
+            )
+
+      this.registry.set(
+        'logres.playableField.status',
+        'FALLBACK',
+      )
+
+      this.registry.set(
+        'logres.playableField.error',
+        message,
+      )
+
+      console.warn(
+        'Playable recovered field unavailable; retaining fallback field',
+        message,
+      )
+    }
+  }
+
+  private movePlayablePlayerToPointer(
+    pointer:
+      Phaser.Input.Pointer,
+  ) {
+    if (
+      this.playableEncounterApproachActive ||
+      !this.playableFieldRuntime ||
+      !this.playableFieldTransform ||
+      !this.playableCurrentTile ||
+      !this.playablePlayer
+    ) {
+      return
+    }
+
+    const target =
+      nearestLogresPlayableFieldTile(
+        pointer.worldX,
+        pointer.worldY,
+        this.playableFieldRuntime
+          .movement
+          .tiles,
+        this.playableFieldTransform,
+      )
+
+    if (!target) {
+      return
+    }
+
+    const path =
+      findReconstructedLogresFieldPath(
+        this.playableCurrentTile,
+        target,
+        this.playableFieldRuntime
+          .movement
+          .tileAt,
+      )
+
+    if (
+      !path ||
+      path.coords.length <=
+        1
+    ) {
+      return
+    }
+
+    this.playableMoveTween
+      ?.stop()
+
+    this.playableMoveTween =
+      null
+
+    this.walkPlayablePath(
+      path.coords,
+      1,
+    )
+  }
+
+  private walkPlayablePath(
+    coords:
+      readonly Readonly<{
+        col: number
+        row: number
+      }>[],
+    index: number,
+    onComplete?:
+      () => void,
+  ) {
+    if (
+      !this.playableFieldRuntime ||
+      !this.playableFieldTransform ||
+      !this.playablePlayer
+    ) {
+      return
+    }
+
+    if (
+      index >=
+      coords.length
+    ) {
+      this.playableMoveTween =
+        null
+
+      onComplete?.()
+
+      return
+    }
+
+    const coord =
+      coords[
+        index
+      ]!
+
+    const tile =
+      this.playableFieldRuntime
+        .movement
+        .tileAt(
+          coord.col,
+          coord.row,
+        )
+
+    if (!tile) {
+      return
+    }
+
+    const point =
+      projectLogresPlayableFieldTileToRaster(
+        tile,
+        this.playableFieldTransform,
+      )
+
+    this.playableMoveTween =
+      this.tweens.add({
+        targets:
+          this.playablePlayer,
+
+        x:
+          point.x,
+
+        y:
+          point.y,
+
+        duration:
+          logresDevMs(
+            RECONSTRUCTED_FIELD_STEP_MS,
+          ),
+
+        ease:
+          'Linear',
+
+        onComplete:
+          () => {
+            this.playableCurrentTile =
+              tile
+
+            this.syncPlayableFieldRegistry()
+
+            this.walkPlayablePath(
+              coords,
+              index +
+                1,
+              onComplete,
+            )
+          },
+      })
+  }
+
+  private createReconstructedEncounterMarker() {
+    if (
+      !this.playableFieldRuntime ||
+      !this.playableFieldTransform ||
+      !this.playableCurrentTile
+    ) {
+      return
+    }
+
+    const offsets =
+      [
+        [3, -3],
+        [4, 0],
+        [0, 4],
+        [-3, 3],
+        [-4, 0],
+        [0, -4],
+      ] as const
+
+    let selected:
+      Readonly<LogresFieldNavigationTile> | null =
+        null
+
+    for (
+      const [
+        colOffset,
+        rowOffset,
+      ]
+      of offsets
+    ) {
+      const candidate =
+        this.playableFieldRuntime
+          .movement
+          .tileAt(
+            this.playableCurrentTile
+              .col +
+              colOffset,
+            this.playableCurrentTile
+              .row +
+              rowOffset,
+          )
+
+      if (
+        !candidate ||
+        candidate.prohibited
+      ) {
+        continue
+      }
+
+      const path =
+        findReconstructedLogresFieldPath(
+          this.playableCurrentTile,
+          candidate,
+          this.playableFieldRuntime
+            .movement
+            .tileAt,
+        )
+
+      if (
+        path &&
+        path.coords.length >
+          1
+      ) {
+        selected =
+          candidate
+
+        break
+      }
+    }
+
+    if (!selected) {
+      const sorted =
+        [
+          ...this.playableFieldRuntime
+            .movement
+            .tiles,
+        ]
+          .filter(
+            (
+              tile,
+            ) =>
+              !tile.prohibited &&
+              (
+                tile.col !==
+                  this.playableCurrentTile
+                    ?.col ||
+                tile.row !==
+                  this.playableCurrentTile
+                    ?.row
+              ),
+          )
+          .sort(
+            (
+              left,
+              right,
+            ) => {
+              const leftDistance =
+                Math.abs(
+                  left.col -
+                    this.playableCurrentTile!
+                      .col,
+                ) +
+                Math.abs(
+                  left.row -
+                    this.playableCurrentTile!
+                      .row,
+                )
+
+              const rightDistance =
+                Math.abs(
+                  right.col -
+                    this.playableCurrentTile!
+                      .col,
+                ) +
+                Math.abs(
+                  right.row -
+                    this.playableCurrentTile!
+                      .row,
+                )
+
+              return (
+                leftDistance -
+                rightDistance
+              )
+            },
+          )
+
+      for (
+        const candidate
+        of sorted.slice(
+          0,
+          64,
+        )
+      ) {
+        const path =
+          findReconstructedLogresFieldPath(
+            this.playableCurrentTile,
+            candidate,
+            this.playableFieldRuntime
+              .movement
+              .tileAt,
+          )
+
+        if (
+          path &&
+          path.coords.length >
+            1
+        ) {
+          selected =
+            candidate
+
+          break
+        }
+      }
+    }
+
+    if (!selected) {
+      this.registry.set(
+        'logres.playableField.encounterStatus',
+        'UNAVAILABLE',
+      )
+
+      return
+    }
+
+    this.playableEncounterTile =
+      selected
+
+    const point =
+      projectLogresPlayableFieldTileToRaster(
+        selected,
+        this.playableFieldTransform,
+      )
+
+    this.playableEncounterMarker =
+      this.add
+        .circle(
+          point.x,
+          point.y,
+          19,
+          0xf59e0b,
+          0.95,
+        )
+        .setStrokeStyle(
+          4,
+          0x3b1f00,
+          1,
+        )
+        .setDepth(
+          905,
+        )
+        .setInteractive({
+          useHandCursor:
+            true,
+        })
+
+    this.add
+      .text(
+          point.x,
+          point.y -
+            2,
+          '!',
+          {
+            fontFamily:
+              'Arial, sans-serif',
+            fontSize:
+              '28px',
+            color:
+              '#ffffff',
+            fontStyle:
+              'bold',
+          },
+        )
+        .setOrigin(
+          0.5,
+          0.5,
+        )
+        .setDepth(
+          906,
+        )
+
+    this.playableEncounterMarker.on(
+      'pointerup',
+      () => {
+        this.approachReconstructedEncounter()
+      },
+    )
+
+    this.registry.set(
+      'logres.playableField.encounterStatus',
+      'READY',
+    )
+
+    this.registry.set(
+      'logres.playableField.encounterProvenance',
+      'RECONSTRUCTED',
+    )
+
+    this.registry.set(
+      'logres.playableField.encounterCoord',
+      {
+        col:
+          selected.col,
+        row:
+          selected.row,
+        level:
+          selected.level,
+      },
+    )
+  }
+
+  private approachReconstructedEncounter() {
+    if (
+      this.playableEncounterApproachActive ||
+      !this.playableFieldRuntime ||
+      !this.playableCurrentTile ||
+      !this.playableEncounterTile
+    ) {
+      return
+    }
+
+    const path =
+      findReconstructedLogresFieldPath(
+        this.playableCurrentTile,
+        this.playableEncounterTile,
+        this.playableFieldRuntime
+          .movement
+          .tileAt,
+      )
+
+    if (!path) {
+      return
+    }
+
+    this.playableEncounterApproachActive =
+      true
+
+    this.playableMoveTween
+      ?.stop()
+
+    this.playableMoveTween =
+      null
+
+    this.walkPlayablePath(
+      path.coords,
+      1,
+      () => {
+        this.launchReconstructedEncounter()
+      },
+    )
+  }
+
+  private launchReconstructedEncounter() {
+    if (
+      !this.playableEncounterTile
+    ) {
+      this.playableEncounterApproachActive =
+        false
+
+      return
+    }
+
+    const encounter =
+      new ReconstructedLogresEncounterAuthority({
+        encounterKey:
+          'reconstructed-tutorial-field-encounter',
+
+        areaRef:
+          null,
+
+        symbolRef:
+          null,
+
+        mapPosition:
+          null,
+
+        rawEntryState:
+          null,
+
+        eligibility: {
+          globalEncounterAllowed:
+            true,
+
+          encounterEnabled:
+            true,
+
+          entryStateEligible:
+            true,
+
+          questAllowsEncounter:
+            true,
+
+          distanceEligible:
+            true,
+        },
+      })
+
+    const bridge =
+      new ReconstructedLogresBattleEntryBridge(
+        encounter,
+      )
+
+    const intent =
+      bridge.requestEntry()
+
+    const launch =
+      bridge.recordBattleInitialized({
+        battleSystemRef:
+          null,
+
+        battleKit: {
+          weaponPanels: [
+            {
+              unlocked:
+                true,
+
+              weaponRef:
+                'reconstructed-tutorial-weapon',
+
+              normalSkillRef:
+                'reconstructed-normal-attack',
+
+              specialSkillRef:
+                null,
+
+              specialEpCost:
+                null,
+            },
+          ],
+
+          selectedWeaponSlot:
+            0,
+
+          currentEp:
+            0,
+
+          epCap:
+            null,
+        },
+      })
+
+    this.registry.set(
+      'logres.playableField.encounterIntent',
+      intent,
+    )
+
+    this.registry.set(
+      'logres.playableField.encounterAuthority',
+      encounter.snapshot(),
+    )
+
+    this.registry.set(
+      'logres.playableField.battleLaunchProvenance',
+      launch.provenance,
+    )
+
+    this.registry.set(
+      'logres.playableField.battleKitIdentityProvenance',
+      'RECONSTRUCTED_LOCAL_IDENTIFIERS',
+    )
+
+    this.scene.start(
+      launch.sceneKey,
+      launch.sceneData,
+    )
+  }
+
+  private syncPlayableFieldRegistry() {
+    if (
+      !this.playableCurrentTile
+    ) {
+      return
+    }
+
+    this.registry.set(
+      'logres.playableField.currentCoord',
+      {
+        col:
+          this.playableCurrentTile
+            .col,
+        row:
+          this.playableCurrentTile
+            .row,
+        level:
+          this.playableCurrentTile
+            .level,
+      },
+    )
   }
 
   private createTutorialHud() {
