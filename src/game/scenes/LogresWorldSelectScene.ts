@@ -85,23 +85,39 @@ export class LogresWorldSelectScene
         WorldSelectStrings |
         undefined
 
-    const worldLabel =
+    const recoveredWorldLabel =
       strings
         ?.world_select
         ?.world
+        ?.trim()
 
-    const openDateLabel =
+    const recoveredOpenDateLabel =
       strings
         ?.world_select
         ?.open_date
+        ?.trim()
 
-    if (!worldLabel) {
-      console.error(
-        'Global Logres world label is missing',
-      )
+    /*
+     * The recovered Global localization JSON is a private runtime derivative
+     * and is intentionally not committed. A clean checkout / APK must still
+     * be able to enter World Select, so use a visibly reconstructed fallback
+     * label when that private file is unavailable. This does not claim the
+     * fallback English copy is original Global text.
+     */
+    const worldLabel =
+      recoveredWorldLabel ||
+      'World'
 
-      return
-    }
+    const openDateLabel =
+      recoveredOpenDateLabel ||
+      undefined
+
+    this.registry.set(
+      'logres.ui.worldSelectLabelSource',
+      recoveredWorldLabel
+        ? 'RECOVERED_GLOBAL'
+        : 'RECONSTRUCTED_FALLBACK',
+    )
 
     if (
       RECONSTRUCTED_WORLDS.some(
@@ -113,7 +129,7 @@ export class LogresWorldSelectScene
       !openDateLabel
     ) {
       console.error(
-        'Global Logres open-date label is missing',
+        'World open-date label is unavailable for a reconstructed dated world',
       )
 
       return

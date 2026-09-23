@@ -111,6 +111,23 @@ test(
       'LogresWorldSelectScene',
     )
 
+    const labelSource =
+      await page.evaluate(
+        () =>
+          window
+            .__AWAKENED_REALMS_GAME__
+            .registry
+            .get(
+              'logres.ui.worldSelectLabelSource',
+            ),
+      )
+
+    expect(
+      labelSource,
+    ).toBe(
+      'RECONSTRUCTED_FALLBACK',
+    )
+
     await page.waitForFunction(
       () => {
         const scene =
