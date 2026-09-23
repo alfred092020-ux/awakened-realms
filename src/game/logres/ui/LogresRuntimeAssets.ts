@@ -105,6 +105,14 @@ export const LOGRES_ASSETS = {
       '/__logres_ref/global/gui/common_base/skill_base.png',
   },
 
+  battleWeaponCover: {
+    key:
+      'logres-global-battle-weapon-cover',
+
+    url:
+      '/__logres_ref/global/gui/Battle/bat_select_parts01.dds.png',
+  },
+
   equipmentSkillBase: {
     key:
       'logres-global-equipment-skill-base',
