@@ -1,0 +1,7 @@
+{
+  "error": "PATCH_APPLY_FAILED: error: corrupt patch at line 600",
+  "job_id": "logres-renderer-candidate-view-002",
+  "job_type": "PATCH",
+  "status": "PATCH_APPLY_FAILED",
+  "written_at": "2026-09-23T02:17:19.514089+00:00"
+}
