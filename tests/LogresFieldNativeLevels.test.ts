@@ -14,6 +14,7 @@ import type {
 } from '../src/game/logres/field/LogresMapInfoBinary'
 
 import {
+  createLogresFieldMovementSurface,
   createLogresFieldNavigationModel,
   deriveLogresFieldBlockLevel,
   LOGRES_FIELD_LEVEL_FORMULA_EVIDENCE,
@@ -67,6 +68,85 @@ function chipTable(
   return {
     kind:
       'chip',
+    formatWordLow16:
+      10001,
+    recordCount:
+      records.length,
+    records:
+      Object.freeze(
+        records,
+      ),
+    byPackedId:
+      new Map(
+        records.map(
+          (record) => [
+            record.packedId,
+            record,
+          ],
+        ),
+      ),
+  }
+}
+
+function objectTable(
+  rows:
+    readonly [
+      number,
+      number,
+      boolean,
+    ][],
+): LogresMapInfoTable {
+  const records =
+    rows.map(
+      (
+        [
+          packedId,
+          height,
+          climbable,
+        ],
+        recordIndex,
+      ) => {
+        const record:
+          LogresMapInfoRecord =
+          {
+            packedId,
+            component0:
+              Math.floor(
+                packedId /
+                  0x1000000,
+              ),
+            component1:
+              Math.floor(
+                packedId /
+                  0x10000,
+              ) &
+              0xff,
+            component2:
+              packedId &
+              0xffff,
+            height,
+            structureFootprintCols:
+              2,
+            structureFootprintRows:
+              2,
+            structureClimbableFlag:
+              climbable
+                ? 1
+                : 0,
+            structureSwfFlag:
+              0,
+            recordIndex,
+          }
+
+        return Object.freeze(
+          record,
+        )
+      },
+    )
+
+  return {
+    kind:
+      'object',
     formatWordLow16:
       10001,
     recordCount:
@@ -494,6 +574,292 @@ describe(
             ),
         ).toThrow(
           'require MAP_CHIP metadata',
+        )
+      },
+    )
+
+    it(
+      'marks a fully resolved non-climbable structure pass as an authentic no-op surface',
+      () => {
+        const chipId =
+          0x02010000
+
+        const objectId =
+          0x02020003
+
+        const model =
+          createLogresFieldMovementSurface(
+            root([
+              grid(
+                4,
+                5,
+                [
+                  {
+                    Id:
+                      BigInt(
+                        chipId,
+                      ),
+                    Height:
+                      2n,
+                    Vertices:
+                      [],
+                  },
+                ],
+                {
+                  Obj: [
+                    {
+                      Id:
+                        BigInt(
+                          objectId,
+                        ),
+                      DepthOrder:
+                        7n,
+                      Vertices:
+                        [],
+                    },
+                  ],
+                },
+              ),
+            ]),
+            chipTable([
+              [
+                chipId,
+                1,
+              ],
+            ]),
+            objectTable([
+              [
+                objectId,
+                10,
+                false,
+              ],
+            ]),
+          )
+
+        expect(
+          model.metadataComplete,
+        ).toBe(
+          true,
+        )
+
+        expect(
+          model.unresolvedPackedObjectIds,
+        ).toEqual([])
+
+        expect(
+          model.ambiguousStructureGridKeys,
+        ).toEqual([])
+
+        expect(
+          model.resolvedStructureCount,
+        ).toBe(
+          1,
+        )
+
+        expect(
+          model.climbableStructureCount,
+        ).toBe(
+          0,
+        )
+
+        expect(
+          model.structureOverlayResolved,
+        ).toBe(
+          true,
+        )
+
+        expect(
+          model.movementSurfaceComplete,
+        ).toBe(
+          true,
+        )
+
+        expect(
+          model.tileAt(
+            4,
+            5,
+          )?.level,
+        ).toBe(
+          3,
+        )
+      },
+    )
+
+    it(
+      'keeps climbable or unresolved structure metadata behind the movement guard',
+      () => {
+        const chipId =
+          0x02010000
+
+        const objectId =
+          0x02020003
+
+        const source =
+          root([
+            grid(
+              4,
+              5,
+              [
+                {
+                  Id:
+                    BigInt(
+                      chipId,
+                    ),
+                  Height:
+                    2n,
+                  Vertices:
+                    [],
+                },
+              ],
+              {
+                Obj: [
+                  {
+                    Id:
+                      BigInt(
+                        objectId,
+                      ),
+                    DepthOrder:
+                      7n,
+                    Vertices:
+                      [],
+                  },
+                ],
+              },
+            ),
+          ])
+
+        const chips =
+          chipTable([
+            [
+              chipId,
+              1,
+            ],
+          ])
+
+        const climbable =
+          createLogresFieldMovementSurface(
+            source,
+            chips,
+            objectTable([
+              [
+                objectId,
+                10,
+                true,
+              ],
+            ]),
+          )
+
+        expect(
+          climbable.climbableStructureCount,
+        ).toBe(
+          1,
+        )
+
+        expect(
+          climbable.structureOverlayResolved,
+        ).toBe(
+          false,
+        )
+
+        expect(
+          climbable.movementSurfaceComplete,
+        ).toBe(
+          false,
+        )
+
+        const missing =
+          createLogresFieldMovementSurface(
+            source,
+            chips,
+            objectTable([]),
+          )
+
+        expect(
+          missing.unresolvedPackedObjectIds,
+        ).toEqual([
+          objectId,
+        ])
+
+        expect(
+          missing.movementSurfaceComplete,
+        ).toBe(
+          false,
+        )
+      },
+    )
+
+    it(
+      'keeps animated or cardinality-ambiguous structures unresolved',
+      () => {
+        const chipId =
+          0x02010000
+
+        const objectId =
+          0x02020003
+
+        const model =
+          createLogresFieldMovementSurface(
+            root([
+              grid(
+                1,
+                2,
+                [
+                  {
+                    Id:
+                      BigInt(
+                        chipId,
+                      ),
+                    Height:
+                      0n,
+                    Vertices:
+                      [],
+                  },
+                ],
+                {
+                  ObjAnimated: [
+                    {
+                      Id:
+                        BigInt(
+                          objectId,
+                        ),
+                      DepthOrder:
+                        4n,
+                    },
+                  ],
+                },
+              ),
+            ]),
+            chipTable([
+              [
+                chipId,
+                1,
+              ],
+            ]),
+            objectTable([
+              [
+                objectId,
+                3,
+                false,
+              ],
+            ]),
+          )
+
+        expect(
+          model.ambiguousStructureGridKeys,
+        ).toEqual([
+          '1,2',
+        ])
+
+        expect(
+          model.structureOverlayResolved,
+        ).toBe(
+          false,
+        )
+
+        expect(
+          model.movementSurfaceComplete,
+        ).toBe(
+          false,
         )
       },
     )

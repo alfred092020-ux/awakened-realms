@@ -26,6 +26,24 @@ export interface LogresMapInfoRecord {
    */
   height: number
 
+  /**
+   * CONFIRMED ORIGINAL in current native InfoObjectBin semantics:
+   * byte 0x19 is the structure footprint along native adjacency 7
+   * (-col), and byte 0x1a is the footprint along native adjacency 1
+   * (-row).
+   *
+   * Present only for MAP_OBJECT records.
+   */
+  structureFootprintCols?: number
+  structureFootprintRows?: number
+
+  /**
+   * Raw InfoObjectBin bytes. Current native setup treats exactly value 1 as
+   * true for these booleans.
+   */
+  structureClimbableFlag?: number
+  structureSwfFlag?: number
+
   recordIndex: number
 }
 
@@ -51,6 +69,18 @@ const HEADER_SIZE =
 
 const HEIGHT_OFFSET =
   0x18
+
+const OBJECT_FOOTPRINT_COLS_OFFSET =
+  0x19
+
+const OBJECT_FOOTPRINT_ROWS_OFFSET =
+  0x1a
+
+const OBJECT_CLIMBABLE_OFFSET =
+  0x1b
+
+const OBJECT_SWF_OFFSET =
+  0x1c
 
 const SPEC = {
   chip: {
@@ -285,7 +315,10 @@ export function parseLogresMapInfoTable(
       )
     }
 
-    const record =
+    const record:
+      Readonly<
+        LogresMapInfoRecord
+      > =
       Object.freeze({
         packedId,
         component0,
@@ -296,6 +329,33 @@ export function parseLogresMapInfoTable(
             offset +
               HEIGHT_OFFSET
           ]!,
+        ...(
+          kind ===
+            'object'
+            ? {
+                structureFootprintCols:
+                  data[
+                    offset +
+                      OBJECT_FOOTPRINT_COLS_OFFSET
+                  ]!,
+                structureFootprintRows:
+                  data[
+                    offset +
+                      OBJECT_FOOTPRINT_ROWS_OFFSET
+                  ]!,
+                structureClimbableFlag:
+                  data[
+                    offset +
+                      OBJECT_CLIMBABLE_OFFSET
+                  ]!,
+                structureSwfFlag:
+                  data[
+                    offset +
+                      OBJECT_SWF_OFFSET
+                  ]!,
+              }
+            : {}
+        ),
         recordIndex,
       })
 
@@ -344,4 +404,109 @@ export function logresMapInfoHeight(
       packedId,
     )
     ?.height
+}
+
+export interface LogresMapInfoObjectStructure {
+  height: number
+  footprintCols: number
+  footprintRows: number
+  climbable: boolean
+  swf: boolean
+}
+
+/**
+ * Returns the movement-relevant native InfoObjectBin structure fields.
+ *
+ * Current-JP native evidence establishes:
+ * - record byte 0x18 contributes structure height
+ * - byte 0x19 is the -col footprint count
+ * - byte 0x1a is the -row footprint count
+ * - byte 0x1b == 1 is FieldStructure::isClimbable()
+ * - byte 0x1c == 1 is FieldStructure::getIsSwf()
+ *
+ * Recovered May-2017 Global MAP_OBJECT records use the same fixed envelope.
+ * Applying the later native semantics to Global remains a separately labelled
+ * SUPPORTED INFERENCE in the navigation model.
+ */
+export function logresMapInfoObjectStructure(
+  table: LogresMapInfoTable,
+  packedId: number,
+):
+  | Readonly<
+      LogresMapInfoObjectStructure
+    >
+  | undefined {
+  if (
+    table.kind !==
+    'object'
+  ) {
+    throw new Error(
+      'Logres object structure metadata requires MAP_OBJECT table',
+    )
+  }
+
+  if (
+    !Number.isSafeInteger(
+      packedId,
+    ) ||
+    packedId < 0 ||
+    packedId >
+      0xffffffff
+  ) {
+    throw new Error(
+      'Logres packed MultiID must be an unsigned uint32',
+    )
+  }
+
+  const record =
+    table.byPackedId.get(
+      packedId,
+    )
+
+  if (!record) {
+    return undefined
+  }
+  const footprintCols =
+    record
+      .structureFootprintCols
+
+  const footprintRows =
+    record
+      .structureFootprintRows
+
+  const climbableFlag =
+    record
+      .structureClimbableFlag
+
+  const swfFlag =
+    record
+      .structureSwfFlag
+
+  if (
+    footprintCols ===
+      undefined ||
+    footprintRows ===
+      undefined ||
+    climbableFlag ===
+      undefined ||
+    swfFlag ===
+      undefined
+  ) {
+    throw new Error(
+      'Logres MAP_OBJECT record is missing structure footprint fields',
+    )
+  }
+
+  return Object.freeze({
+    height:
+      record.height,
+    footprintCols,
+    footprintRows,
+    climbable:
+      climbableFlag ===
+      1,
+    swf:
+      swfFlag ===
+      1,
+  })
 }

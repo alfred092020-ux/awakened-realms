@@ -10,6 +10,7 @@ import {
 import {
   createLogresFieldNavigationTile,
   isLogresFieldNeighborDelta,
+  LOGRES_FIELD_ADJACENCY_DELTAS,
   logresFieldCanTraverseNeighbor,
   logresFieldHeuristic,
   logresFieldLinkedNeighbors,
@@ -70,6 +71,25 @@ function lookup(
 describe(
   'Logres original field navigation rules',
   () => {
+    it(
+      'preserves the confirmed native TileAdjacency enum order',
+      () => {
+        expect(
+          LOGRES_FIELD_ADJACENCY_DELTAS,
+        ).toEqual([
+          { col: -1, row: -1 },
+          { col: 0, row: -1 },
+          { col: 1, row: -1 },
+          { col: 1, row: 0 },
+          { col: 1, row: 1 },
+          { col: 0, row: 1 },
+          { col: -1, row: 1 },
+          { col: -1, row: 0 },
+          { col: 0, row: 0 },
+        ])
+      },
+    )
+
     it(
       'accepts exactly the eight surrounding coordinate deltas',
       () => {

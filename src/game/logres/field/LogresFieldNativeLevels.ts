@@ -13,6 +13,7 @@ import type {
   LogresMapRoot,
 } from './LogresMapBinary'
 import {
+  flattenLogresMapGrids,
   logresMapSafeInt,
 } from './LogresMapBinary'
 import type {
@@ -20,6 +21,7 @@ import type {
 } from './LogresMapInfoBinary'
 import {
   logresMapInfoHeight,
+  logresMapInfoObjectStructure,
 } from './LogresMapInfoBinary'
 
 export const LOGRES_FIELD_LEVEL_FORMULA_EVIDENCE =
@@ -87,6 +89,38 @@ export interface LogresFieldNavigationModel {
    */
   movementSurfaceComplete:
     false
+}
+
+export interface LogresFieldMovementSurface
+  extends Omit<
+    LogresFieldNavigationModel,
+    | 'structureOverlayResolved'
+    | 'movementSurfaceComplete'
+  > {
+  unresolvedPackedObjectIds:
+    readonly number[]
+
+  ambiguousStructureGridKeys:
+    readonly string[]
+
+  resolvedStructureCount:
+    number
+
+  climbableStructureCount:
+    number
+
+  /**
+   * True when every structure that could affect movement is resolved.
+   *
+   * This implementation proves a no-op overlay only when every recovered
+   * structure is non-climbable. Generic climbable structure propagation
+   * remains intentionally guarded.
+   */
+  structureOverlayResolved:
+    boolean
+
+  movementSurfaceComplete:
+    boolean
 }
 
 function safeUint32(
@@ -418,5 +452,181 @@ export function createLogresFieldNavigationModel(
 
     movementSurfaceComplete:
       false,
+  }
+}
+
+/**
+ * Resolves whether the native structure-overlay pass is a proven no-op.
+ *
+ * CONFIRMED ORIGINAL in current native client:
+ * - FieldTile::applyStructureHeightToTiles returns immediately when the
+ *   selected FieldStructure is not climbable.
+ * - InfoObjectBin byte 0x1b == 1 drives FieldStructure::isClimbable().
+ * - static structure metadata is looked up by packed Object.Id.
+ *
+ * Applying those semantics to recovered May-2017 Global map-info records
+ * remains SUPPORTED INFERENCE. This function therefore does not implement
+ * generic climbable-structure propagation. Any climbable, unresolved,
+ * animated, or cardinality-ambiguous structure keeps the movement surface
+ * incomplete.
+ */
+export function createLogresFieldMovementSurface(
+  root: LogresMapRoot,
+  chipInfo: LogresMapInfoTable,
+  objectInfo: LogresMapInfoTable,
+): LogresFieldMovementSurface {
+  if (
+    objectInfo.kind !==
+    'object'
+  ) {
+    throw new Error(
+      'Logres movement surface requires MAP_OBJECT metadata',
+    )
+  }
+
+  const base =
+    createLogresFieldNavigationModel(
+      root,
+      chipInfo,
+    )
+
+  const unresolved =
+    new Set<number>()
+
+  const ambiguous =
+    new Set<string>()
+
+  let resolvedStructureCount =
+    0
+
+  let climbableStructureCount =
+    0
+
+  const grids =
+    flattenLogresMapGrids(
+      root,
+    )
+
+  grids.forEach(
+    (
+      grid,
+      gridIndex,
+    ) => {
+      const col =
+        logresMapSafeInt(
+          grid.Col,
+          'Grid.Col',
+        )
+
+      const row =
+        logresMapSafeInt(
+          grid.Row,
+          'Grid.Row',
+        )
+
+      const key =
+        col ===
+          undefined ||
+        row ===
+          undefined
+          ? `unaddressed:${gridIndex}`
+          : `${col},${row}`
+
+      if (
+        grid.Obj.length >
+          1 ||
+        grid.ObjAnimated
+          .length >
+          0
+      ) {
+        ambiguous.add(
+          key,
+        )
+      }
+
+      for (
+        const object
+        of grid.Obj
+      ) {
+        const packedId =
+          safeUint32(
+            object.Id,
+            'Object.Id',
+          )
+
+        const structure =
+          logresMapInfoObjectStructure(
+            objectInfo,
+            packedId,
+          )
+
+        if (!structure) {
+          unresolved.add(
+            packedId,
+          )
+
+          continue
+        }
+
+        resolvedStructureCount +=
+          1
+
+        if (
+          structure.climbable
+        ) {
+          climbableStructureCount +=
+            1
+        }
+      }
+    },
+  )
+
+  const unresolvedPackedObjectIds =
+    Object.freeze(
+      [
+        ...unresolved,
+      ].sort(
+        (
+          left,
+          right,
+        ) =>
+          left -
+          right,
+      ),
+    )
+
+  const ambiguousStructureGridKeys =
+    Object.freeze(
+      [
+        ...ambiguous,
+      ].sort(),
+    )
+
+  const structureOverlayResolved =
+    unresolvedPackedObjectIds
+      .length ===
+      0 &&
+    ambiguousStructureGridKeys
+      .length ===
+      0 &&
+    climbableStructureCount ===
+      0
+
+  return {
+    ...base,
+
+    unresolvedPackedObjectIds,
+
+    ambiguousStructureGridKeys,
+
+    resolvedStructureCount,
+
+    climbableStructureCount,
+
+    structureOverlayResolved,
+
+    movementSurfaceComplete:
+      base.metadataComplete &&
+      structureOverlayResolved,
   }
 }

@@ -30,6 +30,28 @@ export type LogresFieldNavigationLookup =
     | undefined
 
 /**
+ * CONFIRMED ORIGINAL native TileAdjacency enum order.
+ *
+ * Recovered directly from TerrainAccessor::s_adjacencies static initialization:
+ * 0 NW, 1 N, 2 NE, 3 E, 4 SE, 5 S, 6 SW, 7 W, 8 center.
+ *
+ * FieldTile::applyStructureHeightToTiles specifically walks index 7 across
+ * structure columns and index 1 across structure rows.
+ */
+export const LOGRES_FIELD_ADJACENCY_DELTAS =
+  Object.freeze([
+    Object.freeze({ col: -1, row: -1 }),
+    Object.freeze({ col: 0, row: -1 }),
+    Object.freeze({ col: 1, row: -1 }),
+    Object.freeze({ col: 1, row: 0 }),
+    Object.freeze({ col: 1, row: 1 }),
+    Object.freeze({ col: 0, row: 1 }),
+    Object.freeze({ col: -1, row: 1 }),
+    Object.freeze({ col: -1, row: 0 }),
+    Object.freeze({ col: 0, row: 0 }),
+  ] as const)
+
+/**
  * CONFIRMED ORIGINAL neighbor coordinate set.
  *
  * The current native client accepts only coordinate deltas whose absolute

@@ -6,6 +6,7 @@ import {
 
 import {
   logresMapInfoHeight,
+  logresMapInfoObjectStructure,
   logresMultiIdFromComponents,
   parseLogresMapInfoTable,
 } from '../src/game/logres/field/LogresMapInfoBinary'
@@ -23,6 +24,16 @@ function tableFixture(
         ]
       height:
         number
+      footprint?:
+        readonly [
+          number,
+          number,
+        ]
+      structureFlags?:
+        readonly [
+          number,
+          number,
+        ]
     }[],
 ): Uint8Array {
   const data =
@@ -100,6 +111,38 @@ function tableFixture(
           0x18
       ] =
         record.height
+
+      if (
+        record.footprint
+      ) {
+        data[
+          offset +
+            0x19
+        ] =
+          record.footprint[0]
+
+        data[
+          offset +
+            0x1a
+        ] =
+          record.footprint[1]
+      }
+
+      if (
+        record.structureFlags
+      ) {
+        data[
+          offset +
+            0x1b
+        ] =
+          record.structureFlags[0]
+
+        data[
+          offset +
+            0x1c
+        ] =
+          record.structureFlags[1]
+      }
     },
   )
 
@@ -204,6 +247,10 @@ describe(
                     [2, 4, 100],
                   height:
                     10,
+                  footprint:
+                    [4, 3],
+                  structureFlags:
+                    [1, 0],
                 },
               ],
             ),
@@ -224,10 +271,36 @@ describe(
               100,
             height:
               10,
+            structureFootprintCols:
+              4,
+            structureFootprintRows:
+              3,
+            structureClimbableFlag:
+              1,
+            structureSwfFlag:
+              0,
             recordIndex:
               0,
           },
         ])
+
+        expect(
+          logresMapInfoObjectStructure(
+            table,
+            0x02040064,
+          ),
+        ).toEqual({
+          height:
+            10,
+          footprintCols:
+            4,
+          footprintRows:
+            3,
+          climbable:
+            true,
+          swf:
+            false,
+        })
       },
     )
 
