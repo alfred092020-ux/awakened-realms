@@ -110,6 +110,11 @@ test(
               registry.get(
                 'logres.playableField.currentCoord',
               ),
+
+            encounterVisualPresentation:
+              registry.get(
+                'logres.playableField.encounterVisualPresentation',
+              ),
           }
         },
       )
@@ -134,6 +139,29 @@ test(
 
       spawnProvenance:
         'RECONSTRUCTED',
+    })
+
+    expect(
+      state.encounterVisualPresentation,
+    ).toMatchObject({
+      mode:
+        'RECOVERED_REFERENCE_ART',
+
+      enemy: {
+        globalBehavior:
+          'CONFIRMED_GLOBAL_GREEN_JELL_TUTORIAL',
+
+        historicalGlobalInternalId:
+          'UNRESOLVED',
+      },
+
+      pointer: {
+        globalBehavior:
+          'CONFIRMED_GLOBAL_VIDEO_HAND_PROMPT',
+
+        placement:
+          'RECONSTRUCTED',
+      },
     })
 
     expect(

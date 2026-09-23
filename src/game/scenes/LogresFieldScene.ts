@@ -6,6 +6,11 @@ import {
 } from '../logres/ui/LogresRuntimeAssets'
 
 import {
+  LOGRES_FIELD_ACTOR_ASSETS,
+  preloadLogresFieldActorAssets,
+} from '../logres/field/LogresFieldActorRuntimeAssets'
+
+import {
   createTerrainProofRenderer,
 } from '../logres/field/LogresTerrainProofRenderer'
 
@@ -26,6 +31,13 @@ import {
 import {
   findReconstructedLogresFieldPath,
 } from '../logres/field/LogresFieldPathfinder'
+
+import {
+  LOGRES_TUTORIAL_GREEN_JELL_IDLE_ANIMATION,
+  LOGRES_TUTORIAL_GREEN_JELL_PRESENTATION,
+  LOGRES_TUTORIAL_POINTER_OFFSET,
+  LOGRES_TUTORIAL_POINTER_PRESENTATION,
+} from '../logres/field/LogresFieldActorPresentation'
 
 import {
   ReconstructedLogresEncounterAuthority,
@@ -90,6 +102,9 @@ const PLAYABLE_FIELD_RASTER_TEXTURE_KEY =
 const RECONSTRUCTED_FIELD_STEP_MS =
   90
 
+const TUTORIAL_GREEN_JELL_IDLE_ANIMATION_KEY =
+  'logres-tutorial-green-jell-idle'
+
 export class LogresFieldScene
   extends Phaser.Scene {
   private tutorialParameterBar:
@@ -125,7 +140,9 @@ export class LogresFieldScene
       null
 
   private playableEncounterMarker:
-    Phaser.GameObjects.Arc | null =
+    | Phaser.GameObjects.Sprite
+    | Phaser.GameObjects.Arc
+    | null =
       null
 
   private playableEncounterApproachActive =
@@ -145,6 +162,7 @@ export class LogresFieldScene
 
   preload() {
     preloadLogresAssets(this)
+    preloadLogresFieldActorAssets(this)
 
     const playableFieldUrls =
       logresRendererCandidateUrls(
@@ -1025,30 +1043,190 @@ export class LogresFieldScene
         this.playableFieldTransform,
       )
 
-    this.playableEncounterMarker =
-      this.add
-        .circle(
-          point.x,
-          point.y,
-          19,
-          0xf59e0b,
-          0.95,
-        )
-        .setStrokeStyle(
-          4,
-          0x3b1f00,
-          1,
-        )
-        .setDepth(
-          905,
-        )
-        .setInteractive({
-          useHandCursor:
-            true,
-        })
+    const recoveredEnemyKeys = [
+      LOGRES_FIELD_ACTOR_ASSETS
+        .tutorialGreenJellIdle0
+        .key,
+      LOGRES_FIELD_ACTOR_ASSETS
+        .tutorialGreenJellIdle1
+        .key,
+      LOGRES_FIELD_ACTOR_ASSETS
+        .tutorialGreenJellIdle2
+        .key,
+      LOGRES_FIELD_ACTOR_ASSETS
+        .tutorialGreenJellIdle3
+        .key,
+    ] as const
 
-    this.add
-      .text(
+    const hasRecoveredPresentation =
+      this.textures.exists(
+        LOGRES_FIELD_ACTOR_ASSETS
+          .tutorialTapPointer
+          .key,
+      ) &&
+      recoveredEnemyKeys.every(
+        (
+          key,
+        ) =>
+          this.textures.exists(
+            key,
+          ),
+      )
+
+    if (
+      hasRecoveredPresentation
+    ) {
+      if (
+        !this.anims.exists(
+          TUTORIAL_GREEN_JELL_IDLE_ANIMATION_KEY,
+        )
+      ) {
+        this.anims.create({
+          key:
+            TUTORIAL_GREEN_JELL_IDLE_ANIMATION_KEY,
+
+          frames:
+            recoveredEnemyKeys.map(
+              (
+                key,
+              ) => ({
+                key,
+              }),
+            ),
+
+          frameRate:
+            LOGRES_TUTORIAL_GREEN_JELL_IDLE_ANIMATION
+              .frameRate,
+
+          repeat:
+            LOGRES_TUTORIAL_GREEN_JELL_IDLE_ANIMATION
+              .repeat,
+        })
+      }
+
+      const actorScale =
+        this.playableFieldTransform
+          .fit
+
+      const encounterSprite =
+        this.add
+          .sprite(
+            point.x,
+            point.y -
+              14,
+            LOGRES_FIELD_ACTOR_ASSETS
+              .tutorialGreenJellIdle0
+              .key,
+          )
+          .setScale(
+            actorScale,
+          )
+          .setDepth(
+            905,
+          )
+          .setInteractive(
+            new Phaser.Geom.Rectangle(
+              -35,
+              -35,
+              140,
+              122,
+            ),
+            Phaser.Geom.Rectangle.Contains,
+          )
+
+      encounterSprite.play(
+        TUTORIAL_GREEN_JELL_IDLE_ANIMATION_KEY,
+      )
+
+      this.playableEncounterMarker =
+        encounterSprite
+
+      const pointer =
+        this.add
+          .image(
+            point.x +
+              LOGRES_TUTORIAL_POINTER_OFFSET
+                .x,
+            point.y +
+              LOGRES_TUTORIAL_POINTER_OFFSET
+                .y,
+            LOGRES_FIELD_ACTOR_ASSETS
+              .tutorialTapPointer
+              .key,
+          )
+          .setOrigin(
+            0.5,
+            1,
+          )
+          .setScale(
+            LOGRES_TUTORIAL_POINTER_OFFSET
+              .scale,
+          )
+          .setDepth(
+            906,
+          )
+
+      this.tweens.add({
+        targets:
+          pointer,
+
+        y:
+          pointer.y -
+          6,
+
+        duration:
+          logresDevMs(
+            500,
+          ),
+
+        yoyo:
+          true,
+
+        repeat:
+          -1,
+
+        ease:
+          'Sine.InOut',
+      })
+
+      this.registry.set(
+        'logres.playableField.encounterVisualPresentation',
+        {
+          mode:
+            'RECOVERED_REFERENCE_ART',
+
+          enemy:
+            LOGRES_TUTORIAL_GREEN_JELL_PRESENTATION,
+
+          pointer:
+            LOGRES_TUTORIAL_POINTER_PRESENTATION,
+        },
+      )
+    } else {
+      this.playableEncounterMarker =
+        this.add
+          .circle(
+            point.x,
+            point.y,
+            19,
+            0xf59e0b,
+            0.95,
+          )
+          .setStrokeStyle(
+            4,
+            0x3b1f00,
+            1,
+          )
+          .setDepth(
+            905,
+          )
+          .setInteractive({
+            useHandCursor:
+              true,
+          })
+
+      this.add
+        .text(
           point.x,
           point.y -
             2,
@@ -1072,8 +1250,17 @@ export class LogresFieldScene
           906,
         )
 
+      this.registry.set(
+        'logres.playableField.encounterVisualPresentation',
+        {
+          mode:
+            'RECONSTRUCTED_FALLBACK',
+        },
+      )
+    }
+
     this.playableEncounterMarker.on(
-      'pointerup',
+      'pointerdown',
       () => {
         this.approachReconstructedEncounter()
       },
