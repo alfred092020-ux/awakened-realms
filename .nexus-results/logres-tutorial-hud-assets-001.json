@@ -1,0 +1,7 @@
+{
+  "error": "PATCH_APPLY_FAILED: error: corrupt patch at line 734",
+  "job_id": "logres-tutorial-hud-assets-001",
+  "job_type": "PATCH",
+  "status": "PATCH_APPLY_FAILED",
+  "written_at": "2026-09-23T02:41:46.424652+00:00"
+}
