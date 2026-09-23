@@ -27,7 +27,7 @@ test(
       'Private recovered Global field runtime is not hydrated.',
     )
 
-    await page.goto('/')
+    await page.goto('/?logresBattleHarness=1')
 
     await page.waitForFunction(
       () =>
