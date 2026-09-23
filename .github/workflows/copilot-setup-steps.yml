@@ -1,0 +1,43 @@
+name: Copilot Setup Steps
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - .github/workflows/copilot-setup-steps.yml
+  pull_request:
+    paths:
+      - .github/workflows/copilot-setup-steps.yml
+
+jobs:
+  copilot-setup-steps:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Enforce Copilot branch policy
+        shell: bash
+        run: |
+          BRANCH="${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}"
+          if [[ "$BRANCH" == "main" ]]; then
+            echo "Copilot must not run from main."
+            exit 1
+          fi
+          if [[ "$BRANCH" == "feat/logres-reconstruction" ]] || [[ "$BRANCH" =~ ^copilot/ ]]; then
+            echo "Branch policy check passed for '$BRANCH'."
+            exit 0
+          fi
+          echo "Branch '$BRANCH' is not allowed. Use feat/logres-reconstruction or an isolated agent branch."
+          exit 1
+
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
