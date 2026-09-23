@@ -1,0 +1,8 @@
+{
+  "commit": "e03f0e1281874f48f6e5f0ef80bff8f7939f3517",
+  "job_id": "merge-logres-field-structure-surface-retry-002",
+  "job_type": "MERGE",
+  "status": "SUCCESS",
+  "target_branch": "feat/logres-reconstruction",
+  "written_at": "2026-09-23T02:59:26.975089+00:00"
+}
