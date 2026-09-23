@@ -8,10 +8,58 @@ if (!container) {
   throw new Error('Game container was not found.')
 }
 
-if (new URLSearchParams(window.location.search).get('rendererProof') === '1') {
-  const { showLogresRendererProof } = await import('./game/logres/field/LogresRendererProofView')
-  await showLogresRendererProof(container as HTMLElement)
+const params =
+  new URLSearchParams(
+    window.location.search,
+  )
+
+const rendererCandidate =
+  params.get(
+    'rendererCandidate',
+  )
+
+if (
+  rendererCandidate !==
+  null
+) {
+  const {
+    showLogresRendererCandidate,
+  } =
+    await import(
+      './game/logres/field/LogresRendererCandidateView'
+    )
+
+  await showLogresRendererCandidate(
+    container as HTMLElement,
+    rendererCandidate,
+  )
+} else if (
+  params.get(
+    'rendererProof',
+  ) ===
+  '1'
+) {
+  const {
+    showLogresRendererProof,
+  } =
+    await import(
+      './game/logres/field/LogresRendererProofView'
+    )
+
+  await showLogresRendererProof(
+    container as HTMLElement,
+  )
 } else {
-  const game = new Phaser.Game(gameConfig)
-  Object.assign(window, { __AWAKENED_REALMS_GAME__: game })
+  const game =
+    new Phaser.Game(
+      gameConfig,
+    )
+
+  Object.assign(
+    window,
+    {
+      __AWAKENED_REALMS_GAME__:
+        game,
+    },
+  )
 }
