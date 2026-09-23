@@ -10,6 +10,14 @@ import {
   preloadLogresAssets,
 } from '../logres/ui/LogresRuntimeAssets'
 
+import {
+  completeReconstructedLogresDemoBattle,
+} from '../logres/battle/ReconstructedLogresDemoBattleLoop'
+
+import type {
+  ReconstructedLogresInventoryState,
+} from '../logres/server/LogresInventoryAuthority'
+
 export interface LogresBattleSceneData
   extends Partial<LogresGlobalBattleKitInput> {}
 
@@ -24,6 +32,18 @@ export class LogresBattleScene
       null
 
   private epText:
+    Phaser.GameObjects.Text | null =
+      null
+
+  private demoStatusText:
+    Phaser.GameObjects.Text | null =
+      null
+
+  private demoResolveButton:
+    Phaser.GameObjects.Text | null =
+      null
+
+  private demoReturnButton:
     Phaser.GameObjects.Text | null =
       null
 
@@ -236,6 +256,190 @@ export class LogresBattleScene
         this.emitNormalAttack()
       },
     )
+
+    this.createDemo01ResolutionControls()
+  }
+
+  private createDemo01ResolutionControls() {
+    this.registry.set(
+      'logres.demo01.battleStatus',
+      'ACTIVE',
+    )
+
+    this.registry.set(
+      'logres.demo01.battleProvenance',
+      'RECONSTRUCTED',
+    )
+
+    this.demoStatusText =
+      this.add
+        .text(
+          24,
+          24,
+          'DEMO 0.1 • RECONSTRUCTED BATTLE',
+          {
+            fontFamily:
+              'Arial, sans-serif',
+            fontSize:
+              '20px',
+            color:
+              '#ffffff',
+            backgroundColor:
+              '#000000aa',
+            padding: {
+              x:
+                12,
+              y:
+                8,
+            },
+          },
+        )
+        .setDepth(
+          100,
+        )
+
+    this.demoResolveButton =
+      this.add
+        .text(
+          this.scale.width /
+            2,
+          92,
+          'RESOLVE DEMO BATTLE',
+          {
+            fontFamily:
+              'Arial, sans-serif',
+            fontSize:
+              '24px',
+            color:
+              '#ffffff',
+            backgroundColor:
+              '#263238',
+            padding: {
+              x:
+                18,
+              y:
+                12,
+            },
+          },
+        )
+        .setOrigin(
+          0.5,
+        )
+        .setDepth(
+          100,
+        )
+        .setInteractive({
+          useHandCursor:
+            true,
+        })
+        .on(
+          'pointerup',
+          () => {
+            this.resolveDemo01Battle()
+          },
+        )
+  }
+
+  private resolveDemo01Battle() {
+    const existingInventory =
+      this.registry.get(
+        'logres.demo01.inventory',
+      ) as
+        | Readonly<ReconstructedLogresInventoryState>
+        | undefined
+
+    const result =
+      completeReconstructedLogresDemoBattle(
+        existingInventory,
+      )
+
+    this.registry.set(
+      'logres.demo01.inventory',
+      result.inventory,
+    )
+
+    this.registry.set(
+      'logres.demo01.rewardApplied',
+      result.rewardApplied,
+    )
+
+    this.registry.set(
+      'logres.demo01.resolution',
+      result.flow,
+    )
+
+    this.registry.set(
+      'logres.demo01.battleStatus',
+      'FIELD_RETURN_READY',
+    )
+
+    this.demoStatusText
+      ?.setText(
+        result.rewardApplied
+          ? 'DEMO VICTORY • RECONSTRUCTED REWARD RECORDED'
+          : 'DEMO VICTORY • REWARD ALREADY RECORDED',
+      )
+
+    this.demoResolveButton
+      ?.disableInteractive()
+      .setAlpha(
+        0.45,
+      )
+
+    if (
+      this.demoReturnButton !==
+      null
+    ) {
+      return
+    }
+
+    this.demoReturnButton =
+      this.add
+        .text(
+          this.scale.width /
+            2,
+          160,
+          'RETURN TO MILLENNIUM TREE',
+          {
+            fontFamily:
+              'Arial, sans-serif',
+            fontSize:
+              '24px',
+            color:
+              '#ffffff',
+            backgroundColor:
+              '#1b5e20',
+            padding: {
+              x:
+                18,
+              y:
+                12,
+            },
+          },
+        )
+        .setOrigin(
+          0.5,
+        )
+        .setDepth(
+          100,
+        )
+        .setInteractive({
+          useHandCursor:
+            true,
+        })
+        .on(
+          'pointerup',
+          () => {
+            this.registry.set(
+              'logres.demo01.battleStatus',
+              'RETURNING_TO_FIELD',
+            )
+
+            this.scene.start(
+              'LogresFieldScene',
+            )
+          },
+        )
   }
 
   applyNormalAttackHit(
