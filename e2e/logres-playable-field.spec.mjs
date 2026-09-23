@@ -45,6 +45,27 @@ test(
           window
             .__AWAKENED_REALMS_GAME__
 
+        /*
+         * Preserve the exact reconstructed
+         * character-create request tuple so
+         * field presentation can resolve the
+         * selected gender without inventing a
+         * fallback identity.
+         */
+        game.registry.set(
+          'logres.protocol.C_GMCL_CHAR_CREATE_REQ',
+          [
+            0,
+            'Novice',
+            0,
+            1,
+            1,
+            1,
+            1,
+            1,
+          ],
+        )
+
         game.scene.start(
           'LogresFieldScene',
         )
@@ -70,10 +91,20 @@ test(
     const state =
       await page.evaluate(
         () => {
-          const registry =
+          const game =
             window
               .__AWAKENED_REALMS_GAME__
-              .registry
+
+          const registry =
+            game.registry
+
+          const scene =
+            game.scene.getScene(
+              'LogresFieldScene',
+            )
+
+          const player =
+            scene.playablePlayer
 
           return {
             status:
@@ -115,6 +146,36 @@ test(
               registry.get(
                 'logres.playableField.encounterVisualPresentation',
               ),
+
+            playerVisualPresentation:
+              registry.get(
+                'logres.playableField.playerVisualPresentation',
+              ),
+
+            playerObject:
+              player
+                ? {
+                    type:
+                      player.type,
+
+                    texture:
+                      player.texture
+                        ?.key ??
+                        null,
+
+                    x:
+                      player.x,
+
+                    y:
+                      player.y,
+
+                    displayWidth:
+                      player.displayWidth,
+
+                    displayHeight:
+                      player.displayHeight,
+                  }
+                : null,
           }
         },
       )
@@ -140,6 +201,87 @@ test(
       spawnProvenance:
         'RECONSTRUCTED',
     })
+
+    expect(
+      state.playerVisualPresentation,
+    ).toMatchObject({
+      mode:
+        'RECOVERED_REFERENCE_ART',
+
+      gender:
+        0,
+
+      referenceSex:
+        'm',
+
+      source:
+        'RECOVERED_CURRENT_JP_PRIVATE_DERIVATIVE',
+
+      bodySelection:
+        'RECONSTRUCTED_CURRENT_JP_REFERENCE_BOD_001',
+
+      equipment:
+        'NONE',
+
+      historicalGlobalBodyId:
+        'UNRESOLVED',
+
+      historicalGlobalEquipmentIds:
+        'UNRESOLVED',
+
+      motionApplication:
+        'CONFIRMED_CURRENT_JP_RESOURCE',
+
+      scaleSource:
+        'PLAYABLE_FIELD_TRANSFORM_FIT',
+
+      anchor:
+        'BOTTOM_CENTER_NAVIGATION_TILE',
+    })
+
+    expect(
+      state.playerObject,
+    ).toMatchObject({
+      type:
+        'Image',
+
+      texture:
+        'logres-current-jp-player-avatar-reference-m',
+
+      x:
+        expect.any(
+          Number,
+        ),
+
+      y:
+        expect.any(
+          Number,
+        ),
+
+      displayWidth:
+        expect.any(
+          Number,
+        ),
+
+      displayHeight:
+        expect.any(
+          Number,
+        ),
+    })
+
+    expect(
+      state.playerObject
+        .displayWidth,
+    ).toBeGreaterThan(
+      0,
+    )
+
+    expect(
+      state.playerObject
+        .displayHeight,
+    ).toBeGreaterThan(
+      0,
+    )
 
     expect(
       state.encounterVisualPresentation,
@@ -285,6 +427,17 @@ test(
     const beforeMove =
       state.currentCoord
 
+    const playerBeforeMove =
+      {
+        x:
+          state.playerObject
+            .x,
+
+        y:
+          state.playerObject
+            .y,
+      }
+
     const canvas =
       page.locator(
         'canvas',
@@ -340,19 +493,61 @@ test(
 
     const afterMove =
       await page.evaluate(
-        () =>
-          window
-            .__AWAKENED_REALMS_GAME__
-            .registry
-            .get(
-              'logres.playableField.currentCoord',
-            ),
+        () => {
+          const game =
+            window
+              .__AWAKENED_REALMS_GAME__
+
+          const scene =
+            game.scene.getScene(
+              'LogresFieldScene',
+            )
+
+          return {
+            currentCoord:
+              game.registry.get(
+                'logres.playableField.currentCoord',
+              ),
+
+            player: {
+              x:
+                scene.playablePlayer
+                  .x,
+
+              y:
+                scene.playablePlayer
+                  .y,
+
+              texture:
+                scene.playablePlayer
+                  .texture
+                  ?.key ??
+                  null,
+            },
+          }
+        },
       )
 
     expect(
-      afterMove,
+      afterMove
+        .currentCoord,
     ).not.toEqual(
       beforeMove,
+    )
+
+    expect(
+      afterMove
+        .player
+        .texture,
+    ).toBe(
+      'logres-current-jp-player-avatar-reference-m',
+    )
+
+    expect(
+      afterMove
+        .player,
+    ).not.toMatchObject(
+      playerBeforeMove,
     )
 
     const encounterScreen =

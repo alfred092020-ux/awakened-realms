@@ -40,6 +40,18 @@ import {
 } from '../logres/field/LogresFieldActorPresentation'
 
 import {
+  LOGRES_PLAYER_ACTOR_PRESENTATION,
+  logresPlayerMotionApplication,
+  logresPlayerReferenceSex,
+  readLogresPlayerGenderFromCharacterCreateRequest,
+} from '../logres/field/LogresPlayerActorPresentation'
+
+import {
+  LOGRES_PLAYER_ACTOR_ASSETS,
+  preloadLogresPlayerActorAssets,
+} from '../logres/field/LogresPlayerActorRuntimeAssets'
+
+import {
   ReconstructedLogresEncounterAuthority,
 } from '../logres/encounter/ReconstructedLogresEncounterAuthority'
 
@@ -124,7 +136,9 @@ export class LogresFieldScene
       null
 
   private playablePlayer:
-    Phaser.GameObjects.Arc | null =
+    | Phaser.GameObjects.Image
+    | Phaser.GameObjects.Arc
+    | null =
       null
 
   private playableCurrentTile:
@@ -163,6 +177,7 @@ export class LogresFieldScene
   preload() {
     preloadLogresAssets(this)
     preloadLogresFieldActorAssets(this)
+    preloadLogresPlayerActorAssets(this)
 
     const playableFieldUrls =
       logresRendererCandidateUrls(
@@ -576,23 +591,119 @@ export class LogresFieldScene
           transform,
         )
 
-      this.playablePlayer =
-        this.add
-          .circle(
-            spawnPoint.x,
-            spawnPoint.y,
-            12,
-            0xffffff,
-            0.95,
-          )
-          .setStrokeStyle(
-            3,
-            0x111111,
-            1,
-          )
-          .setDepth(
-            900,
-          )
+      const playerGender =
+        readLogresPlayerGenderFromCharacterCreateRequest(
+          this.registry.get(
+            'logres.protocol.C_GMCL_CHAR_CREATE_REQ',
+          ),
+        )
+
+      const referenceSex =
+        playerGender ===
+          null
+          ? null
+          : logresPlayerReferenceSex(
+              playerGender,
+            )
+
+      const referenceAsset =
+        referenceSex ===
+          'f'
+          ? LOGRES_PLAYER_ACTOR_ASSETS
+              .female
+          : LOGRES_PLAYER_ACTOR_ASSETS
+              .male
+
+      const hasRecoveredPlayerPresentation =
+        referenceSex !==
+          null &&
+        this.textures.exists(
+          referenceAsset
+            .key,
+        )
+
+      if (
+        hasRecoveredPlayerPresentation &&
+        playerGender !==
+          null
+      ) {
+        this.playablePlayer =
+          this.add
+            .image(
+              spawnPoint.x,
+              spawnPoint.y,
+              referenceAsset
+                .key,
+            )
+            .setOrigin(
+              0.5,
+              1,
+            )
+            .setScale(
+              transform.fit,
+            )
+            .setDepth(
+              900,
+            )
+
+        this.registry.set(
+          'logres.playableField.playerVisualPresentation',
+          {
+            mode:
+              'RECOVERED_REFERENCE_ART',
+
+            gender:
+              playerGender,
+
+            referenceSex,
+
+            ...LOGRES_PLAYER_ACTOR_PRESENTATION,
+
+            motionApplication:
+              logresPlayerMotionApplication(
+                playerGender,
+              ),
+
+            scaleSource:
+              'PLAYABLE_FIELD_TRANSFORM_FIT',
+
+            anchor:
+              'BOTTOM_CENTER_NAVIGATION_TILE',
+          },
+        )
+      } else {
+        this.playablePlayer =
+          this.add
+            .circle(
+              spawnPoint.x,
+              spawnPoint.y,
+              12,
+              0xffffff,
+              0.95,
+            )
+            .setStrokeStyle(
+              3,
+              0x111111,
+              1,
+            )
+            .setDepth(
+              900,
+            )
+
+        this.registry.set(
+          'logres.playableField.playerVisualPresentation',
+          {
+            mode:
+              'PLACEHOLDER_FALLBACK',
+
+            reason:
+              playerGender ===
+                null
+                ? 'CHARACTER_CREATE_GENDER_UNAVAILABLE'
+                : 'PRIVATE_REFERENCE_ASSET_UNAVAILABLE',
+          },
+        )
+      }
 
       this.cameras.main
         .setBounds(
