@@ -38,6 +38,12 @@ export const LOGRES_PLAYABLE_FIELD_RUNTIME_PROVENANCE =
 export const LOGRES_PLAYABLE_FIELD_PROJECTION_EVIDENCE =
   'SUPPORTED_INFERENCE_CURRENT_JP_NATIVE_PLUS_GLOBAL_GEOMETRY' as const
 
+export const LOGRES_PLAYABLE_FIELD_UV_ORIGIN =
+  'bottom-left' as const
+
+export const LOGRES_PLAYABLE_FIELD_UV_ORIGIN_EVIDENCE =
+  'SUPPORTED_INFERENCE_GLOBAL_VISUAL_ALIGNMENT' as const
+
 export const LOGRES_FIELD_TILE_SCREEN_STEP_X =
   44 as const
 
@@ -555,8 +561,16 @@ export async function loadLogresPlayableFieldRuntime(
     buildLogresTerrainMeshData(
       candidate.terrain,
       {
+        /*
+         * Recovered UV values are normalized correctly, but browser image
+         * upload and the original GL atlas convention use opposite vertical
+         * origins. The bottom-left policy is validated against the original
+         * Millennium Tree visual: it restores continuous plateaus/cliffs and
+         * correct tree/vine placement, while top-left produces the Android
+         * checkerboard regression.
+         */
         origin:
-          'top-left',
+          LOGRES_PLAYABLE_FIELD_UV_ORIGIN,
       },
     )
 

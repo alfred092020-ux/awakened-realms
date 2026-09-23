@@ -15,6 +15,8 @@ import {
   LOGRES_FIELD_TILE_SCREEN_STEP_Y,
   LOGRES_PLAYABLE_FIELD_MAP_BINDING_PROVENANCE,
   LOGRES_PLAYABLE_FIELD_MAP_ID,
+  LOGRES_PLAYABLE_FIELD_UV_ORIGIN,
+  LOGRES_PLAYABLE_FIELD_UV_ORIGIN_EVIDENCE,
   logresPlayableFieldInfoUrls,
   nearestLogresPlayableFieldTile,
   projectLogresPlayableFieldTile,
@@ -106,6 +108,23 @@ function mesh():
 describe(
   'playable Logres field runtime',
   () => {
+    it(
+      'locks the playable Millennium Tree runtime to the visually validated bottom-left UV origin',
+      () => {
+        expect(
+          LOGRES_PLAYABLE_FIELD_UV_ORIGIN,
+        ).toBe(
+          'bottom-left',
+        )
+
+        expect(
+          LOGRES_PLAYABLE_FIELD_UV_ORIGIN_EVIDENCE,
+        ).toBe(
+          'SUPPORTED_INFERENCE_GLOBAL_VISUAL_ALIGNMENT',
+        )
+      },
+    )
+
     it(
       'keeps the tutorial map binding explicitly supported inference',
       () => {

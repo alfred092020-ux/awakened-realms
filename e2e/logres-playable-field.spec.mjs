@@ -155,6 +155,105 @@ test(
       }),
     )
 
+    const rasterMetrics =
+      await page.evaluate(
+        () => {
+          const game =
+            window
+              .__AWAKENED_REALMS_GAME__
+
+          const scene =
+            game.scene.getScene(
+              'LogresFieldScene',
+            )
+
+          const source =
+            scene.textures
+              .get(
+                'logres-playable-field-raster',
+              )
+              .getSourceImage()
+
+          const context =
+            source.getContext(
+              '2d',
+            )
+
+          if (!context) {
+            throw new Error(
+              'Playable field raster has no 2D context.',
+            )
+          }
+
+          const pixels =
+            context.getImageData(
+              0,
+              0,
+              source.width,
+              source.height,
+            )
+              .data
+
+          let green =
+            0
+
+          for (
+            let index =
+              0;
+            index <
+              pixels.length;
+            index +=
+              4
+          ) {
+            const red =
+              pixels[
+                index
+              ]
+
+            const greenChannel =
+              pixels[
+                index +
+                  1
+              ]
+
+            const blue =
+              pixels[
+                index +
+                  2
+              ]
+
+            if (
+              greenChannel >
+                red *
+                  1.15 &&
+              greenChannel >
+                blue *
+                  1.1 &&
+              greenChannel >
+                50
+            ) {
+              green +=
+                1
+            }
+          }
+
+          return {
+            greenRatio:
+              green /
+              (
+                pixels.length /
+                4
+              ),
+          }
+        },
+      )
+
+    expect(
+      rasterMetrics.greenRatio,
+    ).toBeGreaterThan(
+      0.25,
+    )
+
     const beforeMove =
       state.currentCoord
 
