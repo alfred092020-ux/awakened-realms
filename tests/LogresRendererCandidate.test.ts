@@ -24,13 +24,13 @@ describe(
           ),
         ).toEqual({
           mapBinary:
-            '/proof/001_000_00001/001_000_00001.map.bin',
+            '/proof/001_000_00001/001_000_00001.map.bin?runtime=apk-v4-demo01-20260923',
           chipPng:
-            '/proof/001_000_00001/001_000_00001_CHIP.png',
+            '/proof/001_000_00001/001_000_00001_CHIP.png?runtime=apk-v4-demo01-20260923',
           objPng:
-            '/proof/001_000_00001/001_000_00001_OBJ.png',
+            '/proof/001_000_00001/001_000_00001_OBJ.png?runtime=apk-v4-demo01-20260923',
           metadata:
-            '/proof/001_000_00001/metadata.json',
+            '/proof/001_000_00001/metadata.json?runtime=apk-v4-demo01-20260923',
         })
 
         expect(

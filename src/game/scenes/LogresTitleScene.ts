@@ -2,6 +2,7 @@ import Phaser from 'phaser'
 
 import {
   LOGRES_ASSETS,
+  logresRuntimeUrl,
   preloadLogresAssets,
 } from '../logres/ui/LogresRuntimeAssets'
 
@@ -27,7 +28,9 @@ export class LogresTitleScene
 
     this.load.json(
       'logres-system-strings-en',
-      '/__logres_ref/config/global/system_strings.json',
+      logresRuntimeUrl(
+        '/__logres_ref/config/global/system_strings.json',
+      ),
     )
   }
 

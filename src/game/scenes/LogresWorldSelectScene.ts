@@ -2,6 +2,7 @@ import Phaser from 'phaser'
 
 import {
   LOGRES_ASSETS,
+  logresRuntimeUrl,
   preloadLogresAssets,
 } from '../logres/ui/LogresRuntimeAssets'
 
@@ -73,7 +74,9 @@ export class LogresWorldSelectScene
 
     this.load.json(
       'logres-world-select-en',
-      '/__logres_ref/config/global/world_select_strings.json',
+      logresRuntimeUrl(
+        '/__logres_ref/config/global/world_select_strings.json',
+      ),
     )
   }
 

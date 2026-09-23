@@ -8,6 +8,10 @@ import {
   type LogresTerrainPrimitiveSet,
 } from './LogresTerrainPrimitives'
 
+import {
+  logresRuntimeUrl,
+} from '../ui/LogresRuntimeAssets'
+
 const MAP_ID_PATTERN =
   /^\d{3}_\d{3}_\d{5}$/
 
@@ -54,13 +58,21 @@ export function logresRendererCandidateUrls(
 
   return {
     mapBinary:
-      `${base}/${id}.map.bin`,
+      logresRuntimeUrl(
+        `${base}/${id}.map.bin`,
+      ),
     chipPng:
-      `${base}/${id}_CHIP.png`,
+      logresRuntimeUrl(
+        `${base}/${id}_CHIP.png`,
+      ),
     objPng:
-      `${base}/${id}_OBJ.png`,
+      logresRuntimeUrl(
+        `${base}/${id}_OBJ.png`,
+      ),
     metadata:
-      `${base}/metadata.json`,
+      logresRuntimeUrl(
+        `${base}/metadata.json`,
+      ),
   }
 }
 
