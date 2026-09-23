@@ -79,6 +79,21 @@ export class LogresCharacterCreateScene
   }
 
   create() {
+    // Phaser reuses scene instances. A new gender-selection visit must not
+    // retain an accepted request or completed fade from a previous visit.
+    this.selection = 'man'
+    this.createFadeComplete = false
+    this.characterCreateResponse = undefined
+    for (const key of [
+      'logres.onboarding.identity',
+      'logres.protocol.C_GMCL_CHAR_CREATE_REQ',
+      'logres.server.characterCreateResponse',
+      'logres.server.characterCreateError',
+      'logres.server.characterCreateProvenance',
+      'logres.server.characterCreateNextState',
+    ]) {
+      this.registry.remove(key)
+    }
     this.renderSelection()
     this.createOriginalHeader()
     this.createOriginalOkButton()
@@ -213,7 +228,7 @@ export class LogresCharacterCreateScene
   }
 
   private onTapDecide() {
-    if (!this.okButton) {
+    if (!this.okButton?.input?.enabled) {
       return
     }
 
@@ -342,6 +357,29 @@ export class LogresCharacterCreateScene
             'logres.server.characterCreateResponse',
             response,
           )
+
+          /*
+           * CONFIRMED ORIGINAL: Global launch video 3.0.4, 00:38-00:54,
+           * creates a temporary Novice after gender selection. Full name,
+           * hair and face registration is shown later in Hunter Guild,
+           * 09:45-10:30. Video SHA256:
+           * 488e4564622d708f8bd5ff433fb9307ee1eb50f16832d3921242bb5ff3be7d6f.
+           *
+           * This is presentation identity metadata after RECONSTRUCTED
+           * authority acceptance, not an original response packet or a
+           * quest trigger. Do not start permanent registration from a timer,
+           * first battle completion, or an invented historical quest ID.
+           */
+          if (response.accepted) {
+            this.registry.set('logres.onboarding.identity', {
+              name: request[1],
+              gender: request[2],
+              registration: 'temporary',
+              provenance: 'CONFIRMED ORIGINAL',
+              permanentRegistrationTrigger: null,
+              permanentRegistrationTriggerProvenance: 'UNRESOLVED',
+            })
+          }
 
           this.tryEnterTutorialField()
         },
