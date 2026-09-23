@@ -1,0 +1,8 @@
+{
+  "commit": "1edc7e7c1843693d122d646aa807d6d0bbbddc41",
+  "job_id": "merge-logres-renderer-candidate-view-retry-003",
+  "job_type": "MERGE",
+  "status": "SUCCESS",
+  "target_branch": "feat/logres-reconstruction",
+  "written_at": "2026-09-23T03:12:44.607859+00:00"
+}
