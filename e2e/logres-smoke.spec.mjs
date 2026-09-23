@@ -114,6 +114,73 @@ test(
         },
       )
 
+    const logoPresentation =
+      await page.evaluate(
+        () => {
+          const game =
+            window
+              .__AWAKENED_REALMS_GAME__
+
+          const scene =
+            game.scene.getScene(
+              'LogresTitleScene',
+            )
+
+          const logo =
+            scene.children.list.find(
+              (child) =>
+                child.x === 360 &&
+                child.y === 367 &&
+                child.texture,
+            )
+
+          return {
+            present:
+              Boolean(
+                logo,
+              ),
+
+            x:
+              logo?.x,
+
+            y:
+              logo?.y,
+
+            provenance:
+              game.registry.get(
+                'logres.title.logoPresentation',
+              ),
+          }
+        },
+      )
+
+    expect(
+      logoPresentation,
+    ).toEqual({
+      present:
+        true,
+
+      x:
+        360,
+
+      y:
+        367,
+
+      provenance: {
+        asset:
+          'RECOVERED_GLOBAL',
+
+        layout:
+          'SUPPORTED_INFERENCE_CURRENT_JP_LAYOUT',
+
+        nativeEvidence:
+          'CONFIRMED_CURRENT_JP_NATIVE',
+
+        animation:
+          'UNRESOLVED_GLOBAL_LFLA',
+      },
+    })
+
     console.info(
       'TITLE_CONTROL_INITIAL',
       initial,

@@ -10,6 +10,10 @@ import {
   logresDevMs,
 } from '../logres/LogresDevSettings'
 
+import {
+  LOGRES_TITLE_IDLE_LOGO_LAYOUT,
+} from '../logres/ui/LogresTitleEffectEvidence'
+
 export class LogresTitleScene
   extends Phaser.Scene {
   private transitioning =
@@ -52,6 +56,49 @@ export class LogresTitleScene
           .titleBackground
           .key,
       )
+
+    /*
+     * The recovered Global logo00 artwork is 710 x 334, exactly matching the
+     * current-JP logo_b.lfla symbol dimensions. The current-JP idle title
+     * effect centers that symbol at (360,367) in the native 720x1280 canvas.
+     *
+     * Applying that transform to the 2017 Global artwork is explicitly
+     * SUPPORTED_INFERENCE_CURRENT_JP_LAYOUT. We do not claim the still-missing
+     * Global entrance/exit LFLA timeline has been recovered.
+     */
+    this.add
+      .image(
+        LOGRES_TITLE_IDLE_LOGO_LAYOUT
+          .x,
+        LOGRES_TITLE_IDLE_LOGO_LAYOUT
+          .y,
+        LOGRES_ASSETS
+          .titleLogo
+          .key,
+      )
+      .setOrigin(
+        0.5,
+        0.5,
+      )
+
+    this.registry.set(
+      'logres.title.logoPresentation',
+      {
+        asset:
+          'RECOVERED_GLOBAL',
+
+        layout:
+          LOGRES_TITLE_IDLE_LOGO_LAYOUT
+            .globalApplication,
+
+        nativeEvidence:
+          LOGRES_TITLE_IDLE_LOGO_LAYOUT
+            .nativeEvidence,
+
+        animation:
+          'UNRESOLVED_GLOBAL_LFLA',
+      },
+    )
 
     /*
      * title.lua names this button "start".
