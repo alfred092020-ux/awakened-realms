@@ -72,6 +72,21 @@ def _truth_required() -> bool:
     }
 
 
+def _truth_timeout_seconds() -> float:
+    raw = os.environ.get("LOGRES_VISUAL_TRUTH_TIMEOUT_SECONDS", "5")
+    try:
+        value = float(raw)
+    except ValueError as exc:
+        raise ValueError(
+            "LOGRES_VISUAL_TRUTH_TIMEOUT_SECONDS must be numeric"
+        ) from exc
+    if value <= 0 or value > 30:
+        raise ValueError(
+            "LOGRES_VISUAL_TRUTH_TIMEOUT_SECONDS must be > 0 and <= 30"
+        )
+    return value
+
+
 def record_visual_truth(checkpoint: str, image: Path, result: dict) -> dict:
     if not _truth_enabled():
         return {"recorded": False, "reason": "DISABLED"}
@@ -101,31 +116,45 @@ def record_visual_truth(checkpoint: str, image: Path, result: dict) -> dict:
         "height": metrics.get("height"),
         "source": "playwright-canvas",
     }
-    completed = subprocess.run(
-        [
-            truth_bin,
-            "record",
-            sha,
-            checkpoint,
-            str(image),
-            verdict,
-            "--viewport",
-            json.dumps(viewport, sort_keys=True),
-            "--device",
-            json.dumps(
-                {
-                    "runner": "canonical-playwright",
-                    "gate": "structural",
-                },
-                sort_keys=True,
-            ),
-            "--metrics",
-            json.dumps(metrics, sort_keys=True),
-        ],
-        text=True,
-        capture_output=True,
-        check=False,
-    )
+    try:
+        completed = subprocess.run(
+            [
+                truth_bin,
+                "record",
+                sha,
+                checkpoint,
+                str(image),
+                verdict,
+                "--viewport",
+                json.dumps(viewport, sort_keys=True),
+                "--device",
+                json.dumps(
+                    {
+                        "runner": "canonical-playwright",
+                        "gate": "structural",
+                    },
+                    sort_keys=True,
+                ),
+                "--metrics",
+                json.dumps(metrics, sort_keys=True),
+            ],
+            text=True,
+            capture_output=True,
+            check=False,
+            timeout=_truth_timeout_seconds(),
+        )
+    except subprocess.TimeoutExpired as exc:
+        message = (
+            f"visual truth recording timed out after "
+            f"{_truth_timeout_seconds():g}s"
+        )
+        if _truth_required():
+            raise RuntimeError(message) from exc
+        return {
+            "recorded": False,
+            "reason": "RECORDER_TIMEOUT",
+            "error": message,
+        }
     if completed.returncode != 0:
         message = (completed.stderr or completed.stdout or "recording failed").strip()
         if _truth_required():
