@@ -112,11 +112,48 @@ class MissionRoadmapTests(unittest.TestCase):
         }
         for task_id in links.values():
             conn.execute(
-                "insert into tasks(id,status) values(?, 'DONE')",
+                "insert into tasks(id,status) values(?, 'READY')",
                 (task_id,),
             )
 
         load_config(conn, MISSION_CONFIG)
+
+        before = {
+            str(row[0]): objective_status(conn, str(row[0]))
+            for row in conn.execute(
+                "select id from mission_objectives order by id"
+            )
+        }
+
+        for task_id in links.values():
+            conn.execute(
+                "update tasks set status='DONE' where id=?",
+                (task_id,),
+            )
+
+        after = {
+            str(row[0]): objective_status(conn, str(row[0]))
+            for row in conn.execute(
+                "select id from mission_objectives order by id"
+            )
+        }
+
+        changed = {
+            objective_id
+            for objective_id in before
+            if (
+                before[objective_id].state,
+                before[objective_id].progress_percent,
+            ) != (
+                after[objective_id].state,
+                after[objective_id].progress_percent,
+            )
+        }
+
+        self.assertEqual(
+            set(links) | {"GAME_CLIENT", "GAMEPLAY", "LOGRES_COMPLETE"},
+            changed,
+        )
 
         for objective_id, task_id in links.items():
             configured = list(
@@ -148,7 +185,7 @@ class MissionRoadmapTests(unittest.TestCase):
                 objective_id,
             )
 
-            status = objective_status(conn, objective_id)
+            status = after[objective_id]
             self.assertEqual("IN_PROGRESS", status.state, objective_id)
             self.assertEqual(50.0, status.progress_percent, objective_id)
 
@@ -156,6 +193,27 @@ class MissionRoadmapTests(unittest.TestCase):
             "UNCOVERED",
             objective_status(conn, "PROGRESSION").state,
         )
+
+        first_links = list(
+            conn.execute(
+                "select objective_id,milestone_id,task_id,gate_type "
+                "from mission_links "
+                "order by objective_id,gate_type,milestone_id,task_id"
+            )
+        )
+        load_config(conn, MISSION_CONFIG)
+        second_links = list(
+            conn.execute(
+                "select objective_id,milestone_id,task_id,gate_type "
+                "from mission_links "
+                "order by objective_id,gate_type,milestone_id,task_id"
+            )
+        )
+        self.assertEqual(first_links, second_links)
+        for objective_id in links:
+            status = objective_status(conn, objective_id)
+            self.assertEqual("IN_PROGRESS", status.state, objective_id)
+            self.assertEqual(50.0, status.progress_percent, objective_id)
 
         conn.execute(
             "update milestones set status='DONE' where id='DEMO-0.3'"
