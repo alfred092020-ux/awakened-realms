@@ -1,544 +1,1489 @@
 # Logres Brain Connected Plugin Integration Design
 
 Date: 2026-09-24
-Project: Logres reconstruction
-Repository: alfred092020-ux/awakened-realms
+Project: Awakened Realms / Logres reconstruction
 Integration branch: feat/logres-reconstruction
-Status: Canonical design specification
+Design task: BRAIN-PLUGIN-INTEGRATION-SPEC-002
+Baseline integration SHA: eb90cdfc52f6d4e0f24e5188f7540d31dc538ff7
+Supersedes incomplete review candidate: caa8f9db16a2a2b7e615ba935873b9654497c4a4
+Replaces integrated incomplete spec commit: eb90cdfc52f6d4e0f24e5188f7540d31dc538ff7
 
-## 1. Purpose
+## Purpose
 
-Define one canonical integration layer between connected plugins and the Logres Brain Network.
+Connect the installed ChatGPT plugins and external services to the existing Logres Brain Network without creating competing sources of truth.
 
-Plugins extend what a registered Brain chat can read or do in external systems. They do not become a second project brain, task database, evidence authority, or integration authority.
+The VM control plane remains the canonical operational authority. External systems receive projections, artifacts, telemetry, documentation, or communication work according to their role. Connector-capable ChatGPT sessions execute plugin actions through a durable integration queue and return receipts to the Brain.
 
-The design must preserve restart safety, task ownership, provenance, deterministic dedupe, bounded retries, chat history continuity, and the existing exact-SHA verification pipeline.
+The end state is a project operating system where a new Logres chat registers itself, recovers relevant context, sees current ownership, avoids duplicate work, claims a safe task, uses the right external services, records results, and leaves complete durable state for the next chat.
 
-A successful plugin integration must answer five questions after any restart:
+## Existing System To Preserve
 
-1. Which chat and session initiated the action?
-2. Which task, if any, authorized project work?
-3. Which plugin action ran against which external object and version?
-4. What durable result or artifact was produced?
-5. Which project decision, evidence record, or follow-up consumed the result?
+The current control plane already provides:
 
-## 2. Non-negotiable constraints
+- SQLite WAL storage at the VM control plane.
+- Brain membership and pull-based worker coordination.
+- Atomic task leases.
+- Task graph, dependencies, acceptance criteria, and file claims.
+- Durable Brain events.
+- Project journal and project decisions.
+- Durable chat sessions and chat transcript messages.
+- Transcript archive files.
+- Evidence and knowledge graph state.
+- Exact-SHA verification and integration queue state.
+- Deployment/runtime helpers.
+- Autonomous scheduling and reconciliation.
+- One serialized integration authority.
+- Git branch and worktree guardrails.
 
-- Never modify, merge, or target `main`.
-- `feat/logres-reconstruction` remains the only integration branch.
-- Lead remains the only integration authority.
-- Brain Network and `control.sqlite` remain the coordination source of truth.
-- Existing task leases and claims remain the work-ownership authority.
-- Existing exact-SHA verification, scope checks, merge preflight, regression capture, and merge train remain mandatory.
-- Plugin provider state is external state, not canonical Logres task state.
-- A successful plugin call cannot directly mark a task DONE, verified, integrated, or historically confirmed.
-- No plugin output can promote current-JP evidence above Global 3.0.24 evidence.
-- No OAuth token, API key, bearer token, cookie, refresh token, or provider secret may be written to Brain, chat memory, SQLite, logs, artifacts, or repository files.
-- Large provider payloads are stored once as immutable artifacts when needed. Brain and chat memory keep pointers and hashes instead of duplicate bodies.
-- Missing, disconnected, rate-limited, or permission-denied plugins must fail closed without corrupting project state.
+The plugin layer extends these mechanisms. It does not replace them.
 
-## 3. Existing primitives to reuse
+## Authority Model
 
-The implementation must extend the current control plane instead of introducing a competing orchestrator.
+Each information class has one authoritative home.
 
-Reuse:
-- `logres-chat-start` for automatic Brain registration and durable chat-session resume.
-- `logres-chat-memory` for user, assistant, tool-summary, and system-note transcript records.
-- `chat_sessions` and `chat_messages` for durable per-conversation history.
-- `logres-brain` for events, leases, evidence, decisions, handoffs, cursors, and presence.
-- `route_jobs` for restart-safe routing intent and external route ownership.
-- `route_decisions` for append-only routing rationale.
-- `project_journal` for durable project action lineage.
-- `project_decisions` for durable decision records.
-- `logres-coordinator` for atomic task acquisition and concurrency safety.
-- `logres-finish-task`, merge preflight, and merge train for normal candidate integration.
-- Artifact storage plus SHA-256 for large immutable evidence snapshots.
+| Domain | Authority |
+| --- | --- |
+| Operational coordination | VM Brain Network / SQLite |
+| Code and immutable implementation history | GitHub |
+| Work presentation for humans | Linear |
+| Curated working knowledge | Notion |
+| Stable technical documentation | GitBook |
+| Large files and evidence blobs | Google Drive |
+| Product and interface design | Figma |
+| Player/product behavior | PostHog |
+| Infrastructure telemetry | Datadog |
+| Hosted runtime state | Railway / Render / Oracle |
+| Agent-to-human or agent-to-agent email | AgentMail |
+| Application transactional email | Resend |
+| Company mail and calendar | Gmail / Google Calendar |
+| Presentation outputs | Gamma |
+| Research acquisition | Firecrawl / TinyFish / Context7 / Hugging Face |
+| Generated media | OpenArt |
+| Production game backend when needed | Supabase |
+| Source implementation execution | VM workers / GitHub / approved hosted workers |
 
-No new task table or alternate lease system is allowed.
+An external system never silently becomes authoritative because a connector changed its copy.
 
-## 4. Target architecture
+## Core Architectural Rule
 
-```text
-registered Brain chat
-        |
-   chat session
-        |
- plugin request normalizer
-        |
- durable route intent
-        |
- permission + ownership policy
-        |
- connected plugin/provider
-        |
- result normalizer
-   /          \
-tool-summary   immutable artifact
-   |               |
-chat memory     SHA + provenance
-   \               /
-      Brain event / evidence
-              |
-        existing tasks
-              |
-      normal verification
-              |
-         merge preflight
-              |
-             Lead
-```
+The architecture is hub-and-spoke.
 
-The plugin layer is a transport and normalization boundary. It never replaces Brain state transitions.
+The VM Brain is the hub.
 
-## 5. Canonical plugin request envelope
+Every provider is an adapter.
 
-Every plugin invocation must normalize to one durable envelope before external dispatch.
+There is no direct provider-to-provider synchronization.
+
+For example:
+
+Linear does not update Notion directly.
+Notion does not update GitHub directly.
+GitHub does not update Figma directly.
+AgentMail does not execute arbitrary actions directly.
+
+Every state transition passes through the Brain or is recorded back into it as an immutable receipt.
+
+This prevents sync loops, stale overwrites, split ownership, and duplicate work.
+
+## Connector Execution Constraint
+
+ChatGPT plugins are available to connector-capable ChatGPT sessions. Their credentials are not assumed to exist on the VM.
+
+Therefore the first implementation uses a durable connector bridge rather than embedding provider credentials into the control plane.
+
+Flow:
+
+1. The Brain creates an integration intent.
+2. The intent is written to an integration outbox.
+3. A connector-capable chat claims the intent.
+4. The chat performs the external MCP/plugin action.
+5. The chat writes a structured receipt to the Brain.
+6. The Brain updates the binding/projection state.
+7. Retries or reconciliation operate from durable Brain state.
+
+Later, a provider may gain a direct server-side executor if a service account and explicit security policy exist. Direct execution must implement the same intent and receipt protocol.
+
+## Restart-Safety Contract
+
+After any chat restart, VM restart, connector disconnect, or provider timeout, the durable integration record must answer:
+
+1. Which Brain chat and durable chat session initiated the operation?
+2. Which Brain task or explicit user request authorized it?
+3. Which provider action targeted which external object and version?
+4. Did the provider operation definitely succeed, definitely fail, or enter an uncertain state?
+5. Which receipt, artifact, Brain event, proposal, task, or decision consumed the result?
+
+No mutating provider action is considered complete until enough local state exists to answer those questions.
+
+## Canonical Connector Request Envelope
+
+Every provider operation is normalized before dispatch.
 
 Required fields:
 
-- `schema`: versioned envelope schema.
-- `plugin_id`: stable ChatGPT/plugin identifier when available.
-- `provider`: GitHub, Google Drive, Slack, Gmail, or other provider family.
-- `action`: canonical action name.
-- `action_class`: READ_ONLY, REVERSIBLE_WRITE, or IRREVERSIBLE_SIDE_EFFECT.
-- `chat_id`: registered Brain chat.
-- `session_id`: active durable chat-memory session.
-- `task_id`: project task when the action performs project work.
-- `actor`: initiating Brain member.
-- `request_id`: locally generated immutable run identifier.
-- `dedupe_key`: deterministic operation identity.
-- `request_hash`: SHA-256 of the sanitized canonical request.
-- `external_object_id`: provider object ID when known.
-- `external_version`: commit SHA, ETag, revision, message ID, file version, or equivalent.
-- `source_ref`: sanitized provider reference or URI when useful.
-- `requested_at`: UTC timestamp.
-- `metadata`: sanitized bounded metadata only.
+- schema_version
+- provider
+- target_key
+- operation
+- action_class
+- chat_id
+- session_id
+- task_id when project work is involved
+- actor
+- intent_id
+- dedupe_key
+- canonical_entity_type
+- canonical_entity_id
+- projection_hash or request_hash
+- provider_entity_type when known
+- provider_entity_id when known
+- provider_version when known
+- requested_at
+- bounded sanitized metadata
 
-Fields containing credentials or raw authorization headers are forbidden.
+Forbidden fields:
 
-## 6. Action classes and authorization
+- OAuth access tokens
+- refresh tokens
+- API keys
+- cookies
+- bearer headers
+- passwords
+- private signing material
 
-### 6.1 READ_ONLY
+The durable envelope stores intent and provenance. Connector credentials remain in the connector/provider security boundary.
 
-Examples include fetching a GitHub file, reading a Drive document, searching messages, or inspecting metadata.
+## Action Classes And Authorization
 
-Requirements:
-
-- active plugin connection and provider permission;
-- durable request intent before result publication;
-- task lease is required when the read is part of owned project work;
-- no task mutation occurs from the read alone.
-
-### 6.2 REVERSIBLE_WRITE
-
-Examples include creating a draft, comment, issue, branch, or provider object that has a clear compensating delete/archive operation.
-
-Requirements:
-
-- all READ_ONLY requirements;
-- active task ownership for project-directed work;
-- durable write intent before dispatch;
-- deterministic idempotency key when the provider supports one;
-- provider reconciliation before any retry after an uncertain outcome.
-### 6.3 IRREVERSIBLE_SIDE_EFFECT
-
-Examples include sending a message, publishing externally, deleting nonrecoverable data, or other actions whose effects cannot be safely replayed.
-
-Requirements:
-
-- all REVERSIBLE_WRITE requirements;
-- explicit product/provider authorization must already be present;
-- the plugin layer must not infer missing user consent;
-- no automatic replay after timeout or process crash;
-- uncertain outcomes enter RECONCILING until provider state is checked.
-
-Brain never bypasses ChatGPT or provider permission controls.
-
-## 7. Durable execution ledger
-
-Routing intent continues to use `route_jobs`. Plugin execution needs a provider-facing run ledger inside the same `control.sqlite`, not a second database.
-
-Proposed `plugin_runs` fields:
-
-- `run_id` primary key;
-- `dedupe_key` unique;
-- `route_job_id`;
-- `chat_id`;
-- `session_id`;
-- `task_id`;
-- `plugin_id`;
-- `provider`;
-- `connection_alias_hash`;
-- `action`;
-- `action_class`;
-- `state`;
-- `request_hash`;
-- `response_hash`;
-- `external_ref`;
-- `external_object_id`;
-- `external_version`;
-- `artifact_path`;
-- `artifact_sha256`;
-- `attempt_count`;
-- `last_error`;
-- `created_at`;
-- `updated_at`.
-
-The ledger stores identity and provenance only. It never stores provider credentials.
-
-## 8. Plugin run state machine
-
-Normal path:
-
-`PLANNED -> AUTHORIZED -> DISPATCHED -> SUCCEEDED -> PUBLISHED`
-
-Bounded alternatives:
-
-- `NEEDS_USER_ACTION`
-- `PERMISSION_DENIED`
-- `FAILED_BOUNDED`
-- `SUPERSEDED`
-- `RECONCILING`
-
-Rules:
-
-- PLANNED is durable before any mutating external dispatch.
-- AUTHORIZED means local policy and provider permission checks passed.
-- DISPATCHED means the external call may have taken effect.
-- SUCCEEDED requires a normalized provider result.
-- PUBLISHED means chat memory and required Brain/project lineage are durable.
-- RECONCILING is mandatory when a write outcome is uncertain.
-- FAILED_BOUNDED is terminal unless a new explicit route is created.
-## 9. Deterministic dedupe
-
-Read dedupe key:
-
-`provider + connection_alias_hash + action + external_object_id + external_version_or_query_hash`
-
-Write dedupe key:
-
-`task_or_chat + provider + action + target_identity + canonical_request_hash + idempotency_token`
-
-Rules:
-
-- equivalent requests reuse the existing durable run when safe;
-- a repeated write must not create a second external side effect;
-- provider version changes produce a new read identity;
-- mutable objects without a stable version require a fresh snapshot before evidence use;
-- dedupe keys are recorded before external dispatch.
-
-The existing `route_jobs.dedupe_key` remains the routing-level duplicate guard. `plugin_runs.dedupe_key` protects external execution.
-
-## 10. Chat-memory binding
-
-Every chat-initiated plugin run belongs to the current `chat_sessions.session_id`.
-
-After the provider result is normalized, append one bounded `tool-summary` through `logres-chat-memory`.
-
-The tool-summary metadata should contain:
-
-- plugin run ID;
-- plugin/provider/action;
-- task ID if present;
-- external object ID and version if safe;
-- request and response hashes;
-- artifact path and SHA when a snapshot exists;
-- final run state.
-
-Use a stable `external_id` derived from the plugin run ID so transcript replay cannot duplicate the summary.
-Do not append large raw provider payloads to chat memory.
-
-A final assistant response can refer to the summarized result. It must not become the only durable record of an external action.
-
-## 11. Brain event mapping
-
-Plugin outcomes enter Brain only when they affect project coordination.
+### READ_ONLY
 
 Examples:
 
-- evidence-bearing read -> EVIDENCE with task ID, artifact path, SHA, provenance metadata;
-- project discovery -> DISCOVERY;
-- provider conflict or changed source -> EVIDENCE_CONFLICT or BLOCKER;
-- completed external project step -> PROGRESS or HANDOFF;
-- permission or account problem that blocks a task -> BLOCKER;
-- normal conversational read with no project impact -> chat-memory tool-summary only.
+- fetch a GitHub file
+- search Linear
+- read Notion
+- inspect Figma
+- query Datadog
+- read Drive metadata
 
-Brain events must reference the plugin run ID in metadata.
+Rules:
 
-A plugin success never emits DONE unless the owning task's acceptance path separately determines the task is complete.
+- require an available provider connection and provider permission
+- record durable intent when the read materially affects project state or evidence
+- require task ownership when the read is part of claimed project work
+- never mutate canonical Brain state solely because external data was read
 
-## 12. Artifact and snapshot policy
+### REVERSIBLE_WRITE
 
-Provider data becomes project evidence only after a stable evidence identity exists.
+Examples:
 
-Preferred order:
+- create or update a managed Linear issue
+- create a managed Notion page
+- upload a Drive artifact
+- create a draft
+- update a managed GitBook page
 
-1. provider immutable object/version already exists;
-2. record provider object ID and immutable version;
-3. if content is material, snapshot once to project artifact storage;
-4. compute SHA-256;
-5. publish Brain evidence using path/hash/provenance;
-6. keep the provider reference as supporting provenance.
+Rules:
 
-For mutable external documents, message threads, dashboards, or pages, a later provider state does not silently rewrite prior evidence.
-A new provider version produces a new snapshot and new evidence event.
+- require all READ_ONLY safeguards
+- require an authorized Brain task or explicit user-directed operation
+- persist intent before external dispatch
+- use provider idempotency support when available
+- reconcile provider state before retrying an uncertain write
+- record a receipt after the provider response
 
-## 13. Evidence authority and provenance
+### IRREVERSIBLE_SIDE_EFFECT
+
+Examples:
 
-Plugin retrieval does not change the Logres evidence hierarchy.
+- send external email
+- publish externally
+- delete nonrecoverable provider data
+- trigger financial, legal, release, or other nonreplayable effects
 
-The normalized provenance record must identify:
+Rules:
 
-- provider;
-- external object ID;
-- version or ETag;
-- retrieval timestamp;
-- content SHA or artifact SHA;
-- source classification;
-- target-version relevance;
-- plugin run ID.
+- require all REVERSIBLE_WRITE safeguards
+- require explicit authority for the specific side effect
+- never infer missing consent from prior unrelated approvals
+- never blindly replay after timeout or process crash
+- uncertain outcomes enter RECONCILING until provider state is checked
+- high-risk actions remain human-gated
 
-Historical rules remain unchanged:
+The integration layer never bypasses ChatGPT or provider permission controls.
 
-- recovered Global 3.0.24 evidence outranks later/current JP evidence for the Global target;
-- current-JP-only data cannot establish Global historical truth;
-- model or plugin summaries are not primary evidence by themselves;
-- unsupported claims remain SUPPORTED_INFERENCE, VERSION_SENSITIVE, or UNKNOWN as required by task policy.
+## New Control-Plane Concepts
 
-A plugin result can satisfy a dependency only after deterministic evidence mapping and the existing task evidence policy accepts it.
+### Integration Target
 
-## 14. Task ownership and concurrency
+A configured provider destination.
 
-Project-directed plugin work must honor the same ownership system as repository work.
+Fields:
 
-Before dispatch:
+- provider
+- account/workspace identifier
+- logical purpose
+- enabled state
+- execution mode
+- read policy
+- write policy
+- metadata
 
-- task is active and owned by the initiating chat, or the action is an explicitly allowed read used to evaluate whether work is claimable;
-- hard dependencies are satisfied;
-- no conflicting claim or lease exists;
-- action scope matches the task;
-- integration work is never delegated through a normal plugin route.
-If the lease expires or ownership changes before a mutating dispatch, the run is blocked or superseded.
+Examples:
 
-If ownership changes after DISPATCHED, reconciliation records the external result, but the old worker cannot continue project mutation.
+- linear:logres-workspace
+- notion:logres-knowledge
+- gitbook:logres-docs
+- datadog:nexus-runtime
 
-No plugin action may steal, force-release, or bypass another live lease.
+### Canonical Binding
 
-## 15. Provider capability discovery
+Maps one Brain entity to one provider entity.
 
-Plugin availability must be discovered at runtime.
+Fields:
 
-Do not hard-code an assumption that a specific provider is always connected.
+- provider
+- canonical entity type
+- canonical entity ID
+- provider entity type
+- provider entity ID
+- provider URL
+- last projected canonical version/hash
+- last observed provider version/hash
+- sync state
+- timestamps
 
-The capability record should expose only safe metadata:
+Example:
 
-- plugin ID;
-- provider;
-- connection alias or nonsecret connection hash;
-- supported actions;
-- granted scope summary when available;
-- observed health;
-- last successful use.
+task:MISSION-PERFORMANCE-001
+→ Linear issue LOG-123
 
-When a required plugin is unavailable, the route enters NEEDS_USER_ACTION or a policy-approved deterministic fallback. It does not fabricate provider data.
+A binding is identity metadata, not authority transfer.
 
-## 16. Secret and privacy boundary
+### Integration Intent
 
-Forbidden durable content:
+A durable request for an external action.
 
-- OAuth access or refresh tokens;
-- API keys;
-- cookies;
-- bearer headers;
-- passwords;
-- provider session secrets;
-- raw connector credentials.
+Fields:
 
-Allowed durable content:
+- intent ID
+- provider
+- operation
+- canonical entity type
+- canonical entity ID
+- payload
+- payload hash
+- dedupe key
+- priority
+- state
+- attempt count
+- required capability
+- created by
+- source Brain event or journal entry
+- timestamps
 
-- provider/plugin IDs;
-- connection alias hash;
-- granted scope names without tokens;
-- external object IDs;
-- commit SHAs, revisions, ETags, message IDs, file IDs;
-- sanitized request/response hashes;
-- artifact paths and hashes;
-- bounded nonsecret result metadata.
+States:
 
-Logs and tool-summary records must redact secret-like fields before persistence.
+- NEW
+- CLAIMED
+- DISPATCHED
+- RECONCILING
+- SUCCEEDED
+- RETRYABLE
+- FAILED
+- SUPERSEDED
+- CANCELLED
 
-## 17. Retry and reconciliation policy
+DISPATCHED means the provider call may have taken effect.
+RECONCILING is mandatory when a mutating call returned an uncertain outcome.
+An irreversible side effect must not automatically transition from RECONCILING back to dispatch.
 
-READ_ONLY transient failure:
+### Integration Claim
 
-- one bounded retry when provider semantics make retry safe;
-- then FAILED_BOUNDED or NEEDS_USER_ACTION.
+A bounded lease on an intent.
 
-REVERSIBLE_WRITE transient failure before DISPATCHED:
+Fields:
 
-- one bounded retry is allowed.
+- intent ID
+- chat ID
+- lease token
+- claimed at
+- lease expiry
 
-Any write failure after DISPATCHED:
+The same race-safety principle as Brain task leases applies.
 
-1. enter RECONCILING;
-2. query provider state using the run's external reference or idempotency key;
-3. if effect exists, adopt it and continue;
-4. if effect definitely does not exist, a bounded retry may run;
-5. if outcome remains ambiguous, stop and surface NEEDS_USER_ACTION.
+### Integration Receipt
 
-IRREVERSIBLE_SIDE_EFFECT never auto-replays after an ambiguous dispatch.
+Immutable result of one attempted provider action.
 
-Restart reconciliation scans nonterminal `plugin_runs` and existing `route_jobs` before creating new external work.
+Fields:
 
-## 18. Integration and repository authority
+- intent ID
+- provider
+- operation
+- success/failure
+- provider entity ID
+- provider URL
+- provider revision/version if available
+- observed output hash
+- safe compact response metadata
+- error class
+- error detail
+- chat ID
+- attempt number
+- timestamp
 
-Plugins do not receive a privileged repository path.
+Large provider responses are stored as artifacts and referenced by path/hash.
 
-GitHub-connected actions must still obey:
+### Integration Cursor
 
-- no automated target or push to `main`;
-- worker branches only for normal implementation;
-- candidate SHA remains immutable after queueing;
-- scope check and verification remain mandatory;
-- merge preflight tests the exact combined result SHA;
-- Lead remains the only integration authority.
-Drive, Slack, Gmail, or other plugins cannot redefine repository truth, task state, or acceptance criteria.
+Provider-specific read position for bounded inbound reconciliation.
 
-External provider completion does not substitute for `logres-finish-task`, verification, or merge-train state.
+Examples:
 
-## 19. Failure isolation
+- last Linear update timestamp
+- last AgentMail message/thread ID
+- last deployment event cursor
+- last Datadog incident time
 
-A plugin outage must not stall deterministic work that does not require the plugin.
+A cursor is advisory. It never replaces canonical Brain event IDs.
 
-Failure classes:
+### Integration Proposal
 
-- connection missing;
-- permission denied;
-- rate limited;
-- provider unavailable;
-- object not found;
-- version changed;
-- response invalid;
-- side-effect outcome uncertain;
-- local persistence failure;
-- provenance insufficient.
+Inbound external changes that might affect canonical state are recorded as proposals.
 
-Each failure records a bounded reason in the plugin run and route job.
+Fields:
 
-Only failures that block project progress emit Brain BLOCKER events.
+- provider
+- provider entity ID
+- proposed canonical entity ID
+- change type
+- observed value
+- current canonical value
+- risk class
+- disposition
+- reviewer/actor
+- timestamp
 
-Repeated identical failures update existing lineage rather than spawning an unbounded task chain.
+Possible dispositions:
 
-## 20. Testing strategy
+- ACCEPTED
+- REJECTED
+- NOOP
+- SUPERSEDED
+- NEEDS_HUMAN
 
-Unit tests:
+External changes do not write directly into tasks, leases, evidence confidence, or integration authority.
 
-- envelope normalization;
-- secret redaction;
-- action classification;
-- deterministic read/write dedupe;
-- task ownership guard;
-- evidence-policy guard;
-- state-transition validity;
-- provider capability handling;
-- retry ceilings.
+## Database Design
 
-Integration tests:
+Add focused tables to the existing SQLite WAL database.
 
-- registered chat -> plugin read -> tool-summary;
-- plugin read -> immutable artifact -> Brain EVIDENCE;
-- duplicate read -> one durable result;
-- duplicate write -> one external side effect;
-- crash after provider success before local publish -> reconciliation adopts result;
-- crash before dispatch -> safe bounded retry;
-- permission denial -> NEEDS_USER_ACTION with no task corruption;
-- provider version change -> new snapshot and evidence identity;
-- lease loss before write -> dispatch refused;
-- mutable source changes after snapshot -> prior evidence remains immutable;
-- disconnected plugin -> fail closed;
-- secret-shaped values -> absent from SQLite, logs, chat archive, and artifacts;
-- large result -> pointer/hash in Brain and chat memory, not duplicated body;
-- GitHub target `main` -> hard rejection;
-- plugin success -> no automatic DONE or integration state.
+### integration_targets
 
-Regression requirements:
+Primary key:
+provider + target_key
 
-- Brain health remains PASS;
-- chat-memory resume and append dedupe remain PASS;
-- coordinator acquisition remains atomic;
-- blocker/regression routing remains unchanged;
-- exact-SHA merge preflight remains mandatory.
+Stores provider purpose and policy.
 
-## 21. Rollout
+### integration_bindings
 
-Phase 1: schema and dry-run normalization.
+Unique key:
+provider + provider_entity_type + provider_entity_id
 
-- Add plugin run ledger.
-- Normalize plugin capabilities and request envelopes.
-- Record no external writes.
+Secondary unique key where appropriate:
+provider + canonical_entity_type + canonical_entity_id + logical_slot
 
-Phase 2: read-only providers.
+Stores canonical-to-provider identity.
 
-- Enable bounded reads for a narrow allowlist.
-- Append chat-memory tool summaries.
-- Snapshot evidence-bearing results.
-- Validate dedupe and restart reconciliation.
+### integration_intents
 
-Phase 3: project evidence bridge.
+Primary key:
+integer intent ID
 
-- Publish accepted artifact references to Brain.
-- Enforce evidence-policy and target-version rules.
-Phase 4: reversible writes.
+Unique dedupe key.
 
-- Require active task ownership.
-- Persist write intent before dispatch.
-- Enforce idempotency and reconciliation.
+Indexed by:
+state, provider, priority, created_at
 
-Phase 5: guarded irreversible actions.
+### integration_claims
 
-- Require explicit provider/product authorization.
-- Disable automatic ambiguous replay.
-- Add health and audit reporting.
+Primary key:
+intent_id
 
-## 22. Acceptance criteria
+Stores one active claimant.
 
-The design is implemented when:
+Claims use BEGIN IMMEDIATE and bounded SQLite contention retry.
 
-- any registered Brain chat can use an available connected plugin without becoming a separate coordination island;
-- each plugin run has durable chat/session identity, task ownership when applicable, deterministic dedupe, and sanitized provenance;
-- a restart can reconcile every nonterminal write without duplicating side effects;
-- evidence-bearing provider results are immutable or snapshotted before they influence project truth;
-- large payloads are referenced by artifact path/hash instead of copied into Brain or chat history;
-- plugin outages fail closed and do not block unrelated deterministic work;
-- current-JP/provider data cannot override Global evidence rules;
-- plugin completion cannot bypass task acceptance, verification, merge preflight, or Lead;
-- no credential or provider secret is persisted;
-- `main` remains unreachable from automated plugin routing.
+### integration_receipts
 
-## 23. Explicit non-goals
+Append-only.
 
-- replacing Brain Network or `control.sqlite`;
-- using provider state as the project task database;
-- automatic historical-truth promotion from connector output;
-- automatic integration or merging;
-- storing complete external inboxes, drives, or workspaces in project state;
-- polling external services without a concrete task or unresolved dependency;
-- retrying uncertain irreversible actions until one appears successful.
+Indexed by:
+intent_id, provider, timestamp
 
-## 24. Success metric
+### integration_cursors
 
-Primary metric: useful plugin work reaches durable Brain/chat lineage without duplicate external effects or manual reconstruction after restart.
-Secondary metrics:
+Primary key:
+provider + target_key + cursor_name
 
-- duplicate plugin runs prevented;
-- external writes reconciled without replay;
-- evidence snapshots with complete provenance;
-- plugin-triggered blocker resolution time;
-- plugin permission/error recovery time;
-- percentage of plugin results represented by bounded tool summaries instead of raw duplicated payloads;
-- zero secret-persistence incidents;
-- zero plugin-driven bypasses of task ownership or exact-SHA integration.
+### integration_proposals
 
-The operating rule is:
+Indexed by:
+disposition, provider, canonical_entity_id, created_at
 
-Plugins retrieve or act. Chat memory preserves conversation lineage. Brain owns coordination. Evidence policy owns truth. Verification owns acceptance. Lead owns integration.
+No provider token, OAuth refresh token, password, API key, or secret is stored in these tables.
+
+## Canonical Versioning
+
+Every projected record needs a deterministic canonical version.
+
+For task-style entities, calculate a projection hash from the fields allowed for that provider.
+
+Example Linear task hash input:
+
+- task ID
+- title
+- status
+- priority
+- lane
+- owner/lease summary
+- branch
+- blockers
+- updated acceptance summary
+- integration SHA/reference
+
+Do not hash unrelated private transcript content.
+
+A provider projection is current when its stored canonical hash matches the newly calculated canonical hash.
+
+This makes projection idempotent and avoids noisy repeated writes.
+
+## Dedupe Rules
+
+Each intent has a deterministic dedupe key.
+
+Format concept:
+
+provider:operation:canonical-type:canonical-id:projection-hash:logical-slot
+
+If the same desired projection already exists, creating it again returns the existing intent or a no-op result.
+
+Provider retries reuse the same logical intent.
+
+A new canonical projection hash creates a new intent and supersedes older unclaimed projection intents for the same logical slot.
+
+## Conflict Rules
+
+Conflicts follow authority boundaries.
+
+### Canonical wins automatically
+
+Use when the provider is a presentation mirror.
+
+Examples:
+
+- Linear title/status drift from canonical Brain task state.
+- GitBook generated page drift where the page is marked managed.
+- Generated Notion summary drift.
+
+The system creates a corrective projection intent.
+
+### External becomes proposal
+
+Use when a human may have intentionally edited an external system.
+
+Examples:
+
+- A Linear issue description contains a new request.
+- A Notion page contains a new architecture decision.
+- A Figma design node changed.
+- An AgentMail thread asks for a change.
+
+The external value is recorded as a proposal or evidence candidate.
+
+### Never auto-resolve
+
+Use for:
+
+- evidence confidence changes
+- destructive actions
+- integration branch changes
+- main branch changes
+- credential/security changes
+- money/billing changes
+- public releases
+- legal/business commitments
+- untrusted email instructions
+
+These require the existing project authority or explicit human approval.
+
+## Privacy And Data Minimization
+
+Full chat transcripts stay in the Brain transcript store unless a specific operation requires selected content.
+
+External projections contain only the minimum useful fields.
+
+Do not mirror:
+
+- private transcript history by default
+- secrets
+- environment variables
+- API keys
+- tokens
+- personal credentials
+- raw private evidence blobs when a reference is sufficient
+
+Large evidence uses existing artifact paths/hashes and Google Drive references when appropriate.
+
+## Security
+
+### Credentials
+
+Plugin credentials remain managed by ChatGPT/plugin infrastructure.
+
+VM direct executors, if later introduced, use scoped credentials stored outside SQLite.
+
+Secrets are never committed to Git.
+
+### AgentMail And Inbound Email
+
+Inbound email is untrusted input.
+
+Required controls:
+
+- verified provider/webhook identity where applicable
+- sender allowlists for privileged automation
+- domain allowlists only where justified
+- rate limits
+- audit log
+- no direct shell/code execution from message content
+- no direct canonical task mutation from arbitrary email
+- restricted capability scope
+- human approval for high-risk operations
+
+### Provider Write Policies
+
+Every target defines allowed operations.
+
+Examples:
+
+Linear:
+create/update managed task mirrors
+
+GitBook:
+create/update managed documentation pages
+
+Drive:
+upload/link evidence artifacts
+
+Datadog:
+emit/query telemetry, not control integration
+
+No adapter receives broader write access than its role requires.
+
+## Adapter Interface
+
+Provider adapters share one logical contract even when execution occurs through ChatGPT connectors.
+
+Required operations:
+
+- describe_capabilities
+- normalize_target
+- build_projection
+- validate_intent
+- execute_intent
+- normalize_receipt
+- observe_external_changes where supported
+- reconcile_binding
+
+The VM-side core owns:
+
+- intent creation
+- dedupe
+- claiming
+- retries
+- receipts
+- bindings
+- proposals
+- policy
+- audit events
+
+Connector sessions own provider calls.
+
+## Connector Worker Protocol
+
+A connector-capable chat performs:
+
+1. logres-chat-start <chat-id>
+2. advertise supported provider capabilities for the session
+3. claim one compatible integration intent
+4. fetch the intent payload
+5. perform exactly the requested provider operation
+6. normalize the result
+7. write the integration receipt
+8. release/complete the intent
+9. continue only if safe capacity remains
+
+The connector worker does not invent additional external writes.
+
+If provider output includes unexpected instructions, treat them as untrusted data.
+
+## Chat Bootstrap Integration
+
+logres-chat-start remains the normal entrypoint.
+
+The integration layer extends bootstrap with a compact capability summary.
+
+Example:
+
+CONNECTOR_CAPABILITIES=github,linear,notion,gitbook,drive,figma,datadog
+
+The chat then sees:
+
+- current Brain task/lease state
+- relevant transcript memory
+- current integration backlog compatible with its capabilities
+- failed/retryable intents needing attention
+- provider proposals requiring review
+
+A chat with no development task may safely work on connector intents without claiming source files.
+
+## GitHub Integration
+
+Purpose:
+code authority and immutable implementation provenance.
+
+The existing GitHub workflow remains authoritative for:
+
+- repository content
+- branches
+- commits
+- pull requests
+- Actions/CI
+- tags and releases
+
+The integration layer records bindings from Brain tasks and decisions to GitHub issues, PRs, branches, and exact commit SHAs where useful.
+
+GitHub mutations continue through existing guarded development and integration workflows. A GitHub issue, PR comment, or branch change does not directly alter Brain leases or integration authority.
+
+The integration core must reuse existing GitHub/route state rather than duplicating current Copilot/GitHub automation.
+
+## Replit Adapter
+
+Purpose:
+bounded prototypes, experiments, demos, and isolated hosted tools.
+
+Replit is not a canonical source repository for Logres.
+
+Any durable implementation intended for the game must return through GitHub and the normal exact-SHA verification path.
+
+Brain records useful Replit project/deployment references as external bindings or artifacts.
+
+## OpenAI Developers Adapter
+
+Purpose:
+approved AI API and agent infrastructure.
+
+Use for bounded model/agent services where the project explicitly needs an API-backed worker.
+
+Model outputs remain evidence, proposals, generated artifacts, or execution results according to task policy. They do not become canonical truth solely because an OpenAI service produced them.
+
+API usage should remain observable through existing cost/usage accounting where applicable.
+
+## Superpowers Integration
+
+Purpose:
+development process policy.
+
+Superpowers is not an external state store.
+
+Connector-capable development chats use its skills for design, planning, worktree isolation, debugging, TDD, review, and verification. Specs and plans produced by the workflow live in Git and are linked to Brain tasks.
+
+The Brain remains responsible for task authority and durable coordination.
+
+## VM Execution Bridge
+
+Nexus Commander remains the preferred VM execution path.
+
+Remote Desktop Commander is a bootstrap, inspection, and emergency bridge when Nexus execution is unavailable or the task explicitly requires its capabilities.
+
+Neither execution surface owns project state. Commands that materially change project state must leave normal Brain, Git, task, verification, and provenance records.
+
+## Linear Adapter
+
+Purpose:
+human-readable work view.
+
+Direction:
+primarily Brain → Linear.
+
+Project mapping:
+
+- Brain milestones → Linear project/milestone
+- Brain tasks → Linear issues
+- status → issue state
+- priority → issue priority
+- current lease owner → assignee/delegate metadata when safe
+- branch and exact SHA → issue links/details
+- blocker → blocked state/comment
+- integration completion → completed state with exact SHA reference
+
+Inbound:
+
+Human edits that differ from managed fields become integration proposals.
+
+Linear is not allowed to steal Brain leases, alter integration authority, or mutate Git state.
+
+## Notion Adapter
+
+Purpose:
+curated working knowledge.
+
+Direction:
+Brain knowledge → Notion, with bounded inbound proposals.
+
+Publish:
+
+- architecture decisions
+- reverse-engineering findings
+- system descriptions
+- project history
+- lessons from failed approaches
+- canonical procedures
+- high-value research summaries
+
+Do not publish every transcript message.
+
+Notion is a curated view over Brain knowledge, not transcript storage.
+
+Human Notion edits to managed knowledge produce proposals for incorporation into Brain/project documentation.
+
+## GitBook Adapter
+
+Purpose:
+stable technical documentation.
+
+Direction:
+canonical stable docs → GitBook.
+
+Content is promoted only after it reaches a stable documentation state.
+
+Examples:
+
+- control-plane operator guide
+- reconstruction bible
+- map format
+- protocol format
+- asset pipeline
+- battle system
+- field architecture
+- onboarding
+- API references
+
+GitBook publication does not alter implementation state.
+
+## Google Drive Adapter
+
+Purpose:
+large artifact and evidence storage.
+
+Existing Drive files remain valid.
+
+Use for:
+
+- APKs
+- videos
+- screenshots
+- bug reports
+- binary evidence
+- archives
+- large exports
+- milestone reports
+- backup artifacts
+
+Brain records:
+
+- Drive file ID
+- URL
+- content hash when known
+- artifact type
+- source task
+- evidence label
+- uploader/actor
+- timestamp
+
+The existing Awakened Realms Control sheet becomes legacy/reference. It does not compete with Brain task authority.
+
+## Figma Adapter
+
+Purpose:
+visual source of truth for designed UI.
+
+Bindings link:
+
+Brain design task
+→ Figma file/node
+→ implementation task
+→ commit SHA
+→ verification evidence
+
+Figma changes do not directly change product requirements.
+
+Changed managed designs generate implementation/review proposals.
+
+Generated concept work is distinguished from evidence-backed reconstruction.
+
+## Datadog Adapter
+
+Purpose:
+infrastructure observability.
+
+Inputs:
+
+- VM/runtime metrics
+- service logs
+- traces
+- incidents
+- deployment failures
+- worker health where appropriate
+
+Brain links incidents or anomaly summaries back to tasks/deployments.
+
+Datadog does not schedule development work directly.
+
+An incident requiring code changes becomes a Brain proposal/task through normal policy.
+
+## PostHog Adapter
+
+Purpose:
+player and product behavior.
+
+Use for:
+
+- onboarding funnel
+- field traversal events
+- battle entry/completion
+- victory/reward flow
+- errors
+- session behavior
+- feature flags
+- experiments
+- retention when applicable
+
+PostHog data informs product/reconstruction decisions through evidence or proposals.
+
+It does not own tasks or deployment state.
+
+## Railway, Render, And Oracle
+
+Purpose:
+runtime execution and hosted services.
+
+Deployment identity must include:
+
+- source Git SHA
+- environment
+- service
+- deployment ID
+- timestamp
+- status
+
+Brain stores deployment bindings.
+
+Datadog receives infrastructure telemetry.
+PostHog receives product telemetry.
+GitHub remains code authority.
+
+Railway is preferred for simple managed services where already suitable.
+Render is a secondary deployment option.
+Oracle remains part of the existing execution infrastructure.
+
+## AgentMail Adapter
+
+Purpose:
+agent communication identity.
+
+Use for:
+
+- bounded agent inboxes
+- status messages
+- external coordination
+- attachments
+- threaded communication
+
+Each autonomous agent identity must have:
+
+- purpose
+- allowed senders/domains
+- allowed action classes
+- escalation rules
+
+Inbound requests become proposals/intents, not arbitrary executable commands.
+
+## Resend Adapter
+
+Purpose:
+application transactional email.
+
+Use for:
+
+- verification
+- password reset
+- beta invitations
+- service alerts
+- receipts
+- system notifications
+
+Resend is not the agent coordination bus.
+
+## Gmail And Google Calendar
+
+Purpose:
+Nexus Core company operations.
+
+They remain human/company systems.
+
+Relevant mail or events may be referenced by Brain tasks after explicit retrieval or user-directed workflow.
+
+Do not bulk ingest company email into project memory.
+
+## Research Providers
+
+### Context7
+
+Use for current library and framework documentation.
+
+Output:
+source-backed technical guidance recorded as task evidence when material.
+
+### Firecrawl
+
+Use for web research, archived pages, structured extraction, and monitored public sources.
+
+Output:
+artifact/source references and evidence summaries.
+
+### TinyFish
+
+Use for bounded interactive browser workflows.
+
+Output:
+receipts and selected evidence, not browser history dumps.
+
+### Hugging Face
+
+Use for model, dataset, Space, and AI research.
+
+Output:
+model/dataset references, evaluation artifacts, or task evidence.
+
+Research providers never self-promote findings to CONFIRMED ORIGINAL without project evidence policy.
+
+## OpenArt Adapter
+
+Purpose:
+generated media and visual experimentation.
+
+Generated output is labeled as generated/reconstructed.
+
+It is never classified as original Logres evidence solely because it resembles the target.
+
+Artifacts link to the requesting Brain task and generation metadata.
+
+## Gamma Adapter
+
+Purpose:
+presentation output.
+
+Source material comes from canonical Brain/Notion/GitBook state.
+
+Use for:
+
+- investor decks
+- publisher pitches
+- milestone reviews
+- technical reports
+
+Presentation edits do not mutate canonical engineering state.
+
+## Supabase Policy
+
+Do not create Supabase infrastructure only to duplicate Brain SQLite state.
+
+Reserve Supabase for production game/backend needs such as:
+
+- authentication
+- player data
+- storage
+- realtime
+- production APIs
+- server functions
+
+If a future production requirement needs shared cloud state, define it separately from project control-plane state.
+
+## Failure Handling
+
+Failures are classified.
+
+### RETRYABLE
+
+Examples:
+
+- temporary 5xx before a write was dispatched
+- rate limit with a known safe retry condition
+- connector transient failure before an irreversible side effect
+- network error on an idempotent read
+
+Use bounded exponential backoff and provider-specific retry-after data.
+
+A timeout after a mutating dispatch is not automatically RETRYABLE. It becomes RECONCILING until the external object or provider operation is checked. This prevents duplicate issues, duplicate uploads, duplicate messages, and duplicate irreversible side effects.
+
+### FAILED
+
+Examples:
+
+- invalid target
+- missing permission
+- malformed payload
+- policy violation
+- deleted provider workspace
+- unsupported operation
+
+Record receipt and require corrective action.
+
+### SUPERSEDED
+
+A newer canonical projection replaced the old unexecuted intent.
+
+### Provider drift
+
+Reconciliation compares canonical projection hash and last observed provider hash.
+
+Drift produces either:
+
+- corrective projection
+- proposal
+- no-op
+
+according to policy.
+
+## Observability
+
+Every integration action emits:
+
+- provider
+- operation
+- intent ID
+- canonical entity
+- duration
+- outcome
+- attempt
+- error class
+- provider entity reference when safe
+
+The Brain keeps durable audit state.
+
+Datadog receives operational metrics/logs after the integration core is stable.
+
+Suggested metrics:
+
+- integration_intents_new
+- integration_intents_succeeded
+- integration_intents_retryable
+- integration_intents_failed
+- integration_queue_depth
+- integration_oldest_age_seconds
+- integration_provider_latency_ms
+- integration_proposals_open
+- integration_drift_detected
+
+## Reconciliation
+
+Reconciliation is pull-based and bounded.
+
+It does not continuously poll every service.
+
+Triggers:
+
+- chat bootstrap
+- explicit operator command
+- scheduled low-frequency reconciliation for selected providers
+- provider webhook/event where securely supported
+- post-write verification
+
+The system compares only managed bindings and bounded provider windows.
+
+## Scheduling
+
+Do not create a new high-frequency daemon for every provider.
+
+Use the existing supervisor model for lightweight local maintenance.
+
+Connector-dependent work remains queued until a capable chat is active.
+
+Direct provider executors added later may run under the existing supervisor with bounded cadence and rate limits.
+
+## Provider Capability Registry
+
+The Brain stores provider capability declarations separately from credentials.
+
+Examples:
+
+linear.read
+linear.write
+notion.read
+notion.write
+gitbook.write
+drive.read
+drive.write
+figma.read
+figma.write
+datadog.read
+agentmail.send
+agentmail.read
+
+A connector worker may claim only intents requiring capabilities it currently advertises.
+
+Capability declarations expire with the chat/session unless registered as a durable direct executor.
+
+## Auditability
+
+For every external object we should answer:
+
+- Which canonical Brain entity caused it?
+- Which intent created or updated it?
+- Which chat/direct executor performed the action?
+- What provider ID was returned?
+- What canonical projection hash was used?
+- What exact source Git SHA applied where relevant?
+- Was the action retried?
+- What changed externally afterward?
+- Was external drift accepted, rejected, or corrected?
+
+This is required for autonomous operation.
+
+## CLI Surface
+
+The implementation should expose a compact CLI, likely through a dedicated integration helper and logres-lead routing.
+
+Required operator actions:
+
+- status
+- targets
+- capabilities
+- queue
+- claim
+- show-intent
+- receipt
+- fail
+- bindings
+- proposals
+- accept-proposal
+- reject-proposal
+- reconcile
+- provider-status
+
+Human-readable output is required.
+JSON output should be available for agents.
+
+## Brain Events
+
+Meaningful integration transitions publish deduplicated Brain events.
+
+Examples:
+
+- INTEGRATION_INTENT
+- INTEGRATION_SUCCEEDED
+- INTEGRATION_FAILED
+- INTEGRATION_DRIFT
+- INTEGRATION_PROPOSAL
+- INTEGRATION_PROPOSAL_ACCEPTED
+- INTEGRATION_PROPOSAL_REJECTED
+
+Do not flood Brain with every low-level provider response.
+
+## Knowledge Graph Integration
+
+Bindings and receipts should contribute selected nodes/edges to the existing knowledge graph.
+
+Useful relations:
+
+task → mirrored_as → linear_issue
+decision → documented_in → notion_page
+spec → published_as → gitbook_page
+task → design_ref → figma_node
+artifact → stored_as → drive_file
+commit → deployed_as → deployment
+deployment → observed_by → datadog_service
+feature → observed_by → posthog_event
+
+Provider metadata must not inflate reconstruction evidence confidence.
+
+## Implementation Planning Boundary
+
+This is an umbrella architecture specification.
+
+Do not implement every provider in one branch or one implementation plan.
+
+After user approval, implementation is decomposed into independently verifiable plans:
+
+1. Core integration ledger, queue, claims, receipts, bindings, proposals, capability registry, CLI, Brain events, and fake-adapter tests.
+2. Linear managed work projection and drift/proposal canary.
+3. Notion curated knowledge plus GitBook stable documentation promotion.
+4. Google Drive artifact binding plus Figma design references.
+5. Datadog/PostHog telemetry plus Railway/Render/Oracle deployment references.
+6. AgentMail/Resend communication workflows and untrusted-input controls.
+7. Research/generation provider normalization for Context7, Firecrawl, TinyFish, Hugging Face, OpenArt, Gamma, Replit, and OpenAI Developers where durable receipts are useful.
+
+Each plan has its own task ownership, file scopes, TDD cycle, review, verification, and exact-SHA integration candidate.
+
+## First Rollout
+
+Phase 1 builds the generic integration core only.
+
+Includes:
+
+- schema
+- intent queue
+- leases
+- receipts
+- bindings
+- proposals
+- capability registry
+- CLI
+- Brain events
+- tests
+- deployment manifest integration
+
+Phase 2 adds Linear as the first real adapter.
+
+Reason:
+Linear is currently empty and is the cleanest test of one-way managed projection from canonical Brain work state.
+
+Phase 3 adds Notion and GitBook.
+
+Reason:
+they exercise curated knowledge and stable documentation without affecting code authority.
+
+Phase 4 adds Google Drive and Figma references.
+
+Reason:
+they introduce artifact and design bindings.
+
+Phase 5 adds Datadog/PostHog and deployment references.
+
+Reason:
+they validate observability and runtime linkage.
+
+Phase 6 adds AgentMail/Resend security-aware workflows.
+
+Reason:
+inbound communication requires stricter untrusted-input handling.
+
+Research and generation providers remain tool workers that publish evidence/artifacts through the generic core rather than each receiving custom canonical state.
+
+## Linear Initial Migration
+
+Do not import stale task state from the existing Google control sheet into Linear as authority.
+
+Instead:
+
+1. Read current Brain canonical tasks.
+2. Select current active/ready/recently completed high-value tasks.
+3. Project them into a new Linear project.
+4. Store bindings.
+5. Verify issue state.
+6. Expand historical projection only if useful.
+
+This avoids filling Linear with obsolete recursive/superseded historical tasks.
+
+## Notion Initial Migration
+
+Notion is currently treated as empty for Logres.
+
+Create a minimal top-level structure after the generic core exists:
+
+- Logres Project Home
+- Architecture
+- Reconstruction Knowledge
+- Decisions
+- Operations
+- Milestones
+
+Populate only canonical high-value summaries.
+
+Do not migrate entire chat transcripts.
+
+## GitBook Initial Publication
+
+Publish stable documentation only after Notion/Brain knowledge has a canonical version.
+
+Initial candidates:
+
+- Logres Brain Network
+- Lead Start Here
+- Control Plane Architecture
+- Reconstruction Evidence Policy
+- Developer/Agent Workflow
+
+## Backward Compatibility
+
+Existing commands keep working.
+
+Required:
+
+- logres-chat-start remains valid.
+- logres-brain commands remain valid.
+- logres-control remains valid.
+- logres-worker-start and logres-finish-task remain valid.
+- integration branch rules remain unchanged.
+- current SQLite tables remain intact.
+- existing route_jobs external_ref behavior remains intact.
+- existing transcript archive paths remain intact.
+- no migration deletes or renames existing tables.
+
+New schema creation must be additive and idempotent.
+
+## Performance
+
+The integration layer must stay lightweight.
+
+Requirements:
+
+- no full-provider scans on chat start
+- no provider API call required for ordinary Brain task claims
+- no blocking external call inside SQLite transaction
+- SQLite write locks held only for local state transition
+- payloads compact
+- large results stored by reference
+- bounded retries
+- indexed queue lookup
+- connector intents dormant when no capable worker is active
+
+## Testing Strategy
+
+### Unit tests
+
+Test:
+
+- schema idempotency
+- deterministic hashes
+- dedupe
+- claiming races
+- lease expiry
+- receipt validation
+- superseding intents
+- retry policy
+- proposal rules
+- capability matching
+- conflict policy
+- sensitive-field filtering
+
+### Integration tests
+
+Use fake adapters to test:
+
+Brain change
+→ intent
+→ claim
+→ fake provider result
+→ receipt
+→ binding
+→ reconciliation
+
+Test failure, retry, duplicate, and provider drift paths.
+
+### Provider contract tests
+
+Each real adapter receives mocked connector responses and verifies normalization.
+
+Do not make live destructive provider writes in the default test suite.
+
+### Rollout canary
+
+Linear is the first live canary.
+
+Project a small bounded task set.
+Verify exact provider IDs and state.
+Change one canonical field.
+Verify one idempotent update.
+Introduce one external drift.
+Verify proposal/correction policy.
+
+Only then expand.
+
+## Verification
+
+Implementation must pass:
+
+- focused control-plane tests
+- existing control-plane deployment manifest tests
+- npm run test
+- npm run build
+- existing fast worker gate
+- exact-SHA candidate gate before integration
+
+Provider live canaries remain separately recorded evidence and do not weaken code verification.
+
+## Review And Canonicalization Rule
+
+This document becomes canonical only after:
+
+1. the user reviews the written specification,
+2. requested corrections are incorporated,
+3. the approved spec is integrated through the normal exact-SHA path,
+4. the implementation plan references the integrated spec path.
+
+A prior incomplete spec branch must not be treated as canonical merely because it passed a documentation-only worker gate.
+
+## Success Criteria
+
+The design is successful when:
+
+1. The VM Brain remains the only operational source of truth.
+2. External providers receive useful synchronized views without becoming competing authorities.
+3. Any connector-capable chat can safely claim and execute compatible provider intents.
+4. Every external write is idempotent, attributable, and auditable.
+5. External edits become controlled proposals or corrective projections.
+6. No provider credential is stored in the Brain SQLite database.
+7. Existing Logres workers continue operating without plugin dependencies.
+8. A new chat can recover canonical state and see relevant integration work through logres-chat-start.
+9. Linear provides a current human-readable work view.
+10. Notion and GitBook provide curated knowledge and stable documentation without transcript duplication.
+11. Drive, Figma, deployments, telemetry, and communications are linked by canonical Brain IDs.
+12. Provider outages do not stop normal game development.
+13. Duplicate chats cannot create duplicate provider objects for the same canonical projection.
+14. All integration changes remain additive, testable, and deployable through the existing exact-SHA control-plane workflow.
+
+## Non-Goals
+
+This project does not:
+
+- replace SQLite with Supabase
+- replace Brain tasks with Linear
+- replace Brain knowledge with Notion
+- replace Git with cloud documents
+- mirror all chat content everywhere
+- make email a command shell
+- let providers write directly to main
+- auto-publish public releases
+- auto-approve financial/legal/security actions
+- create direct sync links between external providers
+- require every plugin to be online for normal development
+
+## Selected Design
+
+Use the existing VM Brain as the canonical event/state hub.
+
+Add an additive integration ledger, outbox, receipts, bindings, proposals, and capability registry to the same SQLite control plane.
+
+Use connector-capable ChatGPT sessions as the initial external-action executors.
+
+Project outward according to strict provider roles.
+
+Treat inbound changes as bounded proposals unless the provider has an explicitly safe reconciliation policy.
+
+Add direct server-side provider executors only later, behind the same protocol, when scoped credentials and a clear operational need exist.
+
+This gives the project one durable memory, one work authority, one audit trail, and many specialized external surfaces without turning the system into a fragile synchronization mesh.
