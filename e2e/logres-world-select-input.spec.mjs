@@ -100,6 +100,25 @@ test(
       },
     )
 
+    // World Select is CONFIRMED ORIGINAL but not mandatory in the observed
+    // first-run launch path. Force the replacement/account state to require
+    // explicit world resolution so this test continues to exercise the native
+    // selector independently from the normal Terms -> Gender path.
+    await page.evaluate(() => {
+      const registry =
+        window.__AWAKENED_REALMS_GAME__.registry
+
+      registry.set(
+        'logres.auth.termsAccepted',
+        true,
+      )
+
+      registry.set(
+        'logres.world.selectionRequired',
+        true,
+      )
+    })
+
     await clickGame(
       page,
       360,
@@ -184,6 +203,20 @@ test(
       selectedWorld,
     ).toBe(
       1,
+    )
+
+    expect(
+      await page.evaluate(
+        () =>
+          window
+            .__AWAKENED_REALMS_GAME__
+            .registry
+            .get(
+              'logres.world.selectionStatus',
+            ),
+      ),
+    ).toBe(
+      'USER_SELECTED',
     )
   },
 )
