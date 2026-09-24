@@ -1,0 +1,59 @@
+#!/usr/bin/env bash
+set -euo pipefail
+LANE_LOCK="${LOGRES_MAINTENANCE_LANE_LOCK:-/tmp/logres-maintenance-lane.lock}"
+exec 8>"$LANE_LOCK"
+flock -n 8 || exit 0
+BASE=/home/ubuntu/logres/src/awakened-realms
+LOG=/home/ubuntu/logres/logs/maintenance.log
+mkdir -p /home/ubuntu/logres/logs
+
+{
+  echo "=== $(date -Is) ==="
+  /home/ubuntu/logres/bin/logres-worktree-gc --apply --age-hours 24 || true
+  git -C "$BASE" worktree prune
+  git -C "$BASE" maintenance run --auto || git -C "$BASE" gc --auto
+  git -C "$BASE" commit-graph write --reachable --changed-paths || true
+  /home/ubuntu/logres/bin/logres-share-deps --apply || true
+  /home/ubuntu/logres/bin/logres-branch-sweep > /home/ubuntu/logres/logs/branch-sweep.log 2>&1 || true
+  /home/ubuntu/logres/bin/logres-branch-archaeology > /home/ubuntu/logres/logs/branch-archaeology.log 2>&1 || true
+  /home/ubuntu/logres/bin/logres-integration-review > /home/ubuntu/logres/logs/integration-review.log 2>&1 || true
+  /home/ubuntu/logres/bin/logres-global-jp-diff --output /home/ubuntu/logres/control/GLOBAL_JP_DIFF.json > /home/ubuntu/logres/logs/global-jp-diff.log 2>&1 || true
+  /home/ubuntu/logres/bin/logres-re-ingest --all --no-context > /home/ubuntu/logres/logs/re-ingest-maint.log 2>&1 || true
+  /home/ubuntu/logres/bin/logres-native-index || true
+  /home/ubuntu/logres/bin/logres-code-index || true
+  /home/ubuntu/logres/bin/logres-capabilities > /home/ubuntu/logres/control/CAPABILITIES.txt 2>&1 || true
+  /home/ubuntu/logres/bin/logres-platform-snapshot || true
+  /home/ubuntu/logres/bin/logres-control-backup --dated || true
+  ccache --cleanup || true
+  ccache --show-stats || true
+  sccache --show-stats || true
+  python3 - <<'PY'
+import sqlite3
+for p in [
+ '/home/ubuntu/logres/control/control.sqlite',
+ '/home/ubuntu/logres/index/logres-context.sqlite',
+ '/home/ubuntu/logres/index/current-jp-native.sqlite',
+ '/home/ubuntu/logres/index/code-symbols.sqlite',
+ '/home/ubuntu/logres/index/file-hashes.sqlite',
+ '/home/ubuntu/logres/index/re-evidence.sqlite',
+]:
+    try:
+        c=sqlite3.connect(p)
+        c.execute('pragma optimize')
+        c.close()
+        print('sqlite optimize',p)
+    except Exception as e:
+        print('sqlite optimize failed',p,e)
+PY
+  for f in     /home/ubuntu/.desktop-commander-remote.log     /home/ubuntu/.desktop-commander-watchdog.log     /home/ubuntu/logres/logs/*.log     /home/ubuntu/logres/index/*.log
+  do
+    [[ -f "$f" ]] || continue
+    size=$(stat -c %s "$f" 2>/dev/null || echo 0)
+    if (( size > 20971520 )); then
+      tail -c 5242880 "$f" > "$f.trim"
+      mv "$f.trim" "$f"
+      echo "trimmed $f"
+    fi
+  done
+  /home/ubuntu/logres/bin/logres-doctor || true
+} >> "$LOG" 2>&1

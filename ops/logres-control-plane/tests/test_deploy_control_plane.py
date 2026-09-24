@@ -16,6 +16,8 @@ PRODUCTION_FILES = (
     "bin/logres-autonomy",
     "bin/logres-autonomy-cron",
     "bin/logres-autopilot-watch",
+    "bin/logres-health-snapshot",
+    "bin/logres-maintain",
     "bin/logres-blocker-router",
     "bin/logres-frontier",
     "bin/logres-impact",
@@ -107,6 +109,12 @@ class DeployControlPlaneTests(unittest.TestCase):
             )
             self.assertTrue(
                 (target / "bin" / "logres-claims-reconcile").is_file()
+            )
+            self.assertTrue(
+                (target / "bin" / "logres-health-snapshot").is_file()
+            )
+            self.assertTrue(
+                (target / "bin" / "logres-maintain").is_file()
             )
             self.assertTrue((target / "config" / "autoflow.default.json").is_file())
             self.assertEqual(

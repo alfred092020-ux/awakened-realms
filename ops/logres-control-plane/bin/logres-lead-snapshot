@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 ROOT="${LOGRES_ROOT:-/home/ubuntu/logres}"
+LANE_LOCK="${LOGRES_MAINTENANCE_LANE_LOCK:-/tmp/logres-maintenance-lane.lock}"
 LOCK="${LOGRES_LEAD_SNAPSHOT_LOCK:-/tmp/logres-lead-snapshot.lock}"
+exec 8>"$LANE_LOCK"
+flock -n 8 || exit 0
 exec 9>"$LOCK"
 flock -n 9 || exit 0
 mkdir -p "$ROOT/control" "$ROOT/index"

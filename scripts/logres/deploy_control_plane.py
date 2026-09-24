@@ -15,6 +15,8 @@ MANIFEST: dict[str, tuple[str, int]] = {
     "bin/logres-autonomy": ("bin/logres-autonomy", 0o755),
     "bin/logres-autonomy-cron": ("bin/logres-autonomy-cron", 0o755),
     "bin/logres-autopilot-watch": ("bin/logres-autopilot-watch", 0o755),
+    "bin/logres-health-snapshot": ("bin/logres-health-snapshot", 0o755),
+    "bin/logres-maintain": ("bin/logres-maintain", 0o755),
     "bin/logres-blocker-router": ("bin/logres-blocker-router", 0o755),
     "bin/logres-frontier": ("bin/logres-frontier", 0o755),
     "bin/logres-impact": ("bin/logres-impact", 0o755),

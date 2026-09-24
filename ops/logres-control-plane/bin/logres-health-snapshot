@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 set +e
+LANE_LOCK="${LOGRES_MAINTENANCE_LANE_LOCK:-/tmp/logres-maintenance-lane.lock}"
+exec 8>"$LANE_LOCK"
+flock -n 8 || exit 0
 TMP=/home/ubuntu/logres/control/HEALTH.txt.tmp
 OUT=/home/ubuntu/logres/control/HEALTH.txt
 /home/ubuntu/logres/bin/logres-doctor > "$TMP" 2>&1

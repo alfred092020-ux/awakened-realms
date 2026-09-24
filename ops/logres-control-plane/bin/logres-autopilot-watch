@@ -1,8 +1,18 @@
 #!/usr/bin/env python3
 from __future__ import annotations
-import json, os, shutil, sqlite3, subprocess, time
+import fcntl, json, os, shutil, sqlite3, subprocess, time
 from datetime import datetime, timezone
 from pathlib import Path
+
+LANE_LOCK=Path(os.environ.get(
+    "LOGRES_MAINTENANCE_LANE_LOCK",
+    "/tmp/logres-maintenance-lane.lock",
+))
+LANE_HANDLE=LANE_LOCK.open("a+")
+try:
+    fcntl.flock(LANE_HANDLE.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+except BlockingIOError:
+    raise SystemExit(0)
 
 DB=Path("/home/ubuntu/logres/control/control.sqlite")
 REPO=Path("/home/ubuntu/logres/src/awakened-realms")
