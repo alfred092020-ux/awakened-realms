@@ -181,10 +181,6 @@ class CoordinatorQuarantineTests(unittest.TestCase):
         self.assertIn("PRESERVED_QUEUE_STATES", source)
 
 
-if __name__ == "__main__":
-    unittest.main()
-
-
 def make_scheduler_db():
     conn = sqlite3.connect(":memory:")
     conn.row_factory = sqlite3.Row
@@ -391,3 +387,7 @@ class CoordinatorCopilotOwnershipTests(unittest.TestCase):
             )
         finally:
             coordinator.hard_deps_ok = original_hard_deps_ok
+
+
+if __name__ == "__main__":
+    unittest.main()
