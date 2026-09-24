@@ -1,0 +1,13 @@
+#!/usr/bin/env python3
+import argparse,json,os,sqlite3,sys
+from pathlib import Path
+ROOT=Path(os.environ.get("LOGRES_ROOT","/home/ubuntu/logres"));sys.path.insert(0,str(Path(__file__).resolve().parents[1]/"lib"))
+from logres_engine_reconcile import apply,plan
+DB=Path(os.environ.get("LOGRES_CONTROL_DB",ROOT/"control/control.sqlite"))
+def main():
+ p=argparse.ArgumentParser(prog="logres-engine-reconcile"); p.add_argument("--apply",action="store_true"); a=p.parse_args()
+ c=sqlite3.connect(DB,timeout=30);c.row_factory=sqlite3.Row;c.execute("pragma busy_timeout=30000")
+ try: actions=apply(c) if a.apply else plan(c)
+ finally:c.close()
+ print(json.dumps({"apply":a.apply,"count":len(actions),"actions":actions},indent=2,sort_keys=True))
+if __name__=="__main__":main()
