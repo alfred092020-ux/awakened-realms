@@ -13,6 +13,8 @@ CONTROL_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(CONTROL_ROOT / "lib"))
 
 from logres_ai_runner import automatic_api_allowed, budget_state
+from logres_knowledge import graph_stats, refresh_graph
+from logres_optimizer import record_swarm_observations
 from logres_swarm import (
     acquire_task,
     available_worker_ids,
@@ -272,8 +274,15 @@ def tick(dry_run: bool = False) -> dict:
     stale = reconcile_jobs(conn)
     recovered = release_stale(conn, stale)
 
+    knowledge_refresh = refresh_graph(conn)
+    observations = record_swarm_observations(conn)
+    knowledge = graph_stats(conn)
+
     before = swarm_capacity(conn, cfg)
     payload = {
+        "knowledge_refresh": knowledge_refresh,
+        "knowledge_graph": knowledge,
+        "optimizer_observations_added": observations,
         "enabled": bool(swarm_cfg.get("enabled", False)),
         "before": before.__dict__,
         "stale_recovered": recovered,
@@ -342,7 +351,10 @@ def main() -> int:
     conn = connect()
     if args.command == "status":
         reconcile_jobs(conn)
+        refresh_graph(conn)
+        record_swarm_observations(conn)
         out = status_dict(conn, cfg)
+        out["knowledge_graph"] = graph_stats(conn)
         conn.close()
         print(json.dumps(out, indent=2, sort_keys=True))
         return 0

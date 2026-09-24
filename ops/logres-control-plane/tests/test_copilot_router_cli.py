@@ -163,13 +163,13 @@ class CopilotRouterCLITests(unittest.TestCase):
             payload = json.loads(result.stdout)
             self.assertEqual(1, payload["dispatched"])
             self.assertEqual("B-IMPL", payload["jobs"][0]["task_id"])
-            self.assertTrue(
+            self.assertFalse(
                 any(
                     row["task_id"] == "A-RESEARCH"
-                    and "not Copilot eligible" in row["reason"]
                     for row in payload["skipped"]
                 )
             )
+            self.assertEqual(1, payload["scanned"])
 
 
 

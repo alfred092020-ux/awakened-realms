@@ -83,3 +83,23 @@ logres-swarm status
 logres-swarm tick --dry-run
 logres-swarm tick
 ```
+
+## Beyond Plus Ultra: provenance graph + self-optimizing scheduler
+
+The control plane now has a materialized knowledge graph and optimizer layer. `logres-knowledge refresh` projects tasks, dependencies, Brain discoveries, hashed evidence artifacts, cited public sources, and immutable integration commits into SQLite `knowledge_nodes` / `knowledge_edges`.
+
+Evidence confidence and provenance are separate dimensions. A confirmed current-JP observation is still clamped to supported-inference strength when the target task requires historical Global authority. Multiple weaker claims cannot silently aggregate into confirmed-original truth.
+
+`logres-optimizer plan` ranks READY work inside the existing priority policy using critical-path length, downstream unlock count, evidence gap, expected duration, and observed engine success. Research scheduling therefore attacks the highest-value unresolved evidence gaps instead of simply taking alphabetical/shortest tasks. Copilot uses the same optimizer for implementation/regression/code candidates.
+
+Terminal swarm outcomes feed `optimizer_observations` with duration and API cost. The scheduler can therefore learn from actual worker results while retaining deterministic priority, dependency, concurrency, scope, budget, and provenance gates.
+
+Lead shortcuts:
+
+```bash
+logres-lead knowledge stats
+logres-lead knowledge query "Millennium Tree"
+logres-lead knowledge task G17-TUT-001
+logres-lead optimizer plan --limit 12
+logres-lead swarm status
+```

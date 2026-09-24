@@ -79,6 +79,18 @@ case "$cmd" in
     shift
     "$ROOT/bin/logres-autonomy" "${1:-status}" "${@:2}"
     ;;
+  swarm)
+    shift
+    "$ROOT/bin/logres-swarm" "${1:-status}" "${@:2}"
+    ;;
+  knowledge)
+    shift
+    "$ROOT/bin/logres-knowledge" "${1:-stats}" "${@:2}"
+    ;;
+  optimizer)
+    shift
+    "$ROOT/bin/logres-optimizer" "${1:-plan}" "${@:2}"
+    ;;
   takeover)
     shift
     "$ROOT/bin/logres-lead-takeover" "$@"
@@ -168,7 +180,7 @@ case "$cmd" in
     "$ROOT/bin/logres-protocol" "$@"
     ;;
   *)
-    echo "usage: logres-lead {brief|refresh|json|health|verify-all|brain|ai|routes|autonomy|takeover|nexus|queue|next|preflight|packet|allocate|claim|release|task|branch|search|find|symbol|ast|inspect|unpack|jadx|apktool|doctext|frame|capabilities|snapshot|container|py|duck|ramrun|native|decompile|protocol}" >&2
+    echo "usage: logres-lead {brief|refresh|json|health|verify-all|brain|ai|routes|autonomy|swarm|knowledge|optimizer|takeover|nexus|queue|next|preflight|packet|allocate|claim|release|task|branch|search|find|symbol|ast|inspect|unpack|jadx|apktool|doctext|frame|capabilities|snapshot|container|py|duck|ramrun|native|decompile|protocol}" >&2
     exit 2
     ;;
 esac

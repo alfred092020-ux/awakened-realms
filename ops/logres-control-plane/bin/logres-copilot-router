@@ -13,8 +13,8 @@ CONTROL_ROOT = Path(__file__).resolve().parents[1]
 LIB_DIR = CONTROL_ROOT / "lib"
 sys.path.insert(0, str(LIB_DIR))
 
-from logres_autonomy import rank_ready_tasks
 from logres_copilot import PolicyError, SubprocessGitHubRunner
+from logres_optimizer import rank_task_ids
 from logres_copilot_router import (
     SubprocessCommandRunner,
     active_copilot_jobs,
@@ -55,7 +55,11 @@ def integration_sha() -> str:
 def candidate_ids(conn: sqlite3.Connection, task_id: str | None, limit: int) -> list[str]:
     if task_id:
         return [task_id]
-    return rank_ready_tasks(conn, limit=max(1, limit))
+    return rank_task_ids(
+        conn,
+        limit=max(1, limit),
+        work_type_filter={"implementation", "regression", "code"},
+    )
 
 
 def main() -> int:

@@ -9,6 +9,8 @@ import time
 from dataclasses import dataclass
 from pathlib import Path
 
+from logres_optimizer import rank_task_ids
+
 
 TERMINAL_JOB_STATES = {"DONE", "BLOCKED", "FAILED", "SUPERSEDED"}
 RESEARCH_WORK_TYPES = {"research", "evidence", "analysis"}
@@ -160,7 +162,16 @@ def select_research_tasks(
     ]
     selected_scopes: list[tuple[str, str]] = []
 
-    for task in ready_tasks(conn):
+    task_map = {task["id"]: task for task in ready_tasks(conn)}
+    ranked_ids = rank_task_ids(
+        conn,
+        limit=max(16, max(1, limit) * 4),
+        work_type_filter=RESEARCH_WORK_TYPES,
+    )
+    for task_id in ranked_ids:
+        task = task_map.get(task_id)
+        if task is None:
+            continue
         if task["id"] in skip_task_ids or classify_engine(task) != "research":
             continue
         key = task.get("concurrency_key") or task.get("lane") or ""
