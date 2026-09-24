@@ -11,7 +11,7 @@ sys.path.insert(0, str(LIB_DIR))
 
 from logres_goal_contract import load_contracts
 from logres_goal_executor import validate_execution_template
-from logres_mission import load_config
+from logres_mission import load_config, objective_status
 
 
 MISSION_CONFIG = CONTROL_ROOT / "config" / "mission.default.json"
@@ -100,6 +100,70 @@ class MissionRoadmapTests(unittest.TestCase):
             ["PLANNED"] * 5,
             [str(row[2]) for row in rows[1:]],
         )
+
+    def test_demo03_completed_leaf_tasks_count_as_partial_progress_without_closing_milestone(self):
+        conn = make_db()
+        links = {
+            "UI_RUNTIME": "MISSION-UI-RUNTIME-001",
+            "AUDIO_RUNTIME": "MISSION-AUDIO-RUNTIME-001",
+            "ANDROID_CLIENT": "MISSION-ANDROID-CLIENT-INTEGRATE-002",
+            "NPC_DIALOGUE": "MISSION-NPC-DIALOGUE-001",
+            "QUESTS": "MISSION-QUESTS-001",
+        }
+        for task_id in links.values():
+            conn.execute(
+                "insert into tasks(id,status) values(?, 'DONE')",
+                (task_id,),
+            )
+
+        load_config(conn, MISSION_CONFIG)
+
+        for objective_id, task_id in links.items():
+            configured = list(
+                conn.execute(
+                    """select milestone_id,task_id,gate_type
+                         from mission_links
+                        where objective_id=?
+                        order by gate_type,milestone_id,task_id""",
+                    (objective_id,),
+                )
+            )
+            self.assertEqual(2, len(configured), objective_id)
+            self.assertTrue(
+                any(
+                    row[0] == "DEMO-0.3"
+                    and row[1] is None
+                    and row[2] == "required"
+                    for row in configured
+                ),
+                objective_id,
+            )
+            self.assertTrue(
+                any(
+                    row[0] is None
+                    and row[1] == task_id
+                    and row[2] == "supporting"
+                    for row in configured
+                ),
+                objective_id,
+            )
+
+            status = objective_status(conn, objective_id)
+            self.assertEqual("IN_PROGRESS", status.state, objective_id)
+            self.assertEqual(50.0, status.progress_percent, objective_id)
+
+        self.assertEqual(
+            "UNCOVERED",
+            objective_status(conn, "PROGRESSION").state,
+        )
+
+        conn.execute(
+            "update milestones set status='DONE' where id='DEMO-0.3'"
+        )
+        for objective_id in links:
+            status = objective_status(conn, objective_id)
+            self.assertEqual("COMPLETE", status.state, objective_id)
+            self.assertEqual(100.0, status.progress_percent, objective_id)
 
     def test_every_roadmap_milestone_has_a_contract(self):
         mission = json.loads(MISSION_CONFIG.read_text())
