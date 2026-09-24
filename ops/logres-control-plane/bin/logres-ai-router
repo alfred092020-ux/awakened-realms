@@ -1,0 +1,72 @@
+#!/usr/bin/env python3
+from __future__ import annotations
+
+import argparse
+import json
+import sqlite3
+import sys
+from dataclasses import asdict
+from pathlib import Path
+
+LIB_DIR = Path(__file__).resolve().parent.parent / "lib"
+sys.path.insert(0, str(LIB_DIR))
+
+from logres_ai_router import SubprocessAIRunner, SubprocessBrainRunner, run_ai_cycle
+
+
+DEFAULT_DB = Path("/home/ubuntu/logres/control/control.sqlite")
+DEFAULT_CONFIG = Path("/home/ubuntu/logres/control/autoflow.json")
+DEFAULT_AI = "/home/ubuntu/logres/bin/logres-ai"
+
+SAFE_CONFIG = {
+    "routing": {
+        "ai_dispatch_enabled": False,
+        "copilot_dispatch_enabled": False,
+        "copilot_mode": "report_only",
+    },
+    "openai": {
+        "budget_usd": 10.0,
+        "auto_model": None,
+        "model_rates_per_million": {},
+    },
+}
+def load_config(path: Path) -> dict:
+    if not path.is_file():
+        return json.loads(json.dumps(SAFE_CONFIG))
+    loaded = json.loads(path.read_text())
+    if not isinstance(loaded, dict):
+        raise ValueError("autoflow config must be a JSON object")
+    return loaded
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(prog="logres-ai-router")
+    parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument("--limit", type=int, default=10)
+    parser.add_argument("--since", type=int, default=0, dest="since_event_id")
+    parser.add_argument("--db", type=Path, default=DEFAULT_DB)
+    parser.add_argument("--config", type=Path, default=DEFAULT_CONFIG)
+    parser.add_argument("--ai-executable", default=DEFAULT_AI)
+    args = parser.parse_args()
+
+    config = load_config(args.config)
+    conn = sqlite3.connect(args.db)
+    try:
+        result = run_ai_cycle(
+            conn,
+            SubprocessAIRunner(args.ai_executable),
+            SubprocessBrainRunner(),
+            config,
+            limit=args.limit,
+            since_event_id=args.since_event_id,
+            dry_run=args.dry_run,
+        )
+    finally:
+        conn.close()
+
+    print(json.dumps(asdict(result), sort_keys=True))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
