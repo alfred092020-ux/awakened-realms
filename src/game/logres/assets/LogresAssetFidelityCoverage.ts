@@ -12,12 +12,16 @@ export type LogresAssetLineageStatus =
   | 'PASS'
   | 'EVIDENCE_CEILING'
 
+export type LogresAssetTransform =
+  | 'DDS_TO_PNG_HYDRATION'
+  | 'PNG_COPY'
+
 export interface LogresAssetLineageRecord {
   readonly key: string
   readonly sourceEntry: string | null
   readonly sourceSha256: string | null
   readonly sourceProvenance: string
-  readonly transform: string | null
+  readonly transform: LogresAssetTransform | null
   readonly runtimeKey: string | null
   readonly runtimeUrl: string | null
   readonly status: LogresAssetLineageStatus
@@ -48,6 +52,31 @@ function passRecord(
   })
 }
 
+function globalIndexPassRecord(
+  key: string,
+  sourceEntry: string,
+  sourceSha256: string,
+  transform: LogresAssetTransform,
+  runtime: {
+    readonly key: string
+    readonly url: string
+  },
+): LogresAssetLineageRecord {
+  return Object.freeze({
+    key,
+    sourceEntry,
+    sourceSha256,
+    sourceProvenance:
+      'CONFIRMED ORIGINAL GLOBAL RUNTIME ASSET INDEX',
+    transform,
+    runtimeKey: runtime.key,
+    runtimeUrl: runtime.url,
+    status: 'PASS',
+    note:
+      'Global runtime-asset-index source identity, exact transform class and current runtime binding are all present.',
+  })
+}
+
 export const LOGRES_ASSET_FIDELITY_COVERAGE =
   Object.freeze({
     schemaVersion:
@@ -67,34 +96,41 @@ export const LOGRES_ASSET_FIDELITY_COVERAGE =
         LOGRES_TUTORIAL_HUD_ASSET_EVIDENCE.questStartBackground,
         LOGRES_ASSETS.tutorialQuestStartBackground.key,
       ),
-      Object.freeze({
-        key: 'title-background',
-        sourceEntry: 'title_back.dds',
-        sourceSha256: null,
-        sourceProvenance: 'CONFIRMED ORIGINAL RESOURCE NAME',
-        transform: 'DDS_TO_PNG_HYDRATION',
-        runtimeKey:
-          LOGRES_ASSETS.titleBackground.key,
-        runtimeUrl:
-          LOGRES_ASSETS.titleBackground.url,
-        status: 'EVIDENCE_CEILING' as const,
-        note:
-          'Runtime binding is known, but this coverage surface does not yet expose a per-entry original source hash.',
-      }),
-      Object.freeze({
-        key: 'title-logo',
-        sourceEntry: 'logo00.dds',
-        sourceSha256: null,
-        sourceProvenance: 'CONFIRMED ORIGINAL RESOURCE NAME',
-        transform: 'DDS_TO_PNG_HYDRATION',
-        runtimeKey:
-          LOGRES_ASSETS.titleLogo.key,
-        runtimeUrl:
-          LOGRES_ASSETS.titleLogo.url,
-        status: 'EVIDENCE_CEILING' as const,
-        note:
-          'Runtime binding is known, but this coverage surface does not yet expose a per-entry original source hash.',
-      }),
+      globalIndexPassRecord(
+        'title-background',
+        'gui/title/title_back.dds',
+        'd5cd1b816d3116a197ae5d1b4faa7648c37b93bf1cb5b604adf76aa7ddf47060',
+        'DDS_TO_PNG_HYDRATION',
+        LOGRES_ASSETS.titleBackground,
+      ),
+      globalIndexPassRecord(
+        'title-logo',
+        'gui/title/effect/png/logo00.png',
+        '41a5dc4cfe16dfb9725f067208f705814ad69f366d8ecc350ff8e493ddabf7fe',
+        'PNG_COPY',
+        LOGRES_ASSETS.titleLogo,
+      ),
+      globalIndexPassRecord(
+        'title-base',
+        'gui/title/title_base01.dds',
+        '7cf76d845ed76a64f7091e62b20efd538aa7968659a96238dfc9c65a4162df3a',
+        'DDS_TO_PNG_HYDRATION',
+        LOGRES_ASSETS.titleBase,
+      ),
+      globalIndexPassRecord(
+        'title-start',
+        'gui/title/title_ok.png',
+        'b8048b804cca019c14a16936ef9d587c20a36cda86812cf279ec6862777a773a',
+        'PNG_COPY',
+        LOGRES_ASSETS.titleStart,
+      ),
+      globalIndexPassRecord(
+        'world-select-01',
+        'gui/title/world_select01.png',
+        '0cb475b93b3dd510801c208c5950961b2419bba5316871d65a19c0ca975612be',
+        'PNG_COPY',
+        LOGRES_ASSETS.worldSelect,
+      ),
     ] as const),
     policy: Object.freeze({
       passRequirement:
