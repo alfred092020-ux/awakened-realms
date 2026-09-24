@@ -324,8 +324,12 @@ class GoalContractTests(unittest.TestCase):
         self.assertEqual(before, after)
         by_id = {item.criterion_id: item for item in result.criteria}
         self.assertEqual(
-            "BLOCKED_EVIDENCE",
+            "BLOCKED_DEP",
             by_id["millennium-tree-map-identity"].status,
+        )
+        self.assertIn(
+            "artifact missing",
+            by_id["millennium-tree-map-identity"].reason,
         )
         self.assertEqual(
             "BLOCKED_EXTERNAL",

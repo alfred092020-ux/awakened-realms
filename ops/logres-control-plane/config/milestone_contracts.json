@@ -135,14 +135,11 @@
         {
           "id": "millennium-tree-map-identity",
           "weight": 8,
-          "description": "Millennium Tree static map identity is resolved from sufficient Global-era evidence.",
+          "description": "Millennium Tree map identity is sealed at the strongest available Global evidence ceiling with supported-inference labeling.",
           "check": {
-            "type": "evidence_state",
-            "task_id": "G17-TUT-001",
-            "pass_statuses": [
-              "DONE",
-              "RESOLVED"
-            ]
+            "type": "artifact",
+            "path": "artifacts/tutorial-map-id-global3024-evidence-ceiling-20260924.json",
+            "sha256": "c98879a0024143020581f395952c1804c7c796947a50fe2909765fa1ac7f00c7"
           }
         },
         {
