@@ -16,6 +16,7 @@ sys.path.insert(0, str(LIB_DIR))
 from logres_supervisor import (
     ScheduledJob,
     actionable_integration_backlog,
+    actionable_worker_backlog,
     background_lane_busy,
     default_jobs,
     direct_child_pids,
@@ -107,6 +108,45 @@ class SupervisorTests(unittest.TestCase):
             )
         )
 
+    def test_ready_worker_backlog_wakes_swarm_early_only(self):
+        state = {
+            "last_runs": {
+                "autonomy": {"finished_epoch": 90.0},
+                "swarm": {"finished_epoch": 90.0},
+                "code_index": {"finished_epoch": 90.0},
+            }
+        }
+        autonomy = ScheduledJob("autonomy", ("true",), 60, 10)
+        swarm = ScheduledJob("swarm", ("true",), 60, 10)
+        code_index = ScheduledJob("code_index", ("true",), 60, 10)
+        self.assertTrue(
+            should_run_job(
+                swarm,
+                state,
+                101.0,
+                integration_backlog=0,
+                worker_backlog=1,
+            )
+        )
+        self.assertFalse(
+            should_run_job(
+                autonomy,
+                state,
+                101.0,
+                integration_backlog=0,
+                worker_backlog=1,
+            )
+        )
+        self.assertFalse(
+            should_run_job(
+                code_index,
+                state,
+                101.0,
+                integration_backlog=0,
+                worker_backlog=1,
+            )
+        )
+
     def test_no_backlog_preserves_fixed_interval(self):
         state = {"last_runs": {"autonomy": {"finished_epoch": 90.0}}}
         autonomy = ScheduledJob("autonomy", ("true",), 60, 10)
@@ -151,6 +191,65 @@ class SupervisorTests(unittest.TestCase):
             conn.commit()
             conn.close()
             self.assertEqual(1, actionable_integration_backlog(root))
+
+    def test_actionable_worker_backlog_reads_ready_tasks_only(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            control = root / "control"
+            control.mkdir()
+            db = control / "control.sqlite"
+            import sqlite3
+
+            conn = sqlite3.connect(db)
+            conn.execute("create table tasks(id text, status text)")
+            conn.executemany(
+                "insert into tasks values(?,?)",
+                [
+                    ("A", "READY"),
+                    ("B", "ACTIVE"),
+                    ("C", "BLOCKED_DEP"),
+                    ("D", "DONE"),
+                ],
+            )
+            conn.commit()
+            conn.close()
+            self.assertEqual(1, actionable_worker_backlog(root))
+
+    def test_tick_wakes_swarm_early_for_ready_work(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            heartbeat = root / "heartbeat.json"
+            heartbeat.write_text(
+                json.dumps(
+                    {
+                        "last_runs": {
+                            "swarm": {
+                                "finished_epoch": 90.0,
+                                "finished_at": "x",
+                                "rc": 0,
+                            }
+                        }
+                    }
+                )
+            )
+            swarm = ScheduledJob("swarm", ("swarm", "tick"), 60, 10)
+            calls = []
+
+            def runner(argv, **kwargs):
+                calls.append(list(argv))
+                return subprocess.CompletedProcess(argv, 0, "ok", "")
+
+            result = tick(
+                root,
+                heartbeat,
+                jobs=(swarm,),
+                runner=runner,
+                now_epoch=101.0,
+                integration_backlog=0,
+                worker_backlog=1,
+            )
+            self.assertEqual(["swarm"], result["ran"])
+            self.assertEqual([["swarm", "tick"]], calls)
 
     def test_background_launch_records_tracked_pid(self):
         with tempfile.TemporaryDirectory() as td:

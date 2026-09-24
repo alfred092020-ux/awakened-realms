@@ -218,26 +218,48 @@ def actionable_integration_backlog(root: Path) -> int:
         return 0
 
 
+def actionable_worker_backlog(root: Path) -> int:
+    db = root / "control" / "control.sqlite"
+    if not db.exists():
+        return 0
+    try:
+        conn = sqlite3.connect(f"file:{db}?mode=ro", uri=True, timeout=1)
+        try:
+            row = conn.execute(
+                "select count(*) from tasks where status='READY'"
+            ).fetchone()
+            return int(row[0] if row else 0)
+        finally:
+            conn.close()
+    except (sqlite3.Error, OSError, ValueError):
+        return 0
+
+
 def should_run_job(
     job: ScheduledJob,
     state: dict,
     now_epoch: float,
     *,
     integration_backlog: int,
+    worker_backlog: int = 0,
 ) -> bool:
     last_run = (state.get("last_runs") or {}).get(job.name) or {}
     if last_run.get("running"):
         return False
     if due(job, state, now_epoch):
         return True
-    if job.name != "autonomy" or integration_backlog <= 0:
+    early_wake = (
+        (job.name == "autonomy" and integration_backlog > 0)
+        or (job.name == "swarm" and worker_backlog > 0)
+    )
+    if not early_wake:
         return False
     last = last_run.get("finished_epoch")
     if last is None:
         return True
     # The supervisor itself ticks every 20s. Ten seconds prevents an external
-    # tick storm from bypassing the normal single-flight/autonomy cadence while
-    # still allowing the next supervisor tick to react to newly queued work.
+    # tick storm from bypassing single-flight cadence while still allowing the
+    # next supervisor tick to react to newly actionable work.
     return now_epoch - float(last) >= 10.0
 
 
@@ -518,11 +540,14 @@ def tick(
     pid_alive_fn=pid_alive,
     now_epoch: float | None = None,
     integration_backlog: int | None = None,
+    worker_backlog: int | None = None,
 ) -> dict:
     jobs = default_jobs(root) if jobs is None else jobs
     now_epoch = time.time() if now_epoch is None else float(now_epoch)
     if integration_backlog is None:
         integration_backlog = actionable_integration_backlog(root)
+    if worker_backlog is None:
+        worker_backlog = actionable_worker_backlog(root)
     state = load_state(heartbeat_path)
     state.setdefault("started_at", utc_now())
     state["pid"] = os.getpid()
@@ -554,6 +579,7 @@ def tick(
             state,
             now_epoch,
             integration_backlog=integration_backlog,
+            worker_backlog=worker_backlog,
         ):
             continue
         if job.background and background_lane_busy(job, jobs, state):
