@@ -483,6 +483,54 @@ def actionable_open_regressions(conn: sqlite3.Connection) -> int:
         return 0
 
 
+def failed_preflight_isolation(
+    conn: sqlite3.Connection,
+    base_sha: str,
+) -> dict | None:
+    """Return a bounded isolation policy for the latest failed current-base batch.
+
+    A failed multi-candidate batch tells us that at least one selected candidate
+    is bad, but not which one. The safest next action is to test candidates one
+    at a time. Single-candidate failures are handled by merge-preflight itself
+    through exact-SHA quarantine and should not reduce unrelated future batches.
+    """
+    try:
+        row = conn.execute(
+            """select id,tasks_json,candidates_json,verification_log,note
+                 from integration_preflights
+                where status='FAILED' and base_sha=?
+                order by created_epoch desc,id desc
+                limit 1""",
+            (base_sha,),
+        ).fetchone()
+    except sqlite3.OperationalError:
+        return None
+    if row is None:
+        return None
+
+    try:
+        tasks = json.loads(row[1] or "[]")
+        candidates = json.loads(row[2] or "[]")
+    except (TypeError, json.JSONDecodeError):
+        return None
+    if not isinstance(tasks, list) or len(tasks) <= 1:
+        return None
+
+    return {
+        "preflight_id": int(row[0]),
+        "batch_limit": 1,
+        "task_count": len(tasks),
+        "tasks": [str(x) for x in tasks],
+        "candidates": [str(x) for x in candidates] if isinstance(candidates, list) else [],
+        "verification_log": row[3],
+        "note": row[4],
+        "reason": (
+            "latest current-base preflight failed with multiple candidates; "
+            "isolate candidates serially"
+        ),
+    }
+
+
 def integration_backlog(conn: sqlite3.Connection) -> int:
     try:
         return int(
