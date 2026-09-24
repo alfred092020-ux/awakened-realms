@@ -30,8 +30,10 @@ import {
 } from '../logres/ui/LogresRuntimeAssets'
 
 import {
-  completeReconstructedLogresDemoBattle,
-} from '../logres/battle/ReconstructedLogresDemoBattleLoop'
+  completeReconstructedPlayableBattle,
+  LOGRES_PLAYABLE_BATTLE_COMPLETION_PROVENANCE,
+  LOGRES_PLAYABLE_BATTLE_FIELD_RETURN_SCENE_KEY,
+} from '../logres/battle/ReconstructedLogresPlayableBattleCompletion'
 
 import type {
   ReconstructedLogresInventoryState,
@@ -69,6 +71,10 @@ export class LogresBattleScene
     Phaser.GameObjects.Text | null =
       null
 
+  private normalAttackButton:
+    Phaser.GameObjects.Text | null =
+      null
+
   private demoReturnButton:
     Phaser.GameObjects.Text | null =
       null
@@ -94,6 +100,7 @@ export class LogresBattleScene
     this.epText = null
     this.demoStatusText = null
     this.demoResolveButton = null
+    this.normalAttackButton = null
     this.demoReturnButton = null
     this.presentation = null
     this.stagePresentation = null
@@ -136,11 +143,23 @@ export class LogresBattleScene
     )
     this.registry.set('logres.battle.presentation', this.presentation)
     // An old synthetic result must never describe a new live battle.
-    for (const key of ['logres.demo01.resolution', 'logres.demo01.rewardApplied']) {
+    for (const key of [
+      'logres.demo01.resolution',
+      'logres.demo01.rewardApplied',
+      'logres.playableBattle.resolution',
+      'logres.playableBattle.rewardApplied',
+      'logres.playableBattle.fieldReturn',
+      'logres.playableBattle.completion',
+    ]) {
       this.registry.remove(key)
     }
     this.registry.set('logres.demo01.battleStatus', 'ACTIVE')
     this.registry.set('logres.demo01.battleProvenance', 'RECONSTRUCTED')
+    this.registry.set('logres.playableBattle.battleStatus', 'ACTIVE')
+    this.registry.set(
+      'logres.playableBattle.battleProvenance',
+      LOGRES_PLAYABLE_BATTLE_COMPLETION_PROVENANCE,
+    )
 
     this.createBattleStage()
 
@@ -302,6 +321,9 @@ export class LogresBattleScene
     })
 
     this.createBattleStatusLabel()
+    if (!this.presentation.showDemoControls) {
+      this.createNormalAttackButton()
+    }
     if (this.presentation.showDemoControls) {
       this.createDemo01ResolutionControls()
     }
@@ -597,73 +619,14 @@ export class LogresBattleScene
         )
   }
 
-  private resolveDemo01Battle() {
-    if (
-      !this.presentation?.showDemoControls ||
-      this.registry.get('logres.demo01.battleStatus') !== 'ACTIVE'
-    ) {
-      return
-    }
-
-    const existingInventory =
-      this.registry.get(
-        'logres.demo01.inventory',
-      ) as
-        | Readonly<ReconstructedLogresInventoryState>
-        | undefined
-
-    const result =
-      completeReconstructedLogresDemoBattle(
-        existingInventory,
-      )
-
-    this.registry.set(
-      'logres.demo01.inventory',
-      result.inventory,
-    )
-
-    this.registry.set(
-      'logres.demo01.rewardApplied',
-      result.rewardApplied,
-    )
-
-    this.registry.set(
-      'logres.demo01.resolution',
-      result.flow,
-    )
-
-    this.registry.set(
-      'logres.demo01.battleStatus',
-      'FIELD_RETURN_READY',
-    )
-
-    this.demoStatusText
-      ?.setText(
-        result.rewardApplied
-          ? 'DEMO VICTORY • RECONSTRUCTED REWARD RECORDED'
-          : 'DEMO VICTORY • REWARD ALREADY RECORDED',
-      )
-
-    this.demoResolveButton
-      ?.disableInteractive()
-      .setAlpha(
-        0.45,
-      )
-
-    if (
-      this.demoReturnButton !==
-      null
-    ) {
-      return
-    }
-
-    this.demoReturnButton =
+  private createNormalAttackButton() {
+    this.normalAttackButton =
       this.add
         .text(
           this.scale.width /
             2,
-          160,
-          'RETURN TO MILLENNIUM TREE',
+          92,
+          'NORMAL ATTACK',
           {
             fontFamily:
               'Arial, sans-serif',
@@ -672,7 +635,7 @@ export class LogresBattleScene
             color:
               '#ffffff',
             backgroundColor:
-              '#1b5e20',
+              '#37474f',
             padding: {
               x:
                 18,
@@ -694,16 +657,31 @@ export class LogresBattleScene
         .on(
           'pointerup',
           () => {
-            this.registry.set(
-              'logres.demo01.battleStatus',
-              'RETURNING_TO_FIELD',
-            )
-
-            this.scene.start(
-              'LogresFieldScene',
+            this.events.emit(
+              'logres-request-normal-attack',
             )
           },
         )
+  }
+
+  private resolveDemo01Battle() {
+    if (
+      !this.presentation?.showDemoControls ||
+      this.registry.get('logres.demo01.battleStatus') !== 'ACTIVE'
+    ) {
+      return
+    }
+
+    const result =
+      completeReconstructedPlayableBattle({
+        inventory:
+          this.readPlayableBattleInventory(),
+      })
+
+    this.storeCompletedBattle(
+      result,
+      'HARNESS_DEMO_CONTROL',
+    )
   }
 
   applyNormalAttackHit(
@@ -769,11 +747,29 @@ export class LogresBattleScene
     }
 
     try {
+      const command =
+        this.battleKit
+          .createNormalAttack()
+
       this.events.emit(
         'logres-battle-command',
-        this.battleKit
-          .createNormalAttack(),
+        command,
       )
+
+      if (
+        this.registry.get(
+          'logres.playableBattle.battleStatus',
+        ) ===
+        'ACTIVE'
+      ) {
+        this.storeCompletedBattle(
+          completeReconstructedPlayableBattle({
+            inventory:
+              this.readPlayableBattleInventory(),
+          }),
+          'PLAYABLE_COMMAND_NORMAL_ATTACK',
+        )
+      }
     } catch {
       this.events.emit(
         'logres-battle-command-rejected',
@@ -783,6 +779,177 @@ export class LogresBattleScene
         },
       )
     }
+  }
+
+  private readPlayableBattleInventory():
+    | Readonly<ReconstructedLogresInventoryState>
+    | undefined {
+    return (
+      this.registry.get(
+        'logres.playableBattle.inventory',
+      ) as
+        | Readonly<ReconstructedLogresInventoryState>
+        | undefined
+    ) ??
+      (this.registry.get(
+        'logres.demo01.inventory',
+      ) as
+        | Readonly<ReconstructedLogresInventoryState>
+        | undefined)
+  }
+
+  private storeCompletedBattle(
+    result: ReturnType<
+      typeof completeReconstructedPlayableBattle
+    >,
+    trigger:
+      | 'HARNESS_DEMO_CONTROL'
+      | 'PLAYABLE_COMMAND_NORMAL_ATTACK',
+  ) {
+    this.registry.set(
+      'logres.playableBattle.inventory',
+      result.inventory,
+    )
+    this.registry.set(
+      'logres.playableBattle.rewardApplied',
+      result.rewardApplied,
+    )
+    this.registry.set(
+      'logres.playableBattle.resolution',
+      result.flow,
+    )
+    this.registry.set(
+      'logres.playableBattle.fieldReturn',
+      result.fieldReturn,
+    )
+    this.registry.set(
+      'logres.playableBattle.completion',
+      {
+        provenance:
+          result.provenance,
+        trigger,
+      },
+    )
+    this.registry.set(
+      'logres.playableBattle.battleStatus',
+      'FIELD_RETURN_READY',
+    )
+
+    this.registry.set(
+      'logres.demo01.inventory',
+      result.inventory,
+    )
+    this.registry.set(
+      'logres.demo01.rewardApplied',
+      result.rewardApplied,
+    )
+    this.registry.set(
+      'logres.demo01.resolution',
+      result.flow,
+    )
+    this.registry.set(
+      'logres.demo01.battleStatus',
+      'FIELD_RETURN_READY',
+    )
+
+    this.demoStatusText
+      ?.setText(
+        result.rewardApplied
+          ? 'VICTORY • RECONSTRUCTED REWARD RECORDED'
+          : 'VICTORY • REWARD ALREADY RECORDED',
+      )
+
+    this.demoResolveButton
+      ?.disableInteractive()
+      .setAlpha(
+        0.45,
+      )
+    this.normalAttackButton
+      ?.disableInteractive()
+      .setAlpha(
+        0.45,
+      )
+
+    if (
+      this.demoReturnButton !==
+      null
+    ) {
+      return
+    }
+
+    this.demoReturnButton =
+      this.add
+        .text(
+          this.scale.width /
+            2,
+          160,
+          'RETURN TO MILLENNIUM TREE',
+          {
+            fontFamily:
+              'Arial, sans-serif',
+            fontSize:
+              '24px',
+            color:
+              '#ffffff',
+            backgroundColor:
+              '#1b5e20',
+            padding: {
+              x:
+                18,
+              y:
+                12,
+            },
+          },
+        )
+        .setOrigin(
+          0.5,
+        )
+        .setDepth(
+          100,
+        )
+        .setInteractive({
+          useHandCursor:
+            true,
+        })
+        .on(
+          'pointerup',
+          () => {
+            const fieldReturn =
+              this.registry.get(
+                'logres.playableBattle.fieldReturn',
+              ) as
+                | {
+                    sceneKey: string
+                    fieldName: string
+                    movementState: string
+                  }
+                | undefined
+
+            this.registry.set(
+              'logres.playableBattle.battleStatus',
+              'RETURNING_TO_FIELD',
+            )
+            this.registry.set(
+              'logres.demo01.battleStatus',
+              'RETURNING_TO_FIELD',
+            )
+            this.registry.set(
+              'logres.playableField.currentFieldName',
+              fieldReturn?.fieldName ??
+                'Millennium Tree',
+            )
+            this.registry.set(
+              'logres.playableField.movementState',
+              fieldReturn?.movementState ??
+                'READY',
+            )
+
+            this.scene.start(
+              fieldReturn?.sceneKey ??
+                LOGRES_PLAYABLE_BATTLE_FIELD_RETURN_SCENE_KEY,
+            )
+          },
+        )
   }
 
   private finishWeaponSlide(
