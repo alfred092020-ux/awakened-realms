@@ -1,0 +1,38 @@
+#!/usr/bin/env python3
+import argparse,json,os,sqlite3,subprocess,sys
+from pathlib import Path
+ROOT=Path(os.environ.get("LOGRES_ROOT","/home/ubuntu/logres"));REPO=ROOT/"src/awakened-realms"
+sys.path.insert(0,str(Path(__file__).resolve().parents[1]/"lib"))
+from logres_workspace_lifecycle import classify,integrated_for_task,lease_for_task,task_for_branch
+DB=ROOT/"control/control.sqlite"
+def worktrees():
+ out=subprocess.check_output(["git","-C",str(REPO),"worktree","list","--porcelain"],text=True)
+ recs=[];cur={}
+ for line in out.splitlines()+[""]:
+  if not line:
+   if cur:recs.append(cur);cur={}
+  elif line.startswith("worktree "):cur["path"]=line.split(" ",1)[1]
+  elif line.startswith("branch refs/heads/"):cur["branch"]=line[len("branch refs/heads/"):]
+  elif line=="detached":cur["detached"]=True
+ return recs
+def main():
+ p=argparse.ArgumentParser(prog="logres-workspace-lifecycle");p.add_argument("--json",action="store_true");a=p.parse_args()
+ c=sqlite3.connect(DB,timeout=30);c.row_factory=sqlite3.Row;c.execute("pragma busy_timeout=30000")
+ rows=[]
+ for wt in worktrees():
+  path=wt["path"];branch=wt.get("branch");protected=path==str(REPO) or branch in {"feat/logres-reconstruction","main"}
+  dirty=bool(subprocess.check_output(["git","-C",path,"status","--porcelain"],text=True).strip())
+  tid,status=task_for_branch(c,branch) if branch else (None,None)
+  integrated=integrated_for_task(c,tid)
+  active=lease_for_task(c,tid)
+  unique=0
+  if branch and not protected:
+   try: unique=int(subprocess.check_output(["git","-C",str(REPO),"rev-list","--count",f"feat/logres-reconstruction..{branch}"],text=True).strip())
+   except Exception: unique=-1
+  rec={"path":path,"branch":branch,"task_id":tid,"task_status":status,"active_lease":active,"dirty":dirty,"unique_commits":unique,"integrated":integrated,"protected":protected}
+  rec["classification"]=classify(rec);rows.append(rec)
+ c.close()
+ out={"counts":{},"worktrees":rows,"archive_candidates":[r for r in rows if r["classification"]=="ARCHIVE_CANDIDATE"],"policy":"PLAN_ONLY_NO_DESTRUCTIVE_ACTION"}
+ for r in rows:out["counts"][r["classification"]]=out["counts"].get(r["classification"],0)+1
+ print(json.dumps(out,indent=2,sort_keys=True))
+if __name__=="__main__":main()
