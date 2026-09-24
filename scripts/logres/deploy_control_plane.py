@@ -19,6 +19,7 @@ MANIFEST: dict[str, tuple[str, int]] = {
     "bin/logres-maintain": ("bin/logres-maintain", 0o755),
     "bin/logres-blocker-router": ("bin/logres-blocker-router", 0o755),
     "bin/logres-frontier": ("bin/logres-frontier", 0o755),
+    "bin/logres-finish-task": ("bin/logres-finish-task", 0o755),
     "bin/logres-goal-contract": ("bin/logres-goal-contract", 0o755),
     "bin/logres-impact": ("bin/logres-impact", 0o755),
     "bin/logres-preview-reaper": ("bin/logres-preview-reaper", 0o755),
