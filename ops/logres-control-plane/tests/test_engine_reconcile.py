@@ -34,6 +34,13 @@ class ReconcileTests(unittest.TestCase):
     self.assertEqual("SUPERSEDED",c.execute("select state from route_jobs where id=1").fetchone()[0])
     self.assertEqual(status,c.execute("select status from tasks where id='T'").fetchone()[0])
     self.assertEqual(1,len([x for x in a if x["engine"]=="route"]),f"status={status} state={state} i={i} j={j}")
+ def test_terminal_route_supersedes_routed_and_verifying_directly(self):
+  for state in ("ROUTED","VERIFYING"):
+   c=self.db();c.execute("insert into tasks values('T','DONE')");c.execute("insert into route_jobs values(1,'T',?,null,null,'now')",(state,))
+   planned=plan(c);self.assertEqual(state,planned[0]["from_state"])
+   a=apply(c)
+   self.assertEqual("SUPERSEDED",c.execute("select state from route_jobs where id=1").fetchone()[0])
+   self.assertEqual(state,[x for x in a if x["engine"]=="route"][0]["from_state"])
  def test_active_task_is_untouched(self):
   c=self.db();c.execute("insert into tasks values('T','ACTIVE')");c.execute("insert into route_jobs values(1,'T','ACTIVE',null,null,'now')");c.execute("insert into copilot_jobs values(1,'T','PR_READY','b','sha','now')")
   self.assertEqual([],plan(c))
