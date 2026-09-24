@@ -21,6 +21,10 @@ import {
 } from '../logres/field/controllers/LogresFieldMovementController'
 
 import {
+  LogresFieldNpcDialogueController,
+} from '../logres/field/controllers/LogresFieldNpcDialogueController'
+
+import {
   LogresFieldRenderController,
 } from '../logres/field/controllers/LogresFieldRenderController'
 
@@ -44,6 +48,9 @@ export class LogresFieldScene
 
   private readonly movementController:
     LogresFieldMovementController
+
+  private readonly npcDialogueController:
+    LogresFieldNpcDialogueController
 
   private readonly renderController:
     LogresFieldRenderController
@@ -70,12 +77,22 @@ export class LogresFieldScene
       new LogresFieldMovementController(
         this,
         () =>
-          this.encounterController
-            .isApproachActive,
+          (
+            this.encounterController
+              .isApproachActive ||
+            this.npcDialogueController
+              .blocksMovement
+          ),
       )
 
     this.encounterController =
       new LogresFieldEncounterController(
+        this,
+        this.movementController,
+      )
+
+    this.npcDialogueController =
+      new LogresFieldNpcDialogueController(
         this,
         this.movementController,
       )
@@ -94,6 +111,16 @@ export class LogresFieldScene
   get playablePlayer() {
     return this.actorController
       .player
+  }
+
+  get playableNpcMarker() {
+    return this.actorController
+      .npc
+  }
+
+  get playableNpcDialogueSurface() {
+    return this.npcDialogueController
+      .dialogueSurface
   }
 
   preload() {
@@ -166,6 +193,7 @@ export class LogresFieldScene
 
   update() {
     this.hudController.update()
+    this.npcDialogueController.update()
   }
 
   private async initializePlayableField() {
@@ -220,6 +248,22 @@ export class LogresFieldScene
     this.encounterController
       .bindEncounterTile(
         encounterTile,
+      )
+
+    const npcTile =
+      this.actorController
+        .createNpcMarker(
+          this.movementController,
+          encounterTile,
+          () => {
+            this.npcDialogueController
+              .approach()
+          },
+        )
+
+    this.npcDialogueController
+      .bindNpcTile(
+        npcTile,
       )
 
     this.movementController
