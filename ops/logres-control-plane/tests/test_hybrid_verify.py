@@ -55,6 +55,34 @@ class HybridVerifyTests(unittest.TestCase):
             text,
         )
 
+    def test_unit_cache_never_replaces_local_private_e2e(self):
+        text = SCRIPT.read_text()
+        self.assertIn('CACHE_MODE="unit"', text)
+        self.assertIn('if cache_hit; then', text)
+        self.assertIn('VERIFY_PATH="cache-test+local-build-e2e"', text)
+        self.assertIn('cache_store_pass', text)
+        self.assertIn('npm run test:e2e -- --workers="$E2E_WORKERS"', text)
+        self.assertLess(
+            text.index('npm run test:e2e -- --workers="$E2E_WORKERS"'),
+            text.index('if cache_hit; then'),
+        )
+        cache_block = text[
+            text.index('if cache_hit; then'):
+            text.index('e2e_rc=0')
+        ]
+        self.assertNotIn('exit 0', cache_block)
+        self.assertIn('wait "$e2e_pid"', text)
+
+    def test_cache_dimensions_fail_closed_and_are_exact_sha_keyed(self):
+        text = SCRIPT.read_text()
+        self.assertIn('--source-sha "$SHA"', text)
+        self.assertIn('--lock-hash "$lock_hash"', text)
+        self.assertIn('--config-hash "$config_hash"', text)
+        self.assertIn('--evidence-version "$evidence_version"', text)
+        self.assertIn('--env-hash "$env_hash"', text)
+        self.assertIn('--mode "$CACHE_MODE"', text)
+        self.assertIn('[[ -s "$PRIVATE_ANCHOR" ]] || return 0', text)
+
     def test_remote_pool_has_no_merge_or_deploy_authority(self):
         pool = (CONTROL_ROOT / "lib" / "logres_remote_pool.py").read_text()
 
