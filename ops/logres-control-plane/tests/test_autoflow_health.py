@@ -116,6 +116,11 @@ class AutoflowHealthTests(unittest.TestCase):
         self.assertIn("SYSTEM_TOOL_DIRS", doctor)
         self.assertIn('Path("/usr/sbin")', doctor)
         self.assertIn("except FileNotFoundError", doctor)
+        self.assertIn(
+            "legacy scheduler deferred; authoritative supervisor healthy",
+            doctor,
+        )
+        self.assertIn("elif supervisor_ok:", doctor)
 
         for check in (
             "route_schema",

@@ -298,12 +298,6 @@ try:
 except Exception as e:
     add("strong_exact_sha_gate","WARN",str(e))
 
-cron=run(["crontab","-l"]).stdout
-cron_need=("logres-lead-snapshot","logres-evidence-refresh","logres-health-snapshot","logres-maintain","logres-control-backup","logres-autopilot-watch")
-cron_missing=[x for x in cron_need if x not in cron]
-add("automation_cron","PASS" if not cron_missing else "WARN",
-    "legacy bootstrap complete" if not cron_missing else "legacy missing="+",".join(cron_missing))
-
 supervisor=run(["/home/ubuntu/logres/bin/logres-supervisor","status","--json"])
 try:
     supervisor_state=json.loads(supervisor.stdout or "{}")
@@ -323,6 +317,23 @@ add(
         else "unhealthy or unavailable"
     ),
 )
+
+cron=run(["crontab","-l"]).stdout
+cron_need=("logres-lead-snapshot","logres-evidence-refresh","logres-health-snapshot","logres-maintain","logres-control-backup","logres-autopilot-watch")
+cron_missing=[x for x in cron_need if x not in cron]
+if not cron_missing:
+    cron_status="PASS"
+    cron_detail="legacy bootstrap complete"
+elif supervisor_ok:
+    cron_status="PASS"
+    cron_detail=(
+        "legacy scheduler deferred; authoritative supervisor healthy; missing="
+        + ",".join(cron_missing)
+    )
+else:
+    cron_status="WARN"
+    cron_detail="legacy missing="+",".join(cron_missing)
+add("automation_cron",cron_status,cron_detail)
 
 brain=run(["/home/ubuntu/logres/bin/logres-brain","health"])
 brain_ok=brain.returncode==0 and "fails=0" in brain.stdout
