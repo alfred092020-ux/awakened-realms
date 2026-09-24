@@ -1,0 +1,160 @@
+#!/usr/bin/env python3
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import sqlite3
+import subprocess
+import sys
+from pathlib import Path
+
+CONTROL_ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(CONTROL_ROOT / "lib"))
+
+from logres_bottleneck import analyze as analyze_bottleneck
+from logres_governor import (
+    AUTHORITY,
+    ensure_schema,
+    evaluate_experiment,
+    list_experiments,
+    persist_proposals,
+    propose_experiments,
+    record_outcome,
+)
+from logres_health_confidence import summary as health_summary
+from logres_optimizer import score_ready_tasks
+from logres_shadow_scheduler import compare as compare_shadow
+from logres_zero_human import analyze as analyze_zero_human
+
+ROOT = Path(os.environ.get("LOGRES_ROOT", "/home/ubuntu/logres"))
+DB = Path(
+    os.environ.get(
+        "LOGRES_CONTROL_DB",
+        str(ROOT / "control/control.sqlite"),
+    )
+)
+
+
+def _throughput_snapshot() -> dict:
+    binary = CONTROL_ROOT / "bin" / "logres-throughput"
+    if not binary.is_file():
+        binary = ROOT / "bin" / "logres-throughput"
+    try:
+        proc = subprocess.run(
+            [str(binary), "--json"],
+            text=True,
+            capture_output=True,
+            check=False,
+            timeout=30,
+            env={
+                **os.environ,
+                "LOGRES_CONTROL_DB": str(DB),
+                "LOGRES_ROOT": str(ROOT),
+            },
+        )
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        return {"error": f"{type(exc).__name__}: {exc}"}
+    if proc.returncode:
+        return {
+            "error": (proc.stderr or proc.stdout or "throughput failed")[-1000:],
+            "returncode": proc.returncode,
+        }
+    try:
+        value = json.loads(proc.stdout)
+    except json.JSONDecodeError as exc:
+        return {"error": f"invalid throughput JSON: {exc}"}
+    return value if isinstance(value, dict) else {}
+
+
+def collect_observations(conn: sqlite3.Connection) -> dict:
+    authoritative = [
+        item.task_id
+        for item in score_ready_tasks(conn)[:20]
+    ]
+    return {
+        "bottleneck": analyze_bottleneck(conn, persist=False),
+        "zero_human": analyze_zero_human(conn, persist=False),
+        "health": health_summary(conn),
+        "throughput": _throughput_snapshot(),
+        "shadow_scheduler": compare_shadow(
+            conn,
+            authoritative,
+            persist=False,
+        ),
+        "authority": AUTHORITY,
+    }
+
+
+def connect() -> sqlite3.Connection:
+    conn = sqlite3.connect(DB, timeout=30)
+    conn.row_factory = sqlite3.Row
+    conn.execute("pragma busy_timeout=30000")
+    ensure_schema(conn)
+    return conn
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(prog="logres-governor")
+    sub = parser.add_subparsers(dest="command", required=True)
+
+    sub.add_parser("observe")
+
+    propose = sub.add_parser("propose")
+    propose.add_argument("--apply", action="store_true")
+
+    listing = sub.add_parser("list")
+    listing.add_argument("--limit", type=int, default=50)
+
+    record = sub.add_parser("record")
+    record.add_argument("experiment_id", type=int)
+    record.add_argument("metric_value", type=float)
+    record.add_argument("--guardrail-breached", action="store_true")
+    record.add_argument("--notes", default="")
+
+    evaluate = sub.add_parser("evaluate")
+    evaluate.add_argument("experiment_id", type=int)
+
+    args = parser.parse_args()
+    conn = connect()
+    try:
+        if args.command == "observe":
+            payload = collect_observations(conn)
+        elif args.command == "propose":
+            observations = collect_observations(conn)
+            proposals = propose_experiments(observations)
+            payload = {
+                "apply": bool(args.apply),
+                "observations": observations,
+                "proposals": [proposal.to_dict() for proposal in proposals],
+                "authority": AUTHORITY,
+            }
+            if args.apply:
+                payload["experiments"] = persist_proposals(conn, proposals)
+        elif args.command == "list":
+            payload = {
+                "experiments": list_experiments(conn, limit=args.limit),
+                "authority": AUTHORITY,
+            }
+        elif args.command == "record":
+            payload = record_outcome(
+                conn,
+                args.experiment_id,
+                metric_value=args.metric_value,
+                guardrail_breached=args.guardrail_breached,
+                notes=args.notes,
+            )
+        else:
+            payload = evaluate_experiment(conn, args.experiment_id)
+    except ValueError as exc:
+        print(str(exc), file=sys.stderr)
+        return 2
+    finally:
+        conn.close()
+
+    print(json.dumps(payload, indent=2, sort_keys=True))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
