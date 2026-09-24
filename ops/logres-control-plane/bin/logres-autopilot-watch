@@ -143,6 +143,26 @@ def run_locked_helper(name,*args):
 run_locked_helper("logres-frontier","reconcile","--apply")
 run_locked_helper("logres-impact","scan","--apply")
 run_locked_helper("logres-goal","watch-active","--apply")
+# Goal executor owns its own nonblocking single-flight lock. Call it directly
+# so the outer helper lock does not contend on the same lock file.
+goal_executor=subprocess.run(
+    ["/home/ubuntu/logres/bin/logres-goal-executor","DEMO-0.2","--apply"],
+    text=True,
+    stdout=subprocess.PIPE,
+    stderr=subprocess.PIPE,
+    check=False,
+)
+if goal_executor.returncode!=0:
+    detail=(goal_executor.stderr or goal_executor.stdout or "unknown failure")[-1200:]
+    bucket=int(time.time()//1800)
+    post(
+        "FAIL",
+        "HIGH",
+        "Goal executor failed closed",
+        detail,
+        "AUTONOMY-GOAL-EXECUTOR-001",
+        f"goal-executor-failed:{bucket}",
+    )
 run_locked_helper("logres-route-reconcile")
 run_locked_helper("logres-ai-router")
 # Let the critical-path-ranked Copilot router fill safe implementation capacity.
