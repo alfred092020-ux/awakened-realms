@@ -1,5 +1,6 @@
 import fcntl
 import json
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -23,6 +24,7 @@ from logres_remote_pool import (
     store_collected_result,
     targets_for,
     validate_summary,
+    verification_ref,
 )
 
 
@@ -179,6 +181,85 @@ class RemotePoolPureTests(unittest.TestCase):
             )
 
 
+class BundleCapturePool(RemotePool):
+    def __init__(self, root: Path):
+        workers = {
+            "heavy": WorkerSpec("heavy", "h1", "heavy", 1),
+            "light": WorkerSpec("light", "h2", "light", 1),
+        }
+        super().__init__(
+            root=root,
+            ssh_key=root / "key",
+            artifact_root=root / "artifacts",
+            workers=workers,
+            lock_path=root / "pool.lock",
+        )
+        self.bundle_heads = []
+
+    def _sync_one(
+        self,
+        spec: WorkerSpec,
+        bundle: Path,
+        sha: str,
+        verify_ref: str,
+    ) -> None:
+        heads = subprocess.check_output(
+            ["git", "bundle", "list-heads", str(bundle)],
+            text=True,
+        )
+        self.bundle_heads.append(heads)
+
+
+class RemotePoolExactShaSyncTests(unittest.TestCase):
+    def test_dangling_commit_is_bundled_under_temporary_private_ref(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "repo"
+            root.mkdir()
+            subprocess.run(["git", "init", "-q", str(root)], check=True)
+            subprocess.run(
+                ["git", "-C", str(root), "config", "user.email", "test@example.invalid"],
+                check=True,
+            )
+            subprocess.run(
+                ["git", "-C", str(root), "config", "user.name", "Test"],
+                check=True,
+            )
+            (root / "file.txt").write_text("base\n")
+            subprocess.run(["git", "-C", str(root), "add", "file.txt"], check=True)
+            subprocess.run(
+                ["git", "-C", str(root), "commit", "-q", "-m", "base"],
+                check=True,
+            )
+            tree = subprocess.check_output(
+                ["git", "-C", str(root), "rev-parse", "HEAD^{tree}"],
+                text=True,
+            ).strip()
+            parent = subprocess.check_output(
+                ["git", "-C", str(root), "rev-parse", "HEAD"],
+                text=True,
+            ).strip()
+            dangling = subprocess.check_output(
+                ["git", "-C", str(root), "commit-tree", tree, "-p", parent],
+                input="dangling exact sha\n",
+                text=True,
+            ).strip()
+            self.assertNotEqual(parent, dangling)
+            pool = BundleCapturePool(root)
+            self.assertEqual(dangling, pool.sync(dangling))
+            ref = verification_ref(dangling)
+            self.assertEqual(2, len(pool.bundle_heads))
+            self.assertTrue(
+                all(f"{dangling} {ref}" in heads for heads in pool.bundle_heads)
+            )
+            local_ref = subprocess.run(
+                ["git", "-C", str(root), "show-ref", "--verify", ref],
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+            self.assertNotEqual(0, local_ref.returncode)
+
+
 class FakePool(RemotePool):
     def __init__(self, failures=()):
         super().__init__(
@@ -189,11 +270,15 @@ class FakePool(RemotePool):
         self.failures = set(failures)
         self.calls = []
         self.synced = []
+        self.cleaned = []
 
     def sync(self, sha: str) -> str:
         sha = ensure_exact_sha(sha)
         self.synced.append(sha)
         return sha
+
+    def cleanup_verify_ref(self, sha: str) -> None:
+        self.cleaned.append(sha)
 
     def _run_one(self, role: str, job: str, script: str, sha: str) -> dict:
         self.calls.append(role)
@@ -244,6 +329,7 @@ class RemotePoolPolicyTests(unittest.TestCase):
         )
         self.assertEqual(["heavy", "light"], pool.calls)
         self.assertEqual("light", result[0]["role"])
+        self.assertEqual([SHA], pool.cleaned)
 
     def test_non_reassignable_work_never_fails_over(self):
         pool = FakePool(failures={"heavy"})
@@ -257,6 +343,7 @@ class RemotePoolPolicyTests(unittest.TestCase):
                 retries=1,
             )
         self.assertEqual(["heavy"], pool.calls)
+        self.assertEqual([SHA], pool.cleaned)
 
     def test_both_fans_out_to_both_workers(self):
         pool = FakePool()
