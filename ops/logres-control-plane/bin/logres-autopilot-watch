@@ -143,25 +143,26 @@ def run_locked_helper(name,*args):
 run_locked_helper("logres-frontier","reconcile","--apply")
 run_locked_helper("logres-impact","scan","--apply")
 run_locked_helper("logres-goal","watch-active","--apply")
-# Goal executor owns its own nonblocking single-flight lock. Call it directly
-# so the outer helper lock does not contend on the same lock file.
-goal_executor=subprocess.run(
-    ["/home/ubuntu/logres/bin/logres-goal-executor","DEMO-0.2","--apply"],
+# The finish loop is the sole milestone authority surface. It may invoke the
+# bounded executor or independent certifier once, or emit a deduplicated blocker
+# event, but it never creates free-form work or integrates code.
+finish_loop=subprocess.run(
+    ["/home/ubuntu/logres/bin/logres-finish-loop","cycle","--apply","--json"],
     text=True,
     stdout=subprocess.PIPE,
     stderr=subprocess.PIPE,
     check=False,
 )
-if goal_executor.returncode!=0:
-    detail=(goal_executor.stderr or goal_executor.stdout or "unknown failure")[-1200:]
+if finish_loop.returncode!=0:
+    detail=(finish_loop.stderr or finish_loop.stdout or "unknown failure")[-1200:]
     bucket=int(time.time()//1800)
     post(
         "FAIL",
         "HIGH",
-        "Goal executor failed closed",
+        "Finish loop failed closed",
         detail,
-        "AUTONOMY-GOAL-EXECUTOR-001",
-        f"goal-executor-failed:{bucket}",
+        "AUTONOMY-FINISH-LOOP-001",
+        f"finish-loop-failed:{bucket}",
     )
 run_locked_helper("logres-route-reconcile")
 run_locked_helper("logres-ai-router")

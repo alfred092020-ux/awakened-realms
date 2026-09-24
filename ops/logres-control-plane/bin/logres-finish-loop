@@ -1,0 +1,238 @@
+#!/usr/bin/env python3
+from __future__ import annotations
+
+import argparse
+import fcntl
+import json
+import os
+import sqlite3
+import subprocess
+import sys
+from pathlib import Path
+
+CONTROL_ROOT = Path(__file__).resolve().parents[1]
+SOURCE_LIB = CONTROL_ROOT / "lib"
+ROOT = Path(os.environ.get("LOGRES_ROOT", "/home/ubuntu/logres"))
+LIB = Path(os.environ.get("LOGRES_LIB", str(ROOT / "lib")))
+sys.path.insert(0, str(LIB))
+sys.path.insert(0, str(SOURCE_LIB))
+
+from logres_finish_loop import (
+    active_milestone_id,
+    apply_decision,
+    decide,
+    event_payload,
+    status_payload,
+)
+from logres_goal_certify import current_certificate_valid
+from logres_goal_contract import evaluate_milestone, load_contracts
+
+
+def integration_sha() -> str:
+    override = os.environ.get("LOGRES_INTEGRATION_SHA")
+    if override:
+        return override.strip()
+    repo = Path(
+        os.environ.get(
+            "LOGRES_REPO",
+            str(ROOT / "src" / "awakened-realms"),
+        )
+    )
+    return subprocess.check_output(
+        ["git", "-C", str(repo), "rev-parse", "feat/logres-reconstruction"],
+        text=True,
+    ).strip()
+
+
+def connect(path: str) -> sqlite3.Connection:
+    conn = sqlite3.connect(path, timeout=30)
+    conn.row_factory = sqlite3.Row
+    conn.execute("pragma busy_timeout=30000")
+    return conn
+
+
+def evaluate(
+    conn: sqlite3.Connection,
+    contracts: dict,
+    milestone_id: str,
+) -> tuple[dict, bool]:
+    sha = integration_sha()
+    result = evaluate_milestone(
+        conn,
+        contracts,
+        milestone_id,
+        integration_sha=sha,
+        root=ROOT,
+    ).to_dict()
+    cert_valid = current_certificate_valid(
+        conn,
+        contracts,
+        milestone_id,
+        integration_sha=sha,
+        root=ROOT,
+    )
+    return result, cert_valid
+
+
+def run_authority(action: str, milestone_id: str) -> dict:
+    if action == "goal-executor":
+        argv = [
+            str(ROOT / "bin" / "logres-goal-executor"),
+            milestone_id,
+            "--apply",
+            "--json",
+        ]
+    elif action == "goal-certifier":
+        argv = [
+            str(ROOT / "bin" / "logres-goal-certify"),
+            milestone_id,
+            "--apply",
+        ]
+    else:
+        raise ValueError(f"unsupported finish-loop action: {action}")
+    proc = subprocess.run(
+        argv,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        check=False,
+    )
+    raw = (proc.stdout or "").strip()
+    try:
+        parsed = json.loads(raw) if raw else None
+    except json.JSONDecodeError:
+        parsed = None
+    return {
+        "action": action,
+        "argv": argv,
+        "returncode": proc.returncode,
+        "stdout": raw[-4000:],
+        "stderr": (proc.stderr or "").strip()[-4000:],
+        "json": parsed,
+    }
+
+
+def post_blocker(event: dict[str, str]) -> int:
+    proc = subprocess.run(
+        [
+            str(ROOT / "bin" / "logres-brain"),
+            "post",
+            "finish-loop",
+            "ALL",
+            "INFO",
+            "NORMAL",
+            event["subject"],
+            "--body",
+            event["body"],
+            "--task",
+            "AUTONOMY-FINISH-LOOP-001",
+            "--dedupe",
+            event["dedupe"],
+        ],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        check=False,
+    )
+    return int(proc.returncode)
+
+
+def print_text(payload: dict) -> None:
+    print(
+        f"FINISH_LOOP milestone={payload['milestone_id']} "
+        f"state={payload['state']} "
+        f"progress={payload['progress_percent']:.2f}% "
+        f"certificate={'valid' if payload['certificate_valid'] else 'invalid'}"
+    )
+    print("working=" + (",".join(payload["working"]) or "-"))
+    print("remaining=" + (",".join(payload["remaining"]) or "-"))
+    print("blocked=" + ("; ".join(payload["why_blocked"]) or "-"))
+    action = payload.get("action_result")
+    if action:
+        print(
+            f"action={action['action']} rc={action['returncode']}"
+        )
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(prog="logres-finish-loop")
+    sub = parser.add_subparsers(dest="command", required=True)
+    for name in ("status", "cycle"):
+        cmd = sub.add_parser(name)
+        cmd.add_argument("milestone_id", nargs="?")
+        cmd.add_argument("--json", action="store_true")
+        if name == "cycle":
+            cmd.add_argument("--apply", action="store_true")
+    parser.add_argument(
+        "--config",
+        default=os.environ.get(
+            "LOGRES_MILESTONE_CONTRACTS",
+            str(ROOT / "config" / "milestone_contracts.json"),
+        ),
+    )
+    parser.add_argument(
+        "--db",
+        default=os.environ.get(
+            "LOGRES_CONTROL_DB",
+            str(ROOT / "control" / "control.sqlite"),
+        ),
+    )
+    args = parser.parse_args()
+
+    lock_handle = None
+    if args.command == "cycle":
+        lock_path = Path(
+            os.environ.get(
+                "LOGRES_FINISH_LOOP_LOCK",
+                str(ROOT / "control" / "locks" / "logres-finish-loop.lock"),
+            )
+        )
+        lock_path.parent.mkdir(parents=True, exist_ok=True)
+        lock_handle = lock_path.open("a+")
+        try:
+            fcntl.flock(lock_handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            payload = {"status": "BUSY"}
+            print(json.dumps(payload, sort_keys=True))
+            return 0
+
+    contracts = load_contracts(Path(args.config))
+    conn = connect(args.db)
+    try:
+        milestone_id = args.milestone_id or active_milestone_id(conn)
+        contract, cert_valid = evaluate(conn, contracts, milestone_id)
+        decision = decide(contract, certificate_valid=cert_valid)
+        payload = status_payload(decision)
+    finally:
+        conn.close()
+
+    action_result = None
+    event_result = None
+    if args.command == "cycle" and args.apply:
+        action_result = apply_decision(decision, run_authority)
+        event = event_payload(decision)
+        if event:
+            event_result = {
+                "dedupe": event["dedupe"],
+                "returncode": post_blocker(event),
+            }
+
+    payload["action_result"] = action_result
+    payload["event_result"] = event_result
+    payload["applied"] = bool(args.command == "cycle" and args.apply)
+
+    if getattr(args, "json", False):
+        print(json.dumps(payload, indent=2, sort_keys=True))
+    else:
+        print_text(payload)
+
+    if action_result and action_result["returncode"] != 0:
+        return 2
+    if event_result and event_result["returncode"] != 0:
+        return 3
+    if lock_handle:
+        lock_handle.close()
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
