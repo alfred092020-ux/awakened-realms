@@ -16,7 +16,15 @@ def ensure_schema(conn):
 def _avg(conn,sql,args=(),default=0.0):
     r=conn.execute(sql,args).fetchone(); return default if not r or r[0] is None else float(r[0])
 
-def score_candidates(conn):
+def score_candidates(conn, weights=None):
+    weights={
+      "duration":1.0,
+      "cost":1.0,
+      "conflict":1.0,
+      "evidence":1.0,
+      "failure":1.0,
+      **(weights or {}),
+    }
     rows=conn.execute("""select t.id,coalesce(t.priority,9),coalesce(m.work_type,'implementation'),
       coalesce(m.expected_minutes,60),coalesce(m.concurrency_key,''),coalesce(m.evidence_policy,'')
       from tasks t left join task_metadata m on m.task_id=t.id where t.status='READY' order by t.id""")
@@ -33,7 +41,14 @@ def score_candidates(conn):
         if any(x in e for x in ("historical","external","unknown","inference")):ev=.7
         elif e:ev=.25
         progress=max(1.0,100.0-float(priority)*8.0)
-        denom=1.0+float(minutes)/60.0+avg_cost*10.0+conflict*2.5+ev*1.5+failures*2.0
+        denom=(
+          1.0
+          +(float(minutes)/60.0)*float(weights["duration"])
+          +(avg_cost*10.0)*float(weights["cost"])
+          +(conflict*2.5)*float(weights["conflict"])
+          +(ev*1.5)*float(weights["evidence"])
+          +(failures*2.0)*float(weights["failure"])
+        )
         score=progress/denom
         out.append({"task_id":tid,"score":round(score,6),"progress_value":round(progress,3),
           "duration_minutes":int(minutes),"cost_estimate":round(avg_cost,6),"conflict_risk":conflict,

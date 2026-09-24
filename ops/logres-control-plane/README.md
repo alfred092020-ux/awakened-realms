@@ -282,3 +282,20 @@ These helpers are deliberately separated from merge authority. Descriptive,
 shadow, replay, fault-injection and zero-human tools do not dispatch work,
 weaken verification, modify main, or grant themselves authority. Runtime
 deployment remains explicit and fail-closed through the versioned manifest.
+
+## Shadow experiment executor
+
+`logres-experiment-executor` closes one more part of the self-improvement loop without giving experiments operational authority.
+
+It can execute only governor experiments whose source is `SHADOW_SCHEDULER` and metric is `top5_overlap`. The executor snapshots the current READY task membership and authoritative optimizer order, replays a fixed set of bounded scoring-weight variants against that same task set, measures top-5 overlap, records the measurement through the existing governor ledger, and evaluates it as `KEEP` or `REJECT`.
+
+The executor cannot dispatch tasks, deploy files, run preflight/merge operations, push branches, or promote its own result. A `KEEP` result remains an advisory experiment result only. Any candidate-membership mutation is treated as a guardrail breach.
+
+Useful commands:
+
+```bash
+logres-governor propose --apply
+logres-experiment-executor next
+logres-experiment-executor run <experiment-id>
+logres-governor list
+```
