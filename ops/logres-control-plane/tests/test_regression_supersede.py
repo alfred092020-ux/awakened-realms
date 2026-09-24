@@ -206,6 +206,78 @@ class RegressionSupersedeTests(unittest.TestCase):
 
         self.assertEqual([], plan_supersede(conn, 20))
 
+    def test_cumulative_applied_full_e2e_proof_supersedes_split_failure(self):
+        conn = make_db()
+        preflight(conn, 10, "FAILED", ["BEHAVIOR", "COMBAT"], "f" * 40, 10)
+        preflight(conn, 20, "APPLIED", ["BEHAVIOR"], "b" * 40, 20)
+        preflight(conn, 30, "APPLIED", ["COMBAT"], "c" * 40, 30)
+        regression(conn, 1, "REG-MERGE", "merge-preflight", "f" * 40, 11)
+        regression(conn, 2, "REG-CAND", "candidate-verify", "f" * 40, 10.5)
+
+        targets = plan_supersede(conn, 30)
+
+        self.assertEqual([1, 2], [item.regression_id for item in targets])
+        self.assertEqual(
+            {"failed-task-cumulative-applied"},
+            {item.proof for item in targets},
+        )
+
+    def test_cumulative_proof_requires_every_failed_task(self):
+        conn = make_db()
+        preflight(conn, 10, "FAILED", ["BEHAVIOR", "COMBAT"], "f" * 40, 10)
+        preflight(conn, 20, "APPLIED", ["BEHAVIOR"], "b" * 40, 20)
+        preflight(conn, 30, "APPLIED", ["OTHER"], "o" * 40, 30)
+        regression(conn, 1, "REG-MERGE", "merge-preflight", "f" * 40, 11)
+
+        self.assertEqual([], plan_supersede(conn, 30))
+
+    def test_cumulative_proof_ignores_verified_only_preflight(self):
+        conn = make_db()
+        preflight(conn, 10, "FAILED", ["BEHAVIOR", "COMBAT"], "f" * 40, 10)
+        preflight(conn, 20, "APPLIED", ["BEHAVIOR"], "b" * 40, 20)
+        preflight(conn, 30, "VERIFIED", ["COMBAT"], "c" * 40, 30)
+        regression(conn, 1, "REG-MERGE", "merge-preflight", "f" * 40, 11)
+
+        self.assertEqual([], plan_supersede(conn, 30))
+
+    def test_cumulative_proof_ignores_pre_failure_and_fast_only_proof(self):
+        conn = make_db()
+        preflight(conn, 5, "APPLIED", ["BEHAVIOR"], "a" * 40, 5)
+        preflight(conn, 10, "FAILED", ["BEHAVIOR", "COMBAT"], "f" * 40, 10)
+        preflight(
+            conn,
+            20,
+            "APPLIED",
+            ["BEHAVIOR"],
+            "b" * 40,
+            20,
+            verification_mode="fast",
+        )
+        preflight(conn, 30, "APPLIED", ["COMBAT"], "c" * 40, 30)
+        regression(conn, 1, "REG-MERGE", "merge-preflight", "f" * 40, 11)
+
+        self.assertEqual([], plan_supersede(conn, 30))
+
+    def test_cumulative_proof_accepts_explicit_integrated_carrier_coverage(self):
+        conn = make_db()
+        preflight(conn, 10, "FAILED", ["ORIGINAL", "COMBAT"], "f" * 40, 10)
+        preflight(conn, 20, "APPLIED", ["CARRIER"], "b" * 40, 20)
+        preflight(conn, 30, "APPLIED", ["COMBAT"], "c" * 40, 30)
+        regression(conn, 1, "REG-MERGE", "merge-preflight", "f" * 40, 11)
+        conn.execute(
+            "insert into task_dependencies values(?,?,?,?)",
+            ("ORIGINAL", "CARRIER", "integration_carrier", ""),
+        )
+        conn.execute(
+            "insert into integration_queue values(?,?,?,?)",
+            ("CARRIER", "INTEGRATED", None, ""),
+        )
+
+        targets = plan_supersede(conn, 30)
+
+        self.assertEqual([1], [item.regression_id for item in targets])
+        self.assertEqual("failed-task-cumulative-applied", targets[0].proof)
+
     def test_mixed_failure_remains_open_when_success_does_not_cover_every_task(self):
         conn = make_db()
         preflight(

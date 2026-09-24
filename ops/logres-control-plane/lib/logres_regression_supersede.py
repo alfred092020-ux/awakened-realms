@@ -81,6 +81,33 @@ def _successful_task_coverage(
     return frozenset(covered), frozenset(carrier_covered)
 
 
+def _cumulative_applied_task_coverage(
+    conn: sqlite3.Connection,
+    *,
+    failed_created_epoch: float,
+    through_created_epoch: float,
+) -> frozenset[str]:
+    """Union task coverage from later APPLIED full-E2E preflights only."""
+    covered: set[str] = set()
+    rows = conn.execute(
+        """select *
+             from integration_preflights
+            where status='APPLIED'
+              and verification_mode='full-e2e'
+              and created_epoch > ?
+              and created_epoch <= ?
+            order by created_epoch,id""",
+        (failed_created_epoch, through_created_epoch),
+    ).fetchall()
+
+    for row in rows:
+        tasks = _tasks(row["tasks_json"])
+        expanded, _ = _successful_task_coverage(conn, tasks)
+        covered.update(expanded)
+
+    return frozenset(covered)
+
+
 def successful_preflight(conn: sqlite3.Connection, preflight_id: int) -> sqlite3.Row:
     row = conn.execute(
         "select * from integration_preflights where id=?",
@@ -171,14 +198,24 @@ def plan_supersede(
         if failed is None:
             continue
         failed_tasks = _tasks(failed["tasks_json"])
-        if not failed_tasks or not failed_tasks.issubset(covered_tasks):
+        if not failed_tasks:
             continue
 
-        proof = (
-            "failed-task-carrier-subset"
-            if any(task in carrier_covered_tasks for task in failed_tasks)
-            else "failed-task-subset"
-        )
+        if failed_tasks.issubset(covered_tasks):
+            proof = (
+                "failed-task-carrier-subset"
+                if any(task in carrier_covered_tasks for task in failed_tasks)
+                else "failed-task-subset"
+            )
+        else:
+            cumulative_coverage = _cumulative_applied_task_coverage(
+                conn,
+                failed_created_epoch=float(failed["created_epoch"]),
+                through_created_epoch=created_epoch,
+            )
+            if not failed_tasks.issubset(cumulative_coverage):
+                continue
+            proof = "failed-task-cumulative-applied"
 
         rows = [regression]
         rows.extend(
@@ -245,6 +282,12 @@ def apply_supersede(
                         f"Superseded by successful preflight {preflight_id}; "
                         f"failed preflight {target.failed_preflight_id} task set "
                         f"is covered by explicit integrated carrier lineage."
+                    )
+                elif target.proof == "failed-task-cumulative-applied":
+                    note = (
+                        f"Superseded at preflight {preflight_id}; every task from "
+                        f"failed preflight {target.failed_preflight_id} has later "
+                        f"APPLIED full-e2e coverage."
                     )
                 else:
                     note = (
