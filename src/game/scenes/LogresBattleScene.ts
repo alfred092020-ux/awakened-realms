@@ -5,6 +5,21 @@ import {
 } from '../logres/battle/LogresBattlePresentation'
 
 import {
+  createLogresBattleStagePresentation,
+  type LogresBattleStagePresentation,
+} from '../logres/battle/LogresBattleStagePresentation'
+
+import {
+  hasRecoveredLogresBattleStageAssets,
+  LOGRES_BATTLE_GREEN_JELL_IDLE_ANIMATION_KEY,
+  LOGRES_BATTLE_STAGE_ASSETS,
+} from '../logres/battle/LogresBattleStageRuntimeAssets'
+
+import {
+  LOGRES_TUTORIAL_GREEN_JELL_IDLE_ANIMATION,
+} from '../logres/field/LogresFieldActorPresentation'
+
+import {
   LogresGlobalBattleKit,
   type LogresGlobalBattleKitInput,
 } from '../logres/battle/LogresGlobalBattleKit'
@@ -29,6 +44,10 @@ export class LogresBattleScene
   extends Phaser.Scene {
   private presentation:
     ReturnType<typeof createLogresBattlePresentation> | null = null
+
+  private stagePresentation:
+    LogresBattleStagePresentation | null =
+      null
 
   private battleKit:
     LogresGlobalBattleKit | null =
@@ -77,6 +96,7 @@ export class LogresBattleScene
     this.demoResolveButton = null
     this.demoReturnButton = null
     this.presentation = null
+    this.stagePresentation = null
 
     this.battleKit =
       new LogresGlobalBattleKit({
@@ -121,6 +141,8 @@ export class LogresBattleScene
     }
     this.registry.set('logres.demo01.battleStatus', 'ACTIVE')
     this.registry.set('logres.demo01.battleProvenance', 'RECONSTRUCTED')
+
+    this.createBattleStage()
 
     const spacing =
       112
@@ -283,6 +305,221 @@ export class LogresBattleScene
     if (this.presentation.showDemoControls) {
       this.createDemo01ResolutionControls()
     }
+  }
+
+  private createBattleStage() {
+    const recoveredReferenceArtAvailable =
+      hasRecoveredLogresBattleStageAssets(
+        this,
+      )
+
+    this.stagePresentation =
+      createLogresBattleStagePresentation(
+        this.scale.width,
+        this.scale.height,
+        this.registry.get(
+          'logres.protocol.C_GMCL_CHAR_CREATE_REQ',
+        ),
+        recoveredReferenceArtAvailable,
+      )
+
+    this.registry.set(
+      'logres.battle.stagePresentation',
+      this.stagePresentation,
+    )
+
+    const {
+      ground,
+      player,
+      enemy,
+      referenceSex,
+    } =
+      this.stagePresentation
+
+    /*
+     * No Global 3.0.24 battle-background texture is being asserted here.
+     * These low-depth shapes only provide visual stage context while the
+     * original background-resource binding remains unresolved.
+     */
+    this.add
+      .rectangle(
+        ground.x,
+        ground.y,
+        ground.width,
+        ground.height,
+        0x17231f,
+        0.96,
+      )
+      .setDepth(
+        -100,
+      )
+
+    this.add
+      .ellipse(
+        ground.x,
+        ground.y +
+          ground.height *
+            0.31,
+        ground.width *
+          0.86,
+        ground.height *
+          0.28,
+        0x31483d,
+        0.52,
+      )
+      .setDepth(
+        -90,
+      )
+
+    this.add
+      .ellipse(
+        player.x,
+        player.y +
+          4,
+        112,
+        28,
+        0x000000,
+        0.4,
+      )
+      .setDepth(
+        -20,
+      )
+
+    this.add
+      .ellipse(
+        enemy.x,
+        enemy.y +
+          4,
+        126,
+        30,
+        0x000000,
+        0.4,
+      )
+      .setDepth(
+        -20,
+      )
+
+    if (
+      recoveredReferenceArtAvailable
+    ) {
+      const playerAsset =
+        referenceSex ===
+          'f'
+          ? LOGRES_BATTLE_STAGE_ASSETS
+              .playerFemale
+          : LOGRES_BATTLE_STAGE_ASSETS
+              .playerMale
+
+      this.add
+        .image(
+          player.x,
+          player.y,
+          playerAsset.key,
+        )
+        .setOrigin(
+          player.anchorX,
+          player.anchorY,
+        )
+        .setScale(
+          player.scale,
+        )
+        .setDepth(
+          -10,
+        )
+
+      if (
+        !this.anims.exists(
+          LOGRES_BATTLE_GREEN_JELL_IDLE_ANIMATION_KEY,
+        )
+      ) {
+        this.anims.create({
+          key:
+            LOGRES_BATTLE_GREEN_JELL_IDLE_ANIMATION_KEY,
+
+          frames:
+            LOGRES_BATTLE_STAGE_ASSETS
+              .enemyIdleFrames
+              .map(
+                (
+                  asset,
+                ) => ({
+                  key:
+                    asset.key,
+                }),
+              ),
+
+          frameRate:
+            LOGRES_TUTORIAL_GREEN_JELL_IDLE_ANIMATION
+              .frameRate,
+
+          repeat:
+            LOGRES_TUTORIAL_GREEN_JELL_IDLE_ANIMATION
+              .repeat,
+        })
+      }
+
+      this.add
+        .sprite(
+          enemy.x,
+          enemy.y,
+          LOGRES_BATTLE_STAGE_ASSETS
+            .enemyIdleFrames[
+              0
+            ]
+            .key,
+        )
+        .setOrigin(
+          enemy.anchorX,
+          enemy.anchorY,
+        )
+        .setScale(
+          enemy.scale,
+        )
+        .setDepth(
+          -10,
+        )
+        .play(
+          LOGRES_BATTLE_GREEN_JELL_IDLE_ANIMATION_KEY,
+        )
+
+      return
+    }
+
+    /*
+     * Clean/public verification intentionally has no private derivatives.
+     * Keep the stage non-empty without claiming these silhouettes as Logres
+     * artwork.
+     */
+    this.add
+      .rectangle(
+        player.x,
+        player.y,
+        52,
+        112,
+        0x7895a4,
+        0.9,
+      )
+      .setOrigin(
+        player.anchorX,
+        player.anchorY,
+      )
+      .setDepth(
+        -10,
+      )
+
+    this.add
+      .ellipse(
+        enemy.x,
+        enemy.y -
+          36,
+        112,
+        82,
+        0x6c9b65,
+        0.9,
+      )
+      .setDepth(
+        -10,
+      )
   }
 
   private createBattleStatusLabel() {

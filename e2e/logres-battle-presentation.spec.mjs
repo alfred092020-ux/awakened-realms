@@ -1,34 +1,159 @@
 import { expect, test } from '@playwright/test'
 
-test('normal battle has five controls and cannot resolve synthetic rewards', async ({ page }, testInfo) => {
+const privateBattleStageUrls = [
+  '/__logres_ref/current-jp/player-avatar-reference/player_avatar_reference_m.png',
+  '/__logres_ref/current-jp/player-avatar-reference/player_avatar_reference_f.png',
+  '/__logres_ref/current-jp/tutorial-field/green_jell_idle_0.png',
+  '/__logres_ref/current-jp/tutorial-field/green_jell_idle_1.png',
+  '/__logres_ref/current-jp/tutorial-field/green_jell_idle_2.png',
+  '/__logres_ref/current-jp/tutorial-field/green_jell_idle_3.png',
+]
+
+test('normal battle has visible stage actors, five controls, and cannot resolve synthetic rewards', async ({ page, request }, testInfo) => {
+  const responses = await Promise.all(
+    privateBattleStageUrls.map(url => request.get(url)),
+  )
+
+  const privateBattleStagePresent = responses.every(response =>
+    response.ok() &&
+    (response.headers()['content-type'] ?? '').includes('image/'),
+  )
+
   await page.goto('/')
   await page.waitForFunction(() => window.__AWAKENED_REALMS_GAME__?.scene)
-  await page.evaluate(() => window.__AWAKENED_REALMS_GAME__.scene.start('LogresBattleScene'))
-  await page.waitForFunction(() => window.__AWAKENED_REALMS_GAME__.scene.isActive('LogresBattleScene'))
+
+  await page.evaluate(
+    privateBattleStagePresent => {
+      const game = window.__AWAKENED_REALMS_GAME__
+      game.registry.set(
+        'logres.protocol.C_GMCL_CHAR_CREATE_REQ',
+        [0, 'Novice', 0, 1, 1, 1, 1, 1],
+      )
+
+      game.scene.start(
+        privateBattleStagePresent
+          ? 'LogresFieldScene'
+          : 'LogresBattleScene',
+      )
+    },
+    privateBattleStagePresent,
+  )
+
+  if (privateBattleStagePresent) {
+    await page.waitForFunction(() =>
+      window.__AWAKENED_REALMS_GAME__.registry.get(
+        'logres.playableField.status',
+      ) === 'READY',
+    )
+
+    await page.evaluate(() =>
+      window.__AWAKENED_REALMS_GAME__.scene.start(
+        'LogresBattleScene',
+      ),
+    )
+  }
+
+  await page.waitForFunction(() => {
+    const game = window.__AWAKENED_REALMS_GAME__
+    if (!game?.scene?.isActive('LogresBattleScene')) return false
+
+    return Boolean(
+      game.registry.get('logres.battle.stagePresentation') &&
+      game.registry.get('logres.battle.presentation'),
+    )
+  })
+
   const state = await page.evaluate(() => {
     const game = window.__AWAKENED_REALMS_GAME__
     const scene = game.scene.getScene('LogresBattleScene')
+
     // Exercise the resolver's own guard as well as absence of a visible button.
     scene.resolveDemo01Battle()
+
     return {
       view: game.registry.get('logres.battle.presentation'),
-      controls: scene.children.list.filter(child => child.texture?.key === 'logres-global-skill-base').length,
+      stage: game.registry.get('logres.battle.stagePresentation'),
+      controls:
+        game.registry.get('logres.battle.presentation')
+          ?.weaponPanels
+          ?.length ?? 0,
+      stageTextures: scene.children.list
+        .map(child => child.texture?.key ?? null)
+        .filter(Boolean),
+      stageShapeCount: scene.children.list.filter(
+        child => child.type === 'Rectangle' || child.type === 'Ellipse',
+      ).length,
       demoButton: Boolean(scene.demoResolveButton),
-      labels: scene.children.list.filter(child => child.type === 'Text').map(child => child.text),
+      labels: scene.children.list
+        .filter(child => child.type === 'Text')
+        .map(child => child.text),
       inventory: game.registry.get('logres.demo01.inventory') ?? null,
       resolution: game.registry.get('logres.demo01.resolution') ?? null,
     }
   })
+
   expect(state.controls).toBe(5)
   expect(state.demoButton).toBe(false)
   expect(state.labels.join(' ')).not.toMatch(/DEMO|RESOLVE|VICTORY/)
   expect(state.labels).toContain('RECONSTRUCTED BATTLE')
-  await page.locator('canvas').screenshot({ path: testInfo.outputPath('battle-normal.png') })
+  expect(state.stageShapeCount).toBeGreaterThanOrEqual(4)
+
+  expect(state.stage).toMatchObject({
+    referenceSex: 'm',
+    genderSelection: 'CHARACTER_CREATE_REQUEST',
+    provenance: {
+      actorSpawnArchitecture: 'CONFIRMED_GLOBAL_3_0_24_NATIVE',
+      battlePositionStructure: 'CONFIRMED_GLOBAL_3_0_24_NATIVE_iX_iY',
+      battlePositionToScreenTransform: 'UNRESOLVED',
+      screenPlacement: 'RECONSTRUCTED',
+      stageGround: 'RECONSTRUCTED_PRESENTATION_ONLY',
+      historicalStats: 'UNRESOLVED',
+    },
+    player: {
+      role: 'PLAYER',
+      historicalShapeId: 'UNRESOLVED',
+      historicalBattlePosition: 'UNRESOLVED',
+    },
+    enemy: {
+      role: 'ENEMY',
+      identityProvenance: 'CONFIRMED_GLOBAL_GREEN_JELL_TUTORIAL',
+      historicalShapeId: 'UNRESOLVED',
+      historicalBattlePosition: 'UNRESOLVED',
+    },
+  })
+
+  if (privateBattleStagePresent) {
+    expect(state.stage.mode).toBe('RECOVERED_REFERENCE_ART')
+    expect(state.stageTextures).toContain(
+      'logres-current-jp-player-avatar-reference-m',
+    )
+    expect(
+      state.stageTextures.some(
+        key =>
+          /^logres-current-jp-green-jell-idle-[0-3]$/.test(key),
+      ),
+    ).toBe(true)
+  } else {
+    expect(state.stage.mode).toBe('PLACEHOLDER_FALLBACK')
+    expect(state.stageTextures).not.toContain(
+      'logres-current-jp-player-avatar-reference-m',
+    )
+  }
+
+  await page.locator('canvas').screenshot({
+    path: testInfo.outputPath('battle-normal.png'),
+  })
+
   expect(state.inventory).toBeNull()
   expect(state.resolution).toBeNull()
   expect(state.view).toMatchObject({
-    showDemoControls: false, historicalResult: null, epLabel: 'EP 0',
-    provenance: { weaponControlCount: 'CONFIRMED ORIGINAL', historicalResult: 'UNRESOLVED' },
+    showDemoControls: false,
+    historicalResult: null,
+    epLabel: 'EP 0',
+    provenance: {
+      weaponControlCount: 'CONFIRMED ORIGINAL',
+      historicalResult: 'UNRESOLVED',
+    },
   })
 })
 
