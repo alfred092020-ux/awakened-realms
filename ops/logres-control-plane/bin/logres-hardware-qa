@@ -18,6 +18,10 @@ ACTIVITY=f"{PKG}/.MainActivity"
 APK_DIR=ROOT/"artifacts/apk"
 PROOFS=PHONE_DIR/"proofs"
 LOCK=Path("/tmp/logres-phone-hardware-qa.lock")
+DEVICE_PROOF_BIN=Path(os.environ.get(
+    "LOGRES_DEVICE_PROOF_BIN",
+    str(REPO/"ops/logres-control-plane/bin/logres-device-proof"),
+))
 
 class QAError(RuntimeError): pass
 
@@ -248,10 +252,27 @@ def artifact_map(proof: Path):
     return result
 
 def record_db(sha, apk, proof_json, status, note):
-    subprocess.run([str(ROOT/"bin/logres-device-proof"),"record",sha,status,
-                    "--apk",str(apk),"--checkpoint","demo-0.2",
-                    "--artifact",str(proof_json),"--note",note],
-                   text=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+    p=subprocess.run(
+        [
+            str(DEVICE_PROOF_BIN),"record",sha,status,
+            "--apk",str(apk),"--checkpoint","demo-0.2",
+            "--artifact",str(proof_json),"--note",note,
+        ],
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+    if p.returncode:
+        raise QAError(
+            "device proof DB indexing failed "
+            f"rc={p.returncode}: {(p.stderr or p.stdout).strip()}"
+        )
+    output=(p.stdout or "").strip()
+    if "RECORDED" not in output:
+        raise QAError(
+            "device proof DB recorder returned success without persistence acknowledgement"
+        )
+    return output
 
 def update_task(note, *, proof_status):
     try:
@@ -491,12 +512,53 @@ adb -s "$DEV" shell dumpsys thermalservice | grep -m1 "Thermal Status:"''')
           f"before full production battle-return certification: {failure or 'unknown failure'}. "
           f"Evidence: {proof_json}."
         )
-    record_db(sha,apk,proof_json,status,note)
-    update_task(note,proof_status=status)
-    (PHONE_DIR/"last-tested-sha").write_text(sha+"\n")
-    (PHONE_DIR/"last-run.json").write_text(json.dumps({"sha":sha,"status":status,"proof":str(proof_json),"finished_at":finished},indent=2)+"\n")
+    index_failure=None
+    try:
+        recorder_ack=record_db(sha,apk,proof_json,status,note)
+        packet["persistence"]={
+          "status":"INDEXED",
+          "recorder_ack":recorder_ack,
+        }
+    except Exception as exc:
+        index_failure=f"{type(exc).__name__}: {exc}"
+        packet["persistence"]={
+          "status":"FAILED",
+          "error":index_failure,
+          "reconcile_command":(
+            f"{DEVICE_PROOF_BIN} reconcile {proof_json} "
+            "--checkpoint demo-0.2"
+          ),
+        }
+        (proof/"device-proof-index-error.txt").write_text(
+          index_failure+"\n"
+        )
+    proof_json.write_text(json.dumps(packet,indent=2,sort_keys=True)+"\n")
 
-    print(f"HARDWARE_QA status={status} sha={sha[:12]} proof={proof_json}")
+    effective_status="INDEX_FAILED" if index_failure else status
+    if index_failure:
+        note=(
+          f"{note} Physical QA artifact was preserved but SQLite indexing failed: "
+          f"{index_failure}. Reconcile with: {DEVICE_PROOF_BIN} reconcile "
+          f"{proof_json} --checkpoint demo-0.2"
+        )
+        update_task(note,proof_status="FAIL")
+    else:
+        update_task(note,proof_status=status)
+
+    (PHONE_DIR/"last-tested-sha").write_text(sha+"\n")
+    (PHONE_DIR/"last-run.json").write_text(json.dumps({
+      "sha":sha,
+      "status":effective_status,
+      "physical_status":status,
+      "proof":str(proof_json),
+      "finished_at":finished,
+      "persistence":packet["persistence"],
+    },indent=2)+"\n")
+
+    print(f"HARDWARE_QA status={effective_status} sha={sha[:12]} proof={proof_json}")
+    if index_failure:
+        print(f"HARDWARE_QA persistence_failure={index_failure}",file=sys.stderr)
+        return 2
     if failure:
         print(f"HARDWARE_QA failure={failure}",file=sys.stderr)
         return 1

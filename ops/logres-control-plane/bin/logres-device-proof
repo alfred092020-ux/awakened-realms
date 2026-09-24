@@ -1,0 +1,365 @@
+#!/usr/bin/env python3
+from __future__ import annotations
+
+import argparse
+import hashlib
+import json
+import os
+import re
+import sqlite3
+import sys
+import time
+from datetime import datetime, timezone
+from pathlib import Path
+
+DB = Path(os.environ.get(
+    "LOGRES_CONTROL_DB",
+    "/home/ubuntu/logres/control/control.sqlite",
+))
+BUSY_TIMEOUT_MS = int(os.environ.get("LOGRES_DEVICE_PROOF_BUSY_TIMEOUT_MS", "250"))
+WRITE_RETRIES = int(os.environ.get("LOGRES_DEVICE_PROOF_WRITE_RETRIES", "8"))
+RETRY_DELAY_SEC = float(os.environ.get("LOGRES_DEVICE_PROOF_RETRY_DELAY_SEC", "0.05"))
+SHA40 = re.compile(r"^[0-9a-f]{40}$")
+SHA256 = re.compile(r"^[0-9a-f]{64}$")
+
+
+class DeviceProofPersistenceError(RuntimeError):
+    pass
+
+
+def sha256(path: Path) -> str:
+    h = hashlib.sha256()
+    with path.open("rb") as handle:
+        for block in iter(lambda: handle.read(1024 * 1024), b""):
+            h.update(block)
+    return h.hexdigest()
+
+
+def _connect(db_path: Path, busy_timeout_ms: int) -> sqlite3.Connection:
+    conn = sqlite3.connect(
+        str(db_path),
+        timeout=max(0.001, busy_timeout_ms / 1000.0),
+    )
+    conn.row_factory = sqlite3.Row
+    conn.execute(f"pragma busy_timeout={max(1, busy_timeout_ms)}")
+    return conn
+
+
+def _ensure_schema(conn: sqlite3.Connection) -> None:
+    conn.execute(
+        """create table if not exists device_proofs(
+          id integer primary key autoincrement,
+          sha text not null,
+          apk_sha256 text,
+          checkpoint text not null,
+          status text not null,
+          artifact_path text,
+          note text not null default '',
+          created_at text not null,
+          created_epoch real not null
+        )"""
+    )
+
+
+def _logical_row(
+    conn: sqlite3.Connection,
+    *,
+    sha: str,
+    apk_sha256: str | None,
+    checkpoint: str,
+    status: str,
+    artifact_path: str | None,
+):
+    return conn.execute(
+        """select * from device_proofs
+             where sha=?
+               and checkpoint=?
+               and status=?
+               and coalesce(apk_sha256,'')=coalesce(?,'')
+               and coalesce(artifact_path,'')=coalesce(?,'')
+             order by id desc
+             limit 1""",
+        (sha, checkpoint, status, apk_sha256, artifact_path),
+    ).fetchone()
+
+
+def persist_record(
+    *,
+    sha: str,
+    apk_sha256: str | None,
+    checkpoint: str,
+    status: str,
+    artifact_path: str | None,
+    note: str,
+    db_path: Path | None = None,
+    busy_timeout_ms: int = BUSY_TIMEOUT_MS,
+    retries: int = WRITE_RETRIES,
+    retry_delay_sec: float = RETRY_DELAY_SEC,
+) -> tuple[int, bool]:
+    if not SHA40.fullmatch(sha):
+        raise ValueError("device proof sha must be an exact lowercase 40-character git SHA")
+    if apk_sha256 is not None and not SHA256.fullmatch(apk_sha256):
+        raise ValueError("device proof apk_sha256 must be a lowercase 64-character SHA-256")
+    if status not in {"PASS", "FAIL", "PARTIAL"}:
+        raise ValueError("device proof status must be PASS, FAIL, or PARTIAL")
+    checkpoint = checkpoint.strip()
+    if not checkpoint:
+        raise ValueError("device proof checkpoint must be non-empty")
+
+    target = Path(db_path or DB)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    last_error: Exception | None = None
+
+    for attempt in range(1, max(1, retries) + 1):
+        conn: sqlite3.Connection | None = None
+        try:
+            conn = _connect(target, busy_timeout_ms)
+            _ensure_schema(conn)
+            conn.execute("begin immediate")
+            existing = _logical_row(
+                conn,
+                sha=sha,
+                apk_sha256=apk_sha256,
+                checkpoint=checkpoint,
+                status=status,
+                artifact_path=artifact_path,
+            )
+            if existing is not None:
+                conn.commit()
+                return int(existing["id"]), False
+
+            stamp = datetime.now(timezone.utc).isoformat(timespec="seconds")
+            cursor = conn.execute(
+                """insert into device_proofs
+                  (sha,apk_sha256,checkpoint,status,artifact_path,note,created_at,created_epoch)
+                  values(?,?,?,?,?,?,?,?)""",
+                (
+                    sha,
+                    apk_sha256,
+                    checkpoint,
+                    status,
+                    artifact_path,
+                    note,
+                    stamp,
+                    time.time(),
+                ),
+            )
+            row_id = int(cursor.lastrowid)
+            conn.commit()
+
+            persisted = conn.execute(
+                "select * from device_proofs where id=?",
+                (row_id,),
+            ).fetchone()
+            if persisted is None:
+                raise DeviceProofPersistenceError(
+                    "device proof commit returned without a readable persisted row"
+                )
+            return row_id, True
+        except sqlite3.OperationalError as exc:
+            if conn is not None:
+                try:
+                    conn.rollback()
+                except sqlite3.Error:
+                    pass
+            message = str(exc).lower()
+            if "locked" not in message and "busy" not in message:
+                raise
+            last_error = exc
+            if attempt >= max(1, retries):
+                break
+            time.sleep(retry_delay_sec * attempt)
+        finally:
+            if conn is not None:
+                conn.close()
+
+    raise DeviceProofPersistenceError(
+        "device proof persistence exhausted bounded SQLITE_BUSY retries"
+        + (f": {last_error}" if last_error else "")
+    )
+
+
+def read_proof_packet(path: Path) -> dict:
+    try:
+        packet = json.loads(path.read_text())
+    except Exception as exc:
+        raise ValueError(f"invalid device proof JSON: {path}: {exc}") from exc
+    if not isinstance(packet, dict):
+        raise ValueError("device proof JSON must contain an object")
+
+    sha = packet.get("canonical_sha")
+    status = packet.get("status")
+    apk = packet.get("apk") or {}
+    apk_hash = apk.get("sha256") if isinstance(apk, dict) else None
+    if not isinstance(sha, str) or not SHA40.fullmatch(sha):
+        raise ValueError("device proof JSON canonical_sha is missing or invalid")
+    if status not in {"PASS", "FAIL", "PARTIAL"}:
+        raise ValueError("device proof JSON status is missing or invalid")
+    if apk_hash is not None and (
+        not isinstance(apk_hash, str) or not SHA256.fullmatch(apk_hash)
+    ):
+        raise ValueError("device proof JSON apk.sha256 is invalid")
+    return packet
+
+
+def cmd_plan(args) -> int:
+    conn = _connect(DB, BUSY_TIMEOUT_MS)
+    _ensure_schema(conn)
+    v = conn.execute(
+        """select mode,status,ran_at from verification
+             where sha=? and mode='full-e2e' and status='PASS'
+             order by ran_at desc limit 1""",
+        (args.sha,),
+    ).fetchone()
+    apk_sha = None
+    apk_path = None
+    if args.apk:
+        apk_path = Path(args.apk).expanduser().resolve()
+        if not apk_path.exists():
+            raise SystemExit(f"APK not found: {apk_path}")
+        apk_sha = sha256(apk_path)
+
+    plan = {
+        "checkpoint": args.checkpoint,
+        "git_sha": args.sha,
+        "exact_verification": dict(v) if v else None,
+        "apk": str(apk_path) if apk_path else None,
+        "apk_sha256": apk_sha,
+        "instructions": [
+            {"step": 1, "action": "Cold-launch the test APK.", "expect": "Title renders without runtime error."},
+            {"step": 2, "action": "Proceed through onboarding.", "expect": "Controls respond once per tap."},
+            {"step": 3, "action": "Reach Millennium Tree.", "expect": "Field, HUD, player and actors are visible."},
+            {"step": 4, "action": "Trigger and finish the tutorial encounter.", "expect": "Battle, reward and return complete."},
+        ],
+    }
+    out = Path(
+        args.output
+        or f"/home/ubuntu/logres/artifacts/device-proof/{args.checkpoint}-{args.sha[:12]}.json"
+    )
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(json.dumps(plan, indent=2, sort_keys=True) + "\n")
+    print(f"DEVICE_PROOF_PLAN={out}")
+    print(f"verified={'yes' if v else 'no'} apk_sha256={apk_sha or '-'}")
+    conn.close()
+    return 0
+
+
+def _apk_hash_from_args(args) -> str | None:
+    if args.apk and args.apk_sha256:
+        raise ValueError("use either --apk or --apk-sha256, not both")
+    if args.apk:
+        path = Path(args.apk).expanduser().resolve()
+        if not path.exists():
+            raise ValueError(f"APK not found: {path}")
+        return sha256(path)
+    if args.apk_sha256:
+        if not SHA256.fullmatch(args.apk_sha256):
+            raise ValueError("--apk-sha256 must be a lowercase 64-character SHA-256")
+        return args.apk_sha256
+    return None
+
+
+def cmd_record(args) -> int:
+    artifact = str(Path(args.artifact).expanduser().resolve()) if args.artifact else None
+    row_id, inserted = persist_record(
+        sha=args.sha,
+        apk_sha256=_apk_hash_from_args(args),
+        checkpoint=args.checkpoint,
+        status=args.status,
+        artifact_path=artifact,
+        note=args.note,
+    )
+    print(
+        f"RECORDED id={row_id} inserted={1 if inserted else 0} "
+        f"sha={args.sha[:12]} checkpoint={args.checkpoint} status={args.status}"
+    )
+    return 0
+
+
+def cmd_reconcile(args) -> int:
+    artifact_path = Path(args.artifact).expanduser().resolve()
+    if not artifact_path.is_file():
+        raise ValueError(f"device proof artifact not found: {artifact_path}")
+    packet = read_proof_packet(artifact_path)
+    apk = packet.get("apk") or {}
+    apk_hash = apk.get("sha256") if isinstance(apk, dict) else None
+    note = args.note or "reconciled existing device-proof.json without rerunning physical QA"
+    row_id, inserted = persist_record(
+        sha=packet["canonical_sha"],
+        apk_sha256=apk_hash,
+        checkpoint=args.checkpoint,
+        status=packet["status"],
+        artifact_path=str(artifact_path),
+        note=note,
+    )
+    print(
+        f"RECONCILED id={row_id} inserted={1 if inserted else 0} "
+        f"sha={packet['canonical_sha'][:12]} checkpoint={args.checkpoint} "
+        f"status={packet['status']} artifact={artifact_path}"
+    )
+    return 0
+
+
+def cmd_status(args) -> int:
+    conn = _connect(DB, BUSY_TIMEOUT_MS)
+    _ensure_schema(conn)
+    rows = conn.execute(
+        "select * from device_proofs order by created_epoch desc limit ?",
+        (args.limit,),
+    ).fetchall()
+    for row in rows:
+        apk = row["apk_sha256"]
+        print(
+            f"{row['created_at']} {row['status']:10} {row['sha'][:12]} "
+            f"{row['checkpoint']} apk={apk[:12] if apk else '-'} "
+            f"artifact={row['artifact_path'] or '-'}"
+        )
+    conn.close()
+    return 0
+
+
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(prog="logres-device-proof")
+    sub = parser.add_subparsers(dest="cmd", required=True)
+
+    plan = sub.add_parser("plan")
+    plan.add_argument("sha")
+    plan.add_argument("--apk")
+    plan.add_argument("--checkpoint", default="demo-0.2")
+    plan.add_argument("--output")
+    plan.set_defaults(fn=cmd_plan)
+
+    record = sub.add_parser("record")
+    record.add_argument("sha")
+    record.add_argument("status", choices=["PASS", "FAIL", "PARTIAL"])
+    record.add_argument("--apk")
+    record.add_argument("--apk-sha256")
+    record.add_argument("--checkpoint", default="demo-0.2")
+    record.add_argument("--artifact")
+    record.add_argument("--note", default="")
+    record.set_defaults(fn=cmd_record)
+
+    reconcile = sub.add_parser("reconcile")
+    reconcile.add_argument("artifact")
+    reconcile.add_argument("--checkpoint", default="demo-0.2")
+    reconcile.add_argument("--note", default="")
+    reconcile.set_defaults(fn=cmd_reconcile)
+
+    status = sub.add_parser("status")
+    status.add_argument("--limit", type=int, default=20)
+    status.set_defaults(fn=cmd_status)
+    return parser
+
+
+def main(argv=None) -> int:
+    args = build_parser().parse_args(argv)
+    try:
+        return int(args.fn(args))
+    except (DeviceProofPersistenceError, ValueError) as exc:
+        print(f"DEVICE_PROOF_PERSISTENCE_FAILED: {exc}", file=sys.stderr)
+        return 2
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
+

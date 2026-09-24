@@ -2,6 +2,8 @@ import importlib.machinery
 import types
 import unittest
 from pathlib import Path
+from types import SimpleNamespace
+from unittest.mock import patch
 
 
 TEST_DIR = Path(__file__).resolve().parent
@@ -187,6 +189,51 @@ class HardwareQaTests(unittest.TestCase):
         self.assertIn("RECONSTRUCTED_PLAYABILITY_FALLBACK", text)
         self.assertIn('checks["battle_victory_return"]="PASS"', text)
         self.assertIn("tap(360,160)", text)
+
+
+
+class HardwareQaPersistenceTests(unittest.TestCase):
+    def test_record_db_raises_when_device_proof_indexing_fails(self):
+        failed = SimpleNamespace(
+            returncode=2,
+            stdout="",
+            stderr="DEVICE_PROOF_PERSISTENCE_FAILED: database is locked",
+        )
+        with patch.object(qa.subprocess, "run", return_value=failed):
+            with self.assertRaisesRegex(qa.QAError, "DB indexing failed"):
+                qa.record_db(
+                    "a" * 40,
+                    Path("/tmp/exact.apk"),
+                    Path("/tmp/device-proof.json"),
+                    "PASS",
+                    "proof note",
+                )
+
+    def test_record_db_requires_persistence_acknowledgement(self):
+        ambiguous = SimpleNamespace(
+            returncode=0,
+            stdout="unexpected output",
+            stderr="",
+        )
+        with patch.object(qa.subprocess, "run", return_value=ambiguous):
+            with self.assertRaisesRegex(
+                qa.QAError,
+                "without persistence acknowledgement",
+            ):
+                qa.record_db(
+                    "a" * 40,
+                    Path("/tmp/exact.apk"),
+                    Path("/tmp/device-proof.json"),
+                    "PASS",
+                    "proof note",
+                )
+
+    def test_runner_preserves_artifact_and_surfaces_index_failure(self):
+        text = SCRIPT.read_text()
+        self.assertIn('effective_status="INDEX_FAILED"', text)
+        self.assertIn("device-proof-index-error.txt", text)
+        self.assertIn('"reconcile_command"', text)
+        self.assertIn('update_task(note,proof_status="FAIL")', text)
 
 
 if __name__ == "__main__":
