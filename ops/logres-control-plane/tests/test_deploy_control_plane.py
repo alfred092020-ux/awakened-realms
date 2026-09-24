@@ -20,6 +20,7 @@ PRODUCTION_FILES = (
     "bin/logres-maintain",
     "bin/logres-blocker-router",
     "bin/logres-frontier",
+    "bin/logres-goal-contract",
     "bin/logres-impact",
     "bin/logres-preview-reaper",
     "bin/logres-research-agent",
@@ -52,6 +53,7 @@ PRODUCTION_FILES = (
     "lib/logres_copilot.py",
     "lib/logres_copilot_router.py",
     "lib/logres_frontier.py",
+    "lib/logres_goal_contract.py",
     "lib/logres_impact.py",
     "lib/logres_knowledge.py",
     "lib/logres_mission.py",
@@ -68,6 +70,7 @@ PRODUCTION_FILES = (
     "lib/logres_supervisor.py",
     "lib/logres_throughput.py",
     "config/autoflow.default.json",
+    "config/milestone_contracts.json",
     "config/mission.default.json",
 )
 
