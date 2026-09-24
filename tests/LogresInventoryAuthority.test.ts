@@ -281,3 +281,93 @@ describe(
     )
   },
 )
+
+
+import {
+  LOGRES_ITEM_EQUIPMENT_EVIDENCE,
+  LogresItemEquipmentAuthority,
+} from '../src/game/logres/systems/LogresItemEquipmentRuntime'
+
+describe(
+  'reconstructed Logres item/equipment gameplay authority',
+  () => {
+    it('preserves recovered server item projection authority', () => {
+      expect(LOGRES_ITEM_EQUIPMENT_EVIDENCE.itemMoveRequest.name)
+        .toBe('C_GMCL_ITEM_MOVE_REQ')
+      expect(LOGRES_ITEM_EQUIPMENT_EVIDENCE.itemProjection.name)
+        .toBe('S_GMCL_ITEM_INFO')
+      expect(LOGRES_ITEM_EQUIPMENT_EVIDENCE.slotPolicy)
+        .toContain('reconstruction-local')
+    })
+
+    it('extends reward inventory with equip and unequip authority', () => {
+      const authority = new LogresItemEquipmentAuthority()
+      const rewarded = authority.applyReward({
+        grantKey: 'battle-1',
+        entries: [{
+          itemKey: 'weapon-drop',
+          originalItemId: null,
+          quantity: 1,
+        }],
+      })
+      expect(rewarded.inventory.entries).toHaveLength(1)
+
+      const equipped = authority.equip(
+        'main-weapon',
+        { grantKey: 'battle-1', itemKey: 'weapon-drop' },
+        'equip-1',
+      )
+      expect(equipped.equippedBySlot['main-weapon']).toEqual({
+        grantKey: 'battle-1',
+        itemKey: 'weapon-drop',
+      })
+
+      const unequipped = authority.unequip('main-weapon', 'unequip-1')
+      expect(unequipped.equippedBySlot['main-weapon']).toBeUndefined()
+    })
+
+    it('keeps reward and equipment mutations idempotent', () => {
+      const authority = new LogresItemEquipmentAuthority()
+      const firstReward = authority.applyReward({
+        grantKey: 'same-reward',
+        entries: [{
+          itemKey: 'weapon',
+          originalItemId: null,
+          quantity: 1,
+        }],
+      })
+      const retryReward = authority.applyReward({
+        grantKey: 'same-reward',
+        entries: [{
+          itemKey: 'different',
+          originalItemId: null,
+          quantity: 99,
+        }],
+      })
+      expect(retryReward).toEqual(firstReward)
+
+      const firstEquip = authority.equip(
+        'main',
+        { grantKey: 'same-reward', itemKey: 'weapon' },
+        'same-equip',
+      )
+      const retryEquip = authority.equip(
+        'main',
+        { grantKey: 'same-reward', itemKey: 'weapon' },
+        'same-equip',
+      )
+      expect(retryEquip).toEqual(firstEquip)
+    })
+
+    it('rejects equipment references not present in inventory', () => {
+      const authority = new LogresItemEquipmentAuthority()
+      expect(() =>
+        authority.equip(
+          'main',
+          { grantKey: 'missing', itemKey: 'missing' },
+          'equip-missing',
+        ),
+      ).toThrow('authoritative inventory')
+    })
+  },
+)
