@@ -1,14 +1,12 @@
 import {
-  ReconstructedLogresBattleResolutionFlow,
-} from './ReconstructedLogresBattleResolutionFlow'
-
-import {
-  applyReconstructedLogresBattleRewardGrant,
-} from './ReconstructedLogresRewardInventoryAdapter'
-
+  completeReconstructedLogresBattle,
+  type ReconstructedLogresBattleCompletionResult,
+} from './ReconstructedLogresBattleCompletion'
+import type {
+  ReconstructedLogresInventoryState,
+} from '../server/LogresInventoryAuthority'
 import {
   createReconstructedLogresInventory,
-  type ReconstructedLogresInventoryState,
 } from '../server/LogresInventoryAuthority'
 
 export const LOGRES_PLAYABLE_BATTLE_LOOP_PROVENANCE =
@@ -28,9 +26,7 @@ export interface ReconstructedLogresPlayableBattleLoopResult {
     typeof LOGRES_PLAYABLE_BATTLE_LOOP_PROVENANCE
 
   flow:
-    ReturnType<
-      ReconstructedLogresBattleResolutionFlow['snapshot']
-    >
+    ReconstructedLogresBattleCompletionResult['flow']
 
   inventory:
     Readonly<ReconstructedLogresInventoryState>
@@ -51,62 +47,13 @@ export function completeReconstructedLogresPlayableBattle(
     Readonly<ReconstructedLogresInventoryState> =
       createReconstructedLogresInventory(),
 ): ReconstructedLogresPlayableBattleLoopResult {
-  const flow =
-    new ReconstructedLogresBattleResolutionFlow(
-      null,
-    )
-
-  flow.recordResult({
-    resultRef:
-      null,
-    rawOutcomeCode:
-      null,
-  })
-
-  flow.markResultPresented()
-
-  flow.recordRewardStage({
-    rewardKey:
-      LOGRES_PLAYABLE_BATTLE_REWARD_KEY,
-    originalRewardRef:
-      null,
-    inventoryProjectionRef:
-      null,
-  })
-
-  const grant =
-    applyReconstructedLogresBattleRewardGrant(
-      flow,
-      inventory,
-      {
-        rewardKey:
-          LOGRES_PLAYABLE_BATTLE_REWARD_KEY,
-        grantKey:
-          LOGRES_PLAYABLE_BATTLE_GRANT_KEY,
-        entries: [
-          {
-            itemKey:
-              LOGRES_PLAYABLE_BATTLE_REWARD_ITEM_KEY,
-            originalItemId:
-              null,
-            quantity:
-              1,
-          },
-        ],
-      },
-    )
-
-  flow.markRewardPresented()
-  flow.markFieldReturnReady()
-
-  return Object.freeze({
-    provenance:
-      LOGRES_PLAYABLE_BATTLE_LOOP_PROVENANCE,
-    flow:
-      flow.snapshot(),
-    inventory:
-      grant.state,
-    rewardApplied:
-      grant.applied,
-  })
+  return completeReconstructedLogresBattle(
+    {
+      provenance: LOGRES_PLAYABLE_BATTLE_LOOP_PROVENANCE,
+      rewardKey: LOGRES_PLAYABLE_BATTLE_REWARD_KEY,
+      itemKey: LOGRES_PLAYABLE_BATTLE_REWARD_ITEM_KEY,
+      grantKey: LOGRES_PLAYABLE_BATTLE_GRANT_KEY,
+    },
+    inventory,
+  ) as ReconstructedLogresPlayableBattleLoopResult
 }

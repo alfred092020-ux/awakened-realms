@@ -95,7 +95,7 @@ test('normal battle has visible stage actors, five controls, and cannot resolve 
   expect(state.controls).toBe(5)
   expect(state.demoButton).toBe(false)
   expect(state.labels.join(' ')).not.toMatch(/DEMO|RESOLVE|VICTORY/)
-  expect(state.labels).toContain('RECONSTRUCTED BATTLE')
+  expect(state.labels.join(' ')).toContain('RECONSTRUCTED BATTLE')
   expect(state.stageShapeCount).toBeGreaterThanOrEqual(4)
 
   expect(state.stage).toMatchObject({
@@ -181,7 +181,7 @@ test('explicit harness survives battle restart without duplicate rewards or list
         inventory: game.registry.get('logres.demo01.inventory'),
         rewardApplied: game.registry.get('logres.demo01.rewardApplied'),
         returnEnabled: scene.demoReturnButton?.input?.enabled,
-        normalAttackListeners: scene.events.listenerCount('logres-request-normal-attack'),
+        battleCommandListeners: scene.events.listenerCount('logres-battle-command'),
       }
     })
     expect(resolved.inventory.revision).toBe(1)
@@ -190,7 +190,7 @@ test('explicit harness survives battle restart without duplicate rewards or list
     ])
     expect(resolved.rewardApplied).toBe(visit === 0)
     expect(resolved.returnEnabled).toBe(true)
-    expect(resolved.normalAttackListeners).toBe(1)
+    expect(resolved.battleCommandListeners).toBe(1)
     if (visit === 0) {
       await page.evaluate(() =>
         window.__AWAKENED_REALMS_GAME__.scene.getScene('LogresBattleScene').scene.restart({}))

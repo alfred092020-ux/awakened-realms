@@ -8,6 +8,7 @@ import {
   LOGRES_GLOBAL_BATTLE_KIT_PROVENANCE,
   LOGRES_GLOBAL_NORMAL_SKILL_SLOT_COUNT,
   LOGRES_GLOBAL_WEAPON_SLOT_LIMIT,
+  LOGRES_RECONSTRUCTED_PLAYABILITY_FALLBACK_PROVENANCE,
   LogresGlobalBattleKit,
   type LogresGlobalWeaponPanelInput,
 } from '../src/game/logres/battle/LogresGlobalBattleKit'
@@ -165,7 +166,7 @@ describe(
     )
 
     it(
-      'keeps unresolved special cost unusable instead of inventing a value',
+      'falls back to the normal attack when the special skill is unresolved',
       () => {
         const kit =
           new LogresGlobalBattleKit({
@@ -183,11 +184,18 @@ describe(
             epCap: null,
           })
 
+        expect(kit.tapWeaponPanel(0)).toEqual({
+          type: 'normal-attack',
+          weaponSlot: 0,
+          weaponRef: 'w1',
+          skillRef: 'n1',
+        })
         expect(
-          () => kit.tapWeaponPanel(0),
-        ).toThrow(
-          'Weapon special skill is unresolved',
-        )
+          LOGRES_RECONSTRUCTED_PLAYABILITY_FALLBACK_PROVENANCE,
+        ).toBe('RECONSTRUCTED_PLAYABILITY_FALLBACK')
+        expect(
+          LOGRES_RECONSTRUCTED_PLAYABILITY_FALLBACK_PROVENANCE,
+        ).not.toContain('ORIGINAL')
       },
     )
 
