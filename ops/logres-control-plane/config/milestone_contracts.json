@@ -159,6 +159,816 @@
           }
         }
       ]
+    },
+    "DEMO-0.3": {
+      "title": "Connected world and questing",
+      "definition_of_done": "UI, audio, Android client, NPC dialogue and quest flow operate coherently on the reconstructed field runtime.",
+      "criteria": [
+        {
+          "id": "ui-runtime",
+          "weight": 18,
+          "description": "HUD and required menu/navigation surfaces are operational.",
+          "check": {
+            "type": "task_state",
+            "task_id": "MISSION-UI-RUNTIME-001",
+            "pass_statuses": [
+              "DONE",
+              "RESOLVED"
+            ]
+          },
+          "task_template": {
+            "title": "Complete evidence-bounded Logres UI and menu runtime",
+            "lane": "gameplay",
+            "work_type": "implementation",
+            "priority": 1,
+            "expected_minutes": 120,
+            "concurrency_key": "ui-runtime",
+            "evidence_policy": "Global 3.0.24 evidence outranks current-JP lineage. Implement only supported behavior; unsupported historical details must remain SUPPORTED_INFERENCE or UNKNOWN and must never be labeled CONFIRMED ORIGINAL.",
+            "scopes": [
+              "src/game/logres/ui",
+              "tests/LogresUiRuntime.test.ts",
+              "e2e/logres-ui-runtime.spec.mjs"
+            ],
+            "acceptance": [
+              "Implement required HUD/menu navigation using recovered UI/scene evidence.",
+              "Add deterministic tests for navigation/state transitions and an E2E UI flow.",
+              "Do not invent original screen semantics when evidence is absent; mark supported reconstruction explicitly."
+            ],
+            "dependencies": {
+              "hard": [],
+              "integration": []
+            }
+          }
+        },
+        {
+          "id": "audio-runtime",
+          "weight": 12,
+          "description": "Required BGM, ambience and SE bindings are operational.",
+          "check": {
+            "type": "task_state",
+            "task_id": "MISSION-AUDIO-RUNTIME-001",
+            "pass_statuses": [
+              "DONE",
+              "RESOLVED"
+            ]
+          },
+          "task_template": {
+            "title": "Bind recovered Logres audio runtime",
+            "lane": "gameplay",
+            "work_type": "implementation",
+            "priority": 2,
+            "expected_minutes": 90,
+            "concurrency_key": "audio-runtime",
+            "evidence_policy": "Global 3.0.24 evidence outranks current-JP lineage. Implement only supported behavior; unsupported historical details must remain SUPPORTED_INFERENCE or UNKNOWN and must never be labeled CONFIRMED ORIGINAL.",
+            "scopes": [
+              "src/game/logres/audio",
+              "tests/LogresAudioRuntime.test.ts"
+            ],
+            "acceptance": [
+              "Create an evidence-backed audio binding/runtime boundary for required field, UI and battle cues.",
+              "Missing original audio resources remain explicit evidence ceilings rather than synthetic originals.",
+              "Focused audio runtime tests pass."
+            ],
+            "dependencies": {
+              "hard": [],
+              "integration": []
+            }
+          }
+        },
+        {
+          "id": "android-client",
+          "weight": 18,
+          "description": "Android packaging, lifecycle and device smoke paths are stable.",
+          "check": {
+            "type": "task_state",
+            "task_id": "MISSION-ANDROID-CLIENT-001",
+            "pass_statuses": [
+              "DONE",
+              "RESOLVED"
+            ]
+          },
+          "task_template": {
+            "title": "Harden reconstructed Logres Android client",
+            "lane": "release",
+            "work_type": "implementation",
+            "priority": 1,
+            "expected_minutes": 120,
+            "concurrency_key": "android-client",
+            "evidence_policy": "Global 3.0.24 evidence outranks current-JP lineage. Implement only supported behavior; unsupported historical details must remain SUPPORTED_INFERENCE or UNKNOWN and must never be labeled CONFIRMED ORIGINAL.",
+            "scopes": [
+              "android",
+              "capacitor.config.ts",
+              ".github/workflows/android-debug-apk.yml",
+              "tests/LogresAndroidClient.test.ts"
+            ],
+            "acceptance": [
+              "Exact-source Android debug/release packaging remains reproducible.",
+              "App lifecycle and bridge initialization have deterministic smoke coverage.",
+              "No signing or release gate is weakened."
+            ],
+            "dependencies": {
+              "hard": [],
+              "integration": []
+            }
+          }
+        },
+        {
+          "id": "npc-dialogue",
+          "weight": 20,
+          "description": "NPC interaction, dialogue and scripted interaction flows are verified.",
+          "check": {
+            "type": "task_state",
+            "task_id": "MISSION-NPC-DIALOGUE-001",
+            "pass_statuses": [
+              "DONE",
+              "RESOLVED"
+            ]
+          },
+          "task_template": {
+            "title": "Complete NPC dialogue and scripted interaction runtime",
+            "lane": "gameplay",
+            "work_type": "implementation",
+            "priority": 1,
+            "expected_minutes": 120,
+            "concurrency_key": "npc-dialogue",
+            "evidence_policy": "Global 3.0.24 evidence outranks current-JP lineage. Implement only supported behavior; unsupported historical details must remain SUPPORTED_INFERENCE or UNKNOWN and must never be labeled CONFIRMED ORIGINAL.",
+            "scopes": [
+              "src/game/logres/encounter",
+              "src/game/logres/field/controllers",
+              "src/game/logres/ui",
+              "tests/ReconstructedLogresNpcDialogueAuthority.test.ts",
+              "e2e/logres-npc-dialogue.spec.mjs"
+            ],
+            "acceptance": [
+              "NPC interaction transitions through evidence-bounded dialogue/script state without bypassing field authority.",
+              "Interaction is repeatable and does not duplicate encounter/listener state.",
+              "Unit and E2E dialogue interaction tests pass."
+            ],
+            "dependencies": {
+              "hard": [],
+              "integration": []
+            }
+          }
+        },
+        {
+          "id": "quest-flow",
+          "weight": 22,
+          "description": "Quest acceptance, progress, completion, rewards and persistence are verified.",
+          "check": {
+            "type": "task_state",
+            "task_id": "MISSION-QUESTS-001",
+            "pass_statuses": [
+              "DONE",
+              "RESOLVED"
+            ]
+          },
+          "task_template": {
+            "title": "Complete reconstructed quest gameplay flow",
+            "lane": "gameplay",
+            "work_type": "implementation",
+            "priority": 1,
+            "expected_minutes": 150,
+            "concurrency_key": "quest-runtime",
+            "evidence_policy": "Global 3.0.24 evidence outranks current-JP lineage. Implement only supported behavior; unsupported historical details must remain SUPPORTED_INFERENCE or UNKNOWN and must never be labeled CONFIRMED ORIGINAL.",
+            "scopes": [
+              "src/game/logres/server/LogresQuestInstanceAuthority.ts",
+              "src/game/logres/systems",
+              "tests/LogresQuestInstanceAuthority.test.ts",
+              "e2e/logres-quest-flow.spec.mjs"
+            ],
+            "acceptance": [
+              "Quest accept/progress/completion/reward transitions remain server-authoritative and idempotent.",
+              "Unknown historical quest values stay nullable/evidence-bounded.",
+              "Authenticated persistence and E2E quest flow tests pass."
+            ],
+            "dependencies": {
+              "hard": [],
+              "integration": []
+            }
+          }
+        },
+        {
+          "id": "exact-current-sha-full-e2e",
+          "weight": 10,
+          "description": "Current integration SHA has an authoritative full-E2E PASS.",
+          "check": {
+            "type": "verification",
+            "mode": "full-e2e",
+            "status": "PASS"
+          }
+        }
+      ]
+    },
+    "SYSTEMS-0.4": {
+      "title": "Progression and economy",
+      "definition_of_done": "Progression, inventory/equipment, economy and persistent recovery flows are verified end to end.",
+      "criteria": [
+        {
+          "id": "progression",
+          "weight": 24,
+          "description": "Levels, experience and jobs are verified.",
+          "check": {
+            "type": "task_state",
+            "task_id": "MISSION-PROGRESSION-001",
+            "pass_statuses": [
+              "DONE",
+              "RESOLVED"
+            ]
+          },
+          "task_template": {
+            "title": "Build evidence-bounded progression and job runtime",
+            "lane": "gameplay",
+            "work_type": "implementation",
+            "priority": 1,
+            "expected_minutes": 150,
+            "concurrency_key": "progression",
+            "evidence_policy": "Global 3.0.24 evidence outranks current-JP lineage. Implement only supported behavior; unsupported historical details must remain SUPPORTED_INFERENCE or UNKNOWN and must never be labeled CONFIRMED ORIGINAL.",
+            "scopes": [
+              "src/game/logres/progression",
+              "tests/LogresProgressionRuntime.test.ts"
+            ],
+            "acceptance": [
+              "Implement authoritative XP/level/job state transitions from strongest available evidence.",
+              "Unknown formulas remain explicit reconstruction parameters with provenance.",
+              "Progression tests cover grant, level transition, reconnect and idempotency."
+            ],
+            "dependencies": {
+              "hard": [],
+              "integration": []
+            }
+          }
+        },
+        {
+          "id": "item-systems",
+          "weight": 24,
+          "description": "Inventory, equipment, drops and rewards are verified.",
+          "check": {
+            "type": "task_state",
+            "task_id": "MISSION-ITEM-SYSTEMS-001",
+            "pass_statuses": [
+              "DONE",
+              "RESOLVED"
+            ]
+          },
+          "task_template": {
+            "title": "Complete inventory and equipment gameplay authority",
+            "lane": "gameplay",
+            "work_type": "implementation",
+            "priority": 1,
+            "expected_minutes": 150,
+            "concurrency_key": "item-systems",
+            "evidence_policy": "Global 3.0.24 evidence outranks current-JP lineage. Implement only supported behavior; unsupported historical details must remain SUPPORTED_INFERENCE or UNKNOWN and must never be labeled CONFIRMED ORIGINAL.",
+            "scopes": [
+              "src/game/logres/server/LogresInventoryAuthority.ts",
+              "src/game/logres/systems",
+              "tests/LogresInventoryAuthority.test.ts",
+              "e2e/logres-inventory-equipment.spec.mjs"
+            ],
+            "acceptance": [
+              "Equipment/equip/unequip and reward flows are authoritative and idempotent.",
+              "Existing reward inventory authority is preserved and extended rather than replaced.",
+              "Unit and E2E inventory/equipment tests pass."
+            ],
+            "dependencies": {
+              "hard": [],
+              "integration": []
+            }
+          }
+        },
+        {
+          "id": "economy",
+          "weight": 20,
+          "description": "Shops, currencies, enhancement and crafting boundaries are verified.",
+          "check": {
+            "type": "task_state",
+            "task_id": "MISSION-ECONOMY-SYSTEMS-001",
+            "pass_statuses": [
+              "DONE",
+              "RESOLVED"
+            ]
+          },
+          "task_template": {
+            "title": "Build evidence-bounded economy and enhancement runtime",
+            "lane": "gameplay",
+            "work_type": "implementation",
+            "priority": 2,
+            "expected_minutes": 150,
+            "concurrency_key": "economy",
+            "evidence_policy": "Global 3.0.24 evidence outranks current-JP lineage. Implement only supported behavior; unsupported historical details must remain SUPPORTED_INFERENCE or UNKNOWN and must never be labeled CONFIRMED ORIGINAL.",
+            "scopes": [
+              "src/game/logres/economy",
+              "src/game/logres/systems",
+              "tests/LogresEconomyRuntime.test.ts"
+            ],
+            "acceptance": [
+              "Implement only evidenced currency/shop/enhancement/crafting transitions.",
+              "All mutations are transactional/idempotent at the authoritative boundary.",
+              "Unknown original prices/formulas remain explicit data gaps rather than fabricated facts."
+            ],
+            "dependencies": {
+              "hard": [],
+              "integration": []
+            }
+          }
+        },
+        {
+          "id": "persistence",
+          "weight": 22,
+          "description": "Required player state persists and recovery paths pass.",
+          "check": {
+            "type": "task_state",
+            "task_id": "MISSION-PERSISTENCE-001",
+            "pass_statuses": [
+              "DONE",
+              "RESOLVED"
+            ]
+          },
+          "task_template": {
+            "title": "Harden Logres persistence and recovery",
+            "lane": "server",
+            "work_type": "implementation",
+            "priority": 1,
+            "expected_minutes": 150,
+            "concurrency_key": "persistence",
+            "evidence_policy": "Global 3.0.24 evidence outranks current-JP lineage. Implement only supported behavior; unsupported historical details must remain SUPPORTED_INFERENCE or UNKNOWN and must never be labeled CONFIRMED ORIGINAL.",
+            "scopes": [
+              "src/game/logres/server",
+              "tests/LogresPersistenceRecovery.test.ts",
+              "e2e/logres-persistence-recovery.spec.mjs"
+            ],
+            "acceptance": [
+              "Progression, quest, inventory and relevant session state survive reconnect/reload.",
+              "Recovery is idempotent and cannot duplicate rewards or grants.",
+              "Unit and E2E recovery tests pass."
+            ],
+            "dependencies": {
+              "hard": [],
+              "integration": []
+            }
+          }
+        },
+        {
+          "id": "exact-current-sha-full-e2e",
+          "weight": 10,
+          "description": "Current integration SHA has an authoritative full-E2E PASS.",
+          "check": {
+            "type": "verification",
+            "mode": "full-e2e",
+            "status": "PASS"
+          }
+        }
+      ]
+    },
+    "CONTENT-0.5": {
+      "title": "Recovered content coverage",
+      "definition_of_done": "Declared reconstruction scope for maps, actors, combat, item and quest content is represented and coverage-tested.",
+      "criteria": [
+        {
+          "id": "map-content",
+          "weight": 18,
+          "description": "Declared map/region reconstruction coverage is represented.",
+          "check": {
+            "type": "task_state",
+            "task_id": "MISSION-MAP-CONTENT-001",
+            "pass_statuses": [
+              "DONE",
+              "RESOLVED"
+            ]
+          },
+          "task_template": {
+            "title": "Expand evidence-backed map and region content",
+            "lane": "content",
+            "work_type": "implementation",
+            "priority": 1,
+            "expected_minutes": 180,
+            "concurrency_key": "map-content",
+            "evidence_policy": "Global 3.0.24 evidence outranks current-JP lineage. Implement only supported behavior; unsupported historical details must remain SUPPORTED_INFERENCE or UNKNOWN and must never be labeled CONFIRMED ORIGINAL.",
+            "scopes": [
+              "src/game/logres/generated/maps",
+              "tests/LogresMapContentCoverage.test.ts"
+            ],
+            "acceptance": [
+              "Generate a versioned map/region manifest from recovered evidence with provenance per entry.",
+              "Runtime coverage tests prove every declared map entry resolves to supported geometry/assets or an explicit evidence ceiling.",
+              "No current-JP-only map is mislabeled as Global original."
+            ],
+            "dependencies": {
+              "hard": [],
+              "integration": []
+            }
+          }
+        },
+        {
+          "id": "actor-content",
+          "weight": 16,
+          "description": "Declared NPC/actor reconstruction coverage is represented.",
+          "check": {
+            "type": "task_state",
+            "task_id": "MISSION-ACTOR-CONTENT-001",
+            "pass_statuses": [
+              "DONE",
+              "RESOLVED"
+            ]
+          },
+          "task_template": {
+            "title": "Expand evidence-backed NPC and actor content",
+            "lane": "content",
+            "work_type": "implementation",
+            "priority": 1,
+            "expected_minutes": 150,
+            "concurrency_key": "actor-content",
+            "evidence_policy": "Global 3.0.24 evidence outranks current-JP lineage. Implement only supported behavior; unsupported historical details must remain SUPPORTED_INFERENCE or UNKNOWN and must never be labeled CONFIRMED ORIGINAL.",
+            "scopes": [
+              "src/game/logres/generated/actors",
+              "tests/LogresActorContentCoverage.test.ts"
+            ],
+            "acceptance": [
+              "Generate actor/NPC content manifests with source lineage and stable IDs.",
+              "Every declared actor resolves to supported presentation data or an explicit unknown.",
+              "Coverage tests pass without placeholder-as-original labeling."
+            ],
+            "dependencies": {
+              "hard": [],
+              "integration": []
+            }
+          }
+        },
+        {
+          "id": "combat-content",
+          "weight": 20,
+          "description": "Declared enemies, bosses and skills are represented.",
+          "check": {
+            "type": "task_state",
+            "task_id": "MISSION-COMBAT-CONTENT-001",
+            "pass_statuses": [
+              "DONE",
+              "RESOLVED"
+            ]
+          },
+          "task_template": {
+            "title": "Expand evidence-backed enemy boss and skill content",
+            "lane": "content",
+            "work_type": "implementation",
+            "priority": 1,
+            "expected_minutes": 180,
+            "concurrency_key": "combat-content",
+            "evidence_policy": "Global 3.0.24 evidence outranks current-JP lineage. Implement only supported behavior; unsupported historical details must remain SUPPORTED_INFERENCE or UNKNOWN and must never be labeled CONFIRMED ORIGINAL.",
+            "scopes": [
+              "src/game/logres/generated/combat",
+              "tests/LogresCombatContentCoverage.test.ts"
+            ],
+            "acceptance": [
+              "Generate enemy/boss/skill manifests with evidence provenance.",
+              "Battle runtime consumes stable supported entries without inventing historical mechanics.",
+              "Coverage tests distinguish confirmed, inferred and unknown fields."
+            ],
+            "dependencies": {
+              "hard": [],
+              "integration": []
+            }
+          }
+        },
+        {
+          "id": "item-content",
+          "weight": 18,
+          "description": "Declared item/equipment data coverage is represented.",
+          "check": {
+            "type": "task_state",
+            "task_id": "MISSION-ITEM-CONTENT-001",
+            "pass_statuses": [
+              "DONE",
+              "RESOLVED"
+            ]
+          },
+          "task_template": {
+            "title": "Expand evidence-backed item and equipment content",
+            "lane": "content",
+            "work_type": "implementation",
+            "priority": 1,
+            "expected_minutes": 150,
+            "concurrency_key": "item-content",
+            "evidence_policy": "Global 3.0.24 evidence outranks current-JP lineage. Implement only supported behavior; unsupported historical details must remain SUPPORTED_INFERENCE or UNKNOWN and must never be labeled CONFIRMED ORIGINAL.",
+            "scopes": [
+              "src/game/logres/generated/items",
+              "tests/LogresItemContentCoverage.test.ts"
+            ],
+            "acceptance": [
+              "Generate item/equipment manifests with provenance and stable identifiers.",
+              "Unknown statistics/effects remain nullable or evidence-bounded.",
+              "Coverage tests pass."
+            ],
+            "dependencies": {
+              "hard": [],
+              "integration": []
+            }
+          }
+        },
+        {
+          "id": "quest-content",
+          "weight": 18,
+          "description": "Declared quest content coverage is represented.",
+          "check": {
+            "type": "task_state",
+            "task_id": "MISSION-QUEST-CONTENT-001",
+            "pass_statuses": [
+              "DONE",
+              "RESOLVED"
+            ]
+          },
+          "task_template": {
+            "title": "Expand evidence-backed quest content",
+            "lane": "content",
+            "work_type": "implementation",
+            "priority": 1,
+            "expected_minutes": 150,
+            "concurrency_key": "quest-content",
+            "evidence_policy": "Global 3.0.24 evidence outranks current-JP lineage. Implement only supported behavior; unsupported historical details must remain SUPPORTED_INFERENCE or UNKNOWN and must never be labeled CONFIRMED ORIGINAL.",
+            "scopes": [
+              "src/game/logres/generated/quests",
+              "tests/LogresQuestContentCoverage.test.ts"
+            ],
+            "acceptance": [
+              "Generate quest manifests from strongest recovered evidence.",
+              "Quest runtime can bind declared content without fabricated historical values.",
+              "Coverage tests distinguish supported reconstruction from confirmed original data."
+            ],
+            "dependencies": {
+              "hard": [],
+              "integration": []
+            }
+          }
+        },
+        {
+          "id": "exact-current-sha-full-e2e",
+          "weight": 10,
+          "description": "Current integration SHA has an authoritative full-E2E PASS.",
+          "check": {
+            "type": "verification",
+            "mode": "full-e2e",
+            "status": "PASS"
+          }
+        }
+      ]
+    },
+    "FIDELITY-0.6": {
+      "title": "Reconstruction fidelity closure",
+      "definition_of_done": "Historical, behavioral, visual, asset and performance gates are explicit, evidence-bounded and verified.",
+      "criteria": [
+        {
+          "id": "historical-truth",
+          "weight": 20,
+          "description": "Critical historical claims have provenance/confidence or explicit ceilings.",
+          "check": {
+            "type": "task_state",
+            "task_id": "MISSION-HISTORICAL-TRUTH-001",
+            "pass_statuses": [
+              "DONE",
+              "RESOLVED"
+            ]
+          },
+          "task_template": {
+            "title": "Close critical historical truth coverage",
+            "lane": "research",
+            "work_type": "evidence",
+            "priority": 1,
+            "expected_minutes": 180,
+            "concurrency_key": "historical-truth",
+            "evidence_policy": "Global 3.0.24 evidence outranks current-JP lineage. Implement only supported behavior; unsupported historical details must remain SUPPORTED_INFERENCE or UNKNOWN and must never be labeled CONFIRMED ORIGINAL.",
+            "scopes": [
+              "src/game/logres/reverse",
+              "tests/LogresHistoricalTruthCoverage.test.ts"
+            ],
+            "acceptance": [
+              "Enumerate release-critical historical claims and bind each to provenance/confidence/evidence ceiling.",
+              "Global-era evidence outranks current-JP lineage and contradictions remain explicit.",
+              "Coverage test fails on uncited release-critical claims."
+            ],
+            "dependencies": {
+              "hard": [],
+              "integration": []
+            }
+          }
+        },
+        {
+          "id": "behavioral-fidelity",
+          "weight": 20,
+          "description": "Critical runtime traces match strongest supported reconstructed behavior.",
+          "check": {
+            "type": "task_state",
+            "task_id": "MISSION-BEHAVIORAL-FIDELITY-001",
+            "pass_statuses": [
+              "DONE",
+              "RESOLVED"
+            ]
+          },
+          "task_template": {
+            "title": "Certify critical behavioral fidelity",
+            "lane": "qa",
+            "work_type": "verification",
+            "priority": 1,
+            "expected_minutes": 150,
+            "concurrency_key": "behavioral-fidelity",
+            "evidence_policy": "Global 3.0.24 evidence outranks current-JP lineage. Implement only supported behavior; unsupported historical details must remain SUPPORTED_INFERENCE or UNKNOWN and must never be labeled CONFIRMED ORIGINAL.",
+            "scopes": [
+              "src/game/logres/reverse/LogresGlobalBehaviorTwin.ts",
+              "src/game/logres/reverse/LogresGlobalDifferentialEvidence.ts",
+              "tests/LogresBehavioralFidelityCoverage.test.ts",
+              "e2e/logres-behavioral-fidelity.spec.mjs"
+            ],
+            "acceptance": [
+              "Persist expected/observed critical traces at exact SHA.",
+              "Any divergence becomes a failing truth record or explicit evidence ceiling.",
+              "Behavioral fidelity unit/E2E checks pass."
+            ],
+            "dependencies": {
+              "hard": [],
+              "integration": []
+            }
+          }
+        },
+        {
+          "id": "visual-fidelity",
+          "weight": 18,
+          "description": "Required visual checkpoints pass persisted structural/metric gates.",
+          "check": {
+            "type": "task_state",
+            "task_id": "MISSION-VISUAL-FIDELITY-001",
+            "pass_statuses": [
+              "DONE",
+              "RESOLVED"
+            ]
+          },
+          "task_template": {
+            "title": "Certify reconstructed visual fidelity coverage",
+            "lane": "qa",
+            "work_type": "verification",
+            "priority": 1,
+            "expected_minutes": 150,
+            "concurrency_key": "visual-fidelity",
+            "evidence_policy": "Global 3.0.24 evidence outranks current-JP lineage. Implement only supported behavior; unsupported historical details must remain SUPPORTED_INFERENCE or UNKNOWN and must never be labeled CONFIRMED ORIGINAL.",
+            "scopes": [
+              "e2e/logres-visual-checkpoints.spec.mjs",
+              "tests/LogresVisualFidelityCoverage.test.ts"
+            ],
+            "acceptance": [
+              "Required title/onboarding/field/NPC/battle/victory/menu checkpoints persist exact-SHA visual truth records.",
+              "PASS requires explicit reference plus measurement; missing reference is REVIEW/BLOCKED, never PASS.",
+              "Visual coverage tests pass."
+            ],
+            "dependencies": {
+              "hard": [],
+              "integration": []
+            }
+          }
+        },
+        {
+          "id": "asset-fidelity",
+          "weight": 16,
+          "description": "Recovered assets retain lineage through runtime binding.",
+          "check": {
+            "type": "task_state",
+            "task_id": "MISSION-ASSET-FIDELITY-001",
+            "pass_statuses": [
+              "DONE",
+              "RESOLVED"
+            ]
+          },
+          "task_template": {
+            "title": "Certify source-to-runtime asset lineage",
+            "lane": "research",
+            "work_type": "evidence",
+            "priority": 1,
+            "expected_minutes": 150,
+            "concurrency_key": "asset-fidelity",
+            "evidence_policy": "Global 3.0.24 evidence outranks current-JP lineage. Implement only supported behavior; unsupported historical details must remain SUPPORTED_INFERENCE or UNKNOWN and must never be labeled CONFIRMED ORIGINAL.",
+            "scopes": [
+              "src/game/logres/reverse/LogresAssetBehaviorBindingEvidence.ts",
+              "src/game/logres/assets",
+              "tests/LogresAssetFidelityCoverage.test.ts"
+            ],
+            "acceptance": [
+              "Every release-critical recovered asset traces source hash -> transform -> runtime binding.",
+              "Generated/reconstructed assets are labeled distinctly from originals.",
+              "Asset lineage coverage tests pass."
+            ],
+            "dependencies": {
+              "hard": [],
+              "integration": []
+            }
+          }
+        },
+        {
+          "id": "performance",
+          "weight": 16,
+          "description": "Declared performance budgets pass on target runtime/device classes.",
+          "check": {
+            "type": "task_state",
+            "task_id": "MISSION-PERFORMANCE-001",
+            "pass_statuses": [
+              "DONE",
+              "RESOLVED"
+            ]
+          },
+          "task_template": {
+            "title": "Establish and enforce Logres performance budgets",
+            "lane": "qa",
+            "work_type": "verification",
+            "priority": 2,
+            "expected_minutes": 120,
+            "concurrency_key": "performance",
+            "evidence_policy": "Global 3.0.24 evidence outranks current-JP lineage. Implement only supported behavior; unsupported historical details must remain SUPPORTED_INFERENCE or UNKNOWN and must never be labeled CONFIRMED ORIGINAL.",
+            "scopes": [
+              "tests/LogresPerformanceBudget.test.ts",
+              "e2e/logres-performance.spec.mjs"
+            ],
+            "acceptance": [
+              "Define reproducible load/startup/frame/memory budgets for supported runtime classes.",
+              "Performance measurements are exact-SHA and regressions fail the gate.",
+              "No visual/behavior verification is disabled to meet performance targets."
+            ],
+            "dependencies": {
+              "hard": [],
+              "integration": []
+            }
+          }
+        },
+        {
+          "id": "exact-current-sha-full-e2e",
+          "weight": 10,
+          "description": "Current integration SHA has an authoritative full-E2E PASS.",
+          "check": {
+            "type": "verification",
+            "mode": "full-e2e",
+            "status": "PASS"
+          }
+        }
+      ]
+    },
+    "RELEASE-1.0": {
+      "title": "Android release candidate",
+      "definition_of_done": "A reproducible Android release candidate passes current-SHA verification, release packaging and real-device visual proof.",
+      "criteria": [
+        {
+          "id": "release-candidate",
+          "weight": 50,
+          "description": "Reproducible Android release candidate is packaged with provenance.",
+          "check": {
+            "type": "task_state",
+            "task_id": "MISSION-RELEASE-CANDIDATE-001",
+            "pass_statuses": [
+              "DONE",
+              "RESOLVED"
+            ]
+          },
+          "task_template": {
+            "title": "Produce reproducible Logres Android release candidate",
+            "lane": "release",
+            "work_type": "release",
+            "priority": 0,
+            "expected_minutes": 180,
+            "concurrency_key": "release-candidate",
+            "evidence_policy": "Global 3.0.24 evidence outranks current-JP lineage. Implement only supported behavior; unsupported historical details must remain SUPPORTED_INFERENCE or UNKNOWN and must never be labeled CONFIRMED ORIGINAL.",
+            "scopes": [
+              "scripts/logres",
+              "android",
+              ".github/workflows/android-debug-apk.yml",
+              "docs/logres-release.md"
+            ],
+            "acceptance": [
+              "Package a release candidate from an exact integration SHA with build provenance and artifact hashes.",
+              "All required mission milestones are DONE/certified before candidate publication.",
+              "Release process preserves normal verification and merge authority."
+            ],
+            "dependencies": {
+              "hard": [],
+              "integration": []
+            }
+          }
+        },
+        {
+          "id": "android-real-device-visual-proof",
+          "weight": 25,
+          "description": "Release candidate has repeatable real-device Android visual proof.",
+          "check": {
+            "type": "external_manual",
+            "task_id": "ANDROID-VISUAL-QA-001",
+            "pass_statuses": [
+              "DONE",
+              "RESOLVED"
+            ]
+          }
+        },
+        {
+          "id": "exact-current-sha-full-e2e",
+          "weight": 25,
+          "description": "Current integration SHA has an authoritative full-E2E PASS.",
+          "check": {
+            "type": "verification",
+            "mode": "full-e2e",
+            "status": "PASS"
+          }
+        }
+      ]
     }
   }
 }

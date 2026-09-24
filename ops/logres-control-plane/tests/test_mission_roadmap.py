@@ -1,0 +1,143 @@
+import json
+import sqlite3
+import sys
+import unittest
+from pathlib import Path
+
+TEST_DIR = Path(__file__).resolve().parent
+CONTROL_ROOT = TEST_DIR.parent
+LIB_DIR = CONTROL_ROOT / "lib"
+sys.path.insert(0, str(LIB_DIR))
+
+from logres_goal_contract import load_contracts
+from logres_goal_executor import validate_execution_template
+from logres_mission import load_config
+
+
+MISSION_CONFIG = CONTROL_ROOT / "config" / "mission.default.json"
+CONTRACT_CONFIG = CONTROL_ROOT / "config" / "milestone_contracts.json"
+
+
+def make_db():
+    conn = sqlite3.connect(":memory:")
+    conn.row_factory = sqlite3.Row
+    conn.executescript(
+        """
+        create table tasks(id text primary key,status text);
+        create table milestones(
+          id text primary key,
+          title text not null,
+          sort_order integer not null,
+          status text not null,
+          definition_of_done text not null,
+          updated_at text not null
+        );
+        """
+    )
+    return conn
+
+
+class MissionRoadmapTests(unittest.TestCase):
+    def test_every_leaf_objective_has_source_controlled_coverage(self):
+        conn = make_db()
+        load_config(conn, MISSION_CONFIG)
+        missing = [
+            str(row[0])
+            for row in conn.execute(
+                """
+                select o.id
+                  from mission_objectives o
+                 where not exists(
+                       select 1 from mission_objectives c where c.parent_id=o.id
+                 )
+                   and not exists(
+                       select 1 from mission_links l where l.objective_id=o.id
+                 )
+                 order by o.id
+                """
+            )
+        ]
+        self.assertEqual([], missing)
+
+    def test_existing_milestone_status_is_preserved(self):
+        conn = make_db()
+        conn.execute(
+            """insert into milestones(
+                 id,title,sort_order,status,definition_of_done,updated_at
+               ) values(?,?,?,?,?,?)""",
+            ("DEMO-0.2", "old", 20, "ACTIVE", "old", "old"),
+        )
+        load_config(conn, MISSION_CONFIG)
+        row = conn.execute(
+            "select title,sort_order,status from milestones where id='DEMO-0.2'"
+        ).fetchone()
+        self.assertEqual("Authentic playable presentation", row[0])
+        self.assertEqual(20, row[1])
+        self.assertEqual("ACTIVE", row[2])
+
+    def test_future_milestones_are_planned_in_order(self):
+        conn = make_db()
+        load_config(conn, MISSION_CONFIG)
+        rows = list(
+            conn.execute(
+                "select id,sort_order,status from milestones order by sort_order"
+            )
+        )
+        self.assertEqual(
+            [
+                "DEMO-0.2",
+                "DEMO-0.3",
+                "SYSTEMS-0.4",
+                "CONTENT-0.5",
+                "FIDELITY-0.6",
+                "RELEASE-1.0",
+            ],
+            [str(row[0]) for row in rows],
+        )
+        self.assertEqual(
+            ["PLANNED"] * 5,
+            [str(row[2]) for row in rows[1:]],
+        )
+
+    def test_every_roadmap_milestone_has_a_contract(self):
+        mission = json.loads(MISSION_CONFIG.read_text())
+        contracts = load_contracts(CONTRACT_CONFIG)
+        missing = [
+            item["id"]
+            for item in mission["milestones"]
+            if item["id"] not in contracts["milestones"]
+        ]
+        self.assertEqual([], missing)
+
+    def test_all_executable_templates_satisfy_goal_executor_schema(self):
+        contracts = load_contracts(CONTRACT_CONFIG)
+        checked = 0
+        for milestone_id, milestone in contracts["milestones"].items():
+            for criterion in milestone["criteria"]:
+                template = criterion.get("task_template")
+                if template is None:
+                    continue
+                normalized = validate_execution_template(template)
+                self.assertTrue(normalized["scopes"], milestone_id)
+                self.assertTrue(normalized["acceptance"], milestone_id)
+                if criterion["check"]["type"] == "task_state":
+                    self.assertTrue(
+                        str(criterion["check"].get("task_id") or "").strip(),
+                        f"{milestone_id}/{criterion['id']}",
+                    )
+                checked += 1
+        self.assertGreaterEqual(checked, 19)
+
+    def test_future_milestones_keep_current_demo_first(self):
+        conn = make_db()
+        load_config(conn, MISSION_CONFIG)
+        row = conn.execute(
+            """select id from milestones
+               where status not in ('DONE','RESOLVED','SUPERSEDED','CANCELLED')
+               order by sort_order,id limit 1"""
+        ).fetchone()
+        self.assertEqual("DEMO-0.2", row[0])
+
+
+if __name__ == "__main__":
+    unittest.main()
