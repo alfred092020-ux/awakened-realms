@@ -385,10 +385,20 @@ def _matching_pr(job: CopilotJobRecord, gh_runner) -> dict | None:
     list_prs = getattr(gh_runner, "list_prs", None)
     if list_prs is None:
         return None
-    candidates = [
-        pr for pr in list_prs(DEFAULT_REPO)
-        if pr.get("baseRefName") == INTEGRATION_BRANCH
-    ]
+    candidates = []
+    for pr in list_prs(DEFAULT_REPO):
+        if pr.get("baseRefName") != INTEGRATION_BRANCH:
+            continue
+        if pr.get("isDraft") is not True:
+            continue
+        changed_files = pr.get("changedFiles")
+        if changed_files is not None:
+            try:
+                if int(changed_files) <= 0:
+                    continue
+            except (TypeError, ValueError):
+                continue
+        candidates.append(pr)
     if not candidates:
         return None
 

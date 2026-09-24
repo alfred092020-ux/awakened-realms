@@ -11,7 +11,9 @@ sys.path.insert(0, str(LIB_DIR))
 
 from fixtures import make_test_db, seed_event, seed_task, test_config
 from logres_ai_router import run_ai_cycle
-from logres_copilot_router import dispatch_task, reconcile_copilot_job
+from logres_ai_runner import automatic_api_allowed, budget_state
+from logres_copilot_router import copilot_eligibility, dispatch_task, reconcile_copilot_job
+from logres_reconcile import backpressure
 from logres_route_store import ensure_route_schema
 
 
@@ -216,6 +218,48 @@ class AutoflowIntegrationTests(unittest.TestCase):
                 ("IMP1", "c" * 40),
             ).fetchone()[0],
         )
+
+    def test_combined_backpressure_pauses_implementation_and_unknown_ai_spend(self):
+        conn = make_test_db()
+        ensure_route_schema(conn)
+        seed_task(conn, task_id="IMP2", status="READY", work_type="implementation")
+        conn.execute(
+            "insert into task_scopes(task_id,path_prefix) values(?,?)",
+            ("IMP2", "src/b.ts"),
+        )
+        for index in range(5):
+            conn.execute(
+                "insert into integration_queue(task_id,sha,branch,status,queued_at,updated_at,note) "
+                "values(?,?,?,?,datetime('now'),datetime('now'),'pressure')",
+                (f"Q{index}", f"{index:040d}", f"worker/q{index}", "READY_FOR_INTEGRATION"),
+            )
+        for index in range(4):
+            conn.execute(
+                "insert into route_jobs(dedupe_key,route_kind,state,created_at,updated_at) "
+                "values(?,?,?,datetime('now'),datetime('now'))",
+                (f"verify:{index}", "VERIFY", "VERIFYING"),
+            )
+        conn.commit()
+
+        config = test_config()
+        config["routing"]["ai_dispatch_enabled"] = True
+        config["routing"]["copilot_dispatch_enabled"] = True
+        config["routing"]["copilot_mode"] = "bounded_implementation"
+        config["openai"]["auto_model"] = "gpt-5.6-luna"
+        config["openai"]["model_rates_per_million"] = {}
+
+        pressure = backpressure(conn, config)
+        eligibility = copilot_eligibility(conn, "IMP2", "b" * 40, config)
+        state = budget_state(conn, config, priority=1, model="gpt-5.6-luna")
+
+        self.assertTrue(pressure.copilot_paused)
+        self.assertFalse(pressure.ai_research_paused)
+        self.assertEqual(5, pressure.ready_for_integration)
+        self.assertEqual(4, pressure.verification_backlog)
+        self.assertFalse(eligibility.allowed)
+        self.assertIn("backpressure", eligibility.reason)
+        self.assertEqual("UNKNOWN", state)
+        self.assertFalse(automatic_api_allowed(state, priority=1))
 
 
 if __name__ == "__main__":
