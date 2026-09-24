@@ -9,6 +9,7 @@ import {
   LOGRES_UI_HUD_MENU_RUNTIME,
   LOGRES_UI_RUNTIME_WORLDS,
   resolveLogresTermsAgreementTransition,
+  resolveLogresTitleStartTransition,
   resolveLogresUiNavigation,
   resolveLogresWorldSelection,
 } from '../src/game/logres/ui/LogresUiRuntime'
@@ -42,10 +43,38 @@ describe(
             300,
           transitionDelayMs:
             1500,
-          nextScene:
+          boundaryScene:
             'LogresWorldSelectScene',
+          navigationMode:
+            'DEFER_TO_WORLD_RESOLUTION_BOUNDARY',
           provenance:
             'CONFIRMED_ORIGINAL_GLOBAL_3_0_24',
+        })
+
+        expect(
+          resolveLogresTitleStartTransition({
+            termsAccepted:
+              false,
+            worldSelectionRequired:
+              true,
+          }),
+        ).toMatchObject({
+          boundaryScene:
+            'LogresWorldSelectScene',
+          nextScene:
+            'LogresTermsScene',
+        })
+
+        expect(
+          resolveLogresTitleStartTransition({
+            termsAccepted:
+              true,
+            worldSelectionRequired:
+              true,
+          }),
+        ).toMatchObject({
+          nextScene:
+            'LogresWorldSelectScene',
         })
       },
     )

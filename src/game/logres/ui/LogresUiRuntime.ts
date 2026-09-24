@@ -62,8 +62,10 @@ export const LOGRES_TITLE_MENU_RUNTIME =
     startRevealDelayMs: 1000,
     startFadeMs: 300,
     transitionDelayMs: 1500,
-    nextScene:
+    boundaryScene:
       'LogresWorldSelectScene' as const,
+    navigationMode:
+      'DEFER_TO_WORLD_RESOLUTION_BOUNDARY' as const,
     provenance:
       LOGRES_GLOBAL_3024_TITLE_LAYOUT
         .provenance,
@@ -194,6 +196,17 @@ export function resolveLogresUiNavigation(
         worlds:
           LOGRES_UI_RUNTIME_WORLDS,
       }),
+  })
+}
+
+export function resolveLogresTitleStartTransition(
+  input: ResolveLogresUiNavigationInput,
+) {
+  return Object.freeze({
+    ...LOGRES_TITLE_MENU_RUNTIME,
+    ...resolveLogresUiNavigation(
+      input,
+    ),
   })
 }
 
