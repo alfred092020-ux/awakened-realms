@@ -1,0 +1,139 @@
+{
+  "schema": "logres-project-completion-manifest-v1",
+  "version": "2026-09-24.1",
+  "base_integration_sha": "d4449fcbfeae55a73c2a57ac38f823c29afbaf15",
+  "evidence_policy": "Completion claims are bounded only by this manifest's declared evidence-backed scope. Add newly recovered targets only by publishing a new manifest version.",
+  "categories": {
+    "maps_regions": {
+      "objective_id": "MAP_CONTENT",
+      "criterion_id": "map-content",
+      "title": "Maps and regions",
+      "targets": [
+        {
+          "stable_id": "millennium-tree-field",
+          "name": "Millennium Tree first field",
+          "disposition": "required",
+          "provenance_class": "CONFIRMED_ORIGINAL",
+          "evidence_summary": "Recovered Global first-run order reaches the Millennium Tree field.",
+          "evidence_refs": [
+            "src/game/logres/onboarding/LogresGlobal3024BootEvidence.ts"
+          ]
+        },
+        {
+          "stable_id": "millennium-tree-internal-map-id",
+          "name": "Exact internal static map ID for the first Millennium Tree field",
+          "disposition": "ceiling",
+          "evidence_ceiling": "Historical completion stays capped until the exact internal static map ID is recovered.",
+          "evidence_refs": [
+            "src/game/logres/onboarding/LogresGlobal3024BootEvidence.ts"
+          ]
+        }
+      ]
+    },
+    "actors_npcs": {
+      "objective_id": "ACTOR_CONTENT",
+      "criterion_id": "actor-content",
+      "title": "NPCs and actors",
+      "targets": [
+        {
+          "stable_id": "reconstructed-millennium-tree-guide",
+          "name": "Millennium Tree guide NPC",
+          "disposition": "required",
+          "provenance_class": "RECONSTRUCTED_FROM_EVIDENCE",
+          "evidence_summary": "The reconstructed guide NPC remains explicitly evidence-bounded.",
+          "evidence_refs": [
+            "src/game/logres/encounter/ReconstructedLogresNpcDialogueAuthority.ts"
+          ]
+        },
+        {
+          "stable_id": "tutorial-dialogue-payload-branches",
+          "name": "Exact tutorial dialogue payload branches",
+          "disposition": "ceiling",
+          "evidence_ceiling": "Historical payload text and branch meanings stay unresolved until stronger evidence arrives.",
+          "evidence_refs": [
+            "src/game/logres/field/LogresGlobal3024FieldEvidence.ts"
+          ]
+        }
+      ]
+    },
+    "combat_content": {
+      "objective_id": "COMBAT_CONTENT",
+      "criterion_id": "combat-content",
+      "title": "Enemies, bosses and skills",
+      "targets": [
+        {
+          "stable_id": "special-skill",
+          "name": "Battle special skill command",
+          "disposition": "required",
+          "provenance_class": "CONFIRMED_ORIGINAL",
+          "evidence_summary": "Recovered battle kit evidence preserves the special-skill command path.",
+          "evidence_refs": [
+            "src/game/logres/battle/LogresGlobalBattleKit.ts"
+          ]
+        },
+        {
+          "stable_id": "battle-actor-spawn-defaults",
+          "name": "Historical Global actor spawn defaults",
+          "disposition": "ceiling",
+          "evidence_ceiling": "Default actor/body/equipment battle spawn identity remains unresolved.",
+          "evidence_refs": [
+            "src/game/logres/battle/LogresBattleStagePresentation.ts"
+          ]
+        }
+      ]
+    },
+    "items_equipment": {
+      "objective_id": "ITEM_CONTENT",
+      "criterion_id": "item-content",
+      "title": "Items and equipment",
+      "targets": [
+        {
+          "stable_id": "reconstructed-tutorial-weapon",
+          "name": "Reconstructed tutorial weapon",
+          "disposition": "required",
+          "provenance_class": "RECONSTRUCTED_FROM_EVIDENCE",
+          "evidence_summary": "Tutorial battle and field flows share a bounded reconstructed weapon reference.",
+          "evidence_refs": [
+            "src/game/logres/field/controllers/LogresFieldEncounterController.ts",
+            "tests/LogresPlayableBattleResolution.test.ts"
+          ]
+        },
+        {
+          "stable_id": "starter-equipment-resource-ids",
+          "name": "Exact starter body and equipment resource IDs",
+          "disposition": "ceiling",
+          "evidence_ceiling": "Historical starter equipment resource IDs remain unresolved and excluded from completion claims.",
+          "evidence_refs": [
+            "src/game/logres/onboarding/LogresGlobal3024BootEvidence.ts"
+          ]
+        }
+      ]
+    },
+    "quests": {
+      "objective_id": "QUEST_CONTENT",
+      "criterion_id": "quest-content",
+      "title": "Quests",
+      "targets": [
+        {
+          "stable_id": "quest-start-win-battle",
+          "name": "Tutorial quest start / win battle stage",
+          "disposition": "required",
+          "provenance_class": "CONFIRMED_ORIGINAL",
+          "evidence_summary": "Recovered tutorial video evidence confirms the quest-start battle stage.",
+          "evidence_refs": [
+            "src/game/logres/tutorial/LogresTutorialVideoEvidence.ts"
+          ]
+        },
+        {
+          "stable_id": "hunter-registration-trigger",
+          "name": "Permanent Hunter registration trigger",
+          "disposition": "ceiling",
+          "evidence_ceiling": "Exact quest/server trigger remains unresolved and cannot count toward completion.",
+          "evidence_refs": [
+            "src/game/logres/onboarding/LogresGlobal3024BootEvidence.ts"
+          ]
+        }
+      ]
+    }
+  }
+}

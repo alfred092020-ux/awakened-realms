@@ -527,12 +527,12 @@
     },
     "CONTENT-0.5": {
       "title": "Recovered content coverage",
-      "definition_of_done": "Declared reconstruction scope for maps, actors, combat, item and quest content is represented and coverage-tested.",
+      "definition_of_done": "Declared reconstruction scope in the versioned completion manifest is represented by stable IDs and coverage-tested.",
       "criteria": [
         {
           "id": "map-content",
           "weight": 18,
-          "description": "Declared map/region reconstruction coverage is represented.",
+          "description": "Declared map/region completion-manifest stable IDs are represented.",
           "check": {
             "type": "task_state",
             "task_id": "MISSION-MAP-CONTENT-001",
@@ -555,8 +555,8 @@
               "tests/LogresMapContentCoverage.test.ts"
             ],
             "acceptance": [
-              "Generate a versioned map/region manifest from recovered evidence with provenance per entry.",
-              "Runtime coverage tests prove every declared map entry resolves to supported geometry/assets or an explicit evidence ceiling.",
+              "Maintain the versioned project completion manifest with finite map/region targets and provenance or evidence ceilings per entry.",
+              "Runtime coverage tests compare represented stable IDs against the declared map/region target set and explicit evidence ceilings.",
               "No current-JP-only map is mislabeled as Global original."
             ],
             "dependencies": {
@@ -568,7 +568,7 @@
         {
           "id": "actor-content",
           "weight": 16,
-          "description": "Declared NPC/actor reconstruction coverage is represented.",
+          "description": "Declared NPC/actor completion-manifest stable IDs are represented.",
           "check": {
             "type": "task_state",
             "task_id": "MISSION-ACTOR-CONTENT-001",
@@ -591,7 +591,7 @@
               "tests/LogresActorContentCoverage.test.ts"
             ],
             "acceptance": [
-              "Generate actor/NPC content manifests with source lineage and stable IDs.",
+              "Maintain actor/NPC completion-manifest targets with source lineage and stable IDs.",
               "Every declared actor resolves to supported presentation data or an explicit unknown.",
               "Coverage tests pass without placeholder-as-original labeling."
             ],
@@ -604,7 +604,7 @@
         {
           "id": "combat-content",
           "weight": 20,
-          "description": "Declared enemies, bosses and skills are represented.",
+          "description": "Declared enemy, boss and skill completion-manifest stable IDs are represented.",
           "check": {
             "type": "task_state",
             "task_id": "MISSION-COMBAT-CONTENT-001",
@@ -627,7 +627,7 @@
               "tests/LogresCombatContentCoverage.test.ts"
             ],
             "acceptance": [
-              "Generate enemy/boss/skill manifests with evidence provenance.",
+              "Maintain enemy/boss/skill completion-manifest targets with evidence provenance.",
               "Battle runtime consumes stable supported entries without inventing historical mechanics.",
               "Coverage tests distinguish confirmed, inferred and unknown fields."
             ],
@@ -640,7 +640,7 @@
         {
           "id": "item-content",
           "weight": 18,
-          "description": "Declared item/equipment data coverage is represented.",
+          "description": "Declared item/equipment completion-manifest stable IDs are represented.",
           "check": {
             "type": "task_state",
             "task_id": "MISSION-ITEM-CONTENT-001",
@@ -663,7 +663,7 @@
               "tests/LogresItemContentCoverage.test.ts"
             ],
             "acceptance": [
-              "Generate item/equipment manifests with provenance and stable identifiers.",
+              "Maintain item/equipment completion-manifest targets with provenance and stable identifiers.",
               "Unknown statistics/effects remain nullable or evidence-bounded.",
               "Coverage tests pass."
             ],
@@ -676,7 +676,7 @@
         {
           "id": "quest-content",
           "weight": 18,
-          "description": "Declared quest content coverage is represented.",
+          "description": "Declared quest completion-manifest stable IDs are represented.",
           "check": {
             "type": "task_state",
             "task_id": "MISSION-QUEST-CONTENT-001",
@@ -699,7 +699,7 @@
               "tests/LogresQuestContentCoverage.test.ts"
             ],
             "acceptance": [
-              "Generate quest manifests from strongest recovered evidence.",
+              "Maintain quest completion-manifest targets from strongest recovered evidence.",
               "Quest runtime can bind declared content without fabricated historical values.",
               "Coverage tests distinguish supported reconstruction from confirmed original data."
             ],
