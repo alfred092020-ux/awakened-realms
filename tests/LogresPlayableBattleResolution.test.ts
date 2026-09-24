@@ -326,19 +326,13 @@ describe(
     )
 
     it(
-      'wires normal enemy taps through playable authority and back to the field scene',
+      'wires weapon-panel fallback through playable authority and back to the field scene',
       () => {
         const source =
           readFileSync(
             'src/game/scenes/LogresBattleScene.ts',
             'utf8',
           )
-
-        expect(
-          source,
-        ).toContain(
-          "'logres-request-normal-attack'",
-        )
 
         expect(
           source,
@@ -367,8 +361,15 @@ describe(
         expect(
           source,
         ).toContain(
+          'RECONSTRUCTED_PLAYABILITY_FALLBACK',
+        )
+
+        expect(
+          source,
+        ).not.toContain(
           'TAP ENEMY TO ATTACK',
         )
+
       },
     )
   },

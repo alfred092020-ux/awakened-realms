@@ -21,6 +21,7 @@ import {
 
 import {
   LogresGlobalBattleKit,
+  LOGRES_RECONSTRUCTED_PLAYABILITY_FALLBACK_PROVENANCE,
   type LogresGlobalBattleKitInput,
   type LogresNormalAttackCommand,
   type LogresSpecialSkillCommand,
@@ -241,7 +242,7 @@ export class LogresBattleScene
                 .on(
                   'pointerup',
                   () => {
-                    this.activateSpecial(
+                    this.activateWeaponPanel(
                       index,
                     )
                   },
@@ -342,21 +343,11 @@ export class LogresBattleScene
     )
 
     this.events.on(
-      'logres-request-normal-attack',
-      this.emitNormalAttack,
-      this,
-    )
-    this.events.on(
       'logres-battle-command',
       this.handlePlayableBattleCommand,
       this,
     )
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
-      this.events.off(
-        'logres-request-normal-attack',
-        this.emitNormalAttack,
-        this,
-      )
       this.events.off(
         'logres-battle-command',
         this.handlePlayableBattleCommand,
@@ -541,18 +532,6 @@ export class LogresBattleScene
         .setDepth(
           -10,
         )
-        .setInteractive({
-          useHandCursor:
-            true,
-        })
-        .on(
-          'pointerup',
-          () => {
-            this.events.emit(
-              'logres-request-normal-attack',
-            )
-          },
-        )
         .play(
           LOGRES_BATTLE_GREEN_JELL_IDLE_ANIMATION_KEY,
         )
@@ -595,18 +574,6 @@ export class LogresBattleScene
       .setDepth(
         -10,
       )
-      .setInteractive({
-        useHandCursor:
-          true,
-      })
-      .on(
-        'pointerup',
-        () => {
-          this.events.emit(
-            'logres-request-normal-attack',
-          )
-        },
-      )
   }
 
   private createBattleStatusLabel() {
@@ -617,7 +584,7 @@ export class LogresBattleScene
           24,
           this.presentation?.showDemoControls
             ? 'DEMO 0.1 • RECONSTRUCTED BATTLE'
-            : 'RECONSTRUCTED BATTLE • TAP ENEMY TO ATTACK',
+            : 'RECONSTRUCTED BATTLE • WEAPON PANEL INPUT',
           {
             fontFamily:
               'Arial, sans-serif',
@@ -932,7 +899,7 @@ export class LogresBattleScene
     this.syncEpText()
   }
 
-  private activateSpecial(
+  private activateWeaponPanel(
     slotIndex: number,
   ) {
     if (
@@ -949,6 +916,16 @@ export class LogresBattleScene
             slotIndex,
           )
 
+      if (
+        command.type ===
+        'normal-attack'
+      ) {
+        this.registry.set(
+          'logres.playableBattle.inputProvenance',
+          LOGRES_RECONSTRUCTED_PLAYABILITY_FALLBACK_PROVENANCE,
+        )
+      }
+
       this.events.emit(
         'logres-battle-command',
         command,
@@ -963,31 +940,6 @@ export class LogresBattleScene
             'special-skill',
           weaponSlot:
             slotIndex,
-        },
-      )
-    }
-  }
-
-  private emitNormalAttack() {
-    if (
-      this.battleKit ===
-      null
-    ) {
-      return
-    }
-
-    try {
-      this.events.emit(
-        'logres-battle-command',
-        this.battleKit
-          .createNormalAttack(),
-      )
-    } catch {
-      this.events.emit(
-        'logres-battle-command-rejected',
-        {
-          type:
-            'normal-attack',
         },
       )
     }

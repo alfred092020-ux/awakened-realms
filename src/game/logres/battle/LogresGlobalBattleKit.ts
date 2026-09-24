@@ -22,6 +22,9 @@ export const LOGRES_GLOBAL_BATTLE_KIT_PROVENANCE =
       'CONFIRMED_ORIGINAL_GLOBAL_TUTORIAL',
   } as const)
 
+export const LOGRES_RECONSTRUCTED_PLAYABILITY_FALLBACK_PROVENANCE =
+  'RECONSTRUCTED_PLAYABILITY_FALLBACK' as const
+
 export interface LogresGlobalWeaponPanelInput {
   unlocked: boolean
   weaponRef: string | null
@@ -356,7 +359,9 @@ export class LogresGlobalBattleKit {
 
   tapWeaponPanel(
     slotIndex: number,
-  ): Readonly<LogresSpecialSkillCommand> {
+  ):
+    | Readonly<LogresSpecialSkillCommand>
+    | Readonly<LogresNormalAttackCommand> {
     const panel =
       this.requireEquippedWeapon(
         slotIndex,
@@ -368,9 +373,13 @@ export class LogresGlobalBattleKit {
       panel.specialEpCost ===
       null
     ) {
-      throw new Error(
-        'Weapon special skill is unresolved',
-      )
+      if (panel.normalSkillRef === null) {
+        throw new Error(
+          'Weapon special and normal skills are unresolved',
+        )
+      }
+
+      return this.createNormalAttackForSlot(slotIndex)
     }
 
     if (
@@ -401,6 +410,36 @@ export class LogresGlobalBattleKit {
         panel.specialSkillRef,
       epCost:
         panel.specialEpCost,
+    })
+  }
+
+  createNormalAttackForSlot(
+    slotIndex: number,
+  ):
+    Readonly<LogresNormalAttackCommand> {
+    const panel =
+      this.requireEquippedWeapon(
+        slotIndex,
+      )
+
+    if (
+      panel.normalSkillRef ===
+      null
+    ) {
+      throw new Error(
+        'Selected weapon has no resolved normal skill',
+      )
+    }
+
+    return Object.freeze({
+      type:
+        'normal-attack',
+      weaponSlot:
+        panel.slotIndex,
+      weaponRef:
+        panel.weaponRef,
+      skillRef:
+        panel.normalSkillRef,
     })
   }
 
