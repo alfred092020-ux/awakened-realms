@@ -8,7 +8,7 @@ LIB_DIR = CONTROL_ROOT / "lib"
 sys.path.insert(0, str(TEST_DIR))
 sys.path.insert(0, str(LIB_DIR))
 
-from fixtures import make_test_db, test_config
+from fixtures import make_test_db, seed_task, test_config
 from logres_reconcile import format_routes_status, route_status
 from logres_route_store import ensure_route_schema
 
@@ -37,6 +37,61 @@ class AutoflowHealthTests(unittest.TestCase):
         self.assertIn("BACKPRESSURE", text)
         self.assertIn("cache_hits=1", text)
         self.assertNotIn("api_key", text.lower())
+
+    def test_route_failures_ignore_terminal_and_external_device_waits(self):
+        conn = make_test_db()
+        ensure_route_schema(conn)
+        seed_task(conn, task_id="DONE-TASK", status="DONE")
+        seed_task(conn, task_id="DEVICE-TASK", status="BLOCKED_EVIDENCE")
+        conn.execute(
+            "update tasks set note='Awaiting real-device proof; no ADB device attached' "
+            "where id='DEVICE-TASK'"
+        )
+        for key, task_id in (
+            ("failed-done", "DONE-TASK"),
+            ("failed-device", "DEVICE-TASK"),
+            ("failed-actionable", None),
+        ):
+            conn.execute(
+                "insert into route_jobs(dedupe_key,task_id,route_kind,state,last_error,"
+                "created_at,updated_at) values(?,?,?,'FAILED_BOUNDED','x',datetime('now'),datetime('now'))",
+                (key, task_id, "AI"),
+            )
+        conn.commit()
+
+        status = route_status(conn, test_config())
+
+        self.assertEqual(1, status.failed)
+
+    def test_integrated_copilot_candidates_are_not_reported_as_queued(self):
+        conn = make_test_db()
+        ensure_route_schema(conn)
+        for route_id, task_id, sha in (
+            (1, "INTEGRATED-TASK", "a" * 40),
+            (2, "WAITING-TASK", "b" * 40),
+        ):
+            conn.execute(
+                "insert into route_jobs(id,dedupe_key,task_id,route_kind,state,"
+                "created_at,updated_at) values(?,?,?,?,?,datetime('now'),datetime('now'))",
+                (route_id, f"copilot:{task_id}", task_id, "COPILOT", "QUEUED"),
+            )
+            conn.execute(
+                "insert into copilot_jobs(route_job_id,task_id,branch,base_sha,"
+                "candidate_sha,state,created_at,updated_at) "
+                "values(?,?,?,?,?,'QUEUED',datetime('now'),datetime('now'))",
+                (route_id, task_id, f"copilot/{task_id.lower()}", "c" * 40, sha),
+            )
+        conn.execute(
+            "insert into integration_queue(task_id,sha,branch,status,queued_at,"
+            "updated_at,note,integrated_at) "
+            "values(?,?,?,'INTEGRATED',datetime('now'),datetime('now'),'done',datetime('now'))",
+            ("INTEGRATED-TASK", "a" * 40, "copilot/integrated-task"),
+        )
+        conn.commit()
+
+        status = route_status(conn, test_config())
+
+        self.assertEqual(1, status.copilot_queued)
 
     def test_versioned_scripts_expose_required_task7_hooks(self):
         watcher = (CONTROL_ROOT / "bin" / "logres-autopilot-watch").read_text()

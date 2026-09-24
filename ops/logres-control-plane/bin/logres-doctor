@@ -462,7 +462,27 @@ try:
             "select coalesce(max(source_event_id),0) from route_jobs"
         ).fetchone()[0] or 0)
         route_failed=int(route_conn.execute(
-            "select count(*) from route_jobs where state='FAILED_BOUNDED'"
+            """select count(*)
+                 from route_jobs r
+                 left join tasks t on t.id=r.task_id
+                where r.state='FAILED_BOUNDED'
+                  and (
+                    r.task_id is null
+                    or t.id is null
+                    or (
+                      t.status not in ('DONE','RESOLVED','SUPERSEDED','CANCELLED')
+                      and not (
+                        t.status='BLOCKED_EVIDENCE'
+                        and (
+                          lower(coalesce(t.note,'')) like '%real-device proof%'
+                          or lower(coalesce(t.note,'')) like '%device proof%'
+                          or lower(coalesce(t.note,'')) like '%no adb device%'
+                          or lower(coalesce(t.note,'')) like '%physical device%'
+                          or lower(coalesce(t.note,'')) like '%hardware-dependent%'
+                        )
+                      )
+                    )
+                  )"""
         ).fetchone()[0])
         add("route_cursor","PASS",f"event={route_cursor}")
         add("route_failures","PASS" if route_failed==0 else "WARN",

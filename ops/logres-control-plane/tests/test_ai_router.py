@@ -205,6 +205,68 @@ class AIRouterTests(unittest.TestCase):
             ).fetchone()[0],
         )
 
+    def test_terminal_task_evidence_is_skipped_without_ai_or_child(self):
+        conn = make_test_db()
+        ensure_route_schema(conn)
+        seed_task(conn, task_id="T1", priority=0, work_type="research", status="DONE")
+        seed_event(
+            conn,
+            event_id=20,
+            task_id="T1",
+            artifact_sha="d" * 64,
+            meta={
+                "artifact_bytes": 90000,
+                "kind": "native_trace",
+                "provenance": "CONFIRMED_GLOBAL_2017",
+            },
+        )
+        fake_ai = FakeAIRunner()
+
+        job = route_event(conn, 20, test_config(), False, fake_ai)
+
+        self.assertEqual("SKIPPED_DETERMINISTIC", job.state)
+        self.assertEqual(0, fake_ai.calls)
+        self.assertEqual(
+            0,
+            conn.execute(
+                "select count(*) from tasks "
+                "where note='Autoflow research child from AI evidence routing.'"
+            ).fetchone()[0],
+        )
+
+    def test_hardware_blocked_task_does_not_spawn_evidence_loop(self):
+        conn = make_test_db()
+        ensure_route_schema(conn)
+        seed_task(
+            conn,
+            task_id="T1",
+            priority=0,
+            work_type="research",
+            status="BLOCKED_EVIDENCE",
+        )
+        conn.execute(
+            "update tasks set note='Awaiting real-device proof; no ADB device attached' "
+            "where id='T1'"
+        )
+        conn.commit()
+        seed_event(
+            conn,
+            event_id=21,
+            task_id="T1",
+            artifact_sha="e" * 64,
+            meta={
+                "artifact_bytes": 90000,
+                "kind": "native_trace",
+                "provenance": "CONFIRMED_GLOBAL_2017",
+            },
+        )
+        fake_ai = FakeAIRunner()
+
+        job = route_event(conn, 21, test_config(), False, fake_ai)
+
+        self.assertEqual("SKIPPED_DETERMINISTIC", job.state)
+        self.assertEqual(0, fake_ai.calls)
+
     def test_dispatch_disabled_leaves_route_new(self):
         conn = make_test_db()
         ensure_route_schema(conn)

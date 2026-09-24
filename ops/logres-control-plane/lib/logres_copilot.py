@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import fcntl
 import hashlib
 import json
 import os
@@ -237,17 +238,35 @@ class SubprocessCommandRunner:
         if not branch.startswith("copilot/"):
             raise PolicyError(f"refusing non-Copilot branch: {branch!r}")
         remote_ref = f"origin/{branch}"
-        result = self._run([
-            "git",
-            "-C",
-            self.repo_root,
-            "fetch",
-            "origin",
-            f"+refs/heads/{branch}:refs/remotes/origin/{branch}",
-        ])
+        fetch_lock = open("/tmp/logres-git-fetch.lock", "a+")
+        try:
+            fcntl.flock(fetch_lock.fileno(), fcntl.LOCK_EX)
+            result = self._run([
+                "git",
+                "-C",
+                self.repo_root,
+                "fetch",
+                "origin",
+                f"+refs/heads/{branch}:refs/remotes/origin/{branch}",
+            ])
+        finally:
+            fcntl.flock(fetch_lock.fileno(), fcntl.LOCK_UN)
+            fetch_lock.close()
         if result.returncode != 0:
             raise RuntimeError(
                 f"failed to fetch Copilot branch {branch}: {result.stderr.strip()}"
+            )
+        # Integration safety compares both the logical local branch and the
+        # authoritative origin/<branch> ref to the immutable queued SHA.
+        # Copilot branches originate remotely, so materialize/update a local
+        # mirror at the fetched remote SHA before verification/queueing.
+        mirror = self._run([
+            "git", "-C", self.repo_root,
+            "update-ref", f"refs/heads/{branch}", f"refs/remotes/origin/{branch}",
+        ])
+        if mirror.returncode != 0:
+            raise RuntimeError(
+                f"failed to materialize local Copilot ref {branch}: {mirror.stderr.strip()}"
             )
         return remote_ref
 

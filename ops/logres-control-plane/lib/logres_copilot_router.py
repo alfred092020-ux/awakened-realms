@@ -433,6 +433,7 @@ def _insert_pr_ready_job(
     *,
     old_job: CopilotJobRecord,
     pr: dict,
+    current_integration_sha: str,
 ) -> CopilotJobRecord:
     branch = str(pr.get("headRefName") or "")
     candidate_sha = str(pr.get("headRefOid") or "")
@@ -461,7 +462,7 @@ def _insert_pr_ready_job(
             raise RuntimeError("adopted Copilot job disappeared")
         return adopted
 
-    if old_job.state == "PR_READY" and old_job.candidate_sha == candidate_sha:
+    if old_job.state in {"PR_READY", "QUEUED"} and old_job.candidate_sha == candidate_sha:
         conn.execute(
             """update copilot_jobs
                   set pr_number=?,branch=?,updated_at=datetime('now')
@@ -474,11 +475,20 @@ def _insert_pr_ready_job(
             raise RuntimeError("Copilot job disappeared after PR refresh")
         return adopted
 
-    if old_job.state != "PR_READY":
+    if old_job.state not in {"PR_READY", "QUEUED"}:
         return old_job
 
-    transition_route(conn, old_job.route_job_id, "PR_READY", "SUPERSEDED")
+    transition_route(conn, old_job.route_job_id, old_job.state, "SUPERSEDED")
     _set_copilot_job_state(conn, old_job.route_job_id, "SUPERSEDED")
+    conn.execute(
+        """update integration_queue
+              set status='SUPERSEDED',updated_at=datetime('now'),
+                  note='Superseded by a newer verified Copilot PR candidate.'
+            where task_id=? and sha=?
+              and status not in ('INTEGRATED','SUPERSEDED')""",
+        (old_job.task_id, old_job.candidate_sha),
+    )
+    conn.commit()
 
     replacement = claim_route(
         conn,
@@ -486,7 +496,7 @@ def _insert_pr_ready_job(
             dedupe_key=f"copilot-candidate:{old_job.task_id}:{candidate_sha}",
             route_kind="COPILOT",
             task_id=old_job.task_id,
-            base_sha=old_job.base_sha,
+            base_sha=current_integration_sha,
         ),
     )
     existing = _fetch_job(conn, replacement.id)
@@ -510,7 +520,7 @@ def _insert_pr_ready_job(
             old_job.issue_number,
             int(pr["number"]),
             branch,
-            old_job.base_sha,
+            current_integration_sha,
             candidate_sha,
             "PR_READY",
             None,
@@ -534,9 +544,61 @@ def reconcile_copilot_job(
 
     matched_pr = _matching_pr(job, gh_runner)
     if matched_pr is not None:
-        job = _insert_pr_ready_job(conn, old_job=job, pr=matched_pr)
+        job = _insert_pr_ready_job(
+            conn,
+            old_job=job,
+            pr=matched_pr,
+            current_integration_sha=current_integration_sha,
+        )
 
     branch = job.branch or _safe_branch(job.task_id)
+
+    if job.state == "QUEUED":
+        if job.candidate_sha is None:
+            raise PolicyError(f"Copilot job {job.id} has no immutable candidate SHA")
+        prepare_ref = getattr(command_runner, "prepare_ref", None)
+        verify_ref = prepare_ref(branch) if prepare_ref is not None else branch
+        resolve_sha = getattr(command_runner, "resolve_sha", None)
+        actual_sha = resolve_sha(verify_ref) if resolve_sha is not None else job.candidate_sha
+        if actual_sha != job.candidate_sha:
+            transition_route(conn, job.route_job_id, "QUEUED", "SUPERSEDED")
+            _set_copilot_job_state(
+                conn,
+                job.route_job_id,
+                "SUPERSEDED",
+                last_error=(
+                    f"queued branch moved: expected {job.candidate_sha}, got {actual_sha}"
+                ),
+            )
+            conn.execute(
+                """update integration_queue
+                      set status='SUPERSEDED',updated_at=datetime('now'),
+                          note='Queued Copilot candidate superseded after remote branch moved.'
+                    where task_id=? and sha=?
+                      and status not in ('INTEGRATED','SUPERSEDED')""",
+                (job.task_id, job.candidate_sha),
+            )
+            conn.commit()
+            return ReconcileResult(
+                state="SUPERSEDED",
+                task_id=job.task_id,
+                route_job_id=job.route_job_id,
+                branch=branch,
+                candidate_sha=job.candidate_sha,
+            )
+        conn.execute(
+            "update tasks set branch=?,updated_at=datetime('now') where id=?",
+            (branch, job.task_id),
+        )
+        conn.commit()
+        return ReconcileResult(
+            state="QUEUED",
+            task_id=job.task_id,
+            route_job_id=job.route_job_id,
+            branch=branch,
+            candidate_sha=job.candidate_sha,
+            revalidation_required=False,
+        )
 
     if job.state != "PR_READY":
         return ReconcileResult(
@@ -551,17 +613,12 @@ def reconcile_copilot_job(
     if job.candidate_sha is None:
         raise PolicyError(f"Copilot job {job.id} has no immutable candidate SHA")
 
-    if job.base_sha != current_integration_sha:
-        transition_route(conn, job.route_job_id, "PR_READY", "VERIFYING")
-        _set_copilot_job_state(conn, job.route_job_id, "VERIFYING")
-        return ReconcileResult(
-            state="VERIFYING",
-            task_id=job.task_id,
-            route_job_id=job.route_job_id,
-            branch=branch,
-            candidate_sha=job.candidate_sha,
-            revalidation_required=True,
-        )
+    # A candidate may have been authored from an older integration base.
+    # Scope/fast verification can still run on its immutable SHA; the shared
+    # merge preflight is what validates the composed result on the current
+    # canonical base. Do not strand the route in VERIFYING merely because
+    # canonical advanced while Copilot was working.
+    revalidation_required = job.base_sha != current_integration_sha
 
     verify_ref = branch
     prepare_ref = getattr(command_runner, "prepare_ref", None)
@@ -589,9 +646,7 @@ def reconcile_copilot_job(
                 candidate_sha=job.candidate_sha,
             )
 
-    branch = verify_ref
-
-    if command_runner.scope_check(job.task_id, branch) != 0:
+    if command_runner.scope_check(job.task_id, verify_ref) != 0:
         transition_route(conn, job.route_job_id, "PR_READY", "SCOPE_VIOLATION")
         _set_copilot_job_state(
             conn,
@@ -599,7 +654,7 @@ def reconcile_copilot_job(
             "SCOPE_VIOLATION",
             last_error="scope check failed",
         )
-        command_runner.post_scope_conflict(job.task_id, branch, job.candidate_sha)
+        command_runner.post_scope_conflict(job.task_id, verify_ref, job.candidate_sha)
         return ReconcileResult(
             state="SCOPE_VIOLATION",
             task_id=job.task_id,
@@ -611,7 +666,7 @@ def reconcile_copilot_job(
     transition_route(conn, job.route_job_id, "PR_READY", "VERIFYING")
     _set_copilot_job_state(conn, job.route_job_id, "VERIFYING")
 
-    if command_runner.fast_gate(branch) != 0:
+    if command_runner.fast_gate(verify_ref) != 0:
         transition_route(conn, job.route_job_id, "VERIFYING", "FAILED_BOUNDED")
         _set_copilot_job_state(
             conn,
@@ -619,7 +674,7 @@ def reconcile_copilot_job(
             "FAILED_BOUNDED",
             last_error="fast gate failed",
         )
-        command_runner.capture_regression(job.task_id, branch, job.candidate_sha)
+        command_runner.capture_regression(job.task_id, verify_ref, job.candidate_sha)
         return ReconcileResult(
             state="FAILED_BOUNDED",
             task_id=job.task_id,
@@ -634,7 +689,7 @@ def reconcile_copilot_job(
                   note='Copilot candidate passed scope and fast verification; Lead integration remains required',
                   updated_at=datetime('now')
             where id=?""",
-        (branch, job.task_id),
+        (job.branch or _safe_branch(job.task_id), job.task_id),
     )
     conn.commit()
 
@@ -675,8 +730,9 @@ def reconcile_copilot_job(
         state="QUEUED",
         task_id=job.task_id,
         route_job_id=job.route_job_id,
-        branch=branch,
+        branch=job.branch or _safe_branch(job.task_id),
         candidate_sha=job.candidate_sha,
+        revalidation_required=revalidation_required,
     )
 
 
@@ -684,8 +740,17 @@ def active_copilot_jobs(conn: sqlite3.Connection) -> list[CopilotJobRecord]:
     return [
         _job_from_row(row)
         for row in conn.execute(
-            """select * from copilot_jobs
-                 where state in ('ACTIVE','PR_READY')
-                 order by id"""
+            """select cj.* from copilot_jobs cj
+                 where cj.state in ('ACTIVE','PR_READY')
+                    or (
+                      cj.state='QUEUED'
+                      and not exists (
+                        select 1 from integration_queue iq
+                         where iq.task_id=cj.task_id
+                           and iq.sha=cj.candidate_sha
+                           and iq.status='INTEGRATED'
+                      )
+                    )
+                 order by cj.id"""
         )
     ]

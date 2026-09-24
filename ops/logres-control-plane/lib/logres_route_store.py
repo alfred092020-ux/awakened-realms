@@ -55,6 +55,11 @@ VALID_TRANSITIONS = {
     "ACTIVE": {"PR_READY", "SUPERSEDED", "BLOCKED_EVIDENCE", "FAILED_BOUNDED"},
     "PR_READY": {"VERIFYING", "SCOPE_VIOLATION", "SUPERSEDED"},
     "VERIFYING": {"QUEUED", "FAILED_BOUNDED", "SCOPE_VIOLATION"},
+    # Exact-cache recovery may reopen an AI bounded failure after the model
+    # result is durably present. Callers must prove artifact/question identity.
+    "FAILED_BOUNDED": {"AI_VALIDATED"},
+    # Preserve the live immutable-candidate guard when a queued PR head moves.
+    "QUEUED": {"SUPERSEDED"},
 }
 
 

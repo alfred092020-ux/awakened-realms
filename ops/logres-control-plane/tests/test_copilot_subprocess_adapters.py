@@ -57,11 +57,12 @@ class CopilotSubprocessAdapterTests(unittest.TestCase):
     @patch("logres_copilot.subprocess.run")
     def test_command_runner_reuses_existing_scope_gate_and_coordinator(self, run):
         run.side_effect = [
-            SimpleNamespace(returncode=0, stdout="", stderr=""),
-            SimpleNamespace(returncode=0, stdout="c" * 40 + "\n", stderr=""),
-            SimpleNamespace(returncode=0, stdout="", stderr=""),
-            SimpleNamespace(returncode=0, stdout="", stderr=""),
-            SimpleNamespace(returncode=0, stdout="", stderr=""),
+            SimpleNamespace(returncode=0, stdout="", stderr=""),  # fetch
+            SimpleNamespace(returncode=0, stdout="", stderr=""),  # local mirror update-ref
+            SimpleNamespace(returncode=0, stdout="c" * 40 + "\n", stderr=""),  # rev-parse
+            SimpleNamespace(returncode=0, stdout="", stderr=""),  # scope
+            SimpleNamespace(returncode=0, stdout="", stderr=""),  # gate
+            SimpleNamespace(returncode=0, stdout="", stderr=""),  # coordinator
         ]
         runner = SubprocessCommandRunner()
 
@@ -85,6 +86,14 @@ class CopilotSubprocessAdapterTests(unittest.TestCase):
                 "git", "-C", "/home/ubuntu/logres/src/awakened-realms",
                 "fetch", "origin",
                 "+refs/heads/copilot/t1:refs/remotes/origin/copilot/t1",
+            ],
+            calls,
+        )
+        self.assertIn(
+            [
+                "git", "-C", "/home/ubuntu/logres/src/awakened-realms",
+                "update-ref", "refs/heads/copilot/t1",
+                "refs/remotes/origin/copilot/t1",
             ],
             calls,
         )

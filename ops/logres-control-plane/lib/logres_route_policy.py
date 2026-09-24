@@ -35,6 +35,24 @@ def classify_evidence_event(event, task, metadata, config) -> RouteDecision:
 
     kind = str(meta.get("kind", "")).lower()
     artifact_bytes = int(meta.get("artifact_bytes", 0) or 0)
+    subject = str(event.get("subject") or "").lower()
+    artifact_path = str(event.get("artifact_path") or "").lower()
+
+    control_plane_markers = (
+        "control-plane",
+        "control plane",
+        "autoflow rollout",
+        "autoflow-rollout",
+        "finder-autoflow-rollout",
+    )
+    if any(
+        marker in subject or marker in artifact_path
+        for marker in control_plane_markers
+    ):
+        return RouteDecision(
+            route="SKIP_DETERMINISTIC",
+            reason="control-plane rollout evidence is not Logres gameplay/history evidence",
+        )
 
     if kind == "symbol_lookup" or (artifact_bytes and artifact_bytes <= 4096):
         return RouteDecision(
