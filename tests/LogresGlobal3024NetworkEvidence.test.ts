@@ -55,6 +55,8 @@ describe(
           gamePayloadBuffer:
             'oneup::Buffer',
           framingBytes:
+            'oneup Packetize 0x01 + uint32 sequence + base-128 payload length + 4-byte little-endian GmCl FUNCTION_ID + typed payload',
+          socketTransportBeyondPacketize:
             'UNRESOLVED',
         })
 
@@ -177,7 +179,7 @@ describe(
         expect(
           LOGRES_GLOBAL_3024_NETWORK_UNRESOLVED,
         ).toContain(
-          'exact wire packet header and framing byte layout',
+          'transport bytes below the confirmed oneup Packetize layer, if any',
         )
       },
     )

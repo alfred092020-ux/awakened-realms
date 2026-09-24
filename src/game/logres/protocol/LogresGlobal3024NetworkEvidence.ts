@@ -40,6 +40,8 @@ export const LOGRES_GLOBAL_3024_TRANSPORT =
         'CSException',
       ] as const),
     framingBytes:
+      'oneup Packetize 0x01 + uint32 sequence + base-128 payload length + 4-byte little-endian GmCl FUNCTION_ID + typed payload',
+    socketTransportBeyondPacketize:
       'UNRESOLVED',
   } as const)
 
@@ -171,8 +173,7 @@ export const LOGRES_GLOBAL_3024_NETWORK_AUTHORITY =
 
 export const LOGRES_GLOBAL_3024_NETWORK_UNRESOLVED =
   Object.freeze([
-    'exact numeric values of every FUNCTION_ID constant',
-    'exact wire packet header and framing byte layout',
+    'transport bytes below the confirmed oneup Packetize layer, if any',
     'exact transport encryption and compression behavior for each message class',
     '2017 production HostEntry payload values and server addresses',
     'server-side validation semantics beyond exposed result codes',
