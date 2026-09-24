@@ -4,6 +4,7 @@ import fcntl
 import json
 import os
 import signal
+import sqlite3
 import subprocess
 import time
 from dataclasses import dataclass
@@ -139,6 +140,44 @@ def due(job: ScheduledJob, state: dict, now_epoch: float) -> bool:
     return now_epoch - float(last) >= job.interval_seconds
 
 
+def actionable_integration_backlog(root: Path) -> int:
+    db = root / "control" / "control.sqlite"
+    if not db.exists():
+        return 0
+    try:
+        conn = sqlite3.connect(f"file:{db}?mode=ro", uri=True, timeout=1)
+        try:
+            row = conn.execute(
+                "select count(*) from integration_queue "
+                "where status='READY_FOR_PREFLIGHT'"
+            ).fetchone()
+            return int(row[0] if row else 0)
+        finally:
+            conn.close()
+    except (sqlite3.Error, OSError, ValueError):
+        return 0
+
+
+def should_run_job(
+    job: ScheduledJob,
+    state: dict,
+    now_epoch: float,
+    *,
+    integration_backlog: int,
+) -> bool:
+    if due(job, state, now_epoch):
+        return True
+    if job.name != "autonomy" or integration_backlog <= 0:
+        return False
+    last = ((state.get("last_runs") or {}).get(job.name) or {}).get("finished_epoch")
+    if last is None:
+        return True
+    # The supervisor itself ticks every 20s. Ten seconds prevents an external
+    # tick storm from bypassing the normal single-flight/autonomy cadence while
+    # still allowing the next supervisor tick to react to newly queued work.
+    return now_epoch - float(last) >= 10.0
+
+
 def append_log(root: Path, job: str, text: str) -> None:
     logs = root / "logs" / "supervisor"
     logs.mkdir(parents=True, exist_ok=True)
@@ -204,9 +243,12 @@ def tick(
     jobs: tuple[ScheduledJob, ...] | None = None,
     runner=subprocess.run,
     now_epoch: float | None = None,
+    integration_backlog: int | None = None,
 ) -> dict:
     jobs = default_jobs(root) if jobs is None else jobs
     now_epoch = time.time() if now_epoch is None else float(now_epoch)
+    if integration_backlog is None:
+        integration_backlog = actionable_integration_backlog(root)
     state = load_state(heartbeat_path)
     state.setdefault("started_at", utc_now())
     state["pid"] = os.getpid()
@@ -217,7 +259,12 @@ def tick(
 
     ran = []
     for job in jobs:
-        if not due(job, state, now_epoch):
+        if not should_run_job(
+            job,
+            state,
+            now_epoch,
+            integration_backlog=integration_backlog,
+        ):
             continue
         result = run_job(root, job, runner=runner)
         state["last_runs"][job.name] = result
