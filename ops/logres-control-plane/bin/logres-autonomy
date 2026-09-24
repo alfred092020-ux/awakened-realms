@@ -70,6 +70,7 @@ ROUTES = str(ROOT / "bin" / "logres-route-reconcile")
 TRAIN = str(ROOT / "bin" / "logres-merge-train")
 PREFLIGHT = str(ROOT / "bin" / "logres-merge-preflight")
 COORD = str(ROOT / "bin" / "logres-coordinator")
+RUNTIME_DEPLOY = str(ROOT / "bin" / "logres-runtime-deploy")
 INTEGRATION = "feat/logres-reconstruction"
 
 
@@ -99,6 +100,33 @@ def post(event_type: str, priority: str, subject: str, body: str, dedupe: str):
             dedupe,
         ]
     )
+
+
+def run_runtime_deploy(sha: str, *, runner=run):
+    return runner([RUNTIME_DEPLOY, "--sha", sha])
+
+
+def trip_on_runtime_deploy_failure(
+    preflight_id: int,
+    sha: str,
+    deployed,
+) -> dict:
+    detail = (
+        (deployed.stderr or "") + "\n" + (deployed.stdout or "")
+    )[-2000:]
+    state = record_failure(STATE, detail, 1)
+    post(
+        "AUTONOMY_FAILURE",
+        "CRITICAL",
+        f"Runtime deployment failed after preflight {preflight_id}",
+        (
+            f"integration={sha} returncode={deployed.returncode}; "
+            "autonomy circuit tripped immediately. Integration history "
+            "was preserved; runtime/source drift requires repair."
+        ),
+        f"autonomy-runtime-deploy-fail:{preflight_id}:{sha}",
+    )
+    return state
 
 
 def config() -> dict:
@@ -466,20 +494,39 @@ def cycle(*, dry_run: bool = False) -> int:
             print(json.dumps(result, indent=2, sort_keys=True))
             return 2
 
+        new_integration_sha = integration_sha()
+        deployed = run_runtime_deploy(new_integration_sha)
+        result["runtime_deploy"] = {
+            "requested": True,
+            "returncode": deployed.returncode,
+            "stdout": (deployed.stdout or "")[-4000:],
+        }
+        if deployed.returncode != 0:
+            new_state = trip_on_runtime_deploy_failure(
+                pid,
+                new_integration_sha,
+                deployed,
+            )
+            result["status"] = "RUNTIME_DEPLOY_FAILED"
+            result["circuit"] = new_state
+            result["new_integration_sha"] = new_integration_sha
+            print(json.dumps(result, indent=2, sort_keys=True))
+            return 2
+
         new_state = record_success(STATE, preflight_id=pid)
         result["status"] = "APPLIED"
         result["circuit"] = new_state
-        result["new_integration_sha"] = integration_sha()
+        result["new_integration_sha"] = new_integration_sha
         run([ROUTES])
         run([TRAIN, "status"])
         post(
             "DONE",
             "CRITICAL",
-            f"Autonomy integrated verified preflight {pid}",
+            f"Autonomy integrated and deployed verified preflight {pid}",
             (
                 f"integration={result['new_integration_sha']} "
-                "after exact-SHA full-E2E validation and fail-closed "
-                "policy checks."
+                "after exact-SHA full-E2E validation, runtime deployment, "
+                "and fail-closed policy checks."
             ),
             f"autonomy-applied:{pid}:{result['new_integration_sha']}",
         )

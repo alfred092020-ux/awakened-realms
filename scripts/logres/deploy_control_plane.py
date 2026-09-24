@@ -30,6 +30,7 @@ MANIFEST: dict[str, tuple[str, int]] = {
     "bin/logres-lead-takeover": ("bin/logres-lead-takeover", 0o755),
     "bin/logres-route-reconcile": ("bin/logres-route-reconcile", 0o755),
     "bin/logres-remote-pool": ("bin/logres-remote-pool", 0o755),
+    "bin/logres-runtime-deploy": ("bin/logres-runtime-deploy", 0o755),
     "bin/logres-verify-all-ref": ("bin/logres-verify-all-ref", 0o755),
     "bin/logres-verify-farm": ("bin/logres-verify-farm", 0o755),
     "lib/logres_ai_common.py": ("lib/logres_ai_common.py", 0o600),

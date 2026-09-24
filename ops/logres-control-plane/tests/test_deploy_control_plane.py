@@ -32,6 +32,7 @@ PRODUCTION_FILES = (
     "bin/logres-lead-takeover",
     "bin/logres-route-reconcile",
     "bin/logres-remote-pool",
+    "bin/logres-runtime-deploy",
     "bin/logres-verify-all-ref",
     "bin/logres-verify-farm",
     "lib/logres_ai_common.py",
