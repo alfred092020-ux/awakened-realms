@@ -1,0 +1,355 @@
+#!/home/ubuntu/logres/envs/research/bin/python
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import sqlite3
+import subprocess
+import sys
+from pathlib import Path
+
+CONTROL_ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(CONTROL_ROOT / "lib"))
+
+from logres_ai_runner import automatic_api_allowed, budget_state
+from logres_swarm import (
+    acquire_task,
+    available_worker_ids,
+    create_job,
+    ensure_schema,
+    load_config,
+    mark_job_running,
+    reconcile_jobs,
+    register_worker,
+    select_research_tasks,
+    status_dict,
+    swarm_capacity,
+)
+
+
+ROOT = Path(os.environ.get("LOGRES_ROOT", "/home/ubuntu/logres"))
+DB = Path(
+    os.environ.get(
+        "LOGRES_CONTROL_DB",
+        str(ROOT / "control/control.sqlite"),
+    )
+)
+CONFIG = Path(
+    os.environ.get(
+        "LOGRES_AUTOFLOW_CONFIG",
+        str(ROOT / "control/autoflow.json"),
+    )
+)
+LOGS = ROOT / "logs/swarm"
+BRAIN = str(ROOT / "bin/logres-brain")
+COPILOT = str(ROOT / "bin/logres-copilot-router")
+RESEARCH = str(ROOT / "bin/logres-research-agent")
+
+
+def connect() -> sqlite3.Connection:
+    conn = sqlite3.connect(DB, timeout=30)
+    conn.row_factory = sqlite3.Row
+    conn.execute("pragma busy_timeout=30000")
+    ensure_schema(conn)
+    return conn
+
+
+def run(argv):
+    return subprocess.run(
+        [str(x) for x in argv],
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+
+
+def release_stale(conn: sqlite3.Connection, stale_ids: list[int]) -> list[dict]:
+    released = []
+    for job_id in stale_ids:
+        row = conn.execute(
+            "select task_id,worker_id from swarm_jobs where id=?",
+            (job_id,),
+        ).fetchone()
+        if not row:
+            continue
+        lease = conn.execute(
+            "select 1 from brain_task_leases where task_id=? and chat_id=?",
+            (row["task_id"], row["worker_id"]),
+        ).fetchone()
+        if lease:
+            run([str(ROOT / "bin/logres-control"), "release", row["task_id"]])
+            run(
+                [
+                    BRAIN,
+                    "release",
+                    row["worker_id"],
+                    row["task_id"],
+                    "--status",
+                    "READY",
+                    "--note",
+                    "Swarm research process exited unexpectedly; stale lease recovered.",
+                ]
+            )
+            released.append(
+                {
+                    "job_id": job_id,
+                    "task_id": row["task_id"],
+                    "worker_id": row["worker_id"],
+                }
+            )
+    return released
+
+
+def prior_failures(conn: sqlite3.Connection, task_id: str) -> int:
+    return int(
+        conn.execute(
+            "select count(*) from swarm_jobs where task_id=? and state='FAILED'",
+            (task_id,),
+        ).fetchone()[0]
+    )
+
+
+def post_once(subject: str, body: str, dedupe: str, task: str | None = None):
+    cmd = [
+        BRAIN,
+        "post",
+        "system",
+        "ALL",
+        "INFO",
+        "NORMAL",
+        subject,
+        "--body",
+        body,
+        "--dedupe",
+        dedupe,
+    ]
+    if task:
+        cmd += ["--task", task]
+    run(cmd)
+
+
+def dispatch_research(
+    conn: sqlite3.Connection,
+    cfg: dict,
+    *,
+    limit: int,
+) -> list[dict]:
+    if limit <= 0:
+        return []
+    workers = available_worker_ids(conn, cfg)
+    if not workers:
+        return []
+
+    swarm_cfg = cfg.get("swarm", {})
+    model = str(
+        swarm_cfg.get("research_model")
+        or cfg.get("openai", {}).get("auto_model")
+        or "gpt-5.6-luna"
+    )
+    max_attempts = int(swarm_cfg.get("research_max_attempts", 2) or 2)
+
+    candidates = select_research_tasks(
+        conn,
+        min(limit, len(workers)) * 3,
+    )
+    dispatched = []
+    for task in candidates:
+        if len(dispatched) >= min(limit, len(workers)):
+            break
+        task_id = task["id"]
+        failures = prior_failures(conn, task_id)
+        if failures >= max_attempts:
+            post_once(
+                f"Swarm research retry ceiling: {task_id}",
+                (
+                    f"Automatic research failed {failures} time(s); "
+                    "leaving task READY for manual/Lead review instead of looping."
+                ),
+                f"swarm-retry-ceiling:{task_id}:{failures}",
+                task_id,
+            )
+            continue
+
+        budget = budget_state(
+            conn,
+            cfg,
+            int(task.get("priority") or 9),
+            model,
+        )
+        if not automatic_api_allowed(
+            budget,
+            int(task.get("priority") or 9),
+        ):
+            continue
+
+        worker = workers[len(dispatched)]
+        register_worker(ROOT, worker)
+        branch = acquire_task(ROOT, worker, task_id)
+        if not branch:
+            continue
+
+        try:
+            job_id = create_job(
+                conn,
+                task_id,
+                worker,
+                "research",
+            )
+        except sqlite3.IntegrityError:
+            run(
+                [
+                    BRAIN,
+                    "release",
+                    worker,
+                    task_id,
+                    "--status",
+                    "READY",
+                    "--note",
+                    "Duplicate live swarm job detected; released safely.",
+                ]
+            )
+            continue
+
+        LOGS.mkdir(parents=True, exist_ok=True)
+        log_path = LOGS / f"{job_id}-{task_id}.log"
+        log_handle = open(log_path, "ab", buffering=0)
+        proc = subprocess.Popen(
+            [
+                RESEARCH,
+                "--task",
+                task_id,
+                "--worker",
+                worker,
+                "--job-id",
+                str(job_id),
+            ],
+            stdout=log_handle,
+            stderr=subprocess.STDOUT,
+            start_new_session=True,
+            close_fds=True,
+        )
+        log_handle.close()
+        mark_job_running(conn, job_id, proc.pid)
+        dispatched.append(
+            {
+                "task_id": task_id,
+                "worker_id": worker,
+                "job_id": job_id,
+                "pid": proc.pid,
+                "branch": branch,
+                "log": str(log_path),
+                "budget": budget,
+            }
+        )
+    return dispatched
+
+
+def dispatch_copilot(limit: int) -> dict:
+    if limit <= 0:
+        return {"dispatched": 0, "jobs": []}
+    result = run([COPILOT, "--limit", str(limit)])
+    if result.returncode:
+        return {
+            "dispatched": 0,
+            "jobs": [],
+            "error": ((result.stderr or "") + (result.stdout or ""))[-2000:],
+        }
+    try:
+        return json.loads(result.stdout)
+    except json.JSONDecodeError:
+        return {
+            "dispatched": 0,
+            "jobs": [],
+            "error": result.stdout[-2000:],
+        }
+
+
+def tick(dry_run: bool = False) -> dict:
+    cfg = load_config(CONFIG)
+    swarm_cfg = cfg.get("swarm", {})
+    conn = connect()
+    stale = reconcile_jobs(conn)
+    recovered = release_stale(conn, stale)
+
+    before = swarm_capacity(conn, cfg)
+    payload = {
+        "enabled": bool(swarm_cfg.get("enabled", False)),
+        "before": before.__dict__,
+        "stale_recovered": recovered,
+        "copilot": {"dispatched": 0, "jobs": []},
+        "research": [],
+        "dry_run": dry_run,
+    }
+    if not payload["enabled"] or before.free_slots <= 0:
+        payload["after"] = swarm_capacity(conn, cfg).__dict__
+        conn.close()
+        return payload
+
+    if dry_run:
+        payload["research_candidates"] = [
+            task["id"]
+            for task in select_research_tasks(
+                conn,
+                before.free_slots,
+            )
+        ]
+        payload["after"] = before.__dict__
+        conn.close()
+        return payload
+
+    # Code agents first: they can produce candidates while research workers
+    # independently attack evidence gaps.
+    impl_limit = min(
+        before.free_slots,
+        int(swarm_cfg.get("implementation_dispatch_per_tick", 2) or 2),
+    )
+    payload["copilot"] = dispatch_copilot(impl_limit)
+
+    # Recompute because Copilot jobs consume swarm capacity.
+    cap = swarm_capacity(conn, cfg)
+    research_cfg_limit = int(
+        swarm_cfg.get("research_workers", 2) or 2
+    )
+    openai_soft_limit = int(
+        cfg.get("openai", {}).get("max_active_hard", research_cfg_limit)
+        or research_cfg_limit
+    )
+    research_limit = min(
+        cap.free_slots,
+        max(0, research_cfg_limit - cap.active_research),
+        openai_soft_limit,
+    )
+    payload["research"] = dispatch_research(
+        conn,
+        cfg,
+        limit=research_limit,
+    )
+    payload["after"] = swarm_capacity(conn, cfg).__dict__
+    conn.close()
+    return payload
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser(prog="logres-swarm")
+    sub = ap.add_subparsers(dest="command", required=True)
+    sub.add_parser("status")
+    tick_p = sub.add_parser("tick")
+    tick_p.add_argument("--dry-run", action="store_true")
+    args = ap.parse_args()
+
+    cfg = load_config(CONFIG)
+    conn = connect()
+    if args.command == "status":
+        reconcile_jobs(conn)
+        out = status_dict(conn, cfg)
+        conn.close()
+        print(json.dumps(out, indent=2, sort_keys=True))
+        return 0
+    conn.close()
+    print(json.dumps(tick(args.dry_run), indent=2, sort_keys=True))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

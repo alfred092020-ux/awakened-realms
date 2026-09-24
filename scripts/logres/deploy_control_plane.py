@@ -14,6 +14,8 @@ MANIFEST: dict[str, tuple[str, int]] = {
     "bin/logres-autonomy": ("bin/logres-autonomy", 0o755),
     "bin/logres-autonomy-cron": ("bin/logres-autonomy-cron", 0o755),
     "bin/logres-autopilot-watch": ("bin/logres-autopilot-watch", 0o755),
+    "bin/logres-research-agent": ("bin/logres-research-agent", 0o755),
+    "bin/logres-swarm": ("bin/logres-swarm", 0o755),
     "bin/logres-coordinator": ("bin/logres-coordinator", 0o755),
     "bin/logres-copilot-router": ("bin/logres-copilot-router", 0o755),
     "bin/logres-merge-preflight": ("bin/logres-merge-preflight", 0o755),
@@ -33,6 +35,8 @@ MANIFEST: dict[str, tuple[str, int]] = {
     "lib/logres_reconcile.py": ("lib/logres_reconcile.py", 0o600),
     "lib/logres_route_policy.py": ("lib/logres_route_policy.py", 0o600),
     "lib/logres_route_store.py": ("lib/logres_route_store.py", 0o600),
+    "lib/logres_research_agent.py": ("lib/logres_research_agent.py", 0o600),
+    "lib/logres_swarm.py": ("lib/logres_swarm.py", 0o600),
     "config/autoflow.default.json": ("config/autoflow.default.json", 0o600),
 }
 

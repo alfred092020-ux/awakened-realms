@@ -34,5 +34,15 @@
     "min_free_memory_gib": 12.0,
     "min_free_disk_gib": 30.0,
     "max_load_per_cpu": 1.25
+  },
+  "swarm": {
+    "enabled": false,
+    "max_workers": 6,
+    "research_workers": 2,
+    "implementation_dispatch_per_tick": 2,
+    "research_model": "gpt-5.6-luna",
+    "research_web_search_enabled": true,
+    "research_max_output_tokens": 6000,
+    "research_max_attempts": 2
   }
 }

@@ -44,6 +44,13 @@ AUTONOMY_CRON_LINE = (
     ">>/home/ubuntu/logres/logs/autonomy-cron.log 2>&1 "
     + AUTONOMY_CRON_MARKER
 )
+SWARM_CRON_MARKER = "# LOGRES_SWARM_V1"
+SWARM_CRON_LINE = (
+    "* * * * * flock -n /tmp/logres-swarm.cron.lock "
+    "nice -n 10 ionice -c3 /home/ubuntu/logres/bin/logres-swarm tick "
+    ">>/home/ubuntu/logres/logs/swarm-cron.log 2>&1 "
+    + SWARM_CRON_MARKER
+)
 
 
 def rewrite_crontab(existing: str, *, install: bool = True) -> str:
@@ -53,7 +60,7 @@ def rewrite_crontab(existing: str, *, install: bool = True) -> str:
         if not line:
             kept.append("")
             continue
-        if AUTONOMY_CRON_MARKER in line:
+        if AUTONOMY_CRON_MARKER in line or SWARM_CRON_MARKER in line:
             continue
         # Autonomy v3 owns integration preflight cadence. Remove the old
         # standalone producer to avoid duplicate full-E2E work and races.
@@ -65,6 +72,7 @@ def rewrite_crontab(existing: str, *, install: bool = True) -> str:
         kept.pop()
     if install:
         kept.append(AUTONOMY_CRON_LINE)
+        kept.append(SWARM_CRON_LINE)
     return "\n".join(kept) + ("\n" if kept else "")
 
 

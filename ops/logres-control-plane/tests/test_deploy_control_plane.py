@@ -16,6 +16,8 @@ PRODUCTION_FILES = (
     "bin/logres-autonomy",
     "bin/logres-autonomy-cron",
     "bin/logres-autopilot-watch",
+    "bin/logres-research-agent",
+    "bin/logres-swarm",
     "bin/logres-coordinator",
     "bin/logres-copilot-router",
     "bin/logres-merge-preflight",
@@ -35,6 +37,8 @@ PRODUCTION_FILES = (
     "lib/logres_reconcile.py",
     "lib/logres_route_policy.py",
     "lib/logres_route_store.py",
+    "lib/logres_research_agent.py",
+    "lib/logres_swarm.py",
     "config/autoflow.default.json",
 )
 

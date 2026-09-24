@@ -63,3 +63,23 @@ Idle autonomy ticks use a cheap fast path: coordinator/merge state is refreshed 
 Use `logres-autonomy-cron install` to install the managed one-minute autonomy line and remove the obsolete standalone `logres-merge-preflight run` cron. The installer is idempotent and saves the previous crontab under `control/cron-backups/`.
 
 Copilot dispatch now scans beyond ineligible READY tasks. Research/manual/leased/conflicting tasks are skipped with reasons while the router keeps scanning for the next safe critical-path implementation candidate, up to the configured dispatch limit.
+
+## Auto-saturating hybrid worker swarm
+
+`logres-swarm` continuously fills safe free worker capacity instead of waiting for a human to open another chat. Committed defaults keep the swarm disabled; runtime configuration must explicitly set `swarm.enabled=true`.
+
+The swarm counts active Brain leases and active Copilot jobs against the same global worker ceiling. READY implementation/regression work is offered to the existing bounded Copilot router. READY research/evidence work is assigned atomically to virtual `auto-research-N` workers and executed by `logres-research-agent`.
+
+Research agents are evidence-only. They do not edit the repository. Each job builds a deterministic local evidence bundle from the task packet and indexed Logres helpers, then uses the configured OpenAI Responses model with built-in web search when enabled. Results use a strict provenance schema, explicitly grade every acceptance criterion, write a hashed artifact under `artifacts/swarm-research/`, post Brain evidence, and either complete the task or leave it `BLOCKED_EVIDENCE`. Transient worker failures return the task to READY. Per-task retry ceilings prevent infinite loops.
+
+The research agent shares the existing `api_usage` budget ledger, so autonomous research obeys the same OpenAI budget state and model-rate accounting as the evidence router. Current-JP evidence remains reference-only unless independently tied to recovered Global evidence.
+
+A managed one-minute `LOGRES_SWARM_V1` cron refills capacity alongside the one-minute integration autonomy loop. Stale research processes are detected, their leases are recovered, and safe READY work can immediately refill the slot.
+
+Useful commands:
+
+```bash
+logres-swarm status
+logres-swarm tick --dry-run
+logres-swarm tick
+```
