@@ -1,0 +1,144 @@
+#!/usr/bin/env python3
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import sys
+from pathlib import Path
+
+
+CONTROL_ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(CONTROL_ROOT / "lib"))
+
+from logres_remote_pool import PoolError, RemotePool
+
+
+ROOT = Path(os.environ.get("LOGRES_ROOT", "/home/ubuntu/logres"))
+REPO = Path(
+    os.environ.get(
+        "LOGRES_REPO_ROOT",
+        str(ROOT / "src/awakened-realms"),
+    )
+)
+SSH_KEY = Path(
+    os.environ.get(
+        "LOGRES_UPCLOUD_SSH_KEY",
+        "/home/ubuntu/.ssh/logres_upcloud",
+    )
+)
+ARTIFACT_ROOT = Path(
+    os.environ.get(
+        "LOGRES_REMOTE_POOL_ARTIFACT_ROOT",
+        str(ROOT / "artifacts/remote-pool"),
+    )
+)
+LOCK_PATH = Path(
+    os.environ.get(
+        "LOGRES_REMOTE_POOL_LOCK",
+        "/tmp/logres-remote-pool-sync.lock",
+    )
+)
+
+
+def pool() -> RemotePool:
+    return RemotePool(
+        root=REPO,
+        ssh_key=SSH_KEY,
+        artifact_root=ARTIFACT_ROOT,
+        lock_path=LOCK_PATH,
+    )
+
+
+def cmd_status(args: argparse.Namespace) -> int:
+    rows = pool().health()
+    if args.json:
+        print(json.dumps(rows, indent=2, sort_keys=True))
+        return 0
+    for row in rows:
+        print(
+            f"{row['role']:5} "
+            f"reachable={str(row['reachable']).lower()} "
+            f"host={row['host']} "
+            f"slots={row.get('available_slots', 0)}/{row.get('max_slots', 0)} "
+            f"workers={row.get('active_workers', 0)} "
+            f"cpu={row.get('cpu_count', 0)} "
+            f"node={row.get('node_version', '-')} "
+            f"sha={str(row.get('checkout_sha') or '-')[:12]}"
+        )
+        if not row["reachable"]:
+            print(f"  error={row.get('error', '')}")
+    return 0 if all(row["reachable"] for row in rows) else 1
+
+
+def cmd_sync(args: argparse.Namespace) -> int:
+    sha = pool().sync(args.sha)
+    print(f"POOL_SYNCED sha={sha}")
+    return 0
+
+
+def cmd_run(args: argparse.Namespace) -> int:
+    results = pool().run(
+        args.role,
+        args.job,
+        args.npm_script,
+        args.sha,
+        reassignable=args.reassignable,
+        retries=args.retries,
+    )
+    print(json.dumps(results, indent=2, sort_keys=True))
+    return 0
+
+
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        prog="logres-remote-pool",
+        description=(
+            "Exact-SHA verification/build execution across the bounded "
+            "Logres UpCloud compute pool."
+        ),
+    )
+    sub = parser.add_subparsers(dest="command", required=True)
+
+    status = sub.add_parser("status")
+    status.add_argument("--json", action="store_true")
+    status.set_defaults(func=cmd_status)
+
+    sync = sub.add_parser("sync")
+    sync.add_argument("sha", help="full immutable 40-character commit SHA")
+    sync.set_defaults(func=cmd_sync)
+
+    run = sub.add_parser("run")
+    run.add_argument(
+        "role",
+        choices=("heavy", "light", "both", "auto"),
+    )
+    run.add_argument("job")
+    run.add_argument("npm_script")
+    run.add_argument("sha", help="full immutable 40-character commit SHA")
+    run.add_argument(
+        "--reassignable",
+        action="store_true",
+        help="allow one verification failover to the other worker",
+    )
+    run.add_argument(
+        "--retries",
+        type=int,
+        choices=(0, 1),
+        default=0,
+    )
+    run.set_defaults(func=cmd_run)
+    return parser
+
+
+def main() -> int:
+    args = build_parser().parse_args()
+    try:
+        return int(args.func(args))
+    except PoolError as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return 2
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
