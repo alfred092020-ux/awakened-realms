@@ -192,6 +192,26 @@ export const LOGRES_ASSETS = {
       ),
   },
 
+  tutorialFieldUnderbar: {
+    key:
+      'logres-global-tutorial-field-underbar',
+
+    url:
+      logresRuntimeUrl(
+        '/__logres_ref/global/tutorial-hud/hud/field_underbar.png',
+      ),
+  },
+
+  tutorialFieldMenu: {
+    key:
+      'logres-global-tutorial-field-menu',
+
+    url:
+      logresRuntimeUrl(
+        '/__logres_ref/global/tutorial-hud/hud/field_menu.png',
+      ),
+  },
+
   equipmentSkillBase: {
     key:
       'logres-global-equipment-skill-base',
