@@ -298,11 +298,23 @@ def plan_one(
             continue
         contract_fp = result["contract_fingerprint"]
         template_fp = canonical_fingerprint(template)
-        task_id = deterministic_task_id(
-            milestone_id,
-            criterion_id,
-            contract_fp,
-        )
+        check = raw.get("check") or {}
+        if str(check.get("type") or "") == "task_state":
+            task_id = str(check.get("task_id") or "").strip()
+            if not task_id:
+                skipped.append(
+                    {
+                        "criterion_id": criterion_id,
+                        "reason": "task_state criterion requires explicit task_id",
+                    }
+                )
+                continue
+        else:
+            task_id = deterministic_task_id(
+                milestone_id,
+                criterion_id,
+                contract_fp,
+            )
         generated = _generation_row(
             conn,
             milestone_id,
@@ -326,7 +338,7 @@ def plan_one(
             skipped.append(
                 {
                     "criterion_id": criterion_id,
-                    "reason": f"deterministic task id already exists: {task_id}",
+                    "reason": f"generated task id already exists: {task_id}",
                 }
             )
             continue

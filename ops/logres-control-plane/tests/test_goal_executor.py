@@ -204,7 +204,7 @@ class GoalExecutorTests(unittest.TestCase):
         result = self.plan(contract(criterion(task_template=template())))
         self.assertIsNotNone(result["candidate"])
         self.assertEqual("missing-task", result["candidate"]["criterion_id"])
-        self.assertTrue(result["candidate"]["task_id"].startswith("GOAL-M1-"))
+        self.assertEqual("MISSING", result["candidate"]["task_id"])
 
     def test_evidence_dependency_and_external_checks_never_generate(self):
         for check_type in ("evidence_state", "dependency_state", "external_manual"):
@@ -291,7 +291,33 @@ class GoalExecutorTests(unittest.TestCase):
             contract(criterion(task_template=task_template), title="Second")
         )
         self.assertIsNone(second["candidate"])
-        self.assertIn("equivalent task", second["skipped"][0]["reason"])
+        self.assertIn("already exists with status=READY", second["skipped"][0]["reason"])
+
+    def test_generated_task_completion_satisfies_same_task_state_criterion(self):
+        task_template = template()
+        payload = contract(criterion(task_template=task_template))
+
+        def runner(argv, **kwargs):
+            seed_equivalent(self.conn, argv[2], task_template)
+            return subprocess.CompletedProcess(argv, 0, "CREATED", "")
+
+        created = apply_one(
+            self.conn,
+            payload,
+            "M1",
+            integration_sha="a" * 40,
+            root=self.root,
+            coordinator="/bin/coordinator",
+            runner=runner,
+        )
+        self.assertEqual("MISSING", created["task_id"])
+        self.conn.execute("update tasks set status='DONE' where id='MISSING'")
+        self.conn.commit()
+
+        after = self.plan(payload)
+        self.assertIsNone(after["candidate"])
+        self.assertTrue(after["milestone"]["criteria"][0]["passed"])
+        self.assertEqual("PASS", after["milestone"]["criteria"][0]["status"])
 
     def test_coordinator_args_preserve_operational_template(self):
         task_template = template(
