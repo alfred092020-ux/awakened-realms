@@ -1,0 +1,89 @@
+#!/usr/bin/env python3
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import sys
+from pathlib import Path
+
+CONTROL_ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(CONTROL_ROOT / "lib"))
+
+from logres_temporal import (
+    TemporalBackfillError,
+    fact_at_date,
+    get_entity,
+    lattice_stats,
+    load_lattice,
+    query_entities,
+)
+
+ROOT = Path(os.environ.get("LOGRES_ROOT", "/home/ubuntu/logres"))
+DEFAULT_LATTICE = ROOT / "artifacts/logres-hyperdimension-temporal-lattice-20260924.json"
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser(prog="logres-temporal")
+    ap.add_argument(
+        "--lattice",
+        type=Path,
+        default=Path(os.environ.get("LOGRES_TEMPORAL_LATTICE", str(DEFAULT_LATTICE))),
+    )
+    sub = ap.add_subparsers(dest="command", required=True)
+
+    q = sub.add_parser("query")
+    q.add_argument("--entity")
+    q.add_argument("--version")
+    q.add_argument("--relation")
+    q.add_argument("--evidence-grade")
+    q.add_argument("--kind")
+    q.add_argument("--limit", type=int, default=50)
+
+    e = sub.add_parser("entity")
+    e.add_argument("entity_id")
+
+    a = sub.add_parser("at")
+    a.add_argument("entity_id")
+    a.add_argument("date")
+
+    sub.add_parser("stats")
+    args = ap.parse_args()
+
+    try:
+        lattice = load_lattice(args.lattice)
+        if args.command == "query":
+            out = query_entities(
+                lattice,
+                entity=args.entity,
+                version=args.version,
+                relation=args.relation,
+                evidence_grade=args.evidence_grade,
+                kind=args.kind,
+                limit=args.limit,
+            )
+        elif args.command == "entity":
+            out = get_entity(lattice, args.entity_id)
+        elif args.command == "at":
+            out = fact_at_date(lattice, args.entity_id, args.date)
+        else:
+            out = lattice_stats(lattice)
+    except TemporalBackfillError as exc:
+        print(json.dumps({
+            "error": "TEMPORAL_BACKFILL_REJECTED",
+            "message": str(exc),
+        }, indent=2, sort_keys=True))
+        return 2
+    except (KeyError, ValueError, FileNotFoundError) as exc:
+        print(json.dumps({
+            "error": type(exc).__name__,
+            "message": str(exc),
+        }, indent=2, sort_keys=True))
+        return 1
+
+    print(json.dumps(out, indent=2, sort_keys=True))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
