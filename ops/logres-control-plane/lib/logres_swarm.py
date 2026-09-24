@@ -196,6 +196,18 @@ def select_research_tasks(
     return selected
 
 
+def prior_failures(conn: sqlite3.Connection, task_id: str) -> int:
+    ensure_schema(conn)
+    return int(
+        conn.execute(
+            """select count(*) from swarm_jobs
+                where task_id=? and state='FAILED'
+                  and artifact_path is not null""",
+            (task_id,),
+        ).fetchone()[0]
+    )
+
+
 def worker_ids(config: dict) -> list[str]:
     count = int(config.get("swarm", {}).get("research_workers", 2) or 2)
     return [f"auto-research-{i}" for i in range(1, max(1, count) + 1)]

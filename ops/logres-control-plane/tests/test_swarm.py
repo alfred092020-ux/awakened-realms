@@ -16,6 +16,7 @@ from logres_swarm import (
     classify_engine,
     create_job,
     ensure_schema,
+    prior_failures,
     reconcile_jobs,
     select_research_tasks,
     swarm_capacity,
@@ -105,6 +106,29 @@ class SwarmTests(unittest.TestCase):
 
         self.assertEqual(1, len(ids))
         self.assertIn(ids[0], {"R1", "R2"})
+
+    def test_infrastructure_failures_do_not_consume_research_retry_budget(self):
+        seed_task(
+            self.conn,
+            task_id="R1",
+            status="READY",
+            work_type="research",
+        )
+        self.conn.execute(
+            """insert into swarm_jobs(
+                 task_id,worker_id,engine,state,pid,artifact_path,last_error
+               ) values('R1','auto-research-1','research','FAILED',101,null,
+                        'missing credential')"""
+        )
+        self.conn.execute(
+            """insert into swarm_jobs(
+                 task_id,worker_id,engine,state,pid,artifact_path,last_error
+               ) values('R1','auto-research-2','research','FAILED',102,
+                        '/tmp/semantic.json','semantic failure')"""
+        )
+        self.conn.commit()
+
+        self.assertEqual(1, prior_failures(self.conn, "R1"))
 
     def test_dead_swarm_process_is_marked_failed(self):
         seed_task(
