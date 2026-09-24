@@ -171,7 +171,8 @@
             "pass_statuses": [
               "DONE",
               "RESOLVED"
-            ]
+            ],
+            "integration_required": true
           },
           "task_template": {
             "title": "Complete evidence-bounded Logres UI and menu runtime",
@@ -207,7 +208,8 @@
             "pass_statuses": [
               "DONE",
               "RESOLVED"
-            ]
+            ],
+            "integration_required": true
           },
           "task_template": {
             "title": "Bind recovered Logres audio runtime",
@@ -242,6 +244,10 @@
             "pass_statuses": [
               "DONE",
               "RESOLVED"
+            ],
+            "integration_required": true,
+            "integration_task_ids": [
+              "MISSION-ANDROID-CLIENT-INTEGRATE-002"
             ]
           },
           "task_template": {
@@ -279,7 +285,8 @@
             "pass_statuses": [
               "DONE",
               "RESOLVED"
-            ]
+            ],
+            "integration_required": true
           },
           "task_template": {
             "title": "Complete NPC dialogue and scripted interaction runtime",
@@ -317,7 +324,8 @@
             "pass_statuses": [
               "DONE",
               "RESOLVED"
-            ]
+            ],
+            "integration_required": true
           },
           "task_template": {
             "title": "Complete reconstructed quest gameplay flow",
@@ -370,7 +378,8 @@
             "pass_statuses": [
               "DONE",
               "RESOLVED"
-            ]
+            ],
+            "integration_required": true
           },
           "task_template": {
             "title": "Build evidence-bounded progression and job runtime",
@@ -405,7 +414,8 @@
             "pass_statuses": [
               "DONE",
               "RESOLVED"
-            ]
+            ],
+            "integration_required": true
           },
           "task_template": {
             "title": "Complete inventory and equipment gameplay authority",
@@ -442,7 +452,8 @@
             "pass_statuses": [
               "DONE",
               "RESOLVED"
-            ]
+            ],
+            "integration_required": true
           },
           "task_template": {
             "title": "Build evidence-bounded economy and enhancement runtime",
@@ -478,7 +489,8 @@
             "pass_statuses": [
               "DONE",
               "RESOLVED"
-            ]
+            ],
+            "integration_required": true
           },
           "task_template": {
             "title": "Harden Logres persistence and recovery",
@@ -530,7 +542,8 @@
             "pass_statuses": [
               "DONE",
               "RESOLVED"
-            ]
+            ],
+            "integration_required": true
           },
           "task_template": {
             "title": "Expand evidence-backed map and region content",
@@ -565,7 +578,8 @@
             "pass_statuses": [
               "DONE",
               "RESOLVED"
-            ]
+            ],
+            "integration_required": true
           },
           "task_template": {
             "title": "Expand evidence-backed NPC and actor content",
@@ -600,7 +614,8 @@
             "pass_statuses": [
               "DONE",
               "RESOLVED"
-            ]
+            ],
+            "integration_required": true
           },
           "task_template": {
             "title": "Expand evidence-backed enemy boss and skill content",
@@ -635,7 +650,8 @@
             "pass_statuses": [
               "DONE",
               "RESOLVED"
-            ]
+            ],
+            "integration_required": true
           },
           "task_template": {
             "title": "Expand evidence-backed item and equipment content",
@@ -670,7 +686,8 @@
             "pass_statuses": [
               "DONE",
               "RESOLVED"
-            ]
+            ],
+            "integration_required": true
           },
           "task_template": {
             "title": "Expand evidence-backed quest content",
@@ -721,7 +738,8 @@
             "pass_statuses": [
               "DONE",
               "RESOLVED"
-            ]
+            ],
+            "integration_required": true
           },
           "task_template": {
             "title": "Close critical historical truth coverage",
@@ -756,7 +774,8 @@
             "pass_statuses": [
               "DONE",
               "RESOLVED"
-            ]
+            ],
+            "integration_required": true
           },
           "task_template": {
             "title": "Certify critical behavioral fidelity",
@@ -793,7 +812,8 @@
             "pass_statuses": [
               "DONE",
               "RESOLVED"
-            ]
+            ],
+            "integration_required": true
           },
           "task_template": {
             "title": "Certify reconstructed visual fidelity coverage",
@@ -828,7 +848,8 @@
             "pass_statuses": [
               "DONE",
               "RESOLVED"
-            ]
+            ],
+            "integration_required": true
           },
           "task_template": {
             "title": "Certify source-to-runtime asset lineage",
@@ -864,7 +885,8 @@
             "pass_statuses": [
               "DONE",
               "RESOLVED"
-            ]
+            ],
+            "integration_required": true
           },
           "task_template": {
             "title": "Establish and enforce Logres performance budgets",
@@ -915,7 +937,8 @@
             "pass_statuses": [
               "DONE",
               "RESOLVED"
-            ]
+            ],
+            "integration_required": true
           },
           "task_template": {
             "title": "Produce reproducible Logres Android release candidate",
