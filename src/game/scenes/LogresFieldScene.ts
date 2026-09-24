@@ -28,11 +28,6 @@ import {
   preloadLogresAssets,
 } from '../logres/ui/LogresRuntimeAssets'
 
-import {
-  preloadLogresFieldActorAssets,
-} from '../logres/field/LogresFieldActorRuntimeAssets'
-
-
 export class LogresFieldScene
   extends Phaser.Scene {
   private readonly actorController:
@@ -96,9 +91,16 @@ export class LogresFieldScene
       .marker
   }
 
+  get playablePlayer() {
+    return this.actorController
+      .player
+  }
+
   preload() {
     preloadLogresAssets(this)
-    preloadLogresFieldActorAssets(this)
+
+    this.actorController
+      .preload()
 
     this.renderController
       .preload()
@@ -185,6 +187,7 @@ export class LogresFieldScene
       this.actorController
         .createPlayer(
           spawnPoint,
+          transform,
         )
 
     this.movementController

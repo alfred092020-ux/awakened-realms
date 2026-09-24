@@ -2,7 +2,20 @@ import Phaser from 'phaser'
 
 import {
   LOGRES_FIELD_ACTOR_ASSETS,
+  preloadLogresFieldActorAssets,
 } from '../LogresFieldActorRuntimeAssets'
+
+import {
+  LOGRES_PLAYER_ACTOR_PRESENTATION,
+  logresPlayerMotionApplication,
+  logresPlayerReferenceSex,
+  readLogresPlayerGenderFromCharacterCreateRequest,
+} from '../LogresPlayerActorPresentation'
+
+import {
+  LOGRES_PLAYER_ACTOR_ASSETS,
+  preloadLogresPlayerActorAssets,
+} from '../LogresPlayerActorRuntimeAssets'
 
 import {
   LOGRES_TUTORIAL_GREEN_JELL_IDLE_ANIMATION,
@@ -17,6 +30,7 @@ import {
 
 import {
   projectLogresPlayableFieldTileToRaster,
+  type LogresPlayableFieldRasterTransform,
 } from '../LogresPlayableFieldRuntime'
 
 import type {
@@ -45,6 +59,10 @@ export class LogresFieldActorController {
     | null =
       null
 
+  private playerValue:
+    LogresPlayablePlayer | null =
+      null
+
   constructor(
     scene:
       Phaser.Scene,
@@ -57,29 +75,146 @@ export class LogresFieldActorController {
     return this.encounterMarker
   }
 
+  get player() {
+    return this.playerValue
+  }
+
+  preload() {
+    preloadLogresFieldActorAssets(
+      this.scene,
+    )
+
+    preloadLogresPlayerActorAssets(
+      this.scene,
+    )
+  }
+
   createPlayer(
     spawnPoint:
       Readonly<{
         x: number
         y: number
       }>,
+    transform:
+      Readonly<LogresPlayableFieldRasterTransform>,
   ): LogresPlayablePlayer {
-    return this.scene.add
-      .circle(
-        spawnPoint.x,
-        spawnPoint.y,
-        12,
-        0xffffff,
-        0.95,
+    const playerGender =
+      readLogresPlayerGenderFromCharacterCreateRequest(
+        this.scene.registry.get(
+          'logres.protocol.C_GMCL_CHAR_CREATE_REQ',
+        ),
       )
-      .setStrokeStyle(
-        3,
-        0x111111,
-        1,
+
+    const referenceSex =
+      playerGender ===
+        null
+        ? null
+        : logresPlayerReferenceSex(
+            playerGender,
+          )
+
+    const referenceAsset =
+      referenceSex ===
+        'f'
+        ? LOGRES_PLAYER_ACTOR_ASSETS
+            .female
+        : LOGRES_PLAYER_ACTOR_ASSETS
+            .male
+
+    const hasRecoveredPlayerPresentation =
+      referenceSex !==
+        null &&
+      this.scene.textures.exists(
+        referenceAsset
+          .key,
       )
-      .setDepth(
-        900,
+
+    if (
+      hasRecoveredPlayerPresentation &&
+      playerGender !==
+        null
+    ) {
+      this.playerValue =
+        this.scene.add
+          .image(
+            spawnPoint.x,
+            spawnPoint.y,
+            referenceAsset
+              .key,
+          )
+          .setOrigin(
+            0.5,
+            1,
+          )
+          .setScale(
+            transform.fit,
+          )
+          .setDepth(
+            900,
+          )
+
+      this.scene.registry.set(
+        'logres.playableField.playerVisualPresentation',
+        {
+          mode:
+            'RECOVERED_REFERENCE_ART',
+
+          gender:
+            playerGender,
+
+          referenceSex,
+
+          ...LOGRES_PLAYER_ACTOR_PRESENTATION,
+
+          motionApplication:
+            logresPlayerMotionApplication(
+              playerGender,
+            ),
+
+          scaleSource:
+            'PLAYABLE_FIELD_TRANSFORM_FIT',
+
+          anchor:
+            'BOTTOM_CENTER_NAVIGATION_TILE',
+        },
       )
+
+      return this.playerValue
+    }
+
+    this.playerValue =
+      this.scene.add
+        .circle(
+          spawnPoint.x,
+          spawnPoint.y,
+          12,
+          0xffffff,
+          0.95,
+        )
+        .setStrokeStyle(
+          3,
+          0x111111,
+          1,
+        )
+        .setDepth(
+          900,
+        )
+
+    this.scene.registry.set(
+      'logres.playableField.playerVisualPresentation',
+      {
+        mode:
+          'PLACEHOLDER_FALLBACK',
+
+        reason:
+          playerGender ===
+            null
+            ? 'CHARACTER_CREATE_GENDER_UNAVAILABLE'
+            : 'PRIVATE_REFERENCE_ASSET_UNAVAILABLE',
+      },
+    )
+
+    return this.playerValue
   }
 
   createEncounterMarker(

@@ -10,6 +10,11 @@ import {
   logresDevMs,
 } from '../logres/LogresDevSettings'
 
+import {
+  LOGRES_GLOBAL_3024_TERMS_GATE,
+  LOGRES_GLOBAL_3024_WORLD_SELECTION,
+} from '../logres/onboarding/LogresGlobal3024BootEvidence'
+
 interface WorldSelectStrings {
   world_select?: {
     world?: string
@@ -81,6 +86,72 @@ export class LogresWorldSelectScene
   }
 
   create() {
+    this.selecting =
+      false
+
+    /*
+     * ReleaseScene_WorldSelector is CONFIRMED ORIGINAL, but the observed
+     * launch-era first-run path is Terms -> Select Gender with no visible
+     * World Selector in between. Global 3.0.24 also exposes saved/default/
+     * requested world-ID helpers plus SkipWorldSelect.
+     *
+     * Model World Select as the login/world-resolution boundary:
+     * - agreement not accepted -> original AgreementWebView boundary;
+     * - account/replacement state says selection not required -> skip UI;
+     * - explicit unresolved world state -> render the native selector.
+     */
+    if (
+      this.registry.get(
+        'logres.auth.termsAccepted',
+      ) !== true
+    ) {
+      this.registry.set(
+        'logres.auth.loginResult',
+        LOGRES_GLOBAL_3024_TERMS_GATE
+          .loginFailureCode,
+      )
+
+      this.registry.set(
+        'logres.world.selectorFlowProvenance',
+        LOGRES_GLOBAL_3024_WORLD_SELECTION
+          .provenance,
+      )
+
+      this.scene.start(
+        'LogresTermsScene',
+      )
+
+      return
+    }
+
+    if (
+      this.registry.get(
+        'logres.world.selectionRequired',
+      ) !== true
+    ) {
+      this.registry.set(
+        'logres.world.selectionStatus',
+        'SKIPPED_CONDITIONAL',
+      )
+
+      this.registry.set(
+        'logres.world.selectorFlowProvenance',
+        LOGRES_GLOBAL_3024_WORLD_SELECTION
+          .provenance,
+      )
+
+      this.scene.start(
+        'LogresCharacterCreateScene',
+      )
+
+      return
+    }
+
+    this.registry.set(
+      'logres.world.selectionStatus',
+      'USER_REQUIRED',
+    )
+
     const strings =
       this.cache.json.get(
         'logres-world-select-en',
@@ -416,6 +487,16 @@ export class LogresWorldSelectScene
     this.registry.set(
       'logres.world.selectedId',
       world.id,
+    )
+
+    this.registry.set(
+      'logres.world.selectionRequired',
+      false,
+    )
+
+    this.registry.set(
+      'logres.world.selectionStatus',
+      'USER_SELECTED',
     )
 
     card

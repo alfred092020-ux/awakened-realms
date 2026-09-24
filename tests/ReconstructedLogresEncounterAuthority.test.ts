@@ -9,6 +9,13 @@ import {
   ReconstructedLogresEncounterAuthority,
 } from '../src/game/logres/encounter/ReconstructedLogresEncounterAuthority'
 
+import {
+  LOGRES_GLOBAL_3024_ENCOUNTER_NATIVE_PROVENANCE,
+  LOGRES_GLOBAL_BATTLE_ENTRY_GATE_ORDER,
+  LOGRES_GLOBAL_BATTLE_ENTRY_RETRY_SECONDS,
+  logresGlobalBattleEntryResponseMeaning,
+} from '../src/game/logres/encounter/LogresGlobalEncounterNativeEvidence'
+
 function eligible() {
   return {
     globalEncounterAllowed:
@@ -27,6 +34,49 @@ function eligible() {
 describe(
   'reconstructed Logres encounter authority',
   () => {
+    it(
+      'locks the confirmed Global 3.0.24 encounter gate order and only resolved response meanings',
+      () => {
+        expect(
+          LOGRES_GLOBAL_BATTLE_ENTRY_GATE_ORDER,
+        ).toEqual([
+          'GLOBAL_ENCOUNTER_ALLOWED',
+          'ENCOUNTER_ENABLED',
+          'ENTRY_NOT_ALREADY_ACCEPTED',
+          'ENCOUNTER_STATE_PRESENT',
+          'RETRY_WAIT_ELAPSED_AND_REQUEST_NOT_PENDING',
+          'ENTRY_STATE_ELIGIBLE',
+          'QUEST_STATE_ELIGIBLE',
+          'DISTANCE_TO_SELF_PLAYER_ELIGIBLE',
+          'REQUEST_BATTLE_ENTRY',
+        ])
+
+        expect(
+          logresGlobalBattleEntryResponseMeaning(
+            1,
+          ),
+        ).toBe(
+          'ENTRY_ACCEPTED',
+        )
+
+        expect(
+          logresGlobalBattleEntryResponseMeaning(
+            2,
+          ),
+        ).toBe(
+          'RETRY_WAIT_1_SECOND',
+        )
+
+        expect(
+          logresGlobalBattleEntryResponseMeaning(
+            0,
+          ),
+        ).toBe(
+          'UNRESOLVED',
+        )
+      },
+    )
+
     it(
       'keeps original field identifiers nullable while creating a local battle-entry intent',
       () => {
@@ -115,7 +165,7 @@ describe(
     )
 
     it(
-      'preserves raw battle-entry response codes and does not invent retry timing',
+      'applies the confirmed Global 3.0.24 one-second retry for response code 2',
       () => {
         const authority =
           new ReconstructedLogresEncounterAuthority({
@@ -150,10 +200,73 @@ describe(
           lastResponseCode:
             2,
           retryDelaySeconds:
-            null,
+            LOGRES_GLOBAL_BATTLE_ENTRY_RETRY_SECONDS,
+          entryAccepted:
+            false,
           battleInitialized:
             false,
         })
+      },
+    )
+
+    it(
+      'marks response code 1 as the distinct confirmed Global entry-accepted state',
+      () => {
+        expect(
+          LOGRES_GLOBAL_3024_ENCOUNTER_NATIVE_PROVENANCE,
+        ).toBe(
+          'CONFIRMED_GLOBAL_3_0_24_NATIVE',
+        )
+
+        const authority =
+          new ReconstructedLogresEncounterAuthority({
+            encounterKey:
+              'enemy-a',
+            areaRef:
+              null,
+            symbolRef:
+              null,
+            mapPosition:
+              null,
+            rawEntryState:
+              0,
+            eligibility:
+              eligible(),
+          })
+
+        authority.createBattleEntryIntent()
+
+        authority.recordBattleEntryResponse({
+          rawCode:
+            1,
+        })
+
+        expect(
+          authority.snapshot(),
+        ).toMatchObject({
+          requestPending:
+            false,
+          lastResponseCode:
+            1,
+          retryDelaySeconds:
+            null,
+          entryAccepted:
+            true,
+        })
+
+        expect(
+          authority.snapshot()
+            .rawEntryState,
+        ).toBe(
+          0,
+        )
+
+        expect(
+          () =>
+            authority.createBattleEntryIntent(),
+        ).toThrow(
+          'already accepted',
+        )
       },
     )
 

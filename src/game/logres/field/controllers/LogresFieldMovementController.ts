@@ -4,6 +4,11 @@ import {
   findReconstructedLogresFieldPath,
 } from '../LogresFieldPathfinder'
 
+import {
+  LOGRES_GLOBAL_3024_NATIVE_FIELD_PROVENANCE,
+  resolveLogresGlobalMoveTarget,
+} from '../LogresGlobalNativeFieldEvidence'
+
 import type {
   LogresFieldNavigationTile,
 } from '../LogresFieldNavigation'
@@ -109,6 +114,11 @@ export class LogresFieldMovementController {
       `RECONSTRUCTED_${LOGRES_RECONSTRUCTED_FIELD_STEP_MS}MS_PER_GRAPH_STEP`,
     )
 
+    this.scene.registry.set(
+      'logres.playableField.moveDestinationResolver',
+      LOGRES_GLOBAL_3024_NATIVE_FIELD_PROVENANCE,
+    )
+
     this.syncRegistry()
   }
 
@@ -155,7 +165,7 @@ export class LogresFieldMovementController {
       return
     }
 
-    const target =
+    const requestedTarget =
       nearestLogresPlayableFieldTile(
         pointer.worldX,
         pointer.worldY,
@@ -163,11 +173,54 @@ export class LogresFieldMovementController {
           .movement
           .tiles,
         this.transformValue,
+        true,
       )
 
-    if (!target) {
+    if (!requestedTarget) {
       return
     }
+
+    const destinationResolution =
+      resolveLogresGlobalMoveTarget(
+        this.currentTileValue,
+        requestedTarget,
+        this.runtimeValue
+          .movement
+          .tileAt,
+      )
+
+    if (!destinationResolution) {
+      return
+    }
+
+    const target =
+      destinationResolution
+        .resolved
+
+    this.scene.registry.set(
+      'logres.playableField.lastMoveDestinationResolution',
+      {
+        provenance:
+          destinationResolution
+            .provenance,
+
+        requested:
+          destinationResolution
+            .requested,
+
+        resolved: {
+          col:
+            target.col,
+
+          row:
+            target.row,
+        },
+
+        usedFallback:
+          destinationResolution
+            .usedFallback,
+      },
+    )
 
     const path =
       findReconstructedLogresFieldPath(

@@ -379,9 +379,13 @@ test(
       1080,
     )
 
+    // Global 3.0.24 first-run evidence resolves Start through the account
+    // agreement boundary before gender selection. World Select remains a
+    // conditional native scene and is covered independently when world state
+    // explicitly requires user selection.
     await waitForScene(
       page,
-      'LogresWorldSelectScene',
+      'LogresTermsScene',
     )
 
     expect(
@@ -391,7 +395,7 @@ test(
             .__AWAKENED_REALMS_GAME__
             .scene
             .isActive(
-              'LogresWorldSelectScene',
+              'LogresTermsScene',
             ),
       ),
     ).toBe(true)
