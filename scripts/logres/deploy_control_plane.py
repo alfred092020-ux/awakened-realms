@@ -40,6 +40,7 @@ MANIFEST: dict[str, tuple[str, int]] = {
     "bin/logres-goal": ("bin/logres-goal", 0o755),
     "bin/logres-goal-executor": ("bin/logres-goal-executor", 0o755),
     "bin/logres-goal-certify": ("bin/logres-goal-certify", 0o755),
+    "bin/logres-hardware-qa": ("bin/logres-hardware-qa", 0o755),
     "bin/logres-finish-loop": ("bin/logres-finish-loop", 0o755),
     "bin/logres-impact": ("bin/logres-impact", 0o755),
     "bin/logres-preview-reaper": ("bin/logres-preview-reaper", 0o755),

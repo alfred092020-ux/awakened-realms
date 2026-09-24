@@ -1,0 +1,442 @@
+#!/usr/bin/env python3
+from __future__ import annotations
+import argparse, fcntl, hashlib, json, os, shlex, sqlite3, subprocess, sys, time
+from datetime import datetime, timezone
+from pathlib import Path
+
+ROOT=Path("/home/ubuntu/logres")
+REPO=ROOT/"src/awakened-realms"
+CONTROL=ROOT/"control"
+DB=CONTROL/"control.sqlite"
+PHONE_DIR=CONTROL/"android-device"
+PHONE_QA=PHONE_DIR/"logres-phone-qa"
+KEY=PHONE_DIR/"qa_controller_ed25519"
+PHONE_PORT="22023"
+PHONE="u0_a452@127.0.0.1"
+PKG="com.nexuscore.awakenedrealms"
+ACTIVITY=f"{PKG}/.MainActivity"
+APK_DIR=ROOT/"artifacts/apk"
+PROOFS=PHONE_DIR/"proofs"
+LOCK=Path("/tmp/logres-phone-hardware-qa.lock")
+
+class QAError(RuntimeError): pass
+
+def run(args, *, check=True, capture=True, timeout=None):
+    p=subprocess.run(args, text=True, stdout=subprocess.PIPE if capture else None,
+                     stderr=subprocess.PIPE if capture else None, timeout=timeout)
+    if check and p.returncode:
+        raise QAError(f"command failed rc={p.returncode}: {shlex.join(map(str,args))}\n{p.stderr or p.stdout}")
+    return (p.stdout or "").strip()
+
+def phone(command, *, check=True, timeout=30):
+    return run(["ssh","-p",PHONE_PORT,"-i",str(KEY),"-o","BatchMode=yes",
+                "-o","ConnectTimeout=8",PHONE,command],check=check,timeout=timeout)
+
+def adb_shell(command, *, check=True):
+    return run([str(PHONE_QA),"shell",command],check=check,timeout=30)
+
+def sha256(path: Path):
+    h=hashlib.sha256()
+    with path.open("rb") as f:
+        for b in iter(lambda:f.read(1024*1024),b""): h.update(b)
+    return h.hexdigest()
+
+def canonical_sha():
+    return run(["git","-C",str(REPO),"rev-parse","origin/feat/logres-reconstruction"])
+
+def verified(sha):
+    c=sqlite3.connect(DB)
+    row=c.execute("""select status,ran_at,details from verification
+      where sha=? and mode='full-e2e' and status='PASS'
+      order by ran_at desc limit 1""",(sha,)).fetchone()
+    c.close()
+    return row
+
+def ensure_apk(sha):
+    apk=APK_DIR/f"Awakened-Realms-demo-0.2-canonical-{sha[:12]}.apk"
+    if apk.exists(): return apk
+    run([str(REPO/"scripts/logres/build_android_checkpoint.sh"),
+         "--ref",sha,"--label","demo-0.2-canonical"],capture=False,timeout=900)
+    if not apk.exists(): raise QAError(f"expected APK missing after build: {apk}")
+    return apk
+
+def state():
+    raw=phone('$HOME/bin/logres-cdp state')
+    return json.loads(raw.splitlines()[-1])
+
+def wait_scene(scene, timeout=25):
+    raw=phone(f'$HOME/bin/logres-cdp wait-scene {shlex.quote(scene)} --timeout {float(timeout)}',
+              timeout=int(timeout)+10)
+    return json.loads(raw.splitlines()[-1])
+
+def tap(x,y):
+    raw=phone(f'$HOME/bin/logres-tap-logical {float(x)} {float(y)}')
+    return json.loads(raw.splitlines()[-1])
+
+def screenshot(out: Path):
+    run([str(PHONE_QA),"screenshot",str(out)],timeout=30)
+    if not out.exists() or out.stat().st_size < 2048:
+        raise QAError(f"invalid screenshot: {out}")
+
+def save_state(out: Path, obj):
+    out.write_text(json.dumps(obj,indent=2,sort_keys=True)+"\n")
+
+def playable_battle_plan(snapshot):
+    registry=snapshot.get("registry",{})
+    presentation=registry.get("logres.battle.presentation") or {}
+    if presentation.get("showDemoControls") is not False:
+        raise QAError("canonical battle must not expose demo/harness controls")
+    stage=registry.get("logres.battle.stagePresentation") or {}
+    enemy=stage.get("enemy") or {}
+    x=enemy.get("x"); y=enemy.get("y")
+    if not isinstance(x,(int,float)) or not isinstance(y,(int,float)):
+        raise QAError("playable battle enemy tap target is missing")
+    authority=registry.get("logres.playableBattle.authority") or {}
+    threshold=authority.get("victoryThreshold")
+    accepted=authority.get("acceptedCommandCount")
+    if not isinstance(threshold,int) or threshold < 1 or threshold > 20:
+        raise QAError(f"invalid playable victoryThreshold={threshold!r}")
+    if not isinstance(accepted,int) or accepted < 0 or accepted > threshold:
+        raise QAError(f"invalid playable acceptedCommandCount={accepted!r}")
+    return {"x":float(x),"y":float(y),"threshold":threshold,"accepted":accepted}
+
+def require_command_progress(snapshot, expected_min, threshold):
+    registry=snapshot.get("registry",{})
+    status=registry.get("logres.playableBattle.status")
+    authority=registry.get("logres.playableBattle.authority") or {}
+    accepted=authority.get("acceptedCommandCount")
+    if status == "FIELD_RETURN_READY":
+        return accepted if isinstance(accepted,int) else threshold
+    if not isinstance(accepted,int) or accepted < expected_min:
+        raise QAError(
+            f"playable battle command did not advance: accepted={accepted!r} "
+            f"expected>={expected_min}"
+        )
+    return accepted
+
+def require_playable_victory(snapshot):
+    registry=snapshot.get("registry",{})
+    if registry.get("logres.playableBattle.status") != "FIELD_RETURN_READY":
+        raise QAError("playable battle never reached FIELD_RETURN_READY")
+    authority=registry.get("logres.playableBattle.authority") or {}
+    if authority.get("phase") != "victory-ready":
+        raise QAError("playable battle authority did not reach victory-ready")
+    threshold=authority.get("victoryThreshold")
+    accepted=authority.get("acceptedCommandCount")
+    if not isinstance(threshold,int) or not isinstance(accepted,int) or accepted < threshold:
+        raise QAError("playable battle victory threshold was not satisfied")
+    resolution=registry.get("logres.playableBattle.resolution") or {}
+    if resolution.get("phase") != "field-return-ready":
+        raise QAError("battle resolution flow did not reach field-return-ready")
+    if registry.get("logres.playableBattle.rewardApplied") is not True:
+        raise QAError("fresh playable battle did not apply reconstructed reward")
+    inventory=registry.get("logres.playableBattle.inventory") or {}
+    if inventory.get("provenance") != "RECONSTRUCTED":
+        raise QAError("playable battle inventory provenance is not RECONSTRUCTED")
+    if not isinstance(inventory.get("revision"),int) or inventory.get("revision") < 1:
+        raise QAError("playable battle inventory revision did not advance")
+    entries=inventory.get("entries")
+    grants=inventory.get("appliedGrantKeys")
+    if not isinstance(entries,list) or not entries:
+        raise QAError("playable battle inventory has no reward entry")
+    if not isinstance(grants,list) or not grants:
+        raise QAError("playable battle inventory has no applied grant key")
+    return inventory
+
+def require_field_return(snapshot, expected_inventory):
+    registry=snapshot.get("registry",{})
+    scenes=snapshot.get("activeScenes") or []
+    if "LogresFieldScene" not in scenes:
+        raise QAError("battle return did not activate LogresFieldScene")
+    if registry.get("logres.playableField.status") != "READY":
+        raise QAError("returned field did not reach READY")
+    inventory=registry.get("logres.playableBattle.inventory") or {}
+    if inventory != expected_inventory:
+        raise QAError("playable battle reward inventory was not retained after field return")
+    return True
+
+def start_recording():
+    cmd=r'''set -e
+"$HOME/bin/logres-adb-connect" >/dev/null 2>&1 || true
+DEV=$(adb devices | awk 'NR==2{print $1}')
+adb -s "$DEV" shell rm -f /sdcard/logres-hardware-qa.mp4 >/dev/null 2>&1 || true
+nohup adb -s "$DEV" shell screenrecord --bit-rate 6000000 --time-limit 150 /sdcard/logres-hardware-qa.mp4 >"$HOME/.logres/screenrecord.log" 2>&1 </dev/null &
+echo $!'''
+    return phone(cmd)
+
+def stop_recording(out: Path):
+    cmd=r'''set +e
+"$HOME/bin/logres-adb-connect" >/dev/null 2>&1
+DEV=$(adb devices | awk 'NR==2{print $1}')
+adb -s "$DEV" shell pkill -INT screenrecord >/dev/null 2>&1 || true
+sleep 2
+adb -s "$DEV" pull /sdcard/logres-hardware-qa.mp4 "$HOME/logres-hardware-qa.mp4" >/dev/null 2>&1 || true
+test -s "$HOME/logres-hardware-qa.mp4"'''
+    phone(cmd,check=False,timeout=15)
+    run(["scp","-P",PHONE_PORT,"-i",str(KEY),"-o","BatchMode=yes",
+         f"{PHONE}:/data/data/com.termux/files/home/logres-hardware-qa.mp4",str(out)],
+        check=False,timeout=60)
+
+def capture_logcat(out: Path):
+    run([str(PHONE_QA),"logcat",str(out)],check=False,timeout=30)
+
+def artifact_map(proof: Path):
+    result={}
+    for p in sorted(proof.iterdir()):
+        if p.is_file() and p.name!="device-proof.json":
+            result[p.name]={"path":str(p),"sha256":sha256(p),"bytes":p.stat().st_size}
+    return result
+
+def record_db(sha, apk, proof_json, status, note):
+    subprocess.run([str(ROOT/"bin/logres-device-proof"),"record",sha,status,
+                    "--apk",str(apk),"--checkpoint","demo-0.2",
+                    "--artifact",str(proof_json),"--note",note],
+                   text=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+
+def update_task(note, *, proof_status):
+    try:
+        c=sqlite3.connect(DB,timeout=10)
+        c.execute("pragma busy_timeout=10000")
+        if proof_status=="PASS":
+            c.execute(
+                """update tasks
+                      set note=?,status='DONE',owner=null,updated_at=?
+                    where id='ANDROID-VISUAL-QA-001'
+                      and status not in ('SUPERSEDED','CANCELLED')""",
+                (note,datetime.now(timezone.utc).isoformat(timespec="seconds")),
+            )
+        else:
+            c.execute(
+                "update tasks set note=? where id='ANDROID-VISUAL-QA-001'",
+                (note,),
+            )
+        c.commit(); c.close()
+        if proof_status=="PASS":
+            subprocess.run(
+                [str(ROOT/"bin/logres-coordinator"),"reconcile"],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                check=False,
+            )
+    except Exception:
+        pass
+
+def main():
+    ap=argparse.ArgumentParser()
+    ap.add_argument("--sha")
+    args=ap.parse_args()
+
+    LOCK.touch(exist_ok=True)
+    lf=LOCK.open("r+")
+    try: fcntl.flock(lf.fileno(),fcntl.LOCK_EX|fcntl.LOCK_NB)
+    except BlockingIOError:
+        print("HARDWARE_QA busy"); return 0
+
+    sha=args.sha or canonical_sha()
+    v=verified(sha)
+    if not v:
+        print(f"HARDWARE_QA skip sha={sha[:12]} reason=no-exact-full-e2e-pass")
+        return 2
+
+    proof=PROOFS/sha
+    proof.mkdir(parents=True,exist_ok=True)
+    started=datetime.now(timezone.utc).isoformat(timespec="seconds")
+    checks={}
+    states={}
+    failure=None
+    apk=None
+    recording=False
+
+    try:
+        apk=ensure_apk(sha)
+
+        # Dedicated QA profile + basic health.
+        phone('$HOME/bin/logres-qa-profile')
+        health=phone(r'''set -e
+"$HOME/bin/logres-adb-connect" >/dev/null 2>&1 || true
+DEV=$(adb devices | awk 'NR==2{print $1}')
+adb -s "$DEV" shell dumpsys battery | grep -E "AC powered:|USB powered:|level:|temperature:" | head -8
+adb -s "$DEV" shell dumpsys thermalservice | grep -m1 "Thermal Status:"''')
+        (proof/"health.txt").write_text(health+"\n")
+
+        # Install exact APK, then clear only this app for a true first-run launch.
+        run([str(PHONE_QA),"install",str(apk)],timeout=120)
+        adb_shell(f"am force-stop {PKG}",check=False)
+        adb_shell(f"pm clear {PKG}")
+        adb_shell("logcat -c",check=False)
+
+        start_recording(); recording=True
+        adb_shell(f"am start -W -n {ACTIVITY}")
+
+        states["title"]=wait_scene("LogresTitleScene",30)
+        save_state(proof/"title.state.json",states["title"])
+        screenshot(proof/"title.png")
+        checks["cold_launch"]="PASS"; checks["title_render"]="PASS"
+
+        tap(360,1080)
+        states["agreement"]=wait_scene("LogresTermsScene",30)
+        save_state(proof/"agreement.state.json",states["agreement"])
+        screenshot(proof/"agreement.png")
+        checks["agreement_render"]="PASS"
+
+        tap(360,1110)
+        states["gender"]=wait_scene("LogresCharacterCreateScene",30)
+        save_state(proof/"gender.state.json",states["gender"])
+        screenshot(proof/"gender.png")
+        checks["gender_select_render"]="PASS"
+
+        # Wait through the original fade-in before pressing the native OK control.
+        time.sleep(1.0)
+        tap(360,1152)
+        states["field"]=wait_scene("LogresFieldScene",35)
+        # Async field load continues after scene activation; wait for READY registry.
+        deadline=time.time()+30
+        while time.time()<deadline:
+            s=state()
+            if s.get("registry",{}).get("logres.playableField.status")=="READY":
+                states["field"]=s; break
+            time.sleep(.5)
+        save_state(proof/"field.state.json",states["field"])
+        screenshot(proof/"field.png")
+        if states["field"].get("registry",{}).get("logres.playableField.status")!="READY":
+            raise QAError("LogresFieldScene active but playable field never reached READY")
+        checks["field_render"]="PASS"
+
+        # Deterministic current tutorial marker screen position on canonical field.
+        # Input is still injected by Android ADB after Phaser->surface mapping.
+        tap(526,625)
+        states["battle"]=wait_scene("LogresBattleScene",35)
+        save_state(proof/"battle.state.json",states["battle"])
+        screenshot(proof/"battle.png")
+        checks["touch_encounter_transition"]="PASS"
+        checks["battle_render"]="PASS"
+
+        # Drive only the production battle surface. The canonical battle
+        # exposes the visible enemy itself as the normal-attack target; hidden
+        # harness/demo resolve controls are rejected by playable_battle_plan().
+        plan=playable_battle_plan(states["battle"])
+        accepted=plan["accepted"]
+        victory_state=states["battle"]
+        for expected in range(accepted+1,plan["threshold"]+1):
+            tap(plan["x"],plan["y"])
+            deadline=time.time()+10
+            while time.time()<deadline:
+                victory_state=state()
+                registry=victory_state.get("registry",{})
+                authority=registry.get("logres.playableBattle.authority") or {}
+                if (
+                    registry.get("logres.playableBattle.status")=="FIELD_RETURN_READY"
+                    or (
+                        isinstance(authority.get("acceptedCommandCount"),int)
+                        and authority["acceptedCommandCount"]>=expected
+                    )
+                ):
+                    break
+                time.sleep(.25)
+            require_command_progress(victory_state,expected,plan["threshold"])
+
+        states["victory"]=victory_state
+        inventory=require_playable_victory(victory_state)
+        save_state(proof/"victory.state.json",victory_state)
+        screenshot(proof/"victory.png")
+        checks["battle_victory"]="PASS"
+        checks["reward_inventory"]="PASS"
+
+        # The production return control is a visible Phaser text button centered
+        # at logical (360,160). Do not call scene APIs through CDP.
+        tap(360,160)
+        states["field_return"]=wait_scene("LogresFieldScene",35)
+        deadline=time.time()+30
+        while time.time()<deadline:
+            s=state()
+            if (
+                "LogresFieldScene" in (s.get("activeScenes") or [])
+                and s.get("registry",{}).get("logres.playableField.status")=="READY"
+            ):
+                states["field_return"]=s
+                break
+            time.sleep(.5)
+        require_field_return(states["field_return"],inventory)
+        save_state(proof/"field-return.state.json",states["field_return"])
+        screenshot(proof/"field-return.png")
+        checks["field_return"]="PASS"
+        checks["battle_victory_return"]="PASS"
+
+    except Exception as e:
+        failure=f"{type(e).__name__}: {e}"
+        checks["automation_failure"]="FAIL"
+    finally:
+        if recording:
+            stop_recording(proof/"run.mp4")
+        capture_logcat(proof/"logcat.txt")
+
+    logcat=(proof/"logcat.txt").read_text(errors="replace") if (proof/"logcat.txt").exists() else ""
+    fatal=("FATAL EXCEPTION" in logcat and PKG in logcat)
+    checks["fatal_android_exception"]="FAIL" if fatal else "PASS"
+    if fatal and not failure: failure="Android FATAL EXCEPTION detected in Logres process"
+
+    status="FAIL" if failure else "PASS"
+    finished=datetime.now(timezone.utc).isoformat(timespec="seconds")
+
+    meta={}
+    try:
+        meta={
+          "manufacturer":adb_shell("getprop ro.product.manufacturer"),
+          "model":adb_shell("getprop ro.product.model"),
+          "android_version":adb_shell("getprop ro.build.version.release"),
+          "sdk":adb_shell("getprop ro.build.version.sdk"),
+          "display":adb_shell("wm size").replace("Physical size: ","").strip(),
+          "density":adb_shell("wm density").replace("Physical density: ","").strip(),
+        }
+    except Exception: pass
+
+    packet={
+      "schema_version":2,
+      "canonical_sha":sha,
+      "started_at":started,
+      "finished_at":finished,
+      "status":status,
+      "failure":failure,
+      "verification":{"status":"PASS","ran_at":v[1],"details":v[2]},
+      "apk":{"path":str(apk) if apk else None,"sha256":sha256(apk) if apk and apk.exists() else None},
+      "device":meta,
+      "transport":{
+        "vm_to_phone":"reverse SSH autossh",
+        "android_control":"paired Wireless ADB over phone loopback",
+        "runtime_probe":"Chrome DevTools Protocol -> live Phaser runtime",
+        "input":"ADB input taps mapped from Phaser logical coordinates",
+      },
+      "checks":checks,
+      "states":{k:{"activeScenes":v.get("activeScenes"),"registryKeys":sorted(v.get("registry",{}).keys())} for k,v in states.items()},
+      "artifacts":artifact_map(proof),
+    }
+    proof_json=proof/"device-proof.json"
+    proof_json.write_text(json.dumps(packet,indent=2,sort_keys=True)+"\n")
+
+    if status=="PASS":
+        note=(
+          f"Automated physical Samsung SM-S908U QA for exact canonical {sha[:12]} PASSED: "
+          "cold launch -> Title -> Agreement -> Gender -> Millennium Tree -> encounter -> "
+          "production Battle -> Victory/Reward -> Millennium Tree field return. "
+          "Only visible production controls were used; hidden logresBattleHarness controls "
+          f"were not used. Evidence: {proof_json}."
+        )
+    else:
+        note=(
+          f"Automated physical Samsung SM-S908U QA for exact canonical {sha[:12]} FAILED "
+          f"before full production battle-return certification: {failure or 'unknown failure'}. "
+          f"Evidence: {proof_json}."
+        )
+    record_db(sha,apk,proof_json,status,note)
+    update_task(note,proof_status=status)
+    (PHONE_DIR/"last-tested-sha").write_text(sha+"\n")
+    (PHONE_DIR/"last-run.json").write_text(json.dumps({"sha":sha,"status":status,"proof":str(proof_json),"finished_at":finished},indent=2)+"\n")
+
+    print(f"HARDWARE_QA status={status} sha={sha[:12]} proof={proof_json}")
+    if failure:
+        print(f"HARDWARE_QA failure={failure}",file=sys.stderr)
+        return 1
+    return 0
+
+if __name__=="__main__":
+    raise SystemExit(main())
