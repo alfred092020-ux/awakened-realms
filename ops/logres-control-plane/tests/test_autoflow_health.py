@@ -113,6 +113,10 @@ class AutoflowHealthTests(unittest.TestCase):
             self.assertIn(helper, watcher)
         self.assertIn("flock", watcher)
 
+        self.assertIn("SYSTEM_TOOL_DIRS", doctor)
+        self.assertIn('Path("/usr/sbin")', doctor)
+        self.assertIn("except FileNotFoundError", doctor)
+
         for check in (
             "route_schema",
             "route_cursor",
