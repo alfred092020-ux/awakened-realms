@@ -23,4 +23,4 @@ python3 scripts/logres/deploy_control_plane.py \
 
 Remove `--dry-run` only after reviewing the manifest and passing the relevant tests.
 
-Automatic OpenAI and Copilot routing remains disabled until the staged rollout task explicitly enables it.
+The committed defaults remain fail-closed: automatic OpenAI and Copilot dispatch are disabled in Git. Live routing is enabled only in runtime-only `/home/ubuntu/logres/control/autoflow.json` after current model pricing is configured, doctor is clean, and the staged AI/Copilot safety gates pass. Copilot must target `feat/logres-reconstruction`, remain on isolated `copilot/*` branches, use draft PRs, pass scope and verification gates, and never auto-merge.

@@ -1,0 +1,108 @@
+#!/usr/bin/env bash
+set -euo pipefail
+BASE=/home/ubuntu/logres/src/awakened-realms
+CONTROL=/home/ubuntu/logres/bin/logres-control
+REF="${1:-origin/feat/logres-reconstruction}"
+ROOT=/home/ubuntu/logres/tmp
+PRIVATE_ANCHOR=/home/ubuntu/logres/private/logres-private-cache.zip
+GLOBAL_ARCHIVE=/home/ubuntu/logres/private/global-files.zip
+FINAL_VERIFY_LOCK=/home/ubuntu/logres/control/final-verify.lock
+FINAL_VERIFY_LOCK_WAIT_SECONDS="${LOGRES_FINAL_VERIFY_LOCK_WAIT_SECONDS:-900}"
+
+# Playwright uses a fixed preview port (4174). Multiple authoritative final
+# gates must serialize rather than racing into the same webServer.
+mkdir -p "$(dirname "$FINAL_VERIFY_LOCK")"
+exec 9>"$FINAL_VERIFY_LOCK"
+if ! flock -w "$FINAL_VERIFY_LOCK_WAIT_SECONDS" 9; then
+  echo "FINAL_GATE could not acquire verification lock within ${FINAL_VERIFY_LOCK_WAIT_SECONDS}s" >&2
+  exit 75
+fi
+echo "[lock] final verification acquired"
+
+WT="$(mktemp -d "$ROOT/verify-all-once.XXXXXX")"
+rmdir "$WT"
+START=$(date +%s)
+SHA=unknown
+cleanup() {
+  rc=$?
+  trap - EXIT INT TERM
+  git -C "$BASE" worktree remove --force "$WT" >/dev/null 2>&1 || true
+  END=$(date +%s); DUR=$((END-START))
+  if [[ $rc -eq 0 ]]; then STATUS=PASS; else STATUS=FAIL; fi
+  "$CONTROL" record-verify "$REF" "$SHA" full-e2e "$STATUS" "$DUR"     "verify:all+private-renderer-proof" >/dev/null 2>&1 || true
+  exit $rc
+}
+trap cleanup EXIT INT TERM
+
+git -C "$BASE" worktree add --detach "$WT" "$REF" >/dev/null
+SHA="$(git -C "$WT" rev-parse HEAD)"
+
+base_lock="$(sha256sum "$BASE/package-lock.json" | awk '{print $1}')"
+ref_lock="$(sha256sum "$WT/package-lock.json" | awk '{print $1}')"
+if [[ "$base_lock" == "$ref_lock" && -d "$BASE/node_modules" ]]; then
+  ln -s "$BASE/node_modules" "$WT/node_modules"
+  echo "[deps] shared canonical node_modules"
+else
+  echo "[deps] lockfile differs; local npm ci"
+  (cd "$WT" && npm ci --prefer-offline --no-audit --no-fund)
+fi
+
+# Final verification must not depend on the repository's fixed development
+# preview port. A prior crashed/manual preview can outlive its parent process.
+# Give this detached verification worktree an isolated ephemeral port.
+E2E_PORT=$(python3 - <<'PY'
+import socket
+s=socket.socket()
+s.bind(("127.0.0.1", 0))
+print(s.getsockname()[1])
+s.close()
+PY
+)
+python3 - "$WT/playwright.config.mjs" "$E2E_PORT" <<'PY'
+from pathlib import Path
+import sys
+p=Path(sys.argv[1]); port=sys.argv[2]
+s=p.read_text()
+s=s.replace("127.0.0.1:4174", f"127.0.0.1:{port}")
+s=s.replace("--port 4174", f"--port {port}")
+p.write_text(s)
+PY
+echo "[port] final verification Playwright port $E2E_PORT"
+
+export PLAYWRIGHT_BROWSERS_PATH=/home/ubuntu/logres/cache/playwright
+
+# Hydrate the same canonical private runtime bundle used by verify-farm and
+# Android packaging. This includes the playable Millennium Tree package,
+# recovered Global UI/config, field actors, and any other private derivatives
+# required by current E2E gates.
+if [[ -d "$BASE/public/__logres_ref" ]]; then
+  echo "[hydrate] canonical private runtime bundle"
+  mkdir -p "$WT/public/__logres_ref"
+  rsync -a "$BASE/public/__logres_ref/" "$WT/public/__logres_ref/"
+fi
+
+# Keep the independent legacy renderer proof beside the playable 002 package.
+echo "[hydrate] private renderer proof"
+python3 "$WT/scripts/logres/hydrate_live_renderer_proof.py"   --anchor "$PRIVATE_ANCHOR"   --map-id 001_000_00002   --output-root "$WT/public/__logres_ref/renderer-proof"   --summary "$WT/.renderer-proof-hydration.json"
+
+# The required pre-APK visual gate must exercise the actual playable
+# Millennium Tree runtime rather than silently receiving Vite's SPA fallback.
+for required in   "$WT/public/__logres_ref/renderer-proof/002_000_00001/002_000_00001.map.bin"   "$WT/public/__logres_ref/renderer-proof/002_000_00001/002_000_00001_CHIP.png"   "$WT/public/__logres_ref/renderer-proof/002_000_00001/002_000_00001_OBJ.png"   "$WT/public/__logres_ref/renderer-proof/002_000_00001/chip_d.bin"   "$WT/public/__logres_ref/renderer-proof/002_000_00001/object_d.bin"
+do
+  [[ -s "$required" ]] || {
+    echo "FINAL_GATE missing required playable runtime: $required" >&2
+    exit 1
+  }
+done
+
+if [[ -f "$WT/scripts/logres/hydrate_global_tutorial_hud.py" && -f "$GLOBAL_ARCHIVE" ]]; then
+  echo "[hydrate] private Global tutorial HUD"
+  python3 "$WT/scripts/logres/hydrate_global_tutorial_hud.py" \
+    "$GLOBAL_ARCHIVE" \
+    --output-root "$WT/public/__logres_ref/global/tutorial-hud" \
+    --summary "$WT/.tutorial-hud-hydration.json"
+fi
+
+echo "[verify-all] $REF @ $(git -C "$WT" rev-parse --short HEAD)"
+(cd "$WT" && npm run verify:all)
+echo "[verify-all] PASS"

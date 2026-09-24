@@ -18,6 +18,7 @@ PRODUCTION_FILES = (
     "bin/logres-doctor",
     "bin/logres-lead",
     "bin/logres-route-reconcile",
+    "bin/logres-verify-all-ref",
     "lib/logres_ai_common.py",
     "lib/logres_ai_router.py",
     "lib/logres_ai_runner.py",

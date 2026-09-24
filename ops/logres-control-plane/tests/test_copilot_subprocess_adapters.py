@@ -33,7 +33,7 @@ class CopilotSubprocessAdapterTests(unittest.TestCase):
         self.assertEqual(9, prs[0]["number"])
         argv = run.call_args.args[0]
         self.assertEqual(["gh", "pr", "list"], argv[:3])
-        self.assertIn("number,headRefName,headRefOid,baseRefName,isDraft,body", argv)
+        self.assertIn("number,headRefName,headRefOid,baseRefName,isDraft,body,changedFiles", argv)
 
 
     @patch("logres_copilot.subprocess.run")

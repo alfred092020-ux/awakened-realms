@@ -164,7 +164,7 @@ class SubprocessGitHubRunner:
                 "gh", "pr", "list",
                 "--repo", repo,
                 "--state", "open",
-                "--json", "number,headRefName,headRefOid,baseRefName,isDraft,body",
+                "--json", "number,headRefName,headRefOid,baseRefName,isDraft,body,changedFiles",
             ],
             check=True,
             capture_output=True,

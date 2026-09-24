@@ -9,7 +9,7 @@ sys.path.insert(0, str(LIB_DIR))
 
 from fixtures import make_test_db, seed_task
 from logres_copilot import CopilotJobRecord
-from logres_copilot_router import reconcile_copilot_job
+from logres_copilot_router import _matching_pr, reconcile_copilot_job
 from logres_route_store import RouteSpec, claim_route, ensure_route_schema, transition_route
 
 
@@ -108,6 +108,40 @@ def seed_pr_ready_job(conn, base_sha="b" * 40, candidate_sha="c" * 40):
         last_error=None,
     )
 class CopilotReturnPathTests(unittest.TestCase):
+    def test_matching_pr_ignores_empty_or_non_draft_wip_shell(self):
+        job = CopilotJobRecord(
+            id=1,
+            route_job_id=1,
+            task_id="T1",
+            issue_number=7,
+            pr_number=None,
+            branch="copilot/t1",
+            base_sha="b" * 40,
+            candidate_sha=None,
+            state="ACTIVE",
+            last_error=None,
+        )
+        github = FakeGitHub()
+        github.list_prs_result = [
+            {
+                "number": 9,
+                "headRefName": "copilot/t1",
+                "headRefOid": "c" * 40,
+                "baseRefName": "feat/logres-reconstruction",
+                "isDraft": True,
+                "changedFiles": 0,
+                "body": "Closes #7",
+            }
+        ]
+        self.assertIsNone(_matching_pr(job, github))
+
+        github.list_prs_result[0]["changedFiles"] = 1
+        github.list_prs_result[0]["isDraft"] = False
+        self.assertIsNone(_matching_pr(job, github))
+
+        github.list_prs_result[0]["isDraft"] = True
+        self.assertEqual(9, _matching_pr(job, github)["number"])
+
     def test_stale_base_requires_revalidation_not_auto_queue(self):
         conn = make_test_db()
         job = seed_pr_ready_job(conn, base_sha="a" * 40)

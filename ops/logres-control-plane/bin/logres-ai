@@ -68,6 +68,6 @@ if args.post_brain:
     ]
     if args.task:
         cmd += ["--task", args.task]
-    subprocess.run(cmd, check=True)
+    subprocess.run(cmd, check=True, stdout=subprocess.DEVNULL)
 
 print(json.dumps(cli_summary(out, result_path), indent=2, ensure_ascii=False))
