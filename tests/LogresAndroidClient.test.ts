@@ -50,7 +50,7 @@ describe('logres android client hardening smoke', () => {
     expect(workflow).toContain('ANDROID_DEBUG_KEYSTORE_BASE64')
     expect(workflow).toContain('keytool -list -v')
     expect(workflow).toMatch(
-      /- name: Build signed debug APK[\s\S]*?run: \.\/gradlew assembleDebug assembleRelease --no-daemon/,
+      /- name: Build debug and release APKs[\s\S]*?run: \.\/gradlew assembleDebug assembleRelease --no-daemon/,
     )
     expect(workflow).toMatch(
       /- name: Capture APK checksums[\s\S]*?app-debug\.apk\.sha256[\s\S]*?app-release-unsigned\.apk\.sha256/,
