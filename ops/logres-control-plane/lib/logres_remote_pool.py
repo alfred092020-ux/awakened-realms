@@ -65,6 +65,10 @@ def ensure_exact_sha(value: str) -> str:
     return value
 
 
+def verification_ref(sha: str) -> str:
+    return f"refs/logres/verify/{ensure_exact_sha(sha)}"
+
+
 def ensure_safe_npm_script(script: str) -> str:
     if not SAFE_SCRIPT_RE.fullmatch(script):
         raise PoolError("npm script contains unsupported characters")
@@ -311,39 +315,88 @@ class RemotePool:
     def health(self) -> list[dict]:
         return [self.probe(role) for role in ("heavy", "light")]
 
-    def _sync_one(self, spec: WorkerSpec, bundle: Path, sha: str) -> None:
+    def _sync_one(
+        self,
+        spec: WorkerSpec,
+        bundle: Path,
+        sha: str,
+        verify_ref: str,
+    ) -> None:
         remote_bundle = "/srv/logres/sync.bundle"
         self._scp(str(bundle), f"root@{spec.host}:{remote_bundle}")
+        quoted_ref = shlex.quote(verify_ref)
         command = (
             "set -e; "
             f"git --git-dir=/srv/logres/mirror.git fetch {remote_bundle} "
-            "'+refs/heads/*:refs/heads/*' '+refs/tags/*:refs/tags/*'; "
+            "'+refs/heads/*:refs/heads/*' '+refs/tags/*:refs/tags/*' "
+            f"'+{verify_ref}:{verify_ref}'; "
             "cd /srv/logres/worker; "
-            "git fetch origin feat/logres-reconstruction >/dev/null; "
+            "git fetch origin feat/logres-reconstruction "
+            f"{quoted_ref}:{quoted_ref} >/dev/null; "
             f"git cat-file -e {shlex.quote(sha)}^{{commit}}"
         )
         self._ssh(spec, command)
 
+    def _cleanup_remote_verify_ref(self, spec: WorkerSpec, verify_ref: str) -> None:
+        quoted_ref = shlex.quote(verify_ref)
+        command = (
+            "set +e; "
+            f"git -C /srv/logres/worker update-ref -d {quoted_ref}; "
+            f"git --git-dir=/srv/logres/mirror.git update-ref -d {quoted_ref}; "
+            "exit 0"
+        )
+        self._ssh(spec, command, check=False)
+
+    def cleanup_verify_ref(self, sha: str) -> None:
+        verify_ref = verification_ref(sha)
+        for role in ("heavy", "light"):
+            self._cleanup_remote_verify_ref(self.workers[role], verify_ref)
+
     def sync(self, sha: str) -> str:
         sha = self.verify_local_sha(sha)
+        verify_ref = verification_ref(sha)
         with exclusive_lock(self.lock_path):
-            with tempfile.TemporaryDirectory(
-                prefix="logres-remote-pool-"
-            ) as tmp:
-                bundle = Path(tmp) / "sync.bundle"
+            self._run(
+                ["git", "-C", str(self.root), "update-ref", verify_ref, sha]
+            )
+            try:
+                with tempfile.TemporaryDirectory(
+                    prefix="logres-remote-pool-"
+                ) as tmp:
+                    bundle = Path(tmp) / "sync.bundle"
+                    self._run(
+                        [
+                            "git",
+                            "-C",
+                            str(self.root),
+                            "bundle",
+                            "create",
+                            str(bundle),
+                            "--all",
+                        ]
+                    )
+                    synced_roles: list[str] = []
+                    try:
+                        for role in ("heavy", "light"):
+                            self._sync_one(
+                                self.workers[role],
+                                bundle,
+                                sha,
+                                verify_ref,
+                            )
+                            synced_roles.append(role)
+                    except Exception:
+                        for role in synced_roles:
+                            self._cleanup_remote_verify_ref(
+                                self.workers[role],
+                                verify_ref,
+                            )
+                        raise
+            finally:
                 self._run(
-                    [
-                        "git",
-                        "-C",
-                        str(self.root),
-                        "bundle",
-                        "create",
-                        str(bundle),
-                        "--all",
-                    ]
+                    ["git", "-C", str(self.root), "update-ref", "-d", verify_ref],
+                    check=False,
                 )
-                for role in ("heavy", "light"):
-                    self._sync_one(self.workers[role], bundle, sha)
         return sha
 
     def _run_one(self, role: str, job: str, script: str, sha: str) -> dict:
@@ -432,55 +485,58 @@ class RemotePool:
             raise PoolError("job id contains unsupported characters")
         script = ensure_safe_npm_script(script)
         sha = self.sync(sha)
-        targets = targets_for(role)
-        if role == "auto":
-            health_rows = self.health()
-            try:
-                selected = choose_remote_role(
-                    health_rows,
-                    self.artifact_root,
-                    npm_script=script,
+        try:
+            targets = targets_for(role)
+            if role == "auto":
+                health_rows = self.health()
+                try:
+                    selected = choose_remote_role(
+                        health_rows,
+                        self.artifact_root,
+                        npm_script=script,
+                    )
+                except RuntimeError as exc:
+                    raise PoolError(str(exc)) from exc
+                targets = (selected,)
+
+            if len(targets) > 1:
+                with ThreadPoolExecutor(max_workers=len(targets)) as pool:
+                    futures = [
+                        pool.submit(
+                            self._run_one,
+                            target,
+                            job,
+                            script,
+                            sha,
+                        )
+                        for target in targets
+                    ]
+                    return [future.result() for future in futures]
+
+            primary = targets[0]
+            attempts = [primary]
+            if reassignable and retries > 0:
+                attempts.extend(
+                    [fallback_role(primary)] * min(1, retries)
                 )
-            except RuntimeError as exc:
-                raise PoolError(str(exc)) from exc
-            targets = (selected,)
-
-        if len(targets) > 1:
-            with ThreadPoolExecutor(max_workers=len(targets)) as pool:
-                futures = [
-                    pool.submit(
-                        self._run_one,
-                        target,
-                        job,
-                        script,
-                        sha,
-                    )
-                    for target in targets
-                ]
-                return [future.result() for future in futures]
-
-        primary = targets[0]
-        attempts = [primary]
-        if reassignable and retries > 0:
-            attempts.extend(
-                [fallback_role(primary)] * min(1, retries)
+            last_error: Exception | None = None
+            for target in attempts:
+                try:
+                    return [
+                        self._run_one(
+                            target,
+                            job,
+                            script,
+                            sha,
+                        )
+                    ]
+                except Exception as exc:
+                    last_error = exc
+                    if not reassignable:
+                        raise
+            assert last_error is not None
+            raise PoolError(
+                f"remote verification failed after failover: {last_error}"
             )
-        last_error: Exception | None = None
-        for target in attempts:
-            try:
-                return [
-                    self._run_one(
-                        target,
-                        job,
-                        script,
-                        sha,
-                    )
-                ]
-            except Exception as exc:
-                last_error = exc
-                if not reassignable:
-                    raise
-        assert last_error is not None
-        raise PoolError(
-            f"remote verification failed after failover: {last_error}"
-        )
+        finally:
+            self.cleanup_verify_ref(sha)
