@@ -43,8 +43,8 @@ describe(
             300,
           transitionDelayMs:
             1500,
-          boundaryScene:
-            'LogresWorldSelectScene',
+          transitionBoundary:
+            'WORLD_RESOLUTION',
           navigationMode:
             'DEFER_TO_WORLD_RESOLUTION_BOUNDARY',
           provenance:
@@ -59,8 +59,8 @@ describe(
               true,
           }),
         ).toMatchObject({
-          boundaryScene:
-            'LogresWorldSelectScene',
+          transitionBoundary:
+            'WORLD_RESOLUTION',
           nextScene:
             'LogresTermsScene',
         })
@@ -148,6 +148,9 @@ describe(
           registryPatch: {
             'logres.world.selectionStatus':
               'USER_REQUIRED',
+            'logres.world.selectorFlowProvenance':
+              LOGRES_GLOBAL_3024_WORLD_SELECTION
+                .provenance,
             'logres.server.worldCatalogSource':
               'RECONSTRUCTED',
             'logres.ui.worldSelectLabelSource':

@@ -62,8 +62,8 @@ export const LOGRES_TITLE_MENU_RUNTIME =
     startRevealDelayMs: 1000,
     startFadeMs: 300,
     transitionDelayMs: 1500,
-    boundaryScene:
-      'LogresWorldSelectScene' as const,
+    transitionBoundary:
+      'WORLD_RESOLUTION' as const,
     navigationMode:
       'DEFER_TO_WORLD_RESOLUTION_BOUNDARY' as const,
     provenance:
@@ -175,6 +175,9 @@ export function resolveLogresUiNavigation(
       Object.freeze({
         'logres.world.selectionStatus':
           'USER_REQUIRED',
+        'logres.world.selectorFlowProvenance':
+          LOGRES_GLOBAL_3024_WORLD_SELECTION
+            .provenance,
         'logres.server.worldCatalogSource':
           'RECONSTRUCTED',
         'logres.ui.worldSelectLabelSource':
