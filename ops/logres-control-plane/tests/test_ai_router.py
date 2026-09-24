@@ -259,6 +259,105 @@ class AIRouterTests(unittest.TestCase):
             ).fetchone()[0],
         )
 
+    def test_evidence_ceiling_conflict_is_advisory_without_research_child(self):
+        conn = make_test_db()
+        ensure_route_schema(conn)
+        seed_task(
+            conn,
+            task_id="T1",
+            priority=0,
+            work_type="research",
+            status="BLOCKED_EVIDENCE",
+        )
+        conn.execute(
+            "update tasks set note='Evidence ceiling reached. Use candidate as SUPPORTED_INFERENCE only.' "
+            "where id='T1'"
+        )
+        conn.commit()
+        parent = claim_route(
+            conn,
+            RouteSpec(dedupe_key="parent-ceiling", route_kind="AI", task_id="T1"),
+        )
+        result = {
+            "confidence": "SUPPORTED INFERENCE",
+            "summary": "candidate remains inferred",
+            "findings": ["new lineage support"],
+            "contradictions": ["continuity supports use but does not prove historical identity"],
+            "unresolved": ["direct historical pairing"],
+            "recommended_next_search": "recover a primary historical pairing",
+        }
+
+        decision = route_ai_result(
+            conn,
+            parent.id,
+            result,
+            {
+                "id": "T1",
+                "priority": 0,
+                "status": "BLOCKED_EVIDENCE",
+                "note": "Evidence ceiling reached. Use candidate as SUPPORTED_INFERENCE only.",
+            },
+            {"work_type": "research", "evidence_policy": "Global evidence required"},
+            provenance="CONFIRMED_GLOBAL_2017",
+        )
+
+        self.assertEqual("REVIEW_REQUIRED", decision.route)
+        self.assertIsNone(decision.child_task_id)
+        self.assertEqual(
+            0,
+            conn.execute(
+                "select count(*) from tasks "
+                "where note='Autoflow research child from AI evidence routing.'"
+            ).fetchone()[0],
+        )
+
+    def test_evidence_ceiling_unresolved_is_advisory_without_research_child(self):
+        conn = make_test_db()
+        ensure_route_schema(conn)
+        seed_task(
+            conn,
+            task_id="T1",
+            priority=0,
+            work_type="research",
+            status="BLOCKED_EVIDENCE",
+        )
+        parent = claim_route(
+            conn,
+            RouteSpec(dedupe_key="parent-ceiling-unresolved", route_kind="AI", task_id="T1"),
+        )
+        result = {
+            "confidence": "UNRESOLVED",
+            "summary": "still unresolved",
+            "findings": [],
+            "contradictions": [],
+            "unresolved": ["direct historical pairing"],
+            "recommended_next_search": "recover a primary historical pairing",
+        }
+
+        decision = route_ai_result(
+            conn,
+            parent.id,
+            result,
+            {
+                "id": "T1",
+                "priority": 0,
+                "status": "BLOCKED_EVIDENCE",
+                "note": "Reviewed evidence ceiling; wait for genuinely new primary evidence.",
+            },
+            {"work_type": "research", "evidence_policy": "Global evidence required"},
+            provenance="CONFIRMED_GLOBAL_2017",
+        )
+
+        self.assertEqual("REVIEW_REQUIRED", decision.route)
+        self.assertIsNone(decision.child_task_id)
+        self.assertEqual(
+            0,
+            conn.execute(
+                "select count(*) from tasks "
+                "where note='Autoflow research child from AI evidence routing.'"
+            ).fetchone()[0],
+        )
+
     def test_hardware_blocked_task_does_not_spawn_evidence_loop(self):
         conn = make_test_db()
         ensure_route_schema(conn)

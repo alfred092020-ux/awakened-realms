@@ -219,14 +219,20 @@ def route_ai_result(
         "awaiting real-device",
         "hardware-dependent",
     )
+    evidence_ceiling_markers = (
+        "evidence ceiling reached",
+        "reviewed evidence ceiling",
+        "evidence ceiling",
+    )
+    advisory_blocked = task_status == "BLOCKED_EVIDENCE" and any(
+        marker in task_note
+        for marker in (*external_action_markers, *evidence_ceiling_markers)
+    )
 
     if contradictions and (
         not task_id
         or task_status in terminal_statuses
-        or (
-            task_status == "BLOCKED_EVIDENCE"
-            and any(marker in task_note for marker in external_action_markers)
-        )
+        or advisory_blocked
     ):
         reason = (
             "contradiction retained for review without creating research work: "
@@ -267,7 +273,7 @@ def route_ai_result(
         )
 
     if confidence in {"UNRESOLVED", "VERSION SENSITIVE"} and (
-        not task_id or task_status in terminal_statuses
+        not task_id or task_status in terminal_statuses or advisory_blocked
     ):
         reason = (
             f"{confidence} retained for review without research child: "
