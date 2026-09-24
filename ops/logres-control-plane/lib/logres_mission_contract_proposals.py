@@ -47,7 +47,8 @@ def compile_proposals(conn,templates=None):
           "suggested_check":suggested,
           "task_template":emitted,
           "template_status":"READY" if emitted else (
-             "FORBIDDEN_EVIDENCE_CEILING" if not suggested["template_allowed"]
+             "FORBIDDEN_EVIDENCE_CEILING" if gap["gap_kind"] == "EVIDENCE_CEILING"
+             else "EXISTING_WORK" if not suggested["template_allowed"]
              else "NEEDS_EXPLICIT_SCOPE_ACCEPTANCE"
           ),
         }

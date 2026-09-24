@@ -19,6 +19,11 @@ class ProposalTests(unittest.TestCase):
  def test_incomplete_template_is_not_emitted(self):
   c=self.db();c.execute("insert into mission_objectives values('A',null,'A','done',1)")
   p=compile_proposals(c,{"A":{"title":"x"}})["proposals"][0];self.assertIsNone(p["task_template"])
+ def test_existing_runnable_work_is_not_mislabeled_as_evidence_ceiling(self):
+  c=self.db();c.execute("insert into mission_objectives values('A',null,'A','done',1)")
+  c.execute("insert into tasks values('T','READY','T','')");c.execute("insert into mission_links values('A',null,'T','required')")
+  p=compile_proposals(c)["proposals"][0];self.assertEqual("EXISTING_WORK",p["template_status"]);self.assertIsNone(p["task_template"])
+
  def test_evidence_ceiling_forbids_implementation_template(self):
   c=self.db();c.execute("insert into mission_objectives values('A',null,'A','done',1)")
   c.execute("insert into tasks values('E','BLOCKED_EVIDENCE','E','archive needed')");c.execute("insert into mission_links values('A',null,'E','required')")
