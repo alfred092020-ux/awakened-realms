@@ -1,20 +1,100 @@
 #!/usr/bin/env python3
-import argparse,json,os,sqlite3,sys
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import sqlite3
+import sys
 from pathlib import Path
-ROOT=Path(os.environ.get("LOGRES_ROOT","/home/ubuntu/logres")); sys.path.insert(0,str(Path(__file__).resolve().parents[1]/"lib"))
-from logres_visual_truth import history,latest,record,regressions
-DB=Path(os.environ.get("LOGRES_CONTROL_DB",ROOT/"control/control.sqlite"))
-def main():
- p=argparse.ArgumentParser(prog="logres-visual-truth"); s=p.add_subparsers(dest="cmd",required=True)
- r=s.add_parser("record"); r.add_argument("sha"); r.add_argument("checkpoint"); r.add_argument("observed"); r.add_argument("verdict"); r.add_argument("--reference"); r.add_argument("--objective"); r.add_argument("--viewport",default="{}"); r.add_argument("--device",default="{}"); r.add_argument("--metrics",default="{}")
- l=s.add_parser("latest"); l.add_argument("checkpoint",nargs="?")
- h=s.add_parser("history"); h.add_argument("checkpoint"); s.add_parser("regressions")
- a=p.parse_args(); c=sqlite3.connect(DB,timeout=30); c.row_factory=sqlite3.Row; c.execute("pragma busy_timeout=30000")
- try:
-  if a.cmd=="record": out={"id":record(c,sha=a.sha,checkpoint=a.checkpoint,observed_artifact=a.observed,verdict=a.verdict,reference_artifact=a.reference,objective_id=a.objective,viewport=json.loads(a.viewport),device=json.loads(a.device),metrics=json.loads(a.metrics))}
-  elif a.cmd=="latest": out=latest(c,a.checkpoint)
-  elif a.cmd=="history": out=history(c,a.checkpoint)
-  else: out=regressions(c)
- finally:c.close()
- print(json.dumps(out,indent=2,sort_keys=True))
-if __name__=="__main__":main()
+
+ROOT = Path(os.environ.get("LOGRES_ROOT", "/home/ubuntu/logres"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "lib"))
+
+from logres_visual_truth import ensure_schema, history, latest, record, regressions
+
+DB = Path(os.environ.get("LOGRES_CONTROL_DB", ROOT / "control/control.sqlite"))
+
+
+def db_timeout_seconds() -> float:
+    raw = os.environ.get("LOGRES_VISUAL_TRUTH_DB_TIMEOUT_SECONDS", "4")
+    try:
+        value = float(raw)
+    except ValueError as exc:
+        raise ValueError(
+            "LOGRES_VISUAL_TRUTH_DB_TIMEOUT_SECONDS must be numeric"
+        ) from exc
+    if value <= 0 or value > 15:
+        raise ValueError(
+            "LOGRES_VISUAL_TRUTH_DB_TIMEOUT_SECONDS must be > 0 and <= 15"
+        )
+    return value
+
+
+def connect_db() -> sqlite3.Connection:
+    timeout = db_timeout_seconds()
+    conn = sqlite3.connect(DB, timeout=timeout)
+    conn.row_factory = sqlite3.Row
+    conn.execute(f"pragma busy_timeout={int(timeout * 1000)}")
+    return conn
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(prog="logres-visual-truth")
+    sub = parser.add_subparsers(dest="cmd", required=True)
+
+    rec = sub.add_parser("record")
+    rec.add_argument("sha")
+    rec.add_argument("checkpoint")
+    rec.add_argument("observed")
+    rec.add_argument("verdict")
+    rec.add_argument("--reference")
+    rec.add_argument("--objective")
+    rec.add_argument("--viewport", default="{}")
+    rec.add_argument("--device", default="{}")
+    rec.add_argument("--metrics", default="{}")
+
+    latest_parser = sub.add_parser("latest")
+    latest_parser.add_argument("checkpoint", nargs="?")
+
+    history_parser = sub.add_parser("history")
+    history_parser.add_argument("checkpoint")
+
+    sub.add_parser("regressions")
+    sub.add_parser("init")
+
+    args = parser.parse_args()
+    conn = connect_db()
+    try:
+        if args.cmd == "init":
+            ensure_schema(conn)
+            out = {"initialized": True}
+        elif args.cmd == "record":
+            out = {
+                "id": record(
+                    conn,
+                    sha=args.sha,
+                    checkpoint=args.checkpoint,
+                    observed_artifact=args.observed,
+                    verdict=args.verdict,
+                    reference_artifact=args.reference,
+                    objective_id=args.objective,
+                    viewport=json.loads(args.viewport),
+                    device=json.loads(args.device),
+                    metrics=json.loads(args.metrics),
+                )
+            }
+        elif args.cmd == "latest":
+            out = latest(conn, args.checkpoint)
+        elif args.cmd == "history":
+            out = history(conn, args.checkpoint)
+        else:
+            out = regressions(conn)
+    finally:
+        conn.close()
+
+    print(json.dumps(out, indent=2, sort_keys=True))
+
+
+if __name__ == "__main__":
+    main()

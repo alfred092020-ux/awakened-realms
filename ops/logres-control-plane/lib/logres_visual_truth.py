@@ -24,7 +24,6 @@ def ensure_schema(conn):
 
 def record(conn,*,sha,checkpoint,observed_artifact,verdict,reference_artifact=None,
            objective_id=None,viewport=None,device=None,metrics=None,created_at=None):
-    ensure_schema(conn)
     verdict=verdict.upper()
     if verdict not in VALID: raise ValueError("invalid verdict")
     if len(sha)!=40: raise ValueError("exact 40-character SHA required")
@@ -45,12 +44,10 @@ def _row(r):
       "metrics":json.loads(r[8]),"verdict":r[9],"created_at":r[10]}
 
 def history(conn,checkpoint):
-    ensure_schema(conn)
     return [_row(r) for r in conn.execute("""select id,sha,checkpoint,objective_id,reference_artifact,observed_artifact,
       viewport_json,device_json,metrics_json,verdict,created_at from visual_truth_checks where checkpoint=? order by id""",(checkpoint,))]
 
 def latest(conn,checkpoint=None):
-    ensure_schema(conn)
     if checkpoint:
         r=conn.execute("""select id,sha,checkpoint,objective_id,reference_artifact,observed_artifact,
           viewport_json,device_json,metrics_json,verdict,created_at from visual_truth_checks where checkpoint=? order by id desc limit 1""",(checkpoint,)).fetchone()
@@ -62,7 +59,7 @@ def latest(conn,checkpoint=None):
     return [_row(r) for r in rows]
 
 def regressions(conn):
-    ensure_schema(conn); out=[]
+    out=[]
     for row in latest(conn):
         hist=history(conn,row["checkpoint"])
         prior_pass=any(x["verdict"]=="PASS" for x in hist[:-1])

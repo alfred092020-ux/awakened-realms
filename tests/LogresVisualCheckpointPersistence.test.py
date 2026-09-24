@@ -112,6 +112,55 @@ class VisualCheckpointPersistenceTests(unittest.TestCase):
         self.assertEqual("RECORDER_TIMEOUT", result["reason"])
         self.assertIn("0.25s", result["error"])
 
+    def test_optional_database_lock_is_explicit_contention(self):
+        with tempfile.TemporaryDirectory() as td:
+            recorder = Path(td) / "recorder"
+            recorder.write_text("#!/bin/sh\n")
+            with self.recorder_env(recorder), mock.patch.object(
+                MODULE.subprocess,
+                "run",
+                return_value=SimpleNamespace(
+                    returncode=1,
+                    stdout="",
+                    stderr="sqlite3.OperationalError: database is locked",
+                ),
+            ):
+                result = MODULE.record_visual_truth(
+                    "field",
+                    Path("field.png"),
+                    RESULT,
+                )
+
+        self.assertFalse(result["recorded"])
+        self.assertEqual("RECORDER_CONTENTION", result["reason"])
+        self.assertIn("database is locked", result["error"])
+
+    def test_required_database_lock_fails_closed(self):
+        with tempfile.TemporaryDirectory() as td:
+            recorder = Path(td) / "recorder"
+            recorder.write_text("#!/bin/sh\n")
+            with self.recorder_env(
+                recorder,
+                LOGRES_REQUIRE_VISUAL_TRUTH_RECORD="1",
+            ), mock.patch.object(
+                MODULE.subprocess,
+                "run",
+                return_value=SimpleNamespace(
+                    returncode=1,
+                    stdout="",
+                    stderr="sqlite3.OperationalError: database is locked",
+                ),
+            ):
+                with self.assertRaisesRegex(
+                    RuntimeError,
+                    "database is locked",
+                ):
+                    MODULE.record_visual_truth(
+                        "field",
+                        Path("field.png"),
+                        RESULT,
+                    )
+
     def test_required_timeout_fails_closed(self):
         with tempfile.TemporaryDirectory() as td:
             recorder = Path(td) / "recorder"

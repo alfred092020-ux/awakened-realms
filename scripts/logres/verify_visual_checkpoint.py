@@ -73,7 +73,7 @@ def _truth_required() -> bool:
 
 
 def _truth_timeout_seconds() -> float:
-    raw = os.environ.get("LOGRES_VISUAL_TRUTH_TIMEOUT_SECONDS", "5")
+    raw = os.environ.get("LOGRES_VISUAL_TRUTH_TIMEOUT_SECONDS", "8")
     try:
         value = float(raw)
     except ValueError as exc:
@@ -159,9 +159,16 @@ def record_visual_truth(checkpoint: str, image: Path, result: dict) -> dict:
         message = (completed.stderr or completed.stdout or "recording failed").strip()
         if _truth_required():
             raise RuntimeError(f"visual truth recording failed: {message}")
+        lowered = message.lower()
+        reason = (
+            "RECORDER_CONTENTION"
+            if "database is locked" in lowered
+            or "database table is locked" in lowered
+            else "RECORDER_FAILED"
+        )
         return {
             "recorded": False,
-            "reason": "RECORDER_FAILED",
+            "reason": reason,
             "error": message,
         }
     try:
