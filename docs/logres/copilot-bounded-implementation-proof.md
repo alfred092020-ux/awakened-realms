@@ -25,5 +25,5 @@ Evidence policy: control-plane rollout proof only; no historical gameplay claims
 
 - [x] Bounded scope documented.
 - [x] Safety invariants documented.
-- [x] Required checks executed and passing (`npm test`, `npm run build`).
+- [ ] Required checks executed and passing (`npm test`, `npm run build`).
 - [ ] Draft PR opened against `feat/logres-reconstruction`.
