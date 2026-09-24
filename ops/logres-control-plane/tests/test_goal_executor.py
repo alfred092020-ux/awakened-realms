@@ -341,11 +341,18 @@ class GoalExecutorTests(unittest.TestCase):
         self.assertIn("--minutes", argv)
         self.assertIn("30", argv)
 
-    def test_autopilot_calls_executor_without_duplicate_outer_lock(self):
+    def test_autopilot_delegates_executor_authority_to_finish_loop(self):
         text = (
             TEST_DIR.parent / "bin" / "logres-autopilot-watch"
         ).read_text()
-        self.assertIn('"/home/ubuntu/logres/bin/logres-goal-executor"', text)
+        self.assertIn(
+            '"/home/ubuntu/logres/bin/logres-finish-loop","cycle","--apply","--json"',
+            text,
+        )
+        self.assertNotIn(
+            '"/home/ubuntu/logres/bin/logres-goal-executor","DEMO-0.2","--apply"',
+            text,
+        )
         self.assertNotIn(
             'run_locked_helper("logres-goal-executor"',
             text,
