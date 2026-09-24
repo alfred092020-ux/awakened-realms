@@ -328,3 +328,15 @@ The deployment manifest now covers every runtime-safe `logres-*` control-plane e
 Manifest validation is two-dimensional: local Python import closure still prevents missing library dependencies, while runtime-surface closure prevents a newly committed helper from silently existing only inside repository worktrees.
 
 Two tools are deliberately excluded from runtime deployment: `logres-reconstruct` and `logres-truth`. Both intentionally import `scripts/logres` using repository-relative paths. Moving those wrappers into `/home/ubuntu/logres/bin` would change their computed repository root, so they remain repository-bound until their import contract is redesigned. The exclusion is explicit and tested rather than accidental.
+
+## Continuous shadow self-improvement loop
+
+The user-space supervisor now closes the governor loop without granting experiments operational authority.
+
+Every 15 minutes it schedules two single-flight background jobs in the same `governor` lane. `governor_propose` runs `logres-governor propose --apply --shadow-only`, which observes throughput, bottlenecks, health, zero-human state, and shadow scheduling but persists only experiment contracts that are explicitly approved for executable shadow mode. `shadow_experiment` then runs at most one `logres-experiment-executor next` experiment after the proposal job has completed.
+
+The governor and executor share one `EXECUTABLE_SHADOW_CONTRACTS` registry so a proposal cannot become executable merely because one component recognizes it. The current executable contract remains `SHADOW_SCHEDULER/top5_overlap`.
+
+A shadow result may end in `KEEP` or `REJECT`, but either result is advisory only. The loop cannot dispatch tasks, mutate READY membership, deploy runtime files, change scheduler authority, merge candidates, push branches, or auto-promote its own preferred weights. Promotion still requires a separately reviewed implementation change through the normal exact-SHA merge train.
+
+This turns self-improvement from an occasional manual analysis into a continuously measured, fail-closed feedback loop while preserving the same authority boundaries.

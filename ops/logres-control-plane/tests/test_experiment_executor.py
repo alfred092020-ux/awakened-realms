@@ -126,6 +126,14 @@ class ExperimentExecutorTests(unittest.TestCase):
         ).fetchone()
         self.assertEqual("EVALUATED", row["status"])
 
+    def test_executor_uses_same_approved_contract_registry_as_governor(self):
+        text = (
+            CONTROL_ROOT / "lib" / "logres_experiment_executor.py"
+        ).read_text()
+
+        self.assertIn("EXECUTABLE_SHADOW_CONTRACTS", text)
+        self.assertIn("contract not in EXECUTABLE_SHADOW_CONTRACTS", text)
+
     def test_non_shadow_experiment_is_refused(self):
         proposal = ExperimentProposal(
             source_kind="BOTTLENECK_RESOURCE",
@@ -144,7 +152,7 @@ class ExperimentExecutorTests(unittest.TestCase):
 
         with self.assertRaisesRegex(
             ValueError,
-            "only SHADOW_SCHEDULER",
+            "not approved for executable shadow mode",
         ):
             run_shadow_experiment(self.conn, experiment["id"])
 

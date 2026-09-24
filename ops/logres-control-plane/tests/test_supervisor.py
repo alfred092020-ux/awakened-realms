@@ -57,6 +57,8 @@ class SupervisorTests(unittest.TestCase):
                 "control_backup",
                 "evidence_refresh",
                 "preview_reaper",
+                "governor_propose",
+                "shadow_experiment",
                 "maintenance",
             }.issubset(names)
         )
@@ -65,6 +67,11 @@ class SupervisorTests(unittest.TestCase):
         for name in ("autopilot", "lead_snapshot", "health_snapshot", "maintenance"):
             self.assertTrue(jobs[name].background, name)
             self.assertEqual("maintenance", jobs[name].background_group)
+        for name in ("governor_propose", "shadow_experiment"):
+            self.assertTrue(jobs[name].background, name)
+            self.assertEqual("governor", jobs[name].background_group)
+        self.assertIn("--shadow-only", jobs["governor_propose"].argv)
+        self.assertEqual("next", jobs["shadow_experiment"].argv[-1])
         for name in (
             "swarm",
             "code_index",

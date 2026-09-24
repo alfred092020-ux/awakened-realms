@@ -10,6 +10,21 @@ from typing import Any, Iterable, Mapping
 
 
 AUTHORITY = "ADVISORY_EXPERIMENT_ONLY_NO_SCHEDULER_DEPLOY_MERGE"
+
+EXECUTABLE_SHADOW_CONTRACTS = {
+    ("SHADOW_SCHEDULER", "top5_overlap"),
+}
+
+
+def shadow_executable_proposals(
+    proposals: Iterable["ExperimentProposal"],
+) -> list["ExperimentProposal"]:
+    return [
+        proposal
+        for proposal in proposals
+        if (proposal.source_kind, proposal.metric_name)
+        in EXECUTABLE_SHADOW_CONTRACTS
+    ]
 VALID_DIRECTIONS = {"higher", "lower"}
 
 

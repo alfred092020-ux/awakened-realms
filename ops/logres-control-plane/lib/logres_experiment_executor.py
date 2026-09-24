@@ -5,7 +5,11 @@ import sqlite3
 from dataclasses import dataclass
 from typing import Any
 
-from logres_governor import evaluate_experiment, record_outcome
+from logres_governor import (
+    EXECUTABLE_SHADOW_CONTRACTS,
+    evaluate_experiment,
+    record_outcome,
+)
 from logres_optimizer import score_ready_tasks
 from logres_shadow_scheduler import score_candidates
 
@@ -47,13 +51,11 @@ def _experiment(conn: sqlite3.Connection, experiment_id: int) -> sqlite3.Row:
         raise ValueError(
             f"experiment {experiment_id} is not PROPOSED: {row['status']}"
         )
-    if row["source_kind"] != "SHADOW_SCHEDULER":
+    contract = (str(row["source_kind"]), str(row["metric_name"]))
+    if contract not in EXECUTABLE_SHADOW_CONTRACTS:
         raise ValueError(
-            "only SHADOW_SCHEDULER experiments are executable in shadow mode"
-        )
-    if row["metric_name"] != "top5_overlap":
-        raise ValueError(
-            "shadow executor only supports top5_overlap experiments"
+            "experiment contract is not approved for executable shadow mode: "
+            f"{contract[0]}/{contract[1]}"
         )
     return row
 

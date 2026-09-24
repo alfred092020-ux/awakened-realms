@@ -18,6 +18,7 @@ from logres_governor import (
     persist_proposals,
     propose_experiments,
     record_outcome,
+    shadow_executable_proposals,
 )
 
 
@@ -176,6 +177,39 @@ class GovernorProposalTests(unittest.TestCase):
             "authoritative ordering",
             proposal.rollback_condition,
         )
+
+    def test_shadow_filter_keeps_only_executable_advisory_contracts(self):
+        observations = base_observations()
+        observations["shadow_scheduler"] = {
+            "top5_overlap": 1,
+            "shadow": [
+                {"task_id": "A"},
+                {"task_id": "B"},
+                {"task_id": "C"},
+            ],
+        }
+        observations["bottleneck"] = {
+            "ranked": [
+                {
+                    "kind": "RESOURCE",
+                    "severity": 1.0,
+                    "metrics": {"recent_overload": True},
+                }
+            ]
+        }
+
+        proposals = propose_experiments(observations)
+        filtered = shadow_executable_proposals(proposals)
+
+        self.assertTrue(filtered)
+        self.assertTrue(
+            all(
+                proposal.source_kind == "SHADOW_SCHEDULER"
+                and proposal.metric_name == "top5_overlap"
+                for proposal in filtered
+            )
+        )
+        self.assertLess(len(filtered), len(proposals))
 
     def test_every_proposal_has_predeclared_experiment_contract(self):
         observations = base_observations()
@@ -369,6 +403,13 @@ class GovernorPersistenceTests(unittest.TestCase):
 
         self.assertEqual(1, len(rows))
         self.assertEqual(AUTHORITY, rows[0]["authority"])
+
+    def test_governor_binary_supports_shadow_only_proposal_persistence(self):
+        text = (CONTROL_ROOT / "bin" / "logres-governor").read_text()
+
+        self.assertIn('"--shadow-only"', text)
+        self.assertIn("shadow_executable_proposals(proposals)", text)
+        self.assertIn('"shadow_only": bool(args.shadow_only)', text)
 
     def test_governor_binary_exposes_no_execute_or_promote_command(self):
         text = (CONTROL_ROOT / "bin" / "logres-governor").read_text()

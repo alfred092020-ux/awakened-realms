@@ -101,6 +101,32 @@ def default_jobs(root: Path) -> tuple[ScheduledJob, ...]:
             120,
         ),
         ScheduledJob(
+            "governor_propose",
+            _locked(
+                "/tmp/logres-governor-propose.lock",
+                str(b / "logres-governor"),
+                "propose",
+                "--apply",
+                "--shadow-only",
+            ),
+            900,
+            180,
+            True,
+            "governor",
+        ),
+        ScheduledJob(
+            "shadow_experiment",
+            _locked(
+                "/tmp/logres-shadow-experiment.lock",
+                str(b / "logres-experiment-executor"),
+                "next",
+            ),
+            900,
+            180,
+            True,
+            "governor",
+        ),
+        ScheduledJob(
             "maintenance",
             (str(b / "logres-maintain"),),
             3600,

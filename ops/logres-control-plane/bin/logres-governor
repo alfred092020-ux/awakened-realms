@@ -21,6 +21,7 @@ from logres_governor import (
     persist_proposals,
     propose_experiments,
     record_outcome,
+    shadow_executable_proposals,
 )
 from logres_health_confidence import summary as health_summary
 from logres_optimizer import score_ready_tasks
@@ -102,6 +103,11 @@ def main() -> int:
 
     propose = sub.add_parser("propose")
     propose.add_argument("--apply", action="store_true")
+    propose.add_argument(
+        "--shadow-only",
+        action="store_true",
+        help="limit persistence/output to executable advisory shadow experiments",
+    )
 
     listing = sub.add_parser("list")
     listing.add_argument("--limit", type=int, default=50)
@@ -123,8 +129,11 @@ def main() -> int:
         elif args.command == "propose":
             observations = collect_observations(conn)
             proposals = propose_experiments(observations)
+            if args.shadow_only:
+                proposals = shadow_executable_proposals(proposals)
             payload = {
                 "apply": bool(args.apply),
+                "shadow_only": bool(args.shadow_only),
                 "observations": observations,
                 "proposals": [proposal.to_dict() for proposal in proposals],
                 "authority": AUTHORITY,
