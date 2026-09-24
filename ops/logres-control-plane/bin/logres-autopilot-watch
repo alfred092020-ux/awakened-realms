@@ -142,6 +142,7 @@ def run_locked_helper(name,*args):
 
 run_locked_helper("logres-frontier","reconcile","--apply")
 run_locked_helper("logres-impact","scan","--apply")
+run_locked_helper("logres-regression-dedupe","--apply")
 run_locked_helper("logres-goal","watch-active","--apply")
 # The finish loop is the sole milestone authority surface. It may invoke the
 # bounded executor or independent certifier once, or emit a deduplicated blocker
