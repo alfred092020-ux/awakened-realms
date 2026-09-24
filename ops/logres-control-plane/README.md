@@ -340,3 +340,18 @@ The governor and executor share one `EXECUTABLE_SHADOW_CONTRACTS` registry so a 
 A shadow result may end in `KEEP` or `REJECT`, but either result is advisory only. The loop cannot dispatch tasks, mutate READY membership, deploy runtime files, change scheduler authority, merge candidates, push branches, or auto-promote its own preferred weights. Promotion still requires a separately reviewed implementation change through the normal exact-SHA merge train.
 
 This turns self-improvement from an occasional manual analysis into a continuously measured, fail-closed feedback loop while preserving the same authority boundaries.
+
+## Executable chaos certification
+
+`logres-chaos-cert` replaces synthetic fault flags as the resilience certification path. It executes real sandbox probes against the same control-plane libraries used by production: SQLite writer-lock retry, route dedupe, research-frontier dedupe, adaptive resource placement/fallback, and supervisor single-effect scheduling.
+
+Certification is shadow-only. It never opens the production control database, never mutates integration state, and has no merge, deploy, push, or evidence-promotion authority. Every run emits an atomic JSON artifact containing the exact canonical SHA, individual probe evidence, verdict, and a SHA-256 certification hash.
+
+The supervisor runs certification every six hours in the shadow governor lane using `logres-chaos-cert run --shadow --quiet`. The older `logres-fault-injection` command remains available only as a synthetic diagnostic compatibility tool and is not treated as resilience proof.
+
+Useful commands:
+
+```bash
+logres-chaos-cert probe
+logres-chaos-cert run --shadow
+```

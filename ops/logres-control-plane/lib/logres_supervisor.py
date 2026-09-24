@@ -127,6 +127,20 @@ def default_jobs(root: Path) -> tuple[ScheduledJob, ...]:
             "governor",
         ),
         ScheduledJob(
+            "chaos_cert",
+            _locked(
+                "/tmp/logres-chaos-cert.lock",
+                str(b / "logres-chaos-cert"),
+                "run",
+                "--shadow",
+                "--quiet",
+            ),
+            21600,
+            300,
+            True,
+            "governor",
+        ),
+        ScheduledJob(
             "maintenance",
             (str(b / "logres-maintain"),),
             3600,
