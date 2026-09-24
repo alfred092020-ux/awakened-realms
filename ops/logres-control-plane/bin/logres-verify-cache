@@ -1,0 +1,21 @@
+#!/usr/bin/env python3
+import argparse,json,os,sqlite3,sys
+from pathlib import Path
+ROOT=Path(os.environ.get("LOGRES_ROOT","/home/ubuntu/logres"));sys.path.insert(0,str(Path(__file__).resolve().parents[1]/"lib"))
+from logres_verify_cache import list_entries,lookup,put_pass
+DB=Path(os.environ.get("LOGRES_CONTROL_DB",ROOT/"control/control.sqlite"))
+def dims(a): return {k:getattr(a,k) for k in ("source_sha","lock_hash","config_hash","evidence_version","env_hash","mode")}
+def add_dims(p):
+ for k in ("source_sha","lock_hash","config_hash","evidence_version","env_hash","mode"): p.add_argument("--"+k.replace("_","-"),dest=k,required=True)
+def main():
+ p=argparse.ArgumentParser(prog="logres-verify-cache");s=p.add_subparsers(dest="cmd",required=True)
+ g=s.add_parser("get");add_dims(g); q=s.add_parser("put-pass");add_dims(q);q.add_argument("--provenance",default="{}")
+ l=s.add_parser("list");l.add_argument("--limit",type=int,default=50)
+ a=p.parse_args();c=sqlite3.connect(DB,timeout=30);c.row_factory=sqlite3.Row;c.execute("pragma busy_timeout=30000")
+ try:
+  if a.cmd=="get":out=lookup(c,dims(a))
+  elif a.cmd=="put-pass":out=put_pass(c,dims(a),json.loads(a.provenance))
+  else:out=list_entries(c,a.limit)
+ finally:c.close()
+ print(json.dumps(out,indent=2,sort_keys=True))
+if __name__=="__main__":main()
