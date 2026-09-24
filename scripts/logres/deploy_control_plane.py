@@ -73,6 +73,8 @@ MANIFEST: dict[str, tuple[str, int]] = {
     "config/autoflow.default.json": ("config/autoflow.default.json", 0o600),
     "config/milestone_contracts.json": ("config/milestone_contracts.json", 0o600),
     "config/mission.default.json": ("config/mission.default.json", 0o600),
+    "bin/logres-goal": ("bin/logres-goal", 0o755),
+    "lib/logres_goal.py": ("lib/logres_goal.py", 0o600),
 }
 
 

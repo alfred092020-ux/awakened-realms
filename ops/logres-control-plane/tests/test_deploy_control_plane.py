@@ -74,6 +74,8 @@ PRODUCTION_FILES = (
     "config/autoflow.default.json",
     "config/milestone_contracts.json",
     "config/mission.default.json",
+    "bin/logres-goal",
+    "lib/logres_goal.py",
 )
 
 
