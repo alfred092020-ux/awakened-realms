@@ -327,15 +327,23 @@ class GoalContractTests(unittest.TestCase):
         )
         self.assertTrue(result.passed)
 
-    def test_integration_required_explicit_repair_task_can_prove_ancestry(self):
+    def test_integration_required_explicit_carrier_can_prove_ancestry(self):
         conn = make_db()
-        candidate = "b" * 40
-        repair_candidate = "c" * 40
+        carrier_candidate = "c" * 40
         conn.execute("insert into tasks values('T','DONE')")
-        conn.execute("insert into tasks values('REPAIR','DONE')")
+        conn.execute("insert into tasks values('CARRIER','DONE')")
+        conn.execute(
+            "insert into task_dependencies values(?,?,?,?)",
+            (
+                "T",
+                "CARRIER",
+                "integration_carrier",
+                "fresh-base integration carrier",
+            ),
+        )
         conn.execute(
             "insert into integration_queue values(?,?,?)",
-            ("REPAIR", repair_candidate, "INTEGRATED"),
+            ("CARRIER", carrier_candidate, "INTEGRATED"),
         )
         item = criterion(
             "task",
@@ -343,7 +351,6 @@ class GoalContractTests(unittest.TestCase):
                 "type": "task_state",
                 "task_id": "T",
                 "integration_required": True,
-                "integration_task_ids": ["REPAIR"],
             },
         )
         result = evaluate_criterion(
@@ -351,35 +358,192 @@ class GoalContractTests(unittest.TestCase):
             item,
             integration_sha="a" * 40,
             root=Path("."),
-            ancestor_checker=ancestor_checker(repair_candidate),
+            ancestor_checker=ancestor_checker(carrier_candidate),
         )
         self.assertTrue(result.passed)
-        self.assertIn("via REPAIR", result.reason)
+        self.assertIn("via CARRIER", result.reason)
 
-    def test_integration_task_ids_schema_requires_unique_nonempty_strings(self):
-        payload = {
-            "schema": "logres-milestone-contract-v1",
-            "milestones": {
-                "M": {
-                    "criteria": [
-                        criterion(
-                            "task",
-                            {
-                                "type": "task_state",
-                                "task_id": "T",
-                                "integration_required": True,
-                                "integration_task_ids": ["", ""],
-                            },
-                        )
-                    ]
-                }
+    def test_integration_required_missing_carrier_stays_blocked(self):
+        conn = make_db()
+        conn.execute("insert into tasks values('T','DONE')")
+        item = criterion(
+            "task",
+            {
+                "type": "task_state",
+                "task_id": "T",
+                "integration_required": True,
             },
-        }
-        with self.assertRaisesRegex(
-            ValueError,
-            "integration_task_ids must be a non-empty unique string list",
-        ):
-            validate_contracts(payload)
+        )
+        result = evaluate_criterion(
+            conn,
+            item,
+            integration_sha="a" * 40,
+            root=Path("."),
+            ancestor_checker=ancestor_checker(),
+        )
+        self.assertFalse(result.passed)
+        self.assertEqual("BLOCKED_DEP", result.status)
+
+    def test_integration_required_queued_carrier_stays_blocked(self):
+        conn = make_db()
+        carrier_candidate = "c" * 40
+        conn.execute("insert into tasks values('T','DONE')")
+        conn.execute("insert into tasks values('CARRIER','DONE')")
+        conn.execute(
+            "insert into task_dependencies values(?,?,?,?)",
+            ("T", "CARRIER", "integration_carrier", ""),
+        )
+        conn.execute(
+            "insert into integration_queue values(?,?,?)",
+            ("CARRIER", carrier_candidate, "READY_FOR_PREFLIGHT"),
+        )
+        item = criterion(
+            "task",
+            {
+                "type": "task_state",
+                "task_id": "T",
+                "integration_required": True,
+            },
+        )
+        result = evaluate_criterion(
+            conn,
+            item,
+            integration_sha="a" * 40,
+            root=Path("."),
+            ancestor_checker=ancestor_checker(carrier_candidate),
+        )
+        self.assertFalse(result.passed)
+
+    def test_integration_required_wrong_ancestry_carrier_stays_blocked(self):
+        conn = make_db()
+        carrier_candidate = "c" * 40
+        conn.execute("insert into tasks values('T','DONE')")
+        conn.execute("insert into tasks values('CARRIER','DONE')")
+        conn.execute(
+            "insert into task_dependencies values(?,?,?,?)",
+            ("T", "CARRIER", "integration_carrier", ""),
+        )
+        conn.execute(
+            "insert into integration_queue values(?,?,?)",
+            ("CARRIER", carrier_candidate, "INTEGRATED"),
+        )
+        item = criterion(
+            "task",
+            {
+                "type": "task_state",
+                "task_id": "T",
+                "integration_required": True,
+            },
+        )
+        result = evaluate_criterion(
+            conn,
+            item,
+            integration_sha="a" * 40,
+            root=Path("."),
+            ancestor_checker=ancestor_checker(),
+        )
+        self.assertFalse(result.passed)
+
+    def test_integration_required_superseded_carrier_stays_blocked(self):
+        conn = make_db()
+        carrier_candidate = "c" * 40
+        conn.execute("insert into tasks values('T','DONE')")
+        conn.execute("insert into tasks values('CARRIER','SUPERSEDED')")
+        conn.execute(
+            "insert into task_dependencies values(?,?,?,?)",
+            ("T", "CARRIER", "integration_carrier", ""),
+        )
+        conn.execute(
+            "insert into integration_queue values(?,?,?)",
+            ("CARRIER", carrier_candidate, "INTEGRATED"),
+        )
+        item = criterion(
+            "task",
+            {
+                "type": "task_state",
+                "task_id": "T",
+                "integration_required": True,
+            },
+        )
+        result = evaluate_criterion(
+            conn,
+            item,
+            integration_sha="a" * 40,
+            root=Path("."),
+            ancestor_checker=ancestor_checker(carrier_candidate),
+        )
+        self.assertFalse(result.passed)
+
+    def test_integration_required_ignores_unrelated_dependency_kinds(self):
+        conn = make_db()
+        candidate = "c" * 40
+        conn.execute("insert into tasks values('T','DONE')")
+        conn.execute("insert into tasks values('OTHER','DONE')")
+        conn.execute(
+            "insert into task_dependencies values(?,?,?,?)",
+            ("T", "OTHER", "hard", ""),
+        )
+        conn.execute(
+            "insert into integration_queue values(?,?,?)",
+            ("OTHER", candidate, "INTEGRATED"),
+        )
+        item = criterion(
+            "task",
+            {
+                "type": "task_state",
+                "task_id": "T",
+                "integration_required": True,
+            },
+        )
+        result = evaluate_criterion(
+            conn,
+            item,
+            integration_sha="a" * 40,
+            root=Path("."),
+            ancestor_checker=ancestor_checker(candidate),
+        )
+        self.assertFalse(result.passed)
+
+    def test_integration_required_any_valid_carrier_may_satisfy(self):
+        conn = make_db()
+        good = "d" * 40
+        bad = "c" * 40
+        conn.execute("insert into tasks values('T','DONE')")
+        conn.execute("insert into tasks values('A','DONE')")
+        conn.execute("insert into tasks values('B','DONE')")
+        conn.execute(
+            "insert into task_dependencies values(?,?,?,?)",
+            ("T", "A", "integration_carrier", ""),
+        )
+        conn.execute(
+            "insert into task_dependencies values(?,?,?,?)",
+            ("T", "B", "integration_carrier", ""),
+        )
+        conn.execute(
+            "insert into integration_queue values(?,?,?)",
+            ("A", bad, "INTEGRATED"),
+        )
+        conn.execute(
+            "insert into integration_queue values(?,?,?)",
+            ("B", good, "INTEGRATED"),
+        )
+        item = criterion(
+            "task",
+            {
+                "type": "task_state",
+                "task_id": "T",
+                "integration_required": True,
+            },
+        )
+        result = evaluate_criterion(
+            conn,
+            item,
+            integration_sha="a" * 40,
+            root=Path("."),
+            ancestor_checker=ancestor_checker(good),
+        )
+        self.assertTrue(result.passed)
+        self.assertIn("via B", result.reason)
 
     def test_integration_required_wrong_ancestry_stays_blocked(self):
         conn = make_db()

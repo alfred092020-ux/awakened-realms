@@ -245,10 +245,7 @@
               "DONE",
               "RESOLVED"
             ],
-            "integration_required": true,
-            "integration_task_ids": [
-              "MISSION-ANDROID-CLIENT-INTEGRATE-002"
-            ]
+            "integration_required": true
           },
           "task_template": {
             "title": "Harden reconstructed Logres Android client",

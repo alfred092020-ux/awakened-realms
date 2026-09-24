@@ -125,21 +125,6 @@ def validate_contracts(payload: dict[str, Any]) -> None:
                     f"{milestone_id}/{criterion_id}: "
                     "integration_required must be boolean"
                 )
-            if check_type == "task_state" and "integration_task_ids" in check:
-                proof_ids = check["integration_task_ids"]
-                if (
-                    not isinstance(proof_ids, list)
-                    or not proof_ids
-                    or any(
-                        not isinstance(value, str) or not value.strip()
-                        for value in proof_ids
-                    )
-                    or len(set(proof_ids)) != len(proof_ids)
-                ):
-                    raise ValueError(
-                        f"{milestone_id}/{criterion_id}: "
-                        "integration_task_ids must be a non-empty unique string list"
-                    )
             template = item.get("task_template")
             if template is not None:
                 _validate_task_template(milestone_id, criterion_id, template)
@@ -248,6 +233,28 @@ def _git_ancestor_checker(
     return check
 
 
+def _integration_carrier_task_ids(
+    conn: sqlite3.Connection,
+    task_id: str,
+) -> tuple[str, ...]:
+    try:
+        rows = conn.execute(
+            """select depends_on
+                 from task_dependencies
+                where task_id=?
+                  and kind='integration_carrier'
+                order by depends_on""",
+            (task_id,),
+        ).fetchall()
+    except sqlite3.OperationalError:
+        return ()
+    return tuple(
+        str(row[0])
+        for row in rows
+        if str(row[0] or "").strip()
+    )
+
+
 def _evaluate_task_state(
     conn: sqlite3.Connection,
     criterion: dict[str, Any],
@@ -270,10 +277,10 @@ def _evaluate_task_state(
         checker = ancestor_checker or _git_ancestor_checker(root)
         proof_task_ids = [
             task_id,
-            *[
-                str(value)
-                for value in check.get("integration_task_ids", [])
-            ],
+            *_integration_carrier_task_ids(
+                conn,
+                task_id,
+            ),
         ]
         integrated_via = next(
             (
