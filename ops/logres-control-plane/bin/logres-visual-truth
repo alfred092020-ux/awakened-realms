@@ -11,9 +11,22 @@ from pathlib import Path
 ROOT = Path(os.environ.get("LOGRES_ROOT", "/home/ubuntu/logres"))
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "lib"))
 
-from logres_visual_truth import ensure_schema, history, latest, record, regressions
+from logres_visual_truth import (
+    durable_record,
+    ensure_schema,
+    flush_spool,
+    history,
+    latest,
+    regressions,
+)
 
 DB = Path(os.environ.get("LOGRES_CONTROL_DB", ROOT / "control/control.sqlite"))
+SPOOL = Path(
+    os.environ.get(
+        "LOGRES_VISUAL_TRUTH_SPOOL_DIR",
+        ROOT / "control" / "visual-truth-spool",
+    )
+)
 
 
 def db_timeout_seconds() -> float:
@@ -62,33 +75,49 @@ def main() -> None:
 
     sub.add_parser("regressions")
     sub.add_parser("init")
+    sub.add_parser("flush")
 
     args = parser.parse_args()
     conn = connect_db()
     try:
         if args.cmd == "init":
             ensure_schema(conn)
-            out = {"initialized": True}
-        elif args.cmd == "record":
             out = {
-                "id": record(
-                    conn,
-                    sha=args.sha,
-                    checkpoint=args.checkpoint,
-                    observed_artifact=args.observed,
-                    verdict=args.verdict,
-                    reference_artifact=args.reference,
-                    objective_id=args.objective,
-                    viewport=json.loads(args.viewport),
-                    device=json.loads(args.device),
-                    metrics=json.loads(args.metrics),
-                )
+                "initialized": True,
+                "spool": flush_spool(conn, SPOOL),
             }
+        elif args.cmd == "record":
+            # Keep old evidence moving without consuming the full current-record
+            # lock budget. Required current evidence then gets the normal DB
+            # timeout and falls back to an atomic durable spool on contention.
+            flush_spool(conn, SPOOL, busy_timeout_ms=50)
+            out = durable_record(
+                conn,
+                SPOOL,
+                sha=args.sha,
+                checkpoint=args.checkpoint,
+                observed_artifact=args.observed,
+                verdict=args.verdict,
+                reference_artifact=args.reference,
+                objective_id=args.objective,
+                viewport=json.loads(args.viewport),
+                device=json.loads(args.device),
+                metrics=json.loads(args.metrics),
+            )
+        elif args.cmd == "flush":
+            out = flush_spool(
+                conn,
+                SPOOL,
+                busy_timeout_ms=int(db_timeout_seconds() * 1000),
+            )
         elif args.cmd == "latest":
+            flush_spool(conn, SPOOL, busy_timeout_ms=50)
             out = latest(conn, args.checkpoint)
         elif args.cmd == "history":
+            flush_spool(conn, SPOOL, busy_timeout_ms=50)
             out = history(conn, args.checkpoint)
         else:
+            flush_spool(conn, SPOOL, busy_timeout_ms=50)
             out = regressions(conn)
     finally:
         conn.close()
