@@ -15,6 +15,7 @@ import json
 from pathlib import Path
 import sqlite3
 import sys
+import time
 
 COLUMNS = (
     "sha",
@@ -31,6 +32,8 @@ COLUMNS = (
 )
 
 MAX_BUSY_TIMEOUT_MS = 15_000
+MAX_LOCK_ATTEMPTS = 4
+LOCK_RETRY_BASE_SECONDS = 0.10
 
 
 class MergeError(RuntimeError):
@@ -76,7 +79,7 @@ def validate_timeout(value: int) -> int:
     return value
 
 
-def merge(
+def _merge_once(
     *,
     source: Path,
     target: Path,
@@ -192,6 +195,47 @@ def merge(
         "busy_timeout_ms": busy_timeout_ms,
         "idempotent_key": list(COLUMNS),
     }
+
+
+def is_lock_error(exc: BaseException) -> bool:
+    text = str(exc).lower()
+    return "database is locked" in text or "database is busy" in text
+
+
+def merge(
+    *,
+    source: Path,
+    target: Path,
+    busy_timeout_ms: int,
+) -> dict[str, object]:
+    """Merge with bounded retries for transient canonical SQLite contention.
+
+    All attempts remain fail-closed. Only explicit SQLite lock/busy failures
+    are retried; schema, data, path, and other SQLite errors fail immediately.
+    """
+    last_error: MergeError | None = None
+    for attempt in range(1, MAX_LOCK_ATTEMPTS + 1):
+        try:
+            result = _merge_once(
+                source=source,
+                target=target,
+                busy_timeout_ms=busy_timeout_ms,
+            )
+            result["lock_retry_count"] = attempt - 1
+            result["lock_attempts"] = attempt
+            return result
+        except MergeError as exc:
+            if not is_lock_error(exc):
+                raise
+            last_error = exc
+            if attempt >= MAX_LOCK_ATTEMPTS:
+                break
+            time.sleep(LOCK_RETRY_BASE_SECONDS * (2 ** (attempt - 1)))
+
+    assert last_error is not None
+    raise MergeError(
+        f"{last_error}; exhausted {MAX_LOCK_ATTEMPTS} bounded lock attempts"
+    ) from last_error
 
 
 def parser() -> argparse.ArgumentParser:

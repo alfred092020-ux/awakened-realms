@@ -17,6 +17,7 @@ E2E_LOG="/home/ubuntu/logres/logs/verify-farm-$STAMP-e2e.log"
 BEHAVIOR_LOG="/home/ubuntu/logres/logs/verify-farm-$STAMP-behavior.log"
 REMOTE_TEST_LOG="/home/ubuntu/logres/logs/verify-farm-$STAMP-remote-test.log"
 VISUAL_TRUTH_MERGE_LOG="/home/ubuntu/logres/logs/verify-farm-$STAMP-visual-truth-merge.log"
+VISUAL_TRUTH_FAILURE_DIR="${LOGRES_VISUAL_TRUTH_FAILURE_DIR:-/home/ubuntu/logres/artifacts/visual-truth-merge-failures}"
 CACHE_JSON="/tmp/logres-verify-cache-$STAMP.json"
 VISUAL_TRUTH_DB="$ROOT/verify-farm-$STAMP-visual-truth.sqlite"
 VISUAL_TRUTH_WRAPPER="$ROOT/verify-farm-$STAMP-visual-truth-recorder"
@@ -243,6 +244,34 @@ merge_visual_truth_isolation() {
   python3 "$merger"     --source "$VISUAL_TRUTH_DB"     --target "$CANONICAL_CONTROL_DB"     --busy-timeout-ms "$VISUAL_TRUTH_MERGE_TIMEOUT_MS"     >"$VISUAL_TRUTH_MERGE_LOG" 2>&1
 }
 
+preserve_visual_truth_failure() {
+  local destination="$VISUAL_TRUTH_FAILURE_DIR/$STAMP-${SHA:0:12}.sqlite"
+  mkdir -p "$VISUAL_TRUTH_FAILURE_DIR"
+  python3 - "$VISUAL_TRUTH_DB" "$destination" <<'PY'
+from pathlib import Path
+import sqlite3
+import sys
+
+source = Path(sys.argv[1])
+destination = Path(sys.argv[2])
+if not source.is_file():
+    raise SystemExit(2)
+destination.parent.mkdir(parents=True, exist_ok=True)
+if destination.exists():
+    destination.unlink()
+src = sqlite3.connect(f"file:{source}?mode=ro", uri=True, timeout=5)
+dst = sqlite3.connect(destination, timeout=5)
+try:
+    src.backup(dst)
+    dst.commit()
+finally:
+    dst.close()
+    src.close()
+print(destination)
+PY
+}
+
+
 hydrate() {
   local wt="$1"
   if [[ -d "$BASE/public/__logres_ref" ]]; then
@@ -399,6 +428,12 @@ fi
 
 if ! merge_visual_truth_isolation; then
   echo "VERIFY_FARM FAIL visual truth merge failed closed sha=${SHA:0:12}" >&2
+  preserved_visual_truth=""
+  preserved_visual_truth=$(preserve_visual_truth_failure 2>/dev/null || true)
+  if [[ -n "$preserved_visual_truth" ]]; then
+    printf 'preserved_isolated_visual_truth=%s\n' "$preserved_visual_truth"       >>"$VISUAL_TRUTH_MERGE_LOG"
+    echo "VERIFY_FARM preserved isolated visual truth: $preserved_visual_truth" >&2
+  fi
   echo "--- visual truth merge tail ---" >&2
   tail -120 "$VISUAL_TRUTH_MERGE_LOG" >&2 || true
   /home/ubuntu/logres/bin/logres-regression-capture     --kind candidate-verify     --ref "$REF"     --sha "$SHA"     --summary "visual-truth isolated merge failed after successful E2E"     --log "$VISUAL_TRUTH_MERGE_LOG" >/dev/null 2>&1 || true

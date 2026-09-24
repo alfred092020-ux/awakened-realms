@@ -5,6 +5,7 @@ import sqlite3
 import subprocess
 import sys
 import tempfile
+import threading
 import unittest
 
 
@@ -192,6 +193,50 @@ class VisualTruthMergeTests(unittest.TestCase):
 
         self.assertEqual(2, result["inserted_rows"])
         self.assertEqual(0, result["deduped_rows"])
+
+    def test_transient_canonical_lock_retries_then_merges(self):
+        source = make_db(self.source)
+        initial_target = make_db(self.target)
+        try:
+            record_sample(source)
+        finally:
+            source.close()
+            initial_target.close()
+
+        target = sqlite3.connect(
+            self.target,
+            check_same_thread=False,
+        )
+        target.execute("begin exclusive")
+        release = threading.Timer(
+            0.08,
+            target.rollback,
+        )
+        release.start()
+        try:
+            result = merge_module.merge(
+                source=self.source,
+                target=self.target,
+                busy_timeout_ms=25,
+            )
+        finally:
+            release.join(timeout=1)
+            target.close()
+
+        self.assertEqual("PASS", result["status"])
+        self.assertGreaterEqual(result["lock_retry_count"], 1)
+        self.assertLessEqual(
+            result["lock_attempts"],
+            merge_module.MAX_LOCK_ATTEMPTS,
+        )
+        conn = sqlite3.connect(self.target)
+        try:
+            count = conn.execute(
+                "select count(*) from visual_truth_checks"
+            ).fetchone()[0]
+        finally:
+            conn.close()
+        self.assertEqual(1, count)
 
     def test_locked_canonical_database_fails_closed_with_bounded_timeout(self):
         source = make_db(self.source)

@@ -270,6 +270,14 @@ class VerifyFarmE2EPolicyTests(unittest.TestCase):
         ]
         self.assertIn('exit 1', fail_block)
         self.assertIn(
+            'preserve_visual_truth_failure',
+            fail_block,
+        )
+        self.assertIn(
+            'preserved_isolated_visual_truth=',
+            fail_block,
+        )
+        self.assertIn(
             'visual_truth_merge_log=$VISUAL_TRUTH_MERGE_LOG',
             text,
         )
