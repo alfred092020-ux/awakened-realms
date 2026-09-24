@@ -1,0 +1,16 @@
+#!/usr/bin/env python3
+import argparse,json,sys
+from pathlib import Path
+sys.path.insert(0,str(Path(__file__).resolve().parents[1]/"lib"))
+from logres_fault_injection import list_scenarios,run_all,simulate
+def main():
+ p=argparse.ArgumentParser(prog="logres-fault-injection",description="Sandbox-only synthetic fault harness; never opens production control DB.")
+ s=p.add_subparsers(dest="cmd",required=True);s.add_parser("list")
+ r=s.add_parser("run");r.add_argument("scenario");r.add_argument("--state",default="{}");r.add_argument("--protections",default="{}")
+ a=s.add_parser("all");a.add_argument("--state",default="{}");a.add_argument("--protections",default="{}")
+ x=p.parse_args()
+ if x.cmd=="list":out=list_scenarios()
+ elif x.cmd=="run":out=simulate(x.scenario,json.loads(x.state),json.loads(x.protections))
+ else:out=run_all(json.loads(x.state),json.loads(x.protections))
+ print(json.dumps(out,indent=2,sort_keys=True))
+if __name__=="__main__":main()
