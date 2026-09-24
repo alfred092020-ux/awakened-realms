@@ -1,5 +1,6 @@
 import importlib.machinery
 import importlib.util
+import json
 import sys
 import tempfile
 import types
@@ -21,11 +22,14 @@ from logres_autonomy import (
     doctor_stability,
     dynamic_batch_limit,
     integration_backlog,
+    legacy_cron_should_defer,
     load_state,
     parse_route_failures,
+    process_ancestry_contains_marker,
     rank_ready_tasks,
     record_failure,
     record_success,
+    supervisor_heartbeat_healthy,
 )
 
 
@@ -45,6 +49,139 @@ def config(enabled=True):
 
 
 class AutonomyTests(unittest.TestCase):
+    @staticmethod
+    def _write_proc(proc_root: Path, pid: int, command: str, ppid: int):
+        proc = proc_root / str(pid)
+        proc.mkdir(parents=True, exist_ok=True)
+        proc.joinpath("cmdline").write_bytes(
+            command.replace(" ", "\0").encode() + b"\0"
+        )
+        proc.joinpath("status").write_text(
+            f"Name:\ttest\nPPid:\t{ppid}\n"
+        )
+
+    def test_legacy_cron_ancestry_is_bounded_and_marker_specific(self):
+        with tempfile.TemporaryDirectory() as td:
+            proc_root = Path(td) / "proc"
+            self._write_proc(
+                proc_root,
+                300,
+                "flock -n /tmp/logres-autonomy.cron.lock python3 logres-autonomy",
+                200,
+            )
+            self._write_proc(
+                proc_root,
+                200,
+                "/bin/sh -c autonomy # LOGRES_AUTONOMY_V3",
+                1,
+            )
+            self.assertTrue(
+                process_ancestry_contains_marker(
+                    "LOGRES_AUTONOMY_V3",
+                    start_pid=300,
+                    proc_root=proc_root,
+                )
+            )
+            self.assertFalse(
+                process_ancestry_contains_marker(
+                    "NOT_PRESENT",
+                    start_pid=300,
+                    proc_root=proc_root,
+                )
+            )
+            self.assertFalse(
+                process_ancestry_contains_marker(
+                    "LOGRES_AUTONOMY_V3",
+                    start_pid=999,
+                    proc_root=proc_root,
+                )
+            )
+
+    def test_supervisor_heartbeat_must_be_fresh_and_live(self):
+        with tempfile.TemporaryDirectory() as td:
+            heartbeat = Path(td) / "heartbeat.json"
+            heartbeat.write_text(
+                json.dumps({"pid": 4321, "updated_epoch": 100.0})
+            )
+            self.assertTrue(
+                supervisor_heartbeat_healthy(
+                    heartbeat,
+                    now_epoch=150.0,
+                    pid_alive_fn=lambda _: True,
+                )
+            )
+            self.assertFalse(
+                supervisor_heartbeat_healthy(
+                    heartbeat,
+                    now_epoch=250.0,
+                    pid_alive_fn=lambda _: True,
+                )
+            )
+            self.assertFalse(
+                supervisor_heartbeat_healthy(
+                    heartbeat,
+                    now_epoch=150.0,
+                    pid_alive_fn=lambda _: False,
+                )
+            )
+
+    def test_legacy_cron_defers_only_with_healthy_supervisor(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            proc_root = root / "proc"
+            heartbeat = root / "heartbeat.json"
+            self._write_proc(
+                proc_root,
+                300,
+                "flock -n /tmp/logres-autonomy.cron.lock python3 logres-autonomy",
+                200,
+            )
+            self._write_proc(
+                proc_root,
+                200,
+                "/bin/sh -c autonomy # LOGRES_AUTONOMY_V3",
+                1,
+            )
+            heartbeat.write_text(
+                json.dumps({"pid": 4321, "updated_epoch": 100.0})
+            )
+            self.assertTrue(
+                legacy_cron_should_defer(
+                    heartbeat,
+                    start_pid=300,
+                    proc_root=proc_root,
+                    now_epoch=150.0,
+                    pid_alive_fn=lambda _: True,
+                )
+            )
+            self.assertFalse(
+                legacy_cron_should_defer(
+                    heartbeat,
+                    start_pid=300,
+                    proc_root=proc_root,
+                    now_epoch=250.0,
+                    pid_alive_fn=lambda _: True,
+                )
+            )
+
+            # A manual/supervisor-style ancestry has no legacy marker and must
+            # retain the fallback path even with a healthy supervisor.
+            self._write_proc(
+                proc_root,
+                400,
+                "flock -n /tmp/logres-autonomy.cron.lock logres-autonomy cycle",
+                1,
+            )
+            self.assertFalse(
+                legacy_cron_should_defer(
+                    heartbeat,
+                    start_pid=400,
+                    proc_root=proc_root,
+                    now_epoch=150.0,
+                    pid_alive_fn=lambda _: True,
+                )
+            )
+
     def test_doctor_stability_accepts_clean_first_run(self):
         state = doctor_stability(0)
         self.assertTrue(state.ok)

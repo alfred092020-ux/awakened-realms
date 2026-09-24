@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import os
 import sqlite3
+import time
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable
@@ -99,6 +100,111 @@ AUTONOMY_CRON_LINE = (
     ">>/home/ubuntu/logres/logs/autonomy-cron.log 2>&1 "
     + AUTONOMY_CRON_MARKER
 )
+
+
+def _proc_ppid(proc_dir: Path) -> int | None:
+    try:
+        for line in (proc_dir / "status").read_text(errors="replace").splitlines():
+            if line.startswith("PPid:"):
+                return int(line.split(":", 1)[1].strip())
+    except (OSError, ValueError):
+        return None
+    return None
+
+
+def process_ancestry_contains_marker(
+    marker: str,
+    *,
+    start_pid: int | None = None,
+    proc_root: Path = Path("/proc"),
+    max_depth: int = 6,
+) -> bool:
+    pid = os.getppid() if start_pid is None else int(start_pid)
+    seen: set[int] = set()
+    for _ in range(max(1, int(max_depth))):
+        if pid <= 1 or pid in seen:
+            return False
+        seen.add(pid)
+        proc_dir = proc_root / str(pid)
+        try:
+            command = (
+                (proc_dir / "cmdline")
+                .read_bytes()
+                .replace(b"\0", b" ")
+                .decode(errors="replace")
+            )
+        except OSError:
+            return False
+        if marker in command:
+            return True
+        parent = _proc_ppid(proc_dir)
+        if parent is None or parent == pid:
+            return False
+        pid = parent
+    return False
+
+
+def supervisor_heartbeat_healthy(
+    heartbeat_path: Path,
+    *,
+    now_epoch: float | None = None,
+    max_age_seconds: float = 120.0,
+    pid_alive_fn=None,
+) -> bool:
+    try:
+        state = json.loads(heartbeat_path.read_text())
+    except (OSError, json.JSONDecodeError):
+        return False
+    if not isinstance(state, dict):
+        return False
+    try:
+        pid = int(state.get("pid") or 0)
+        updated = float(state.get("updated_epoch") or 0)
+    except (TypeError, ValueError):
+        return False
+    if pid <= 0 or updated <= 0:
+        return False
+    now_epoch = time.time() if now_epoch is None else float(now_epoch)
+    if now_epoch - updated > max_age_seconds:
+        return False
+    if now_epoch < updated - 5:
+        return False
+    if pid_alive_fn is None:
+        def pid_alive_fn(candidate: int) -> bool:
+            try:
+                os.kill(candidate, 0)
+                return True
+            except ProcessLookupError:
+                return False
+            except PermissionError:
+                return True
+    try:
+        return bool(pid_alive_fn(pid))
+    except OSError:
+        return False
+
+
+def legacy_cron_should_defer(
+    heartbeat_path: Path,
+    *,
+    start_pid: int | None = None,
+    proc_root: Path = Path("/proc"),
+    now_epoch: float | None = None,
+    pid_alive_fn=None,
+) -> bool:
+    if not process_ancestry_contains_marker(
+        "LOGRES_AUTONOMY_V3",
+        start_pid=start_pid,
+        proc_root=proc_root,
+    ):
+        return False
+    return supervisor_heartbeat_healthy(
+        heartbeat_path,
+        now_epoch=now_epoch,
+        pid_alive_fn=pid_alive_fn,
+    )
+
+
 SWARM_CRON_MARKER = "# LOGRES_SWARM_V1"
 SWARM_CRON_LINE = (
     "* * * * * "
