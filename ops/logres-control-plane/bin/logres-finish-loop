@@ -117,7 +117,7 @@ def post_blocker(event: dict[str, str]) -> int:
         [
             str(ROOT / "bin" / "logres-brain"),
             "post",
-            "finish-loop",
+            "brain",
             "ALL",
             "INFO",
             "NORMAL",

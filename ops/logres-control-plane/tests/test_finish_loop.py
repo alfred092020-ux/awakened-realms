@@ -265,6 +265,19 @@ class FinishLoopTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "no active or completed milestone"):
             active_milestone_id(conn)
 
+    def test_blocker_post_uses_reserved_brain_sender(self):
+        script = (
+            TEST_DIR.parent / "bin" / "logres-finish-loop"
+        ).read_text()
+        self.assertIn(
+            '"post",\n            "brain",\n            "ALL",',
+            script,
+        )
+        self.assertNotIn(
+            '"post",\n            "finish-loop",\n            "ALL",',
+            script,
+        )
+
     def test_autopilot_delegates_goal_authority_to_finish_loop(self):
         script = (
             TEST_DIR.parent / "bin" / "logres-autopilot-watch"
