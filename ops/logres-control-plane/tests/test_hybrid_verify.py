@@ -61,9 +61,16 @@ class HybridVerifyTests(unittest.TestCase):
         self.assertIn('if cache_hit; then', text)
         self.assertIn('VERIFY_PATH="cache-test+local-build-e2e"', text)
         self.assertIn('cache_store_pass', text)
-        self.assertIn('npm run test:e2e -- --workers="$E2E_WORKERS"', text)
+        shared_cmd = 'npm run test:e2e -- "${shared_e2e_specs[@]}" --workers="$E2E_WORKERS"'
+        perf_cmd = 'npm run test:e2e -- "$PERF_SPEC_REL" --workers=1'
+        self.assertIn(shared_cmd, text)
+        self.assertIn(perf_cmd, text)
         self.assertLess(
-            text.index('npm run test:e2e -- --workers="$E2E_WORKERS"'),
+            text.index(shared_cmd),
+            text.index('if cache_hit; then'),
+        )
+        self.assertLess(
+            text.index(perf_cmd),
             text.index('if cache_hit; then'),
         )
         cache_block = text[

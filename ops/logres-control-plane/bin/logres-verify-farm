@@ -14,6 +14,7 @@ TEST_WT="$ROOT/verify-farm-$STAMP-test"
 E2E_WT="$ROOT/verify-farm-$STAMP-e2e"
 TEST_LOG="/home/ubuntu/logres/logs/verify-farm-$STAMP-test.log"
 E2E_LOG="/home/ubuntu/logres/logs/verify-farm-$STAMP-e2e.log"
+PERF_LOG="/home/ubuntu/logres/logs/verify-farm-$STAMP-performance.log"
 BEHAVIOR_LOG="/home/ubuntu/logres/logs/verify-farm-$STAMP-behavior.log"
 BEHAVIOR_TRACE_MERGE_LOG="/home/ubuntu/logres/logs/verify-farm-$STAMP-behavior-trace-merge.log"
 BEHAVIOR_TRACE_FAILURE_DIR="${LOGRES_BEHAVIOR_TRACE_FAILURE_DIR:-/home/ubuntu/logres/artifacts/behavior-trace-merge-failures}"
@@ -37,6 +38,8 @@ VERIFY_PATH="local-test+local-build-e2e"
 CACHE_MODE="unit"
 CACHE_READY=0
 CACHE_ARGS=()
+PERF_SPEC_REL="e2e/logres-performance.spec.mjs"
+PERF_REQUIRED=0
 
 select_e2e_workers() {
   local override="${LOGRES_E2E_WORKERS:-}"
@@ -182,6 +185,10 @@ SHA=$(git -C "$BASE" rev-parse "$REF")
   echo "VERIFY_FARM could not pin exact source SHA for $REF" >&2
   exit 2
 }
+if git -C "$BASE" cat-file -e "$SHA:$PERF_SPEC_REL" 2>/dev/null; then
+  PERF_REQUIRED=1
+  E2E_VERIFY_TAG="${E2E_VERIFY_TAG}+perf-w1"
+fi
 prepare_cache_dimensions
 
 cleanup() {
@@ -430,7 +437,26 @@ export LOGRES_BEHAVIOR_TRACE_BIN="$BEHAVIOR_TRACE_WRAPPER"
   hydrate "$E2E_WT"
   cd "$E2E_WT"
   npm run build
-  npm run test:e2e -- --workers="$E2E_WORKERS"
+
+  mapfile -t shared_e2e_specs < <(
+    find e2e -maxdepth 1 -type f -name '*.spec.mjs'       ! -name 'logres-performance.spec.mjs'       -print | sort
+  )
+  if (( ${#shared_e2e_specs[@]} == 0 )); then
+    echo "VERIFY_FARM shared E2E spec set is empty" >&2
+    exit 2
+  fi
+
+  npm run test:e2e -- "${shared_e2e_specs[@]}" --workers="$E2E_WORKERS"
+
+  # Performance timing is calibrated as a single-browser runtime class. Running
+  # it inside the parallel E2E worker pool measures scheduler contention rather
+  # than the candidate runtime, so it remains mandatory but isolated.
+  if (( PERF_REQUIRED == 1 )); then
+    npm run test:e2e -- "$PERF_SPEC_REL" --workers=1       >"$PERF_LOG" 2>&1
+  else
+    printf 'VERIFY_FARM isolated performance lane not required; %s absent at exact SHA %s
+'       "$PERF_SPEC_REL" "$SHA" >"$PERF_LOG"
+  fi
 ) >"$E2E_LOG" 2>&1 &
 e2e_pid=$!
 
@@ -499,9 +525,11 @@ if (( test_rc != 0 || e2e_rc != 0 || behavior_rc != 0 )); then
   tail -80 "$TEST_LOG" >&2 || true
   echo "--- e2e tail ---" >&2
   tail -120 "$E2E_LOG" >&2 || true
+  echo "--- isolated performance tail ---" >&2
+  tail -120 "$PERF_LOG" >&2 || true
   echo "--- behavior tail ---" >&2
   tail -120 "$BEHAVIOR_LOG" >&2 || true
-  /home/ubuntu/logres/bin/logres-regression-capture     --kind candidate-verify     --ref "$REF"     --sha "$SHA"     --summary "verify-farm test_rc=$test_rc e2e_rc=$e2e_rc behavior_rc=$behavior_rc path=$VERIFY_PATH+$E2E_VERIFY_TAG"     --log "$TEST_LOG"     --log "$E2E_LOG" --log "$BEHAVIOR_LOG" >/dev/null 2>&1 || true
+  /home/ubuntu/logres/bin/logres-regression-capture     --kind candidate-verify     --ref "$REF"     --sha "$SHA"     --summary "verify-farm test_rc=$test_rc e2e_rc=$e2e_rc behavior_rc=$behavior_rc path=$VERIFY_PATH+$E2E_VERIFY_TAG"     --log "$TEST_LOG"     --log "$E2E_LOG" --log "$PERF_LOG" --log "$BEHAVIOR_LOG" >/dev/null 2>&1 || true
   exit 1
 fi
 
@@ -543,6 +571,7 @@ dur=$(( $(date +%s)-START ))
 echo "VERIFY_FARM PASS ref=$REF sha=$SHA duration=${dur}s path=$VERIFY_PATH+$E2E_VERIFY_TAG+behavior-truth"
 echo "test_log=$TEST_LOG"
 echo "e2e_log=$E2E_LOG"
+echo "performance_log=$PERF_LOG"
 echo "behavior_log=$BEHAVIOR_LOG"
 echo "behavior_trace_merge_log=$BEHAVIOR_TRACE_MERGE_LOG"
 echo "visual_truth_merge_log=$VISUAL_TRUTH_MERGE_LOG"

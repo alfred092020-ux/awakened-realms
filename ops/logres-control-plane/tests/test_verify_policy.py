@@ -110,7 +110,15 @@ class VerifyFarmE2EPolicyTests(unittest.TestCase):
             text,
         )
         self.assertIn(
-            'npm run test:e2e -- --workers="$E2E_WORKERS"',
+            'npm run test:e2e -- "${shared_e2e_specs[@]}" --workers="$E2E_WORKERS"',
+            text,
+        )
+        self.assertIn(
+            'npm run test:e2e -- "$PERF_SPEC_REL" --workers=1',
+            text,
+        )
+        self.assertIn(
+            "! -name 'logres-performance.spec.mjs'",
             text,
         )
         self.assertIn(
@@ -122,6 +130,21 @@ class VerifyFarmE2EPolicyTests(unittest.TestCase):
             text,
         )
 
+
+    def test_performance_gate_is_mandatory_and_isolated_from_parallel_e2e(self):
+        text = SCRIPT.read_text()
+        self.assertIn(
+            "! -name 'logres-performance.spec.mjs'",
+            text,
+        )
+        self.assertIn(
+            'npm run test:e2e -- "$PERF_SPEC_REL" --workers=1',
+            text,
+        )
+        self.assertIn('PERF_LOG=', text)
+        self.assertIn('tail -120 "$PERF_LOG"', text)
+        self.assertIn('--log "$PERF_LOG"', text)
+        self.assertIn('performance_log=$PERF_LOG', text)
 
     def test_canonical_farm_exports_exact_sha_for_visual_truth(self):
         text = SCRIPT.read_text()
