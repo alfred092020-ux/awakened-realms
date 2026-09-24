@@ -59,6 +59,11 @@ export class LogresFieldActorController {
     | null =
       null
 
+  private npcMarker:
+    | Phaser.GameObjects.Arc
+    | null =
+      null
+
   private playerValue:
     LogresPlayablePlayer | null =
       null
@@ -73,6 +78,10 @@ export class LogresFieldActorController {
 
   get marker() {
     return this.encounterMarker
+  }
+
+  get npc() {
+    return this.npcMarker
   }
 
   get player() {
@@ -215,6 +224,299 @@ export class LogresFieldActorController {
     )
 
     return this.playerValue
+  }
+
+  createNpcMarker(
+    movement:
+      LogresFieldMovementController,
+    excludedTile:
+      Readonly<LogresFieldNavigationTile> | null,
+    onActivate:
+      () => void,
+  ): Readonly<LogresFieldNavigationTile> | null {
+    const runtime =
+      movement.runtime
+
+    const transform =
+      movement.transform
+
+    const currentTile =
+      movement.currentTile
+
+    if (
+      !runtime ||
+      !transform ||
+      !currentTile
+    ) {
+      return null
+    }
+
+    const offsets =
+      [
+        [2, 2],
+        [-2, 2],
+        [2, -2],
+        [-2, -2],
+        [0, 3],
+        [-3, 0],
+      ] as const
+
+    const isExcluded = (
+      tile:
+        Readonly<LogresFieldNavigationTile>,
+    ) =>
+      Boolean(
+        excludedTile &&
+        tile.col ===
+          excludedTile.col &&
+        tile.row ===
+          excludedTile.row &&
+        tile.level ===
+          excludedTile.level,
+      )
+
+    let selected:
+      Readonly<LogresFieldNavigationTile> | null =
+        null
+
+    for (
+      const [
+        colOffset,
+        rowOffset,
+      ]
+      of offsets
+    ) {
+      const candidate =
+        runtime
+          .movement
+          .tileAt(
+            currentTile.col +
+              colOffset,
+            currentTile.row +
+              rowOffset,
+          )
+
+      if (
+        !candidate ||
+        candidate.prohibited ||
+        isExcluded(
+          candidate,
+        )
+      ) {
+        continue
+      }
+
+      const path =
+        findReconstructedLogresFieldPath(
+          currentTile,
+          candidate,
+          runtime
+            .movement
+            .tileAt,
+        )
+
+      if (
+        path &&
+        path.coords.length >
+          1
+      ) {
+        selected =
+          candidate
+
+        break
+      }
+    }
+
+    if (!selected) {
+      const candidates =
+        [
+          ...runtime
+            .movement
+            .tiles,
+        ]
+          .filter(
+            (
+              tile,
+            ) =>
+              !tile.prohibited &&
+              !isExcluded(
+                tile,
+              ) &&
+              (
+                tile.col !==
+                  currentTile.col ||
+                tile.row !==
+                  currentTile.row
+              ),
+          )
+          .sort(
+            (
+              left,
+              right,
+            ) => {
+              const leftDistance =
+                Math.abs(
+                  left.col -
+                    currentTile.col,
+                ) +
+                Math.abs(
+                  left.row -
+                    currentTile.row,
+                )
+
+              const rightDistance =
+                Math.abs(
+                  right.col -
+                    currentTile.col,
+                ) +
+                Math.abs(
+                  right.row -
+                    currentTile.row,
+                )
+
+              return (
+                leftDistance -
+                rightDistance
+              )
+            },
+          )
+
+      for (
+        const candidate
+        of candidates.slice(
+          0,
+          64,
+        )
+      ) {
+        const path =
+          findReconstructedLogresFieldPath(
+            currentTile,
+            candidate,
+            runtime
+              .movement
+              .tileAt,
+          )
+
+        if (
+          path &&
+          path.coords.length >
+            1
+        ) {
+          selected =
+            candidate
+
+          break
+        }
+      }
+    }
+
+    if (!selected) {
+      this.scene.registry.set(
+        'logres.playableField.npcStatus',
+        'UNAVAILABLE',
+      )
+
+      return null
+    }
+
+    const point =
+      projectLogresPlayableFieldTileToRaster(
+        selected,
+        transform,
+      )
+
+    this.npcMarker =
+      this.scene.add
+        .circle(
+          point.x,
+          point.y,
+          18,
+          0x2563eb,
+          0.96,
+        )
+        .setStrokeStyle(
+          4,
+          0x0f172a,
+          1,
+        )
+        .setDepth(
+          904,
+        )
+        .setInteractive({
+          useHandCursor:
+            true,
+        })
+
+    this.scene.add
+      .text(
+        point.x,
+        point.y -
+          33,
+        'NPC',
+        {
+          fontFamily:
+            'Arial, sans-serif',
+          fontSize:
+            '13px',
+          color:
+            '#ffffff',
+          fontStyle:
+            'bold',
+          backgroundColor:
+            '#0f172a',
+          padding: {
+            x:
+              5,
+            y:
+              3,
+          },
+        },
+      )
+      .setOrigin(
+        0.5,
+        1,
+      )
+      .setDepth(
+        905,
+      )
+
+    this.npcMarker.on(
+      'pointerdown',
+      onActivate,
+    )
+
+    this.scene.registry.set(
+      'logres.playableField.npcStatus',
+      'READY',
+    )
+
+    this.scene.registry.set(
+      'logres.playableField.npcCoord',
+      {
+        col:
+          selected.col,
+        row:
+          selected.row,
+        level:
+          selected.level,
+      },
+    )
+
+    this.scene.registry.set(
+      'logres.playableField.npcVisualPresentation',
+      {
+        mode:
+          'RECONSTRUCTED_FALLBACK',
+        provenance:
+          'RECONSTRUCTED',
+        historicalGlobalActorIdentity:
+          'UNRESOLVED',
+        historicalGlobalDialoguePayload:
+          'UNRESOLVED',
+      },
+    )
+
+    return selected
   }
 
   createEncounterMarker(
