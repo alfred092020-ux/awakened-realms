@@ -1,0 +1,9 @@
+#!/usr/bin/env python3
+import argparse,json,sys
+from pathlib import Path
+sys.path.insert(0,str(Path(__file__).resolve().parents[1]/"lib"))
+from logres_visual_compare import compare_images
+def main():
+ p=argparse.ArgumentParser(prog="logres-visual-compare");p.add_argument("reference");p.add_argument("observed");p.add_argument("--max-rmse",type=float,default=.02);p.add_argument("--max-changed",type=float,default=.01)
+ a=p.parse_args();print(json.dumps(compare_images(a.reference,a.observed,max_normalized_rmse=a.max_rmse,max_changed_ratio=a.max_changed),indent=2,sort_keys=True))
+if __name__=="__main__":main()
