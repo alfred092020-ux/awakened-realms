@@ -18,6 +18,39 @@ START=$(date +%s)
 SHA=unknown
 VERIFY_PATH="local-test+local-build-e2e"
 
+select_e2e_workers() {
+  local override="${LOGRES_E2E_WORKERS:-}"
+  if [[ -n "$override" ]]; then
+    if [[ ! "$override" =~ ^[1-4]$ ]]; then
+      echo "LOGRES_E2E_WORKERS must be an integer from 1 through 4" >&2
+      return 2
+    fi
+    echo "$override"
+    return 0
+  fi
+
+  local cpus="${LOGRES_CPU_COUNT_OVERRIDE:-}"
+  if [[ -z "$cpus" ]]; then
+    cpus=$(nproc 2>/dev/null || echo 1)
+  fi
+  if [[ ! "$cpus" =~ ^[0-9]+$ ]]; then
+    cpus=1
+  fi
+  if (( cpus >= 8 )); then
+    echo 3
+  else
+    echo 1
+  fi
+}
+
+if [[ "${1:-}" == "--print-e2e-workers" ]]; then
+  select_e2e_workers
+  exit $?
+fi
+
+E2E_WORKERS=$(select_e2e_workers)
+E2E_VERIFY_TAG="e2e-w${E2E_WORKERS}"
+
 remote_enabled() {
   case "${LOGRES_REMOTE_VERIFY_ENABLED:-}" in
     1|true|TRUE|yes|YES) return 0 ;;
@@ -74,7 +107,7 @@ cleanup() {
   rm -f "/tmp/logres-remote-pool-health-$STAMP.json"
   dur=$(( $(date +%s)-START ))
   status=FAIL; [[ $rc -eq 0 ]] && status=PASS
-  "$CONTROL" record-verify "$REF" "$SHA" full-e2e "$status" "$dur"     "verify-farm:$VERIFY_PATH" >/dev/null 2>&1 || true
+  "$CONTROL" record-verify "$REF" "$SHA" full-e2e "$status" "$dur"     "verify-farm:$VERIFY_PATH+$E2E_VERIFY_TAG" >/dev/null 2>&1 || true
   exit $rc
 }
 trap cleanup EXIT INT TERM
@@ -162,7 +195,7 @@ export PLAYWRIGHT_BROWSERS_PATH=/home/ubuntu/logres/cache/playwright
   hydrate "$E2E_WT"
   cd "$E2E_WT"
   npm run build
-  npm run test:e2e
+  npm run test:e2e -- --workers="$E2E_WORKERS"
 ) >"$E2E_LOG" 2>&1 &
 e2e_pid=$!
 
@@ -209,11 +242,11 @@ if (( test_rc != 0 || e2e_rc != 0 )); then
   tail -80 "$TEST_LOG" >&2 || true
   echo "--- e2e tail ---" >&2
   tail -120 "$E2E_LOG" >&2 || true
-  /home/ubuntu/logres/bin/logres-regression-capture     --kind candidate-verify     --ref "$REF"     --sha "$SHA"     --summary "verify-farm test_rc=$test_rc e2e_rc=$e2e_rc path=$VERIFY_PATH"     --log "$TEST_LOG"     --log "$E2E_LOG" >/dev/null 2>&1 || true
+  /home/ubuntu/logres/bin/logres-regression-capture     --kind candidate-verify     --ref "$REF"     --sha "$SHA"     --summary "verify-farm test_rc=$test_rc e2e_rc=$e2e_rc path=$VERIFY_PATH+$E2E_VERIFY_TAG"     --log "$TEST_LOG"     --log "$E2E_LOG" >/dev/null 2>&1 || true
   exit 1
 fi
 
 dur=$(( $(date +%s)-START ))
-echo "VERIFY_FARM PASS ref=$REF sha=$SHA duration=${dur}s path=$VERIFY_PATH"
+echo "VERIFY_FARM PASS ref=$REF sha=$SHA duration=${dur}s path=$VERIFY_PATH+$E2E_VERIFY_TAG"
 echo "test_log=$TEST_LOG"
 echo "e2e_log=$E2E_LOG"
