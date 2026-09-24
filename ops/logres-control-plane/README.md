@@ -320,3 +320,11 @@ Useful commands:
 logres-workspace-gc plan --limit 25
 logres-workspace-gc apply --limit 25
 ```
+
+## Runtime control-plane surface closure
+
+The deployment manifest now covers every runtime-safe `logres-*` control-plane executable and every `logres_*.py` runtime library in the canonical control-plane tree. This includes architecture pressure, code-index, decision bridge, shadow experiment execution/governor, lifecycle audit, mission-contract proposals, synchronization health, and temporal reasoning.
+
+Manifest validation is two-dimensional: local Python import closure still prevents missing library dependencies, while runtime-surface closure prevents a newly committed helper from silently existing only inside repository worktrees.
+
+Two tools are deliberately excluded from runtime deployment: `logres-reconstruct` and `logres-truth`. Both intentionally import `scripts/logres` using repository-relative paths. Moving those wrappers into `/home/ubuntu/logres/bin` would change their computed repository root, so they remain repository-bound until their import contract is redesigned. The exclusion is explicit and tested rather than accidental.

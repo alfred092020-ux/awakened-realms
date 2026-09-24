@@ -7,7 +7,11 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(REPO_ROOT / "scripts" / "logres"))
 
-from deploy_control_plane import deploy
+from deploy_control_plane import (
+    MANIFEST,
+    REPO_BOUND_TOOL_EXCLUSIONS,
+    deploy,
+)
 
 
 PRODUCTION_FILES = (
@@ -16,6 +20,15 @@ PRODUCTION_FILES = (
     "bin/logres-autonomy",
     "bin/logres-autonomy-cron",
     "bin/logres-autopilot-watch",
+    "bin/logres-architecture-pressure",
+    "bin/logres-code-index",
+    "bin/logres-decision-bridge",
+    "bin/logres-experiment-executor",
+    "bin/logres-governor",
+    "bin/logres-lifecycle-guard",
+    "bin/logres-mission-contract-proposals",
+    "bin/logres-sync-health",
+    "bin/logres-temporal",
     "bin/logres-health-snapshot",
     "bin/logres-maintain",
     "bin/logres-blocker-router",
@@ -69,7 +82,15 @@ PRODUCTION_FILES = (
     "bin/logres-verify-all-ref",
     "bin/logres-verify-farm",
     "lib/logres_ai_common.py",
+    "lib/logres_architecture_pressure.py",
     "lib/logres_behavior_trace.py",
+    "lib/logres_decision_bridge.py",
+    "lib/logres_experiment_executor.py",
+    "lib/logres_governor.py",
+    "lib/logres_lifecycle_guard.py",
+    "lib/logres_mission_contract_proposals.py",
+    "lib/logres_temporal.py",
+    "lib/logres_temporal_drift.py",
     "lib/logres_bottleneck.py",
     "lib/logres_engine_reconcile.py",
     "lib/logres_fault_injection.py",
@@ -217,6 +238,46 @@ class DeployControlPlaneTests(unittest.TestCase):
                 str(item.destination.relative_to(target)) for item in deployed
             }
             self.assertIn("lib/logres_regression_reconcile.py", destinations)
+
+    def test_repository_runtime_surface_is_manifested_or_explicitly_repo_bound(self):
+        control_root = REPO_ROOT / "ops" / "logres-control-plane"
+        runtime_files = {
+            f"bin/{path.name}"
+            for path in (control_root / "bin").iterdir()
+            if path.is_file() and path.name.startswith("logres-")
+        }
+        runtime_files.update(
+            f"lib/{path.name}"
+            for path in (control_root / "lib").iterdir()
+            if (
+                path.is_file()
+                and path.name.startswith("logres_")
+                and path.suffix == ".py"
+            )
+        )
+        manifested_runtime = {
+            item
+            for item in MANIFEST
+            if item.startswith("bin/") or item.startswith("lib/")
+        }
+
+        self.assertEqual(
+            runtime_files - REPO_BOUND_TOOL_EXCLUSIONS,
+            manifested_runtime,
+        )
+        self.assertEqual(
+            {
+                "bin/logres-reconstruct",
+                "bin/logres-truth",
+            },
+            REPO_BOUND_TOOL_EXCLUSIONS,
+        )
+        self.assertTrue(
+            all(
+                (control_root / item).is_file()
+                for item in REPO_BOUND_TOOL_EXCLUSIONS
+            )
+        )
 
     def test_missing_local_python_import_is_rejected(self):
         with tempfile.TemporaryDirectory() as td:
