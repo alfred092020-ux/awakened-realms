@@ -158,11 +158,19 @@ describe(
       'records the reconstructed auth boundary and selected world transition without inventing extra semantics',
       () => {
         expect(
-          resolveLogresTermsAgreementTransition(),
+          resolveLogresTermsAgreementTransition({
+            worldSelectionRequired:
+              false,
+          }),
         ).toEqual({
           nextScene:
-            'LogresWorldSelectScene',
+            'LogresCharacterCreateScene',
           registryPatch: {
+            'logres.world.selectionStatus':
+              'SKIPPED_CONDITIONAL',
+            'logres.world.selectorFlowProvenance':
+              LOGRES_GLOBAL_3024_WORLD_SELECTION
+                .provenance,
             'logres.auth.termsAccepted':
               true,
             'logres.auth.lastOperation':
@@ -171,6 +179,26 @@ describe(
               'RECONSTRUCTED_AUTH_BOUNDARY',
             'logres.world.firstRunRequirement':
               'CONDITIONAL_NOT_CONFIRMED_MANDATORY',
+          },
+          worldSelectView:
+            undefined,
+        })
+
+        expect(
+          resolveLogresTermsAgreementTransition({
+            worldSelectionRequired:
+              true,
+            recoveredWorldLabel:
+              'World',
+          }),
+        ).toMatchObject({
+          nextScene:
+            'LogresWorldSelectScene',
+          worldSelectView: {
+            labelSource:
+              'RECOVERED_GLOBAL',
+            worldLabel:
+              'World',
           },
         })
 

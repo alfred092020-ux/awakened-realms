@@ -197,12 +197,33 @@ export function resolveLogresUiNavigation(
   })
 }
 
-export function resolveLogresTermsAgreementTransition() {
+export interface ResolveLogresTermsAgreementInput {
+  worldSelectionRequired: boolean
+  recoveredWorldLabel?: string | null
+  recoveredOpenDateLabel?: string | null
+}
+
+export function resolveLogresTermsAgreementTransition(
+  input: ResolveLogresTermsAgreementInput,
+) {
+  const navigation =
+    resolveLogresUiNavigation({
+      termsAccepted:
+        true,
+      worldSelectionRequired:
+        input.worldSelectionRequired,
+      recoveredWorldLabel:
+        input.recoveredWorldLabel,
+      recoveredOpenDateLabel:
+        input.recoveredOpenDateLabel,
+    })
+
   return Object.freeze({
     nextScene:
-      'LogresWorldSelectScene' as const,
+      navigation.nextScene,
     registryPatch:
       Object.freeze({
+        ...navigation.registryPatch,
         'logres.auth.termsAccepted':
           true,
         'logres.auth.lastOperation':
@@ -214,6 +235,8 @@ export function resolveLogresTermsAgreementTransition() {
           LOGRES_GLOBAL_3024_WORLD_SELECTION
             .firstRunRequirement,
       }),
+    worldSelectView:
+      navigation.worldSelectView,
   })
 }
 
