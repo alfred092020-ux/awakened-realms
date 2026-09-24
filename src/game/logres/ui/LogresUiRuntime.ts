@@ -44,6 +44,20 @@ export interface LogresUiNavigationResolution {
   }
 }
 
+export interface LogresTitleStartTransition
+  extends LogresUiNavigationResolution {
+  startButtonPosition:
+    readonly [number, number]
+  startRevealDelayMs: number
+  startFadeMs: number
+  transitionDelayMs: number
+  transitionBoundary:
+    'WORLD_RESOLUTION'
+  navigationMode:
+    'DEFER_TO_WORLD_RESOLUTION_BOUNDARY'
+  provenance: string
+}
+
 export const LOGRES_UI_RUNTIME_WORLDS:
   readonly Readonly<LogresUiRuntimeWorldEntry>[] =
   Object.freeze([
@@ -204,7 +218,7 @@ export function resolveLogresUiNavigation(
 
 export function resolveLogresTitleStartTransition(
   input: ResolveLogresUiNavigationInput,
-) {
+): Readonly<LogresTitleStartTransition> {
   return Object.freeze({
     ...LOGRES_TITLE_MENU_RUNTIME,
     ...resolveLogresUiNavigation(
