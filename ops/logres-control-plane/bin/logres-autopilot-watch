@@ -1,0 +1,138 @@
+#!/usr/bin/env python3
+from __future__ import annotations
+import json, os, shutil, sqlite3, subprocess, time
+from datetime import datetime, timezone
+from pathlib import Path
+
+DB=Path("/home/ubuntu/logres/control/control.sqlite")
+REPO=Path("/home/ubuntu/logres/src/awakened-realms")
+BRAIN="/home/ubuntu/logres/bin/logres-brain"
+
+def post(kind, priority, subject, body, task=None, dedupe=None):
+    cmd=[BRAIN,"post","brain","lead",kind,priority,subject,"--body",body]
+    if task: cmd += ["--task",task]
+    if dedupe: cmd += ["--dedupe",dedupe]
+    subprocess.run(cmd,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,check=False)
+
+def iso_to_epoch(s):
+    try: return datetime.fromisoformat(s.replace("Z","+00:00")).timestamp()
+    except Exception: return 0.0
+
+# Any brain command safely expires overdue leases first.
+subprocess.run([BRAIN,"health"],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,check=False)
+# Refresh the serialized verified integration queue before reading coordination state.
+subprocess.run(["/home/ubuntu/logres/bin/logres-merge-train","status"],
+               stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,check=False)
+subprocess.run(["/home/ubuntu/logres/bin/logres-integration-pager"],
+               stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,check=False)
+
+now=time.time()
+c=sqlite3.connect(f"file:{DB}?mode=ro",uri=True)
+c.row_factory=sqlite3.Row
+members={r["chat_id"]:r for r in c.execute("select * from brain_members")}
+leases=list(c.execute("""select l.*,t.status,t.title,
+  coalesce(m.expected_minutes,60) expected_minutes
+  from brain_task_leases l
+  left join tasks t on t.id=l.task_id
+  left join task_metadata m on m.task_id=l.task_id"""))
+renewals=[]
+for l in leases:
+    m=members.get(l["chat_id"])
+    seen=float(m["last_seen_epoch"] or 0) if m else 0
+    owner_age=now-seen if seen else 1e12
+    remaining=float(l["lease_until_epoch"])-now
+    task=l["task_id"]
+    ev=c.execute("select max(ts_epoch) from brain_events where task_id=?",(task,)).fetchone()[0]
+    event_age=now-float(ev) if ev else 1e12
+    renew_age=now-iso_to_epoch(l["renewed_at"])
+    quiet_age=min(owner_age,event_age,renew_age)
+    expected=max(30*60,float(l["expected_minutes"] or 60)*60)
+    risk_after=max(20*60,expected*0.55)
+    stale_after=max(45*60,expected*1.00)
+    if quiet_age > stale_after:
+        post("WORKER_STALE","HIGH",f"Stale lane: {task}",
+             f"{l['chat_id']} lane has had no heartbeat, task event, or lease renewal for {int(quiet_age//60)}m "
+             f"(expected packet ~{int(expected//60)}m). Lease has {max(0,int(remaining//60))}m remaining.",
+             task,f"worker-stale:{task}:{int(l['lease_until_epoch'])}")
+    elif quiet_age > risk_after:
+        post("TASK_AT_RISK","HIGH",f"Task at risk: {task}",
+             f"{l['chat_id']} lane has been quiet for {int(quiet_age//60)}m "
+             f"against an expected ~{int(expected//60)}m packet.",
+             task,f"task-risk:{task}:{int(l['lease_until_epoch'])}")
+    if 0 < remaining < 600 and quiet_age < 900:
+        # A recently-active worker should not lose ownership just because its
+        # original lease window is ending. Renew after closing our read DB.
+        renewals.append((l["chat_id"],task))
+    elif 0 < remaining < 900:
+        post("LEASE_EXPIRING","NORMAL",f"Lease expiring: {task}",
+             f"{l['chat_id']} lease expires in about {max(1,int(remaining//60))}m.",
+             task,f"lease-expiring:{task}:{int(l['lease_until_epoch'])}")
+
+# Surface only canonical merge-train candidates. Patch-equivalent or
+# superseded branches are filtered by logres-merge-train before this query.
+for q in c.execute("""select q.task_id,q.branch,q.sha,q.verification_mode,t.title
+    from integration_queue q left join tasks t on t.id=q.task_id
+    where q.status='READY_FOR_INTEGRATION'
+    order by coalesce(t.priority,99),q.queued_at"""):
+    post("READY_FOR_INTEGRATION","HIGH",f"Verified work waiting: {q['task_id']}",
+         f"{q['branch']} @ {q['sha'][:12]} is exact-SHA verified "
+         f"{q['verification_mode'] or 'PASS'} and merge-tree clean.",
+         q["task_id"],f"ready-integrate:{q['task_id']}:{q['sha']}")
+
+# Surface recent verification failures once.
+for v in c.execute("select ref,sha,mode,status,ran_at,details from verification where status='FAIL'"):
+    age=now-iso_to_epoch(v["ran_at"])
+    if 0 <= age <= 1800:
+        post("BUILD_FAIL","HIGH",f"Verification failed: {v['ref']}",
+             f"{v['mode']} failed for {v['sha'][:12]} about {int(age//60)}m ago. {v['details'] or ''}",
+             None,f"verify-fail:{v['ref']}:{v['sha']}:{v['ran_at']}")
+
+# Resource pressure warnings.
+load1=os.getloadavg()[0]
+cpus=os.cpu_count() or 1
+mem={}
+for line in Path("/proc/meminfo").read_text().splitlines():
+    k,*rest=line.replace(":","").split()
+    if rest: mem[k]=int(rest[0])*1024
+avail=mem.get("MemAvailable",0)
+disk=shutil.disk_usage("/")
+reasons=[]
+if load1 > cpus*1.5: reasons.append(f"load1={load1:.1f}/{cpus}cpu")
+if avail < 8*1024**3: reasons.append(f"MemAvailable={avail/1024**3:.1f}GiB")
+if disk.free < 20*1024**3: reasons.append(f"disk_free={disk.free/1024**3:.1f}GiB")
+if reasons:
+    bucket=int(now//1800)
+    post("MACHINE_OVERLOADED","HIGH","VM resource pressure detected",
+         ", ".join(reasons),None,f"vm-overload:{bucket}")
+
+c.close()
+for chat_id,task_id in renewals:
+    subprocess.run(
+        [BRAIN,"renew",chat_id,task_id,"--minutes","60"],
+        stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,check=False,
+    )
+subprocess.run(["/home/ubuntu/logres/bin/logres-blocker-router"],
+               stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,check=False)
+subprocess.run(["/home/ubuntu/logres/bin/logres-coordinator","reconcile"],
+               stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,check=False)
+subprocess.run(["/home/ubuntu/logres/bin/logres-autoflow-plan"],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,check=False)
+
+# If the worker pool has spare capacity, surface only the scheduler's mutually
+# safe wave rather than telling humans to guess which tasks may run in parallel.
+wave=subprocess.run(
+    ["/home/ubuntu/logres/bin/logres-coordinator","wave","--count","5","--json"],
+    text=True,stdout=subprocess.PIPE,stderr=subprocess.DEVNULL,check=False,
+)
+try:
+    wave_data=json.loads(wave.stdout) if wave.returncode==0 else {}
+except Exception:
+    wave_data={}
+if wave_data.get("count",0)>0:
+    names=", ".join(x["task"] for x in wave_data.get("tasks",[]))
+    bucket=int(time.time()//1800)
+    post("INFO","NORMAL","Safe worker capacity available",
+         f"Scheduler has {wave_data['count']} mutually-safe packet(s) ready: {names}. "
+         "Use logres-worker-start <chat-id> AUTO; atomic acquire prevents duplication.",
+         None,f"worker-capacity:{bucket}:{names}")
+
+print(f"autopilot_ok leases={len(leases)} load1={load1:.2f} mem_avail_gib={avail/1024**3:.1f} disk_free_gib={disk.free/1024**3:.1f}")

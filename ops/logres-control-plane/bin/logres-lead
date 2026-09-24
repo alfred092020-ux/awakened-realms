@@ -1,0 +1,163 @@
+#!/usr/bin/env bash
+set -euo pipefail
+ROOT=/home/ubuntu/logres
+SNAP="$ROOT/control/LEAD_SNAPSHOT.txt"
+UPDATED="$ROOT/control/LEAD_SNAPSHOT.updated"
+
+freshen() {
+  local now ts age
+  now=$(date +%s)
+  if [[ ! -f "$UPDATED" ]]; then
+    "$ROOT/bin/logres-lead-snapshot"
+    return
+  fi
+  ts=$(stat -c %Y "$UPDATED")
+  age=$((now-ts))
+  if (( age > 180 )); then
+    "$ROOT/bin/logres-lead-snapshot"
+  fi
+}
+
+cmd="${1:-brief}"
+case "$cmd" in
+  brief)
+    freshen
+    cat "$SNAP"
+    echo
+    echo "=== UNIQUE/STALE WORKTREE AUDIT ==="
+    cat "$ROOT/control/WORKTREE_AUDIT.txt" 2>/dev/null || true
+    echo
+    "$ROOT/bin/logres-brain" digest --limit 8
+    echo
+    echo "=== SYNCHRONICITY ==="
+    "$ROOT/bin/logres-sync-health" --quiet || true
+    head -12 "$ROOT/control/SYNC_HEALTH.txt" 2>/dev/null || true
+    ;;
+  refresh)
+    "$ROOT/bin/logres-lead-snapshot"
+    cat "$SNAP"
+    ;;
+  json)
+    freshen
+    cat "$ROOT/control/LEAD_SNAPSHOT.json"
+    ;;
+  health|doctor)
+    "$ROOT/bin/logres-doctor"
+    ;;
+  verify-all)
+    shift
+    "$ROOT/bin/logres-verify-all-ref" "${1:-origin/feat/logres-reconstruction}"
+    ;;
+  preflight)
+    shift
+    "$ROOT/bin/logres-preflight" "$@"
+    ;;
+  packet)
+    shift
+    "$ROOT/bin/logres-worker-packet" "$@"
+    ;;
+  allocate)
+    shift
+    "$ROOT/bin/logres-allocate" "$@"
+    ;;
+  claim|release|task|branch)
+    sub="$cmd"; shift
+    "$ROOT/bin/logres-control" "$sub" "$@"
+    ;;
+  brain)
+    shift
+    "$ROOT/bin/logres-brain" "$@"
+    ;;
+  ai)
+    shift
+    "$ROOT/bin/logres-ai" "$@"
+    ;;
+  nexus)
+    shift
+    "$ROOT/bin/logres-nexus" "$@"
+    ;;
+  queue)
+    "$ROOT/bin/logres-merge-queue"
+    ;;
+  next)
+    "$ROOT/bin/logres-next"
+    ;;
+  search)
+    shift
+    "$ROOT/bin/logres-search" "$@"
+    ;;
+  find)
+    shift
+    "$ROOT/bin/logres-find" "$@"
+    ;;
+  symbol)
+    shift
+    "$ROOT/bin/logres-symbol" "$@"
+    ;;
+  ast)
+    shift
+    ast-grep "$@"
+    ;;
+  inspect)
+    shift
+    "$ROOT/bin/logres-inspect-file" "$@"
+    ;;
+  unpack)
+    shift
+    "$ROOT/bin/logres-unpack" "$@"
+    ;;
+  jadx)
+    shift
+    "$ROOT/bin/logres-jadx" "$@"
+    ;;
+  apktool)
+    shift
+    "$ROOT/bin/logres-apktool" "$@"
+    ;;
+  doctext)
+    shift
+    "$ROOT/bin/logres-doctext" "$@"
+    ;;
+  frame)
+    shift
+    "$ROOT/bin/logres-frame" "$@"
+    ;;
+  capabilities)
+    "$ROOT/bin/logres-capabilities"
+    ;;
+  snapshot)
+    "$ROOT/bin/logres-platform-snapshot"
+    ;;
+  container)
+    shift
+    podman "$@"
+    ;;
+  py)
+    shift
+    "$ROOT/bin/logres-py" "$@"
+    ;;
+  duck)
+    shift
+    "$ROOT/bin/logres-duck" "$@"
+    ;;
+  ramrun)
+    shift
+    "$ROOT/bin/logres-ramrun" "$@"
+    ;;
+  native)
+    shift
+    "$ROOT/bin/logres-native-search" "$@"
+    ;;
+  decompile)
+    shift
+    "$ROOT/bin/logres-ghidra-decompile" "$@"
+    ;;
+  protocol)
+    shift
+    "$ROOT/bin/logres-protocol" "$@"
+    ;;
+  *)
+    echo "usage: logres-lead {brief|refresh|json|health|verify-all|brain|ai|nexus|queue|next|preflight|packet|allocate|claim|release|task|branch|search|find|symbol|ast|inspect|unpack|jadx|apktool|doctext|frame|capabilities|snapshot|container|py|duck|ramrun|native|decompile|protocol}" >&2
+    exit 2
+    ;;
+esac
