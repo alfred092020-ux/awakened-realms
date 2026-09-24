@@ -35,6 +35,25 @@ class CopilotSubprocessAdapterTests(unittest.TestCase):
         self.assertEqual(["gh", "pr", "list"], argv[:3])
         self.assertIn("number,headRefName,headRefOid,baseRefName,isDraft,body", argv)
 
+
+    @patch("logres_copilot.subprocess.run")
+    def test_github_issue_search_is_read_only_and_exact_task_filtered(self, run):
+        run.return_value = SimpleNamespace(
+            returncode=0,
+            stdout=json.dumps([
+                {"number": 42, "title": "[Copilot] T1: helper", "body": "Task ID: T1", "state": "OPEN"},
+                {"number": 43, "title": "[Copilot] OTHER: helper", "body": "Task ID: OTHER", "state": "OPEN"},
+            ]),
+            stderr="",
+        )
+        issue = SubprocessGitHubRunner().search_issue("T1")
+        self.assertEqual(42, issue["number"])
+        argv = run.call_args.args[0]
+        self.assertEqual(["gh", "issue", "list"], argv[:3])
+        self.assertIn("--state", argv)
+        self.assertIn("open", argv)
+        self.assertNotIn("create", argv)
+
     @patch("logres_copilot.subprocess.run")
     def test_command_runner_reuses_existing_scope_gate_and_coordinator(self, run):
         run.side_effect = [

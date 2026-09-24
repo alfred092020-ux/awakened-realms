@@ -12,6 +12,7 @@ LIB_DIR = Path(__file__).resolve().parent.parent / "lib"
 sys.path.insert(0, str(LIB_DIR))
 
 from logres_ai_router import SubprocessAIRunner, SubprocessBrainRunner, run_ai_cycle
+from logres_reconcile import route_cursor
 
 
 DEFAULT_DB = Path("/home/ubuntu/logres/control/control.sqlite")
@@ -43,7 +44,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(prog="logres-ai-router")
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--limit", type=int, default=10)
-    parser.add_argument("--since", type=int, default=0, dest="since_event_id")
+    parser.add_argument("--since", type=int, default=None, dest="since_event_id")
     parser.add_argument("--db", type=Path, default=DEFAULT_DB)
     parser.add_argument("--config", type=Path, default=DEFAULT_CONFIG)
     parser.add_argument("--ai-executable", default=DEFAULT_AI)
@@ -52,13 +53,17 @@ def main() -> int:
     config = load_config(args.config)
     conn = sqlite3.connect(args.db)
     try:
+        if args.since_event_id is None:
+            since_event_id = route_cursor(conn)
+        else:
+            since_event_id = args.since_event_id
         result = run_ai_cycle(
             conn,
             SubprocessAIRunner(args.ai_executable),
             SubprocessBrainRunner(),
             config,
             limit=args.limit,
-            since_event_id=args.since_event_id,
+            since_event_id=since_event_id,
             dry_run=args.dry_run,
         )
     finally:

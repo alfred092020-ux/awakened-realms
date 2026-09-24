@@ -442,6 +442,124 @@ add("quarantine_lab","PASS" if qok else "WARN",
 ctl=run(["/home/ubuntu/logres/bin/logres-control","dashboard"])
 add("control_plane","PASS" if ctl.returncode==0 else "FAIL","ok" if ctl.returncode==0 else ctl.stdout[-500:])
 
+# Autoflow routing / OpenAI / Copilot health. Never print credentials or secret values.
+autoflow_db=Path("/home/ubuntu/logres/control/control.sqlite")
+route_tables={"route_jobs","route_decisions","copilot_jobs","api_usage"}
+autoflow_tables=set()
+route_conn=None
+try:
+    route_conn=sqlite3.connect(autoflow_db)
+    route_conn.row_factory=sqlite3.Row
+    autoflow_tables={r[0] for r in route_conn.execute(
+        "select name from sqlite_master where type='table'"
+    )}
+    missing_routes=sorted(route_tables-autoflow_tables)
+    add("route_schema","PASS" if not missing_routes else "WARN",
+        "ready" if not missing_routes else "missing="+",".join(missing_routes))
+
+    if "route_jobs" in autoflow_tables:
+        route_cursor=int(route_conn.execute(
+            "select coalesce(max(source_event_id),0) from route_jobs"
+        ).fetchone()[0] or 0)
+        route_failed=int(route_conn.execute(
+            "select count(*) from route_jobs where state='FAILED_BOUNDED'"
+        ).fetchone()[0])
+        add("route_cursor","PASS",f"event={route_cursor}")
+        add("route_failures","PASS" if route_failed==0 else "WARN",
+            f"failed_bounded={route_failed}")
+    else:
+        add("route_cursor","WARN","route schema not initialized")
+        add("route_failures","WARN","route schema not initialized")
+
+    if "ai_runs" in autoflow_tables:
+        latest_ai=route_conn.execute(
+            "select created_at,model from ai_runs where status='PASS' order by id desc limit 1"
+        ).fetchone()
+        add("openai_recent_success","PASS" if latest_ai else "WARN",
+            (f"model={latest_ai['model']} at={latest_ai['created_at']}" if latest_ai
+             else "no successful cached run"))
+    else:
+        add("openai_recent_success","WARN","ai_runs missing")
+
+    config_path=Path("/home/ubuntu/logres/control/autoflow.json")
+    config={}
+    if config_path.is_file():
+        try:
+            config=json.loads(config_path.read_text())
+        except Exception:
+            config={}
+    routing=config.get("routing",{}) if isinstance(config,dict) else {}
+    openai_cfg=config.get("openai",{}) if isinstance(config,dict) else {}
+    if not routing.get("ai_dispatch_enabled",False):
+        budget_detail="DISABLED"
+        budget_level="PASS"
+    else:
+        model=openai_cfg.get("auto_model")
+        rates=openai_cfg.get("model_rates_per_million",{})
+        if not model or model not in rates:
+            budget_detail="UNKNOWN model/rate"
+            budget_level="WARN"
+        elif "api_usage" not in autoflow_tables:
+            budget_detail="UNKNOWN usage table"
+            budget_level="WARN"
+        else:
+            values=[r[0] for r in route_conn.execute(
+                "select estimated_cost_usd from api_usage"
+            )]
+            if any(v is None for v in values):
+                budget_detail="UNKNOWN unpriced usage"
+                budget_level="WARN"
+            else:
+                spent=sum(float(v or 0) for v in values)
+                budget=float(openai_cfg.get("budget_usd",0) or 0)
+                budget_detail=f"spent_estimate={spent:.4f} budget={budget:.2f}"
+                budget_level="PASS" if budget>0 and spent<budget else "WARN"
+    add("openai_budget_state",budget_level,budget_detail)
+
+    if "copilot_jobs" in autoflow_tables:
+        active_jobs=int(route_conn.execute(
+            "select count(*) from copilot_jobs where state in ('ASSIGNING','ACTIVE','PR_READY','VERIFYING')"
+        ).fetchone()[0])
+        add("copilot_active_jobs","PASS",f"active={active_jobs}")
+    else:
+        add("copilot_active_jobs","WARN","route schema not initialized")
+except Exception as e:
+    add("route_schema","WARN",str(e))
+    add("route_cursor","WARN","unavailable")
+    add("route_failures","WARN","unavailable")
+    add("openai_recent_success","WARN","unavailable")
+    add("openai_budget_state","WARN","unavailable")
+    add("copilot_active_jobs","WARN","unavailable")
+finally:
+    if route_conn is not None:
+        route_conn.close()
+
+gh_auth=run(["gh","auth","status"])
+add("copilot_auth","PASS" if gh_auth.returncode==0 else "FAIL",
+    "authenticated" if gh_auth.returncode==0 else "GitHub auth unavailable")
+
+pr_query=run([
+    "gh","pr","list","--repo","alfred092020-ux/awakened-realms",
+    "--state","open","--json","headRefName,baseRefName",
+])
+try:
+    open_prs=json.loads(pr_query.stdout or "[]") if pr_query.returncode==0 else []
+    copilot_prs=[p for p in open_prs if str(p.get("headRefName","")).startswith("copilot/")]
+    bad=[p for p in copilot_prs if p.get("baseRefName")!="feat/logres-reconstruction"]
+    add("copilot_base_policy","PASS" if pr_query.returncode==0 and not bad else "FAIL",
+        f"copilot_prs={len(copilot_prs)} invalid_base={len(bad)}")
+except Exception as e:
+    add("copilot_base_policy","WARN",str(e))
+
+autoflow_helpers=[
+    Path("/home/ubuntu/logres/bin/logres-route-reconcile"),
+    Path("/home/ubuntu/logres/bin/logres-ai-router"),
+    Path("/home/ubuntu/logres/bin/logres-copilot-router"),
+]
+deployed_ok=all(p.exists() and os.access(p,os.X_OK) for p in autoflow_helpers)
+add("autoflow_source_deployed","PASS" if deployed_ok else "WARN",
+    "helpers ready" if deployed_ok else "new helpers not deployed yet")
+
 for name,status,detail in checks:
     print(f"{status:4} {name:24} {detail}")
 print(f"SUMMARY fails={fails} warnings={warns} checks={len(checks)}")

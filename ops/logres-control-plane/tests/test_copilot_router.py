@@ -106,6 +106,38 @@ class CopilotRouterTests(unittest.TestCase):
         self.assertFalse(result.allowed)
         self.assertIn("overlap", result.reason)
 
+
+    def test_exact_integration_backpressure_threshold_stays_open(self):
+        conn = make_test_db()
+        ensure_route_schema(conn)
+        seed_task(conn, task_id="T1", work_type="implementation", status="READY")
+        add_scope(conn, "T1", "src/a.ts")
+        for i in range(4):
+            conn.execute(
+                "insert into integration_queue(task_id,sha,branch,status,queued_at,updated_at,note) values(?,?,?,?,datetime('now'),datetime('now'),'')",
+                (f"Q{i}", f"{i:040d}", f"worker/q{i}", "READY_FOR_INTEGRATION"),
+            )
+        conn.commit()
+
+        result = copilot_eligibility(conn, "T1", "b" * 40, test_config())
+        self.assertTrue(result.allowed, result.reason)
+
+    def test_integration_backpressure_rejects_new_copilot_work(self):
+        conn = make_test_db()
+        ensure_route_schema(conn)
+        seed_task(conn, task_id="T1", work_type="implementation", status="READY")
+        add_scope(conn, "T1", "src/a.ts")
+        for i in range(5):
+            conn.execute(
+                "insert into integration_queue(task_id,sha,branch,status,queued_at,updated_at,note) values(?,?,?,?,datetime('now'),datetime('now'),'')",
+                (f"Q{i}", f"{i:040d}", f"worker/q{i}", "READY_FOR_INTEGRATION"),
+            )
+        conn.commit()
+
+        result = copilot_eligibility(conn, "T1", "b" * 40, test_config())
+        self.assertFalse(result.allowed)
+        self.assertIn("backpressure", result.reason)
+
     def test_main_can_never_be_target(self):
         packet = CopilotPacket(
             task_id="T1",

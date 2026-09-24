@@ -158,6 +158,29 @@ def copilot_eligibility(
                     f"active scope overlap with {claim['task_id']}:{claim['path_prefix']}",
                 )
 
+    pressure = config.get("backpressure", {})
+    ready_limit = int(pressure.get("ready_for_integration", 4))
+    verify_limit = int(pressure.get("verification_backlog", 3))
+    ready_backlog = int(
+        conn.execute(
+            "select count(*) from integration_queue where status='READY_FOR_INTEGRATION'"
+        ).fetchone()[0]
+    )
+    verify_backlog = int(
+        conn.execute(
+            "select count(*) from route_jobs where state='VERIFYING'"
+        ).fetchone()[0]
+    )
+    if ready_backlog > ready_limit or verify_backlog > verify_limit:
+        return Eligibility(
+            False,
+            (
+                "backpressure active "
+                f"integration_ready={ready_backlog}/{ready_limit} "
+                f"verifying={verify_backlog}/{verify_limit}"
+            ),
+        )
+
     max_active = int(config.get("copilot", {}).get("max_active", 2))
     active_jobs = conn.execute(
         "select count(*) from copilot_jobs where state in ('ASSIGNING','ACTIVE','PR_READY','VERIFYING')"
