@@ -1,0 +1,17 @@
+#!/usr/bin/env python3
+import argparse,json,os,sqlite3,sys
+from pathlib import Path
+ROOT=Path(os.environ.get("LOGRES_ROOT","/home/ubuntu/logres"));sys.path.insert(0,str(Path(__file__).resolve().parents[1]/"lib"))
+from logres_lifecycle_guard import audit,validate_transition
+DB=Path(os.environ.get("LOGRES_CONTROL_DB",ROOT/"control/control.sqlite"))
+def main():
+ p=argparse.ArgumentParser(prog="logres-lifecycle-guard");s=p.add_subparsers(dest="cmd",required=True)
+ s.add_parser("audit");v=s.add_parser("transition");v.add_argument("entity");v.add_argument("prior");v.add_argument("next")
+ a=p.parse_args()
+ if a.cmd=="transition":out=validate_transition(a.entity,None if a.prior=="NONE" else a.prior,a.next)
+ else:
+  c=sqlite3.connect(DB,timeout=30);c.row_factory=sqlite3.Row;c.execute("pragma busy_timeout=30000")
+  try:out=audit(c)
+  finally:c.close()
+ print(json.dumps(out,indent=2,sort_keys=True))
+if __name__=="__main__":main()
