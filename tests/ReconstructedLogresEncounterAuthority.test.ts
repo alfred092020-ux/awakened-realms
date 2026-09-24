@@ -271,7 +271,7 @@ describe(
     )
 
     it(
-      'accepts externally supplied retry timing without treating it as original Global behavior',
+      'blocks retry requests until the exact recovered one-second wait elapses',
       () => {
         const authority =
           new ReconstructedLogresEncounterAuthority({
@@ -294,23 +294,55 @@ describe(
         authority.recordBattleEntryResponse({
           rawCode:
             2,
-          retryDelaySeconds:
-            1,
         })
 
         expect(
           authority.snapshot()
             .retryDelaySeconds,
         ).toBe(
-          1,
+          LOGRES_GLOBAL_BATTLE_ENTRY_RETRY_SECONDS,
         )
 
-        authority.clearRetryDelay()
+        expect(
+          () =>
+            authority.createBattleEntryIntent(),
+        ).toThrow(
+          'retry wait has not elapsed',
+        )
+
+        expect(
+          () =>
+            authority.elapseRetryDelay(
+              0.5,
+            ),
+        ).toThrow(
+          'requires exactly 1 seconds',
+        )
+
+        expect(
+          () =>
+            authority.elapseRetryDelay(
+              2,
+            ),
+        ).toThrow(
+          'requires exactly 1 seconds',
+        )
+
+        authority.elapseRetryDelay(
+          LOGRES_GLOBAL_BATTLE_ENTRY_RETRY_SECONDS,
+        )
 
         expect(
           authority.snapshot()
             .retryDelaySeconds,
         ).toBeNull()
+
+        expect(
+          authority.createBattleEntryIntent()
+            .encounterKey,
+        ).toBe(
+          'enemy-a',
+        )
       },
     )
 

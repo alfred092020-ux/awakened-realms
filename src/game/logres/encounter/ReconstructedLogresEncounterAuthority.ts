@@ -430,6 +430,17 @@ export class ReconstructedLogresEncounterAuthority {
     }
 
     if (
+      this.retryDelaySeconds !==
+        null &&
+      this.retryDelaySeconds >
+        0
+    ) {
+      throw new Error(
+        `Battle entry retry wait has not elapsed: ${this.retryDelaySeconds} seconds remaining`,
+      )
+    }
+
+    if (
       this.entryAccepted
     ) {
       throw new Error(
@@ -486,9 +497,6 @@ export class ReconstructedLogresEncounterAuthority {
   recordBattleEntryResponse(
     input: {
       rawCode: number
-      retryDelaySeconds?:
-        | number
-        | null
     },
   ): void {
     if (
@@ -517,21 +525,15 @@ export class ReconstructedLogresEncounterAuthority {
      * response code 2, and marks the separate local entry-accepted flag for
      * response code 1. Other response-code meanings remain unresolved here.
      *
-     * An explicitly supplied retryDelaySeconds remains available for
-     * reconstructed/emulator experiments; otherwise the native Global default
-     * is applied exactly for code 2.
+     * The code-2 delay is intentionally not caller-configurable: the recovered
+     * Global client writes exactly 1.0f, and allowing another duration here
+     * would silently weaken the evidence-backed retry gate.
      */
     this.retryDelaySeconds =
-      input.retryDelaySeconds !==
-        undefined
-        ? optionalNonNegativeFinite(
-            input.retryDelaySeconds,
-            'Battle entry retry delay',
-          )
-        : rawCode ===
-            LOGRES_GLOBAL_BATTLE_ENTRY_RETRY_RESPONSE_CODE
-          ? LOGRES_GLOBAL_BATTLE_ENTRY_RETRY_SECONDS
-          : null
+      rawCode ===
+        LOGRES_GLOBAL_BATTLE_ENTRY_RETRY_RESPONSE_CODE
+        ? LOGRES_GLOBAL_BATTLE_ENTRY_RETRY_SECONDS
+        : null
 
     if (
       rawCode ===
@@ -542,8 +544,34 @@ export class ReconstructedLogresEncounterAuthority {
     }
   }
 
-  clearRetryDelay():
-    void {
+  elapseRetryDelay(
+    elapsedSeconds:
+      number,
+  ): void {
+    if (
+      this.retryDelaySeconds ===
+        null
+    ) {
+      throw new Error(
+        'No battle entry retry wait is active',
+      )
+    }
+
+    const elapsed =
+      optionalNonNegativeFinite(
+        elapsedSeconds,
+        'Battle entry retry elapsed seconds',
+      )
+
+    if (
+      elapsed !==
+        this.retryDelaySeconds
+    ) {
+      throw new Error(
+        `Battle entry retry wait requires exactly ${this.retryDelaySeconds} seconds`,
+      )
+    }
+
     this.retryDelaySeconds =
       null
   }
