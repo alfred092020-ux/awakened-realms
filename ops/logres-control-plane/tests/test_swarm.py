@@ -14,10 +14,12 @@ sys.path.insert(0, str(LIB_DIR))
 from fixtures import make_test_db, seed_task
 from logres_route_store import ensure_route_schema
 from logres_swarm import (
+    ACTIVE_COPILOT_STATES,
     classify_engine,
     create_job,
     ensure_schema,
     prior_failures,
+    ready_tasks,
     reconcile_jobs,
     select_research_tasks,
     swarm_capacity,
@@ -89,6 +91,115 @@ class SwarmTests(unittest.TestCase):
         self.assertEqual(1, cap.active_leases)
         self.assertEqual(1, cap.active_copilot)
         self.assertEqual(4, cap.free_slots)
+
+    def test_current_copilot_lifecycle_vocabulary_is_live_capacity(self):
+        self.assertEqual(
+            {"ASSIGNING", "ACTIVE", "PR_READY", "VERIFYING"},
+            set(ACTIVE_COPILOT_STATES),
+        )
+
+    def test_capacity_reaches_zero_with_four_leases_and_two_live_copilot_jobs(self):
+        now = time.time()
+        for index in range(4):
+            task_id = f"L{index + 1}"
+            seed_task(
+                self.conn,
+                task_id=task_id,
+                status="ACTIVE",
+                work_type="manual",
+            )
+            self.conn.execute(
+                """insert into brain_task_leases(
+                     task_id,chat_id,branch,lease_until_epoch,acquired_at,
+                     renewed_at,progress,note
+                   ) values(?,?,?,?,datetime('now'),datetime('now'),0,'')""",
+                (
+                    task_id,
+                    f"worker-{index + 1}",
+                    f"worker/{task_id.lower()}",
+                    now + 3600,
+                ),
+            )
+
+        for route_id, state in ((101, "ASSIGNING"), (102, "VERIFYING")):
+            self.conn.execute(
+                """insert into copilot_jobs(
+                     route_job_id,task_id,branch,base_sha,candidate_sha,state,
+                     created_at,updated_at
+                   ) values(?,?,?,?,?,?,datetime('now'),datetime('now'))""",
+                (
+                    route_id,
+                    f"C{route_id}",
+                    f"copilot/c{route_id}",
+                    "a" * 40,
+                    None,
+                    state,
+                ),
+            )
+        self.conn.commit()
+
+        cap = swarm_capacity(
+            self.conn,
+            {"swarm": {"max_workers": 6}},
+        )
+
+        self.assertEqual(4, cap.active_leases)
+        self.assertEqual(2, cap.active_copilot)
+        self.assertEqual(0, cap.free_slots)
+
+    def test_obsolete_copilot_states_do_not_consume_capacity(self):
+        for route_id, state in ((201, "ISSUE_CREATED"), (202, "ASSIGNED")):
+            self.conn.execute(
+                """insert into copilot_jobs(
+                     route_job_id,task_id,branch,base_sha,candidate_sha,state,
+                     created_at,updated_at
+                   ) values(?,?,?,?,?,?,datetime('now'),datetime('now'))""",
+                (
+                    route_id,
+                    f"OLD{route_id}",
+                    f"copilot/old{route_id}",
+                    "a" * 40,
+                    None,
+                    state,
+                ),
+            )
+        self.conn.commit()
+
+        cap = swarm_capacity(
+            self.conn,
+            {"swarm": {"max_workers": 6}},
+        )
+
+        self.assertEqual(0, cap.active_copilot)
+        self.assertEqual(6, cap.free_slots)
+
+    def test_ready_task_owned_by_live_copilot_is_not_dispatchable(self):
+        seed_task(
+            self.conn,
+            task_id="COPILOT-OWNED",
+            status="READY",
+            work_type="implementation",
+        )
+        seed_task(
+            self.conn,
+            task_id="NORMAL",
+            status="READY",
+            work_type="implementation",
+        )
+        self.conn.execute(
+            """insert into copilot_jobs(
+                 route_job_id,task_id,branch,base_sha,candidate_sha,state,
+                 created_at,updated_at
+               ) values(301,'COPILOT-OWNED','copilot/owned',?,?,'ACTIVE',
+                        datetime('now'),datetime('now'))""",
+            ("a" * 40, None),
+        )
+        self.conn.commit()
+
+        ids = [task["id"] for task in ready_tasks(self.conn)]
+
+        self.assertNotIn("COPILOT-OWNED", ids)
+        self.assertIn("NORMAL", ids)
 
     def test_select_research_respects_concurrency_key_and_claim_conflict(self):
         for task_id in ("R1", "R2", "R3"):
