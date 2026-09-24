@@ -1,3 +1,9 @@
+import {
+  LOGRES_GLOBAL_BATTLE_ENTRY_ACCEPTED_RESPONSE_CODE,
+  LOGRES_GLOBAL_BATTLE_ENTRY_RETRY_RESPONSE_CODE,
+  LOGRES_GLOBAL_BATTLE_ENTRY_RETRY_SECONDS,
+} from './LogresGlobalEncounterNativeEvidence'
+
 export const LOGRES_RECONSTRUCTED_ENCOUNTER_PROVENANCE =
   'RECONSTRUCTED' as const
 
@@ -84,6 +90,7 @@ export interface ReconstructedLogresEncounterSnapshot {
   retryDelaySeconds:
     | number
     | null
+  entryAccepted: boolean
   battleInitialized: boolean
   battleSystemRef:
     | string
@@ -264,6 +271,9 @@ export class ReconstructedLogresEncounterAuthority {
     | null =
       null
 
+  private entryAccepted =
+    false
+
   private battleInitialized =
     false
 
@@ -419,6 +429,14 @@ export class ReconstructedLogresEncounterAuthority {
       )
     }
 
+    if (
+      this.entryAccepted
+    ) {
+      throw new Error(
+        'Encounter battle entry was already accepted',
+      )
+    }
+
     const blockers =
       Object.entries(
         this.eligibility,
@@ -484,18 +502,44 @@ export class ReconstructedLogresEncounterAuthority {
     this.requestPending =
       false
 
-    this.lastResponseCode =
+    const rawCode =
       optionalSafeInteger(
         input.rawCode,
         'Battle entry response code',
       )
 
+    this.lastResponseCode =
+      rawCode
+
+    /*
+     * CONFIRMED GLOBAL 3.0.24:
+     * Encounter::receiveBattleEntryResponse writes 1.0f to its wait timer for
+     * response code 2, and marks the separate local entry-accepted flag for
+     * response code 1. Other response-code meanings remain unresolved here.
+     *
+     * An explicitly supplied retryDelaySeconds remains available for
+     * reconstructed/emulator experiments; otherwise the native Global default
+     * is applied exactly for code 2.
+     */
     this.retryDelaySeconds =
-      optionalNonNegativeFinite(
-        input.retryDelaySeconds ??
-          null,
-        'Battle entry retry delay',
-      )
+      input.retryDelaySeconds !==
+        undefined
+        ? optionalNonNegativeFinite(
+            input.retryDelaySeconds,
+            'Battle entry retry delay',
+          )
+        : rawCode ===
+            LOGRES_GLOBAL_BATTLE_ENTRY_RETRY_RESPONSE_CODE
+          ? LOGRES_GLOBAL_BATTLE_ENTRY_RETRY_SECONDS
+          : null
+
+    if (
+      rawCode ===
+        LOGRES_GLOBAL_BATTLE_ENTRY_ACCEPTED_RESPONSE_CODE
+    ) {
+      this.entryAccepted =
+        true
+    }
   }
 
   clearRetryDelay():
@@ -620,6 +664,8 @@ export class ReconstructedLogresEncounterAuthority {
         this.lastResponseCode,
       retryDelaySeconds:
         this.retryDelaySeconds,
+      entryAccepted:
+        this.entryAccepted,
       battleInitialized:
         this.battleInitialized,
       battleSystemRef:

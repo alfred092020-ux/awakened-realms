@@ -33,6 +33,11 @@ import {
 } from '../logres/field/LogresFieldPathfinder'
 
 import {
+  LOGRES_GLOBAL_3024_NATIVE_FIELD_PROVENANCE,
+  resolveLogresGlobalMoveTarget,
+} from '../logres/field/LogresGlobalNativeFieldEvidence'
+
+import {
   LOGRES_TUTORIAL_GREEN_JELL_IDLE_ANIMATION,
   LOGRES_TUTORIAL_GREEN_JELL_PRESENTATION,
   LOGRES_TUTORIAL_POINTER_OFFSET,
@@ -688,6 +693,11 @@ export class LogresFieldScene
         `RECONSTRUCTED_${RECONSTRUCTED_FIELD_STEP_MS}MS_PER_GRAPH_STEP`,
       )
 
+      this.registry.set(
+        'logres.playableField.moveDestinationResolver',
+        LOGRES_GLOBAL_3024_NATIVE_FIELD_PROVENANCE,
+      )
+
       this.syncPlayableFieldRegistry()
     } catch (
       error
@@ -737,7 +747,7 @@ export class LogresFieldScene
       return
     }
 
-    const target =
+    const requestedTarget =
       nearestLogresPlayableFieldTile(
         pointer.worldX,
         pointer.worldY,
@@ -745,11 +755,54 @@ export class LogresFieldScene
           .movement
           .tiles,
         this.playableFieldTransform,
+        true,
       )
 
-    if (!target) {
+    if (!requestedTarget) {
       return
     }
+
+    const destinationResolution =
+      resolveLogresGlobalMoveTarget(
+        this.playableCurrentTile,
+        requestedTarget,
+        this.playableFieldRuntime
+          .movement
+          .tileAt,
+      )
+
+    if (!destinationResolution) {
+      return
+    }
+
+    const target =
+      destinationResolution
+        .resolved
+
+    this.registry.set(
+      'logres.playableField.lastMoveDestinationResolution',
+      {
+        provenance:
+          destinationResolution
+            .provenance,
+
+        requested:
+          destinationResolution
+            .requested,
+
+        resolved: {
+          col:
+            target.col,
+
+          row:
+            target.row,
+        },
+
+        usedFallback:
+          destinationResolution
+            .usedFallback,
+      },
+    )
 
     const path =
       findReconstructedLogresFieldPath(
