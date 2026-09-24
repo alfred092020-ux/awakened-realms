@@ -85,6 +85,7 @@ def _sync_milestones(
         insert_values = {
             "id": milestone_id,
             "status": str(item.get("status", "PLANNED")),
+            "created_at": stamp,
             **values,
         }
         selected = [

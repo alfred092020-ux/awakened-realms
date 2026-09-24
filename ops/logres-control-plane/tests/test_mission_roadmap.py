@@ -30,6 +30,7 @@ def make_db():
           sort_order integer not null,
           status text not null,
           definition_of_done text not null,
+          created_at text not null,
           updated_at text not null
         );
         """
@@ -63,17 +64,18 @@ class MissionRoadmapTests(unittest.TestCase):
         conn = make_db()
         conn.execute(
             """insert into milestones(
-                 id,title,sort_order,status,definition_of_done,updated_at
-               ) values(?,?,?,?,?,?)""",
-            ("DEMO-0.2", "old", 20, "ACTIVE", "old", "old"),
+                 id,title,sort_order,status,definition_of_done,created_at,updated_at
+               ) values(?,?,?,?,?,?,?)""",
+            ("DEMO-0.2", "old", 20, "ACTIVE", "old", "original-created", "old"),
         )
         load_config(conn, MISSION_CONFIG)
         row = conn.execute(
-            "select title,sort_order,status from milestones where id='DEMO-0.2'"
+            "select title,sort_order,status,created_at from milestones where id='DEMO-0.2'"
         ).fetchone()
         self.assertEqual("Authentic playable presentation", row[0])
         self.assertEqual(20, row[1])
         self.assertEqual("ACTIVE", row[2])
+        self.assertEqual("original-created", row[3])
 
     def test_future_milestones_are_planned_in_order(self):
         conn = make_db()
