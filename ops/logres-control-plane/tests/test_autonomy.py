@@ -15,6 +15,7 @@ from logres_autonomy import (
     actionable_open_regressions,
     autonomy_apply_authorized,
     autonomy_decision,
+    doctor_stability,
     dynamic_batch_limit,
     integration_backlog,
     load_state,
@@ -41,6 +42,24 @@ def config(enabled=True):
 
 
 class AutonomyTests(unittest.TestCase):
+    def test_doctor_stability_accepts_clean_first_run(self):
+        state = doctor_stability(0)
+        self.assertTrue(state.ok)
+        self.assertFalse(state.recovered)
+        self.assertEqual(1, state.attempts)
+
+    def test_doctor_stability_recovers_one_transient_failure(self):
+        state = doctor_stability(1, 0)
+        self.assertTrue(state.ok)
+        self.assertTrue(state.recovered)
+        self.assertEqual(2, state.attempts)
+
+    def test_doctor_stability_blocks_persistent_failure(self):
+        state = doctor_stability(1, 1)
+        self.assertFalse(state.ok)
+        self.assertFalse(state.recovered)
+        self.assertEqual(2, state.attempts)
+
     def test_fail_closed_default_blocks_automation(self):
         resources = ResourceState(
             cpus=8,

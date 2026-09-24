@@ -31,6 +31,26 @@ class AutonomyDecision:
     batch_limit: int
 
 
+@dataclass(frozen=True)
+class DoctorStability:
+    ok: bool
+    recovered: bool
+    attempts: int
+
+
+def doctor_stability(
+    first_returncode: int,
+    retry_returncode: int | None = None,
+) -> DoctorStability:
+    if first_returncode == 0:
+        return DoctorStability(ok=True, recovered=False, attempts=1)
+    if retry_returncode is None:
+        return DoctorStability(ok=False, recovered=False, attempts=1)
+    if retry_returncode == 0:
+        return DoctorStability(ok=True, recovered=True, attempts=2)
+    return DoctorStability(ok=False, recovered=False, attempts=2)
+
+
 def load_config(path: Path) -> dict:
     if not path.is_file():
         return {}

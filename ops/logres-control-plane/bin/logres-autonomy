@@ -8,6 +8,7 @@ import os
 import sqlite3
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 
@@ -18,6 +19,7 @@ sys.path.insert(0, str(LIB_DIR))
 from logres_autonomy import (
     actionable_open_regressions,
     autonomy_decision,
+    doctor_stability,
     integration_backlog,
     latest_verified_preflight,
     load_config,
@@ -284,6 +286,14 @@ def cycle(*, dry_run: bool = False) -> int:
         resources = resource_state()
         routes = run([ROUTES, "--status"])
         doctor = run([DOCTOR])
+        doctor_retry = None
+        if doctor.returncode != 0:
+            time.sleep(2)
+            doctor_retry = run([DOCTOR])
+        doctor_state = doctor_stability(
+            doctor.returncode,
+            doctor_retry.returncode if doctor_retry is not None else None,
+        )
         route_failures = parse_route_failures(
             (routes.stdout or "") + "\n" + (routes.stderr or "")
         )
@@ -291,7 +301,7 @@ def cycle(*, dry_run: bool = False) -> int:
             cfg,
             state,
             resources,
-            doctor_ok=doctor.returncode == 0,
+            doctor_ok=doctor_state.ok,
             route_failures=route_failures,
             open_regressions=regressions,
             ready_count=backlog,
@@ -306,9 +316,24 @@ def cycle(*, dry_run: bool = False) -> int:
                 "reasons": list(decision.reasons),
                 "batch_limit": decision.batch_limit,
             },
+            "doctor": {
+                "ok": doctor_state.ok,
+                "recovered": doctor_state.recovered,
+                "attempts": doctor_state.attempts,
+            },
             "preflight": None,
             "apply": None,
         }
+
+        if doctor_state.recovered:
+            post(
+                "INFO",
+                "NORMAL",
+                "Autonomy Doctor transient recovered",
+                "Initial Doctor gate failed, immediate bounded retry passed. "
+                "Continuing through normal fail-closed autonomy policy.",
+                f"autonomy-doctor-recovered:{current_base}",
+            )
 
         if not decision.allowed:
             print(json.dumps(result, indent=2, sort_keys=True))
