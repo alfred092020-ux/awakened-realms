@@ -1,0 +1,273 @@
+#!/home/ubuntu/logres/envs/research/bin/python
+from __future__ import annotations
+
+import argparse
+import hashlib
+import json
+import os
+import sqlite3
+import subprocess
+import sys
+import traceback
+from pathlib import Path
+
+from openai import OpenAI
+
+CONTROL_ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(CONTROL_ROOT / "lib"))
+
+from logres_ai_runner import automatic_api_allowed, budget_state
+from logres_research_agent import (
+    artifact_payload,
+    brain_confidence,
+    build_prompt,
+    can_complete,
+    collect_local_bundle,
+    record_usage,
+    run_research,
+    write_artifact,
+)
+from logres_swarm import ensure_schema
+
+
+ROOT = Path(os.environ.get("LOGRES_ROOT", "/home/ubuntu/logres"))
+DB = Path(
+    os.environ.get(
+        "LOGRES_CONTROL_DB",
+        str(ROOT / "control/control.sqlite"),
+    )
+)
+CONFIG = Path(
+    os.environ.get(
+        "LOGRES_AUTOFLOW_CONFIG",
+        str(ROOT / "control/autoflow.json"),
+    )
+)
+BRAIN = str(ROOT / "bin/logres-brain")
+CONTROL = str(ROOT / "bin/logres-control")
+
+
+def run(argv):
+    return subprocess.run(
+        [str(x) for x in argv],
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+
+
+def config() -> dict:
+    try:
+        return json.loads(CONFIG.read_text())
+    except (OSError, json.JSONDecodeError):
+        return {}
+
+
+def update_job(
+    conn: sqlite3.Connection,
+    job_id: int,
+    *,
+    state: str,
+    artifact_path: str | None = None,
+    error: str | None = None,
+) -> None:
+    conn.execute(
+        """update swarm_jobs
+              set state=?,artifact_path=coalesce(?,artifact_path),
+                  last_error=?,updated_at=datetime('now'),
+                  finished_at=case when ? in ('DONE','BLOCKED','FAILED')
+                                   then datetime('now') else finished_at end
+            where id=?""",
+        (state, artifact_path, error, state, job_id),
+    )
+    conn.commit()
+
+
+def release(worker: str, task: str, status: str, note: str) -> None:
+    run([CONTROL, "release", task])
+    result = run(
+        [
+            BRAIN,
+            "release",
+            worker,
+            task,
+            "--status",
+            status,
+            "--note",
+            note[:1800],
+        ]
+    )
+    if result.returncode:
+        raise RuntimeError(
+            "brain release failed: "
+            + ((result.stderr or "") + (result.stdout or "")).strip()
+        )
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser(prog="logres-research-agent")
+    ap.add_argument("--task", required=True)
+    ap.add_argument("--worker", required=True)
+    ap.add_argument("--job-id", type=int, required=True)
+    args = ap.parse_args()
+
+    cfg = config()
+    swarm_cfg = cfg.get("swarm", {})
+    model = str(
+        swarm_cfg.get("research_model")
+        or cfg.get("openai", {}).get("auto_model")
+        or "gpt-5.6-luna"
+    )
+    rate_config = cfg.get("openai", {}).get("model_rates_per_million", {})
+
+    conn = sqlite3.connect(DB, timeout=30)
+    conn.row_factory = sqlite3.Row
+    conn.execute("pragma busy_timeout=30000")
+    ensure_schema(conn)
+
+    lease = conn.execute(
+        "select branch from brain_task_leases where task_id=? and chat_id=?",
+        (args.task, args.worker),
+    ).fetchone()
+    if lease is None:
+        update_job(
+            conn,
+            args.job_id,
+            state="FAILED",
+            error="research worker no longer owns task lease",
+        )
+        conn.close()
+        return 2
+    branch = lease[0] or "-"
+
+    task_row = conn.execute(
+        "select priority from tasks where id=?",
+        (args.task,),
+    ).fetchone()
+    priority = int(task_row[0] if task_row else 9)
+    state = budget_state(conn, cfg, priority, model)
+    if not automatic_api_allowed(state, priority):
+        note = f"OpenAI budget state {state}; returning task to READY without research spend."
+        update_job(conn, args.job_id, state="FAILED", error=note)
+        conn.close()
+        release(args.worker, args.task, "READY", note)
+        return 0
+
+    try:
+        context, local_bundle = collect_local_bundle(
+            ROOT,
+            conn,
+            args.task,
+            args.worker,
+            branch,
+        )
+        local_sha = hashlib.sha256(local_bundle.encode()).hexdigest()
+        prompt = build_prompt(context, local_bundle)
+        use_web = bool(swarm_cfg.get("research_web_search_enabled", True))
+        client = OpenAI()
+        result, response = run_research(
+            client,
+            model=model,
+            prompt=prompt,
+            web_search=use_web,
+            max_output_tokens=int(
+                swarm_cfg.get("research_max_output_tokens", 6000) or 6000
+            ),
+        )
+        usage = record_usage(
+            conn,
+            response,
+            model=model,
+            rate_config=rate_config,
+            task_id=args.task,
+            artifact_sha=local_sha,
+        )
+        payload = artifact_payload(
+            context,
+            result,
+            task_id=args.task,
+            worker_id=args.worker,
+            model=model,
+            local_bundle_sha256=local_sha,
+        )
+        payload["usage"] = usage
+        artifact, artifact_sha = write_artifact(ROOT, args.task, payload)
+
+        confidence = brain_confidence(result.get("confidence", "UNRESOLVED"))
+        evidence = run(
+            [
+                BRAIN,
+                "evidence",
+                args.worker,
+                confidence,
+                f"Autonomous research: {args.task}",
+                result.get("summary", "")[:1600],
+                "--task",
+                args.task,
+                "--artifact",
+                str(artifact),
+                "--sha256",
+                artifact_sha,
+                "--recipient",
+                "ALL",
+                "--dedupe",
+                f"swarm-research:{args.task}:{artifact_sha}",
+            ]
+        )
+        if evidence.returncode:
+            raise RuntimeError(
+                "brain evidence failed: "
+                + ((evidence.stderr or "") + (evidence.stdout or "")).strip()
+            )
+
+        done = can_complete(result, len(context.get("acceptance") or []))
+        final = "DONE" if done else "BLOCKED_EVIDENCE"
+        note = result.get("completion_note") or result.get("summary") or final
+        update_job(
+            conn,
+            args.job_id,
+            state="DONE" if done else "BLOCKED",
+            artifact_path=str(artifact),
+        )
+        conn.close()
+        release(args.worker, args.task, final, note)
+        print(
+            json.dumps(
+                {
+                    "task_id": args.task,
+                    "worker": args.worker,
+                    "job_id": args.job_id,
+                    "status": final,
+                    "artifact": str(artifact),
+                    "artifact_sha256": artifact_sha,
+                    "model": model,
+                    "usage": usage,
+                },
+                indent=2,
+                sort_keys=True,
+            )
+        )
+        return 0
+    except Exception as exc:
+        detail = f"{type(exc).__name__}: {exc}"
+        try:
+            update_job(conn, args.job_id, state="FAILED", error=detail)
+            conn.close()
+        except Exception:
+            pass
+        try:
+            release(
+                args.worker,
+                args.task,
+                "READY",
+                "Autonomous research worker failed transiently; returned READY. "
+                + detail[:1200],
+            )
+        except Exception:
+            pass
+        traceback.print_exc()
+        return 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
