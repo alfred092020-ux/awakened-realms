@@ -21,6 +21,7 @@ from logres_route_store import RouteSpec, claim_route, ensure_route_schema, tran
 SATISFIED = {"DONE", "RESOLVED", "INTEGRATED"}
 ALLOWED_WORK_TYPES = {"implementation", "test", "refactor", "tooling", "review"}
 ACTIVE_COPILOT_STATES = {"ASSIGNING", "ACTIVE", "PR_READY", "VERIFYING"}
+SAME_TASK_LIVE_COPILOT_STATES = ACTIVE_COPILOT_STATES | {"QUEUED"}
 
 
 @dataclass(frozen=True)
@@ -86,6 +87,43 @@ def _task_scopes(conn: sqlite3.Connection, task_id: str) -> tuple[str, ...]:
             (task_id,),
         )
     )
+
+
+def _same_task_live_job(
+    conn: sqlite3.Connection,
+    task_id: str,
+) -> sqlite3.Row | None:
+    states = tuple(sorted(SAME_TASK_LIVE_COPILOT_STATES))
+    placeholders = ",".join("?" for _ in states)
+    return conn.execute(
+        f"""select id,route_job_id,state,branch,candidate_sha
+              from copilot_jobs
+             where task_id=?
+               and state in ({placeholders})
+             order by id desc
+             limit 1""",
+        (task_id, *states),
+    ).fetchone()
+
+
+def _latest_terminal_job_id(
+    conn: sqlite3.Connection,
+    task_id: str,
+) -> int | None:
+    states = tuple(sorted(SAME_TASK_LIVE_COPILOT_STATES))
+    placeholders = ",".join("?" for _ in states)
+    row = conn.execute(
+        f"""select id
+              from copilot_jobs
+             where task_id=?
+               and state not in ({placeholders})
+             order by id desc
+             limit 1""",
+        (task_id, *states),
+    ).fetchone()
+    return None if row is None else int(row[0])
+
+
 def copilot_eligibility(
     conn: sqlite3.Connection,
     task_id: str,
@@ -105,6 +143,16 @@ def copilot_eligibility(
         return Eligibility(False, "task not found")
     if task["status"] != "READY":
         return Eligibility(False, f"status is {task['status']}, expected READY")
+
+    live_job = _same_task_live_job(conn, task_id)
+    if live_job is not None:
+        return Eligibility(
+            False,
+            (
+                "task already has a live Copilot job "
+                f"id={live_job['id']} state={live_job['state']}"
+            ),
+        )
 
     work_type = task["work_type"] or "implementation"
     if work_type not in ALLOWED_WORK_TYPES:
@@ -252,7 +300,11 @@ def _dedupe_key(conn: sqlite3.Connection, task_id: str, integration_sha: str) ->
         (task_id,),
     ).fetchone()
     revision = row[0] if row else "missing"
-    return f"copilot:{task_id}:{revision}:{integration_sha}"
+    base = f"copilot:{task_id}:{revision}:{integration_sha}"
+    terminal_job_id = _latest_terminal_job_id(conn, task_id)
+    if terminal_job_id is None:
+        return base
+    return f"{base}:retry-after:{terminal_job_id}"
 
 
 def dispatch_task(

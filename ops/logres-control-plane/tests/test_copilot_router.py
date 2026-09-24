@@ -10,7 +10,7 @@ sys.path.insert(0, str(LIB_DIR))
 from fixtures import make_test_db, seed_active_lease, seed_task, test_config
 from logres_copilot import CopilotPacket, PolicyError, build_assignment, build_issue_body
 from logres_copilot_router import copilot_eligibility, dispatch_task
-from logres_route_store import ensure_route_schema
+from logres_route_store import ensure_route_schema, transition_route
 
 
 class FakeGitHub:
@@ -216,7 +216,7 @@ class CopilotRouterTests(unittest.TestCase):
             dispatch_task(conn, "T1", "b" * 40, test_config(), github)
         self.assertEqual(0, github.issue_create_calls)
 
-    def test_same_task_revision_and_base_sha_reuses_existing_job(self):
+    def test_same_task_live_job_blocks_duplicate_even_with_free_capacity(self):
         conn = make_test_db()
         ensure_route_schema(conn)
         seed_task(
@@ -228,15 +228,91 @@ class CopilotRouterTests(unittest.TestCase):
         config = test_config()
         config["routing"]["copilot_dispatch_enabled"] = True
         config["routing"]["copilot_mode"] = "bounded_implementation"
+        config["copilot"]["max_active"] = 10
         github = FakeGitHub()
 
         first = dispatch_task(conn, "T1", "b" * 40, config, github)
-        second = dispatch_task(conn, "T1", "b" * 40, config, github)
 
-        self.assertEqual(first.route_job_id, second.route_job_id)
+        eligibility = copilot_eligibility(
+            conn,
+            "T1",
+            "b" * 40,
+            config,
+        )
+        self.assertFalse(eligibility.allowed)
+        self.assertIn("live Copilot job", eligibility.reason)
+        self.assertIn("ACTIVE", eligibility.reason)
+
+        with self.assertRaisesRegex(
+            PolicyError,
+            "live Copilot job",
+        ):
+            dispatch_task(conn, "T1", "b" * 40, config, github)
+
+        self.assertEqual("ACTIVE", first.job.state)
         self.assertEqual(1, github.issue_create_calls)
         self.assertEqual(1, github.assignment_calls)
-        self.assertEqual(first.job.id, second.job.id)
+
+    def test_queued_same_task_job_still_blocks_duplicate_dispatch(self):
+        conn = make_test_db()
+        ensure_route_schema(conn)
+        seed_task(conn, task_id="T1")
+        add_scope(conn, "T1", "src/a.ts")
+        config = test_config()
+        config["routing"]["copilot_dispatch_enabled"] = True
+        config["routing"]["copilot_mode"] = "bounded_implementation"
+        config["copilot"]["max_active"] = 10
+        github = FakeGitHub()
+
+        first = dispatch_task(conn, "T1", "b" * 40, config, github)
+        transition_route(conn, first.route_job_id, "ACTIVE", "PR_READY")
+        transition_route(conn, first.route_job_id, "PR_READY", "VERIFYING")
+        transition_route(conn, first.route_job_id, "VERIFYING", "QUEUED")
+        conn.execute(
+            "update copilot_jobs set state='QUEUED' where route_job_id=?",
+            (first.route_job_id,),
+        )
+        conn.commit()
+
+        result = copilot_eligibility(conn, "T1", "b" * 40, config)
+
+        self.assertFalse(result.allowed)
+        self.assertIn("QUEUED", result.reason)
+        self.assertEqual(1, github.issue_create_calls)
+
+    def test_superseded_same_task_job_allows_new_immutable_retry_route(self):
+        conn = make_test_db()
+        ensure_route_schema(conn)
+        seed_task(conn, task_id="T1")
+        add_scope(conn, "T1", "src/a.ts")
+        config = test_config()
+        config["routing"]["copilot_dispatch_enabled"] = True
+        config["routing"]["copilot_mode"] = "bounded_implementation"
+        config["copilot"]["max_active"] = 10
+        github = FakeGitHub()
+
+        first = dispatch_task(conn, "T1", "b" * 40, config, github)
+        transition_route(conn, first.route_job_id, "ACTIVE", "SUPERSEDED")
+        conn.execute(
+            "update copilot_jobs set state='SUPERSEDED' where route_job_id=?",
+            (first.route_job_id,),
+        )
+        conn.commit()
+
+        eligibility = copilot_eligibility(conn, "T1", "b" * 40, config)
+        self.assertTrue(eligibility.allowed, eligibility.reason)
+
+        second = dispatch_task(conn, "T1", "b" * 40, config, github)
+
+        self.assertNotEqual(first.route_job_id, second.route_job_id)
+        self.assertEqual(2, github.issue_create_calls)
+        self.assertEqual(2, github.assignment_calls)
+        old = conn.execute(
+            "select state from copilot_jobs where route_job_id=?",
+            (first.route_job_id,),
+        ).fetchone()
+        self.assertEqual("SUPERSEDED", old[0])
+        self.assertEqual("ACTIVE", second.job.state)
 
 
 if __name__ == "__main__":
