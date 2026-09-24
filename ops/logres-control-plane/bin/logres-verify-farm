@@ -4,6 +4,7 @@ set -euo pipefail
 BASE="${LOGRES_REPO_ROOT:-/home/ubuntu/logres/src/awakened-realms}"
 CONTROL="${LOGRES_CONTROL_BIN:-/home/ubuntu/logres/bin/logres-control}"
 POOL_BIN="${LOGRES_REMOTE_POOL_BIN:-/home/ubuntu/logres/bin/logres-remote-pool}"
+CACHE_BIN="${LOGRES_VERIFY_CACHE_BIN:-/home/ubuntu/logres/bin/logres-verify-cache}"
 CONFIG="${LOGRES_AUTOFLOW_CONFIG:-/home/ubuntu/logres/control/autoflow.json}"
 REF="${1:-feat/logres-reconstruction}"
 ROOT="${LOGRES_VERIFY_ROOT:-/dev/shm/logres}"
@@ -14,9 +15,13 @@ E2E_WT="$ROOT/verify-farm-$STAMP-e2e"
 TEST_LOG="/home/ubuntu/logres/logs/verify-farm-$STAMP-test.log"
 E2E_LOG="/home/ubuntu/logres/logs/verify-farm-$STAMP-e2e.log"
 REMOTE_TEST_LOG="/home/ubuntu/logres/logs/verify-farm-$STAMP-remote-test.log"
+CACHE_JSON="/tmp/logres-verify-cache-$STAMP.json"
 START=$(date +%s)
 SHA=unknown
 VERIFY_PATH="local-test+local-build-e2e"
+CACHE_MODE="unit"
+CACHE_READY=0
+CACHE_ARGS=()
 
 select_e2e_workers() {
   local override="${LOGRES_E2E_WORKERS:-}"
@@ -85,6 +90,69 @@ raise SystemExit(0 if eligible else 1)
 PY
 }
 
+prepare_cache_dimensions() {
+  CACHE_READY=0
+  [[ -x "$CACHE_BIN" ]] || return 0
+  [[ -s "$PRIVATE_ANCHOR" ]] || return 0
+  git -C "$BASE" cat-file -e "$SHA:package-lock.json" 2>/dev/null || return 0
+  git -C "$BASE" cat-file -e "$SHA:package.json" 2>/dev/null || return 0
+  git -C "$BASE" cat-file -e "$SHA:tsconfig.json" 2>/dev/null || return 0
+  git -C "$BASE" cat-file -e "$SHA:vitest.config.ts" 2>/dev/null || return 0
+
+  local lock_hash config_hash evidence_version env_hash
+  lock_hash=$(git -C "$BASE" show "$SHA:package-lock.json" | sha256sum | awk '{print $1}')
+  config_hash=$(
+    {
+      for file in package.json tsconfig.json vitest.config.ts; do
+        printf '%s\0' "$file"
+        git -C "$BASE" show "$SHA:$file"
+      done
+    } | sha256sum | awk '{print $1}'
+  )
+  evidence_version=$(sha256sum "$PRIVATE_ANCHOR" | awk '{print $1}')
+  env_hash=$(
+    {
+      node --version
+      npm --version
+      uname -srm
+    } | sha256sum | awk '{print $1}'
+  )
+  [[ -n "$lock_hash" && -n "$config_hash" && -n "$evidence_version" && -n "$env_hash" ]] || return 0
+  CACHE_ARGS=(
+    --source-sha "$SHA"
+    --lock-hash "$lock_hash"
+    --config-hash "$config_hash"
+    --evidence-version "$evidence_version"
+    --env-hash "$env_hash"
+    --mode "$CACHE_MODE"
+  )
+  CACHE_READY=1
+}
+
+cache_hit() {
+  (( CACHE_READY == 1 )) || return 1
+  "$CACHE_BIN" get "${CACHE_ARGS[@]}" >"$CACHE_JSON" 2>/dev/null || return 1
+  python3 - "$CACHE_JSON" <<'PY'
+import json,sys
+try:
+    payload=json.load(open(sys.argv[1]))
+except Exception:
+    raise SystemExit(1)
+raise SystemExit(0 if payload.get("hit") and payload.get("status") == "PASS" else 1)
+PY
+}
+
+cache_store_pass() {
+  (( CACHE_READY == 1 )) || return 0
+  local provenance
+  provenance=$(python3 - "$VERIFY_PATH" <<'PY'
+import json,sys
+print(json.dumps({"producer":"logres-verify-farm","unit_lane":sys.argv[1]}))
+PY
+)
+  "$CACHE_BIN" put-pass "${CACHE_ARGS[@]}" --provenance "$provenance" >/dev/null 2>&1 || true
+}
+
 # Full browser verification remains single-flight locally. Remote unit tests do
 # not get merge authority and cannot bypass the local private-hydrated E2E gate.
 exec 9>/tmp/logres-verify-farm.lock
@@ -99,13 +167,14 @@ SHA=$(git -C "$BASE" rev-parse "$REF")
   echo "VERIFY_FARM could not pin exact source SHA for $REF" >&2
   exit 2
 }
+prepare_cache_dimensions
 
 cleanup() {
   rc=$?
   trap - EXIT INT TERM
   git -C "$BASE" worktree remove --force "$TEST_WT" >/dev/null 2>&1 || true
   git -C "$BASE" worktree remove --force "$E2E_WT" >/dev/null 2>&1 || true
-  rm -f "/tmp/logres-remote-pool-health-$STAMP.json"
+  rm -f "/tmp/logres-remote-pool-health-$STAMP.json" "$CACHE_JSON"
   dur=$(( $(date +%s)-START ))
   status=FAIL; [[ $rc -eq 0 ]] && status=PASS
   "$CONTROL" record-verify "$REF" "$SHA" full-e2e "$status" "$dur"     "verify-farm:$VERIFY_PATH+$E2E_VERIFY_TAG" >/dev/null 2>&1 || true
@@ -202,35 +271,48 @@ e2e_pid=$!
 
 remote_pid=""
 remote_used=0
-if remote_enabled && remote_available; then
-  remote_used=1
-  job="verify-${STAMP}-${SHA:0:12}"
-  (
-    timeout "${LOGRES_REMOTE_VERIFY_TIMEOUT_SEC:-240}"       "$POOL_BIN" run auto "$job" test "$SHA" --reassignable --retries 1
-  ) >"$REMOTE_TEST_LOG" 2>&1 &
-  remote_pid=$!
-  echo "VERIFY_FARM adaptive remote unit-test lane started sha=${SHA:0:12}"
-fi
-
+cache_used=0
 test_rc=0
-if (( remote_used == 1 )); then
-  if wait "$remote_pid"; then
-    VERIFY_PATH="remote-test+local-build-e2e"
-    cp "$REMOTE_TEST_LOG" "$TEST_LOG"
-    echo "VERIFY_FARM remote unit-test lane PASS"
+
+if cache_hit; then
+  cache_used=1
+  VERIFY_PATH="cache-test+local-build-e2e"
+  printf 'VERIFY_FARM unit cache HIT sha=%s mode=%s\n' "${SHA:0:12}" "$CACHE_MODE" >"$TEST_LOG"
+  echo "VERIFY_FARM exact-key unit-test cache HIT sha=${SHA:0:12}"
+else
+  if remote_enabled && remote_available; then
+    remote_used=1
+    job="verify-${STAMP}-${SHA:0:12}"
+    (
+      timeout "${LOGRES_REMOTE_VERIFY_TIMEOUT_SEC:-240}"       "$POOL_BIN" run auto "$job" test "$SHA" --reassignable --retries 1
+    ) >"$REMOTE_TEST_LOG" 2>&1 &
+    remote_pid=$!
+    echo "VERIFY_FARM adaptive remote unit-test lane started sha=${SHA:0:12}"
+  fi
+
+  if (( remote_used == 1 )); then
+    if wait "$remote_pid"; then
+      VERIFY_PATH="remote-test+local-build-e2e"
+      cp "$REMOTE_TEST_LOG" "$TEST_LOG"
+      echo "VERIFY_FARM remote unit-test lane PASS"
+    else
+      echo "VERIFY_FARM remote unit-test lane unavailable/failed; falling back locally" >&2
+      if run_local_tests; then
+        VERIFY_PATH="remote-fallback-local-test+local-build-e2e"
+      else
+        test_rc=$?
+      fi
+    fi
   else
-    echo "VERIFY_FARM remote unit-test lane unavailable/failed; falling back locally" >&2
     if run_local_tests; then
-      VERIFY_PATH="remote-fallback-local-test+local-build-e2e"
+      VERIFY_PATH="local-test+local-build-e2e"
     else
       test_rc=$?
     fi
   fi
-else
-  if run_local_tests; then
-    VERIFY_PATH="local-test+local-build-e2e"
-  else
-    test_rc=$?
+
+  if (( test_rc == 0 )); then
+    cache_store_pass
   fi
 fi
 
