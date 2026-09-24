@@ -33,6 +33,7 @@ class CoverageTests(unittest.TestCase):
   c=self.db(); self.add_leaf(c,"MAP_CONTENT","Maps")
   self.add_task(c,"MAP_CONTENT")
   r=scan(c)
+  self.assertEqual("COMPLETE",r["gaps"][0]["state"])
   self.assertEqual("DECLARED_CONTENT_GAP",r["gaps"][0]["gap_kind"])
   self.assertEqual(1,r["content_completion"]["maps_regions"]["missing_count"])
   self.assertEqual(0,r["content_completion"]["maps_regions"]["represented_count"])

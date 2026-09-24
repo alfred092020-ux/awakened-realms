@@ -220,15 +220,12 @@ def scan(conn,persist=False,manifest_path=None):
         if obj["id"] in _CONTENT_OBJECTIVES:
             completion=_content_status(manifest,obj["id"],refs,manifest_error)
             content_completion[completion.get("category_id") or obj["id"]]=completion
-            if not completion["complete"]:
-                kind="DECLARED_CONTENT_GAP"
-                if state=="COMPLETE" or completion.get("error"):
-                    state="UNCOVERED"
+            if not completion["complete"]: kind="DECLARED_CONTENT_GAP"
         item={"objective_id":obj["id"],"title":obj["title"],"definition_of_done":obj["definition_of_done"],
               "state":state,"gap_kind":kind,"references":refs}
         if completion is not None: item["content_completion"]=completion
         counts[state]=counts.get(state,0)+1
-        if state!="COMPLETE": gaps.append(item)
+        if state!="COMPLETE" or (completion is not None and not completion["complete"]): gaps.append(item)
     payload={"counts":counts,"gaps":gaps,"gap_count":len(gaps),"content_completion":content_completion}
     if manifest_error: payload["content_manifest_error"]=manifest_error
     if persist:

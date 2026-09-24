@@ -55,6 +55,7 @@ class ProjectCompletionManifestTests(unittest.TestCase):
    c.execute("insert into mission_links values(?,null,?,'required')",(objective_id,f"T{n}"))
   r=scan(c,manifest_path=MANIFEST_PATH)
   self.assertEqual(1,r["gap_count"])
+  self.assertEqual("COMPLETE",r["gaps"][0]["state"])
   self.assertEqual(["placeholder-map"],r["content_completion"]["maps_regions"]["undeclared_represented_ids"])
-  self.assertEqual(4,r["counts"]["COMPLETE"])
+  self.assertEqual(5,r["counts"]["COMPLETE"])
 if __name__=="__main__":unittest.main()
