@@ -326,6 +326,7 @@ export function nearestLogresPlayableFieldTile(
     >[],
   transform:
     LogresPlayableFieldRasterTransform,
+  includeProhibited = false,
 ): Readonly<LogresFieldNavigationTile> | null {
   if (
     !Number.isFinite(
@@ -352,7 +353,8 @@ export function nearestLogresPlayableFieldTile(
     of tiles
   ) {
     if (
-      tile.prohibited
+      tile.prohibited &&
+      !includeProhibited
     ) {
       continue
     }
