@@ -57,23 +57,40 @@ def load_config(path: Path) -> dict:
     return json.loads(path.read_text())
 
 
+MANAGED_CRON_PATH = (
+    "/home/ubuntu/logres/bin:"
+    "/home/ubuntu/.local/bin:"
+    "/home/ubuntu/bin:"
+    "/usr/local/bin:"
+    "/usr/bin:"
+    "/bin:"
+    "/snap/bin"
+)
+MANAGED_CRON_ENV = f"PATH={MANAGED_CRON_PATH} "
+
 AUTONOMY_CRON_MARKER = "# LOGRES_AUTONOMY_V3"
 AUTONOMY_CRON_LINE = (
-    "* * * * * flock -n /tmp/logres-autonomy.cron.lock "
+    "* * * * * "
+    + MANAGED_CRON_ENV
+    + "flock -n /tmp/logres-autonomy.cron.lock "
     "nice -n 10 ionice -c3 /home/ubuntu/logres/bin/logres-autonomy cycle "
     ">>/home/ubuntu/logres/logs/autonomy-cron.log 2>&1 "
     + AUTONOMY_CRON_MARKER
 )
 SWARM_CRON_MARKER = "# LOGRES_SWARM_V1"
 SWARM_CRON_LINE = (
-    "* * * * * flock -n /tmp/logres-swarm.cron.lock "
+    "* * * * * "
+    + MANAGED_CRON_ENV
+    + "flock -n /tmp/logres-swarm.cron.lock "
     "nice -n 10 ionice -c3 /home/ubuntu/logres/bin/logres-swarm tick "
     ">>/home/ubuntu/logres/logs/swarm-cron.log 2>&1 "
     + SWARM_CRON_MARKER
 )
 PREVIEW_REAPER_CRON_MARKER = "# LOGRES_PREVIEW_REAPER_V1"
 PREVIEW_REAPER_CRON_LINE = (
-    "*/10 * * * * flock -n /tmp/logres-preview-reaper.lock "
+    "*/10 * * * * "
+    + MANAGED_CRON_ENV
+    + "flock -n /tmp/logres-preview-reaper.lock "
     "nice -n 15 ionice -c3 /home/ubuntu/logres/bin/logres-preview-reaper "
     "--apply --age-hours 2 >>/home/ubuntu/logres/logs/preview-reaper.log 2>&1 "
     + PREVIEW_REAPER_CRON_MARKER

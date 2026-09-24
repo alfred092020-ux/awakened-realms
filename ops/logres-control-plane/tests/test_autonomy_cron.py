@@ -9,6 +9,7 @@ sys.path.insert(0, str(LIB_DIR))
 from logres_autonomy import (
     AUTONOMY_CRON_LINE,
     AUTONOMY_CRON_MARKER,
+    MANAGED_CRON_PATH,
     PREVIEW_REAPER_CRON_LINE,
     PREVIEW_REAPER_CRON_MARKER,
     SWARM_CRON_LINE,
@@ -18,6 +19,19 @@ from logres_autonomy import (
 
 
 class AutonomyCronTests(unittest.TestCase):
+    def test_managed_cron_lines_pin_canonical_tool_path(self):
+        expected = f"PATH={MANAGED_CRON_PATH} "
+        for line in (
+            AUTONOMY_CRON_LINE,
+            SWARM_CRON_LINE,
+            PREVIEW_REAPER_CRON_LINE,
+        ):
+            self.assertIn(expected, line)
+            self.assertIn("/home/ubuntu/logres/bin", line)
+            self.assertIn("/home/ubuntu/.local/bin", line)
+            self.assertIn("/usr/local/bin", line)
+            self.assertIn("/usr/bin", line)
+
     def test_install_replaces_legacy_preflight_cron_and_is_idempotent(self):
         before = """*/5 * * * * /home/ubuntu/logres/bin/logres-autopilot-watch
 * * * * * flock -n /tmp/logres-merge-preflight.cron.lock /home/ubuntu/logres/bin/logres-merge-preflight run --max 4 --min-age 45 --min-count 2
