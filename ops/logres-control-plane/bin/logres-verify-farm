@@ -77,10 +77,11 @@ try:
     rows=json.load(open(sys.argv[1]))
 except Exception:
     raise SystemExit(1)
-heavy=next((r for r in rows if r.get("role")=="heavy"),None)
-raise SystemExit(
-    0 if heavy and heavy.get("reachable") and heavy.get("available_slots",0)>0 else 1
-)
+eligible=[
+    r for r in rows
+    if r.get("reachable") and int(r.get("available_slots",0) or 0)>0
+]
+raise SystemExit(0 if eligible else 1)
 PY
 }
 
@@ -205,10 +206,10 @@ if remote_enabled && remote_available; then
   remote_used=1
   job="verify-${STAMP}-${SHA:0:12}"
   (
-    timeout "${LOGRES_REMOTE_VERIFY_TIMEOUT_SEC:-240}"       "$POOL_BIN" run heavy "$job" test "$SHA" --reassignable --retries 1
+    timeout "${LOGRES_REMOTE_VERIFY_TIMEOUT_SEC:-240}"       "$POOL_BIN" run auto "$job" test "$SHA" --reassignable --retries 1
   ) >"$REMOTE_TEST_LOG" 2>&1 &
   remote_pid=$!
-  echo "VERIFY_FARM remote unit-test lane started sha=${SHA:0:12}"
+  echo "VERIFY_FARM adaptive remote unit-test lane started sha=${SHA:0:12}"
 fi
 
 test_rc=0

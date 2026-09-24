@@ -13,6 +13,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable, Iterable
 
+from logres_resource_broker import choose_remote_role
+
 
 FULL_SHA_RE = re.compile(r"^[0-9a-f]{40}$")
 SAFE_SCRIPT_RE = re.compile(r"^[A-Za-z0-9:_-]+$")
@@ -170,6 +172,8 @@ def store_collected_result(
     job: str,
     spec: WorkerSpec,
     summary: dict,
+    *,
+    npm_script: str | None = None,
 ) -> Path:
     outdir = artifact_root / job / spec.role
     outdir.mkdir(parents=True, exist_ok=True)
@@ -184,6 +188,7 @@ def store_collected_result(
         "exit_code": summary.get("exit_code"),
         "duration_seconds": summary.get("duration_seconds"),
         "kind": summary.get("kind"),
+        "npm_script": npm_script,
         "error": summary.get("error"),
     }
     path = outdir / "pool-result.json"
@@ -401,6 +406,7 @@ class RemotePool:
                 job,
                 spec,
                 summary,
+                npm_script=script,
             )
             return {
                 "role": role,
@@ -428,7 +434,16 @@ class RemotePool:
         sha = self.sync(sha)
         targets = targets_for(role)
         if role == "auto":
-            targets = (select_auto_target(self.health()),)
+            health_rows = self.health()
+            try:
+                selected = choose_remote_role(
+                    health_rows,
+                    self.artifact_root,
+                    npm_script=script,
+                )
+            except RuntimeError as exc:
+                raise PoolError(str(exc)) from exc
+            targets = (selected,)
 
         if len(targets) > 1:
             with ThreadPoolExecutor(max_workers=len(targets)) as pool:

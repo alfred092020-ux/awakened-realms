@@ -35,11 +35,15 @@ class HybridVerifyTests(unittest.TestCase):
             text,
         )
         self.assertIn(
-            '"$POOL_BIN" run heavy "$job" test "$SHA"',
+            '"$POOL_BIN" run auto "$job" test "$SHA"',
             text,
         )
         self.assertIn(
             'npm run test:e2e',
+            text,
+        )
+        self.assertIn(
+            'adaptive remote unit-test lane started',
             text,
         )
         self.assertIn(

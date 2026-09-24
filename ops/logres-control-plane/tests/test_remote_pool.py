@@ -140,6 +140,7 @@ class RemotePoolPureTests(unittest.TestCase):
                 "proof",
                 spec,
                 summary,
+                npm_script="test",
             )
             payload = json.loads(path.read_text())
         self.assertEqual("heavy", payload["role"])
@@ -147,6 +148,7 @@ class RemotePoolPureTests(unittest.TestCase):
         self.assertEqual(SHA, payload["source_sha"])
         self.assertEqual(12.5, payload["duration_seconds"])
         self.assertEqual(0, payload["exit_code"])
+        self.assertEqual("test", payload["npm_script"])
 
     def test_summary_must_match_exact_sha_and_job(self):
         summary = {

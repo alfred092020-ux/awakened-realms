@@ -39,6 +39,15 @@ class SwarmTests(unittest.TestCase):
         self.assertIn('SUPERVISOR = str(ROOT / "bin/logres-supervisor")', script)
         self.assertIn('[SUPERVISOR, "ensure"]', script)
 
+    def test_swarm_status_exposes_resource_broker_placement_hints(self):
+        script = (CONTROL_ROOT / "bin" / "logres-swarm").read_text()
+        self.assertIn(
+            "from logres_resource_broker import infer_task_workload, plan_workload",
+            script,
+        )
+        self.assertIn('"placement_hints"', script)
+        self.assertIn('"selected_lane": plan.selected_lane', script)
+
     def test_classifies_research_and_implementation_engines(self):
         self.assertEqual("research", classify_engine({"work_type": "research"}))
         self.assertEqual("research", classify_engine({"work_type": "evidence"}))
