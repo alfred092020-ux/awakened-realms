@@ -51,6 +51,8 @@ describe('logres android client hardening smoke', () => {
     expect(workflow).toContain('keytool -list -v')
     expect(workflow).toContain('./gradlew assembleDebug assembleRelease --no-daemon')
     expect(workflow).toContain('android/app/build/outputs/apk/debug/app-debug.apk')
+    expect(workflow).toContain('android/app/build/outputs/apk/debug/app-debug.apk.sha256')
     expect(workflow).toContain('android/app/build/outputs/apk/release/app-release-unsigned.apk')
+    expect(workflow).toContain('android/app/build/outputs/apk/release/app-release-unsigned.apk.sha256')
   })
 })
