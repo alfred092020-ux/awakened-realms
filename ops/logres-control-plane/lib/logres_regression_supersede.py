@@ -26,6 +26,61 @@ def _tasks(raw: str | None) -> frozenset[str]:
     return frozenset(str(value) for value in values if str(value).strip())
 
 
+def _successful_task_coverage(
+    conn: sqlite3.Connection,
+    success_tasks: frozenset[str],
+) -> tuple[frozenset[str], frozenset[str]]:
+    """Expand successful task coverage by one explicit verified carrier hop.
+
+    The expansion is intentionally narrow:
+    - only task_dependencies.kind == integration_carrier
+    - the carrier itself must be in the successful preflight task set
+    - the carrier must have an INTEGRATED queue row
+    - newly covered originals are not recursively expanded
+    """
+    covered = set(success_tasks)
+    carrier_covered: set[str] = set()
+    if not success_tasks:
+        return frozenset(), frozenset()
+
+    try:
+        rows = conn.execute(
+            """select task_id,depends_on
+                 from task_dependencies
+                where kind='integration_carrier'
+                order by task_id,depends_on"""
+        ).fetchall()
+    except sqlite3.OperationalError:
+        # Runtime-minimal / historical DBs may not expose task_dependencies.
+        # Missing explicit lineage must fail closed rather than infer carriers.
+        return frozenset(covered), frozenset()
+
+    for row in rows:
+        original = str(row[0] or "")
+        carrier = str(row[1] or "")
+        if not original or carrier not in success_tasks:
+            continue
+
+        try:
+            integrated = conn.execute(
+                """select 1
+                     from integration_queue
+                    where task_id=? and status='INTEGRATED'
+                    limit 1""",
+                (carrier,),
+            ).fetchone()
+        except sqlite3.OperationalError:
+            integrated = None
+
+        if integrated is None:
+            continue
+
+        covered.add(original)
+        carrier_covered.add(original)
+
+    return frozenset(covered), frozenset(carrier_covered)
+
+
 def successful_preflight(conn: sqlite3.Connection, preflight_id: int) -> sqlite3.Row:
     row = conn.execute(
         "select * from integration_preflights where id=?",
@@ -48,6 +103,10 @@ def plan_supersede(
 ) -> list[SupersedeTarget]:
     success = successful_preflight(conn, preflight_id)
     success_tasks = _tasks(success["tasks_json"])
+    covered_tasks, carrier_covered_tasks = _successful_task_coverage(
+        conn,
+        success_tasks,
+    )
     created_epoch = float(success["created_epoch"])
     targets: list[SupersedeTarget] = []
     seen: set[int] = set()
@@ -112,8 +171,14 @@ def plan_supersede(
         if failed is None:
             continue
         failed_tasks = _tasks(failed["tasks_json"])
-        if not failed_tasks or not failed_tasks.issubset(success_tasks):
+        if not failed_tasks or not failed_tasks.issubset(covered_tasks):
             continue
+
+        proof = (
+            "failed-task-carrier-subset"
+            if any(task in carrier_covered_tasks for task in failed_tasks)
+            else "failed-task-subset"
+        )
 
         rows = [regression]
         rows.extend(
@@ -138,7 +203,7 @@ def plan_supersede(
                     task_id=str(row["task_id"] or ""),
                     kind=str(row["kind"] or ""),
                     ref=ref,
-                    proof="failed-task-subset",
+                    proof=proof,
                     failed_preflight_id=int(failed["id"]),
                     failed_tasks=tuple(sorted(failed_tasks)),
                 )
@@ -174,6 +239,12 @@ def apply_supersede(
                     note = (
                         f"Superseded by successful full-e2e preflight "
                         f"{preflight_id} at exact result SHA {target.ref}."
+                    )
+                elif target.proof == "failed-task-carrier-subset":
+                    note = (
+                        f"Superseded by successful preflight {preflight_id}; "
+                        f"failed preflight {target.failed_preflight_id} task set "
+                        f"is covered by explicit integrated carrier lineage."
                     )
                 else:
                     note = (
