@@ -5,6 +5,10 @@ import {
 } from '../../encounter/ReconstructedLogresEncounterAuthority'
 
 import {
+  LOGRES_GLOBAL_BATTLE_ENTRY_ACCEPTED_RESPONSE_CODE,
+} from '../../encounter/LogresGlobalEncounterNativeEvidence'
+
+import {
   ReconstructedLogresBattleEntryBridge,
 } from '../../encounter/ReconstructedLogresBattleEntryBridge'
 
@@ -155,6 +159,32 @@ export class LogresFieldEncounterController {
     const intent =
       bridge.requestEntry()
 
+    /*
+     * RECONSTRUCTED SERVER-AUTHORITY STUB.
+     *
+     * Global 3.0.24 proves the client handling of response code 1
+     * (entry accepted) and code 2 (exact 1.0-second retry wait), but the
+     * retired production server outcome for this demo encounter is not
+     * recoverable. Demo 0.2 therefore chooses the confirmed accepted client
+     * branch explicitly instead of skipping the response boundary.
+     */
+    const entryResponseStub =
+      Object.freeze({
+        provenance:
+          'RECONSTRUCTED_SERVER_AUTHORITY_STUB' as const,
+
+        rawCode:
+          LOGRES_GLOBAL_BATTLE_ENTRY_ACCEPTED_RESPONSE_CODE,
+
+        evidenceCeiling:
+          'Retired Global battle-entry server outcome is unavailable; Demo 0.2 deterministically exercises the confirmed accepted client branch.',
+      })
+
+    bridge.recordEntryResponse({
+      rawCode:
+        entryResponseStub.rawCode,
+    })
+
     const launch =
       bridge.recordBattleInitialized({
         battleSystemRef:
@@ -199,6 +229,11 @@ export class LogresFieldEncounterController {
     this.scene.registry.set(
       'logres.playableField.encounterAuthority',
       encounter.snapshot(),
+    )
+
+    this.scene.registry.set(
+      'logres.playableField.battleEntryResponseStub',
+      entryResponseStub,
     )
 
     this.scene.registry.set(
