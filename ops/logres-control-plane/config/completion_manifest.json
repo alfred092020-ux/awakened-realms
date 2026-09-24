@@ -1,0 +1,199 @@
+{
+  "categories": {
+    "actors_npcs": {
+      "criterion_id": "actor-content",
+      "historical_total_ceiling": {
+        "reason": "The complete historical Global NPC/actor catalog, internal IDs, names, packages, roles, and dialogue payloads are not recovered.",
+        "status": "UNKNOWABLE_FROM_CURRENT_EVIDENCE"
+      },
+      "objective_id": "ACTOR_CONTENT",
+      "source_inventory": {
+        "file_sha256": "257bda9b2b57ab2acc910afa01ca7cec80d9de7077088a7292db5546eea3c724",
+        "ids": [
+          "created-player-avatar",
+          "tutorial-armored-male-npc"
+        ],
+        "ids_sha256": "e3bd0018e67d42f238a7d9e52eb9a2f7389f6353ab92e6dfd6dd2180296956fe",
+        "path": "src/game/logres/generated/actors/LogresActorContent.ts",
+        "schema_version": "actor-content-v1"
+      },
+      "targets": [
+        {
+          "disposition": "required",
+          "evidence_summary": "Created-player presence is Global-evidence backed; current-JP private actor art remains explicitly reference-only.",
+          "provenance_class": "RECONSTRUCTED_WITH_CURRENT_JP_REFERENCE",
+          "stable_id": "created-player-avatar"
+        },
+        {
+          "disposition": "required",
+          "evidence_summary": "Original tutorial footage confirms the nearby armored male NPC; unresolved identity/art fields remain nullable.",
+          "provenance_class": "CONFIRMED_ORIGINAL_VIDEO",
+          "stable_id": "tutorial-armored-male-npc"
+        }
+      ],
+      "title": "NPCs and actors"
+    },
+    "combat_content": {
+      "criterion_id": "combat-content",
+      "historical_total_ceiling": {
+        "reason": "Historical enemy/boss catalogs, boss identity, SkillUID tables, stats, formulas, EP costs, cooldowns, drops, and encounter placements are incomplete or absent.",
+        "status": "UNKNOWABLE_FROM_CURRENT_EVIDENCE"
+      },
+      "objective_id": "COMBAT_CONTENT",
+      "source_inventory": {
+        "file_sha256": "516eb99b0bdc28f23708d24e859774860782d87e4bf23f7356b8ea6d98c36260",
+        "ids": [
+          "global-charge-recast-skill-events",
+          "global-command-skill-intent",
+          "global-reaction-skill-events",
+          "tutorial-green-jell",
+          "tutorial-reconstructed-normal-attack",
+          "tutorial-reconstructed-weapon"
+        ],
+        "ids_sha256": "c4017d140d549c3164658f8235fc027a01c998ef155b045be5d33e93b9b3569e",
+        "path": "src/game/logres/generated/combat/LogresCombatContent.ts",
+        "schema_version": "combat-content-v1"
+      },
+      "targets": [
+        {
+          "disposition": "required",
+          "evidence_summary": "Tutorial Green Jell identity is represented while historical internal IDs/stats remain unresolved.",
+          "provenance_class": "CONFIRMED_GLOBAL_3_0_24",
+          "stable_id": "tutorial-green-jell"
+        },
+        {
+          "disposition": "required",
+          "evidence_summary": "Playable normal attack is a bounded reconstruction layered on recovered battle command authority.",
+          "provenance_class": "RECONSTRUCTED_PLAYABILITY",
+          "stable_id": "tutorial-reconstructed-normal-attack"
+        },
+        {
+          "disposition": "required",
+          "evidence_summary": "Tutorial weapon runtime binding is explicitly reconstruction-local and carries no fabricated historical item UID.",
+          "provenance_class": "RECONSTRUCTED_PLAYABILITY",
+          "stable_id": "tutorial-reconstructed-weapon"
+        },
+        {
+          "disposition": "excluded",
+          "exclusion_reason": "Recovered Global schema capability, not a concrete historical SkillUID/content entry.",
+          "stable_id": "global-command-skill-intent"
+        },
+        {
+          "disposition": "excluded",
+          "exclusion_reason": "Recovered Global event/schema capability; exact historical skills, values, and mechanics are unresolved.",
+          "stable_id": "global-charge-recast-skill-events"
+        },
+        {
+          "disposition": "excluded",
+          "exclusion_reason": "Recovered Global reaction-skill schema capability, not a concrete historical skill catalog entry.",
+          "stable_id": "global-reaction-skill-events"
+        }
+      ],
+      "title": "Enemies, bosses and skills"
+    },
+    "items_equipment": {
+      "criterion_id": "item-content",
+      "historical_total_ceiling": {
+        "reason": "The historical Global production item/equipment catalog, IDs, names, rarities, stats, slots, effects, and drop/source tables are not recovered.",
+        "status": "UNKNOWABLE_FROM_CURRENT_EVIDENCE"
+      },
+      "objective_id": "ITEM_CONTENT",
+      "source_inventory": {
+        "file_sha256": "34870ad12f3e3ff33bb018a5c03c854115884c1fb660f6fc8e4ed72ea4fbec5e",
+        "ids": [
+          "global-equipment-selection-surface",
+          "global-item-move-equipment-boundary",
+          "playable-tutorial-reconstructed-reward-line"
+        ],
+        "ids_sha256": "c3e3fd0aebccb8f96b878443159e2d3884f2ae40570cefd85f9a21252be65d37",
+        "path": "src/game/logres/generated/items/LogresItemContent.ts",
+        "schema_version": "item-content-v1"
+      },
+      "targets": [
+        {
+          "disposition": "required",
+          "evidence_summary": "Persistent tutorial reward item is represented without assigning fabricated historical ID/name/stats/effect.",
+          "provenance_class": "RECONSTRUCTED_PLAYABILITY",
+          "stable_id": "playable-tutorial-reconstructed-reward-line"
+        },
+        {
+          "disposition": "excluded",
+          "exclusion_reason": "Recovered Global equipment-selection schema surface, not a concrete historical equipment item.",
+          "stable_id": "global-equipment-selection-surface"
+        },
+        {
+          "disposition": "excluded",
+          "exclusion_reason": "Recovered Global item-move/equipment protocol boundary, not a historical item catalog entry.",
+          "stable_id": "global-item-move-equipment-boundary"
+        }
+      ],
+      "title": "Items and equipment"
+    },
+    "maps_regions": {
+      "criterion_id": "map-content",
+      "historical_total_ceiling": {
+        "reason": "Only one direct Global terrain package is recovered; hundreds of current-JP terrain packages cannot be promoted into historical Global scope without Global-era evidence.",
+        "status": "UNKNOWABLE_FROM_CURRENT_EVIDENCE"
+      },
+      "objective_id": "MAP_CONTENT",
+      "source_inventory": {
+        "file_sha256": "645d949c6fbf3042b150b8cee2fb1be12ff57c7dedfcf8f504b7af86032321a6",
+        "ids": [
+          "global-terrain-002_000_00001",
+          "millennium-tree-current-jp-reference"
+        ],
+        "ids_sha256": "fb05035ff51068df2cba39642d17a33d1e771d20b43b37dfce76720d1345a2b9",
+        "path": "src/game/logres/generated/maps/LogresMapContent.ts",
+        "schema_version": "map-content-v1"
+      },
+      "targets": [
+        {
+          "disposition": "required",
+          "evidence_summary": "Recovered Global map package 002_000_00001 is directly represented with decoded geometry/collision provenance.",
+          "provenance_class": "CONFIRMED_GLOBAL_3_0_24",
+          "stable_id": "global-terrain-002_000_00001"
+        },
+        {
+          "disposition": "excluded",
+          "exclusion_reason": "This is a confirmed current-JP region reference used for lineage comparison; the historical Global Millennium Tree area-to-static-map assignment remains unsupported inference.",
+          "stable_id": "millennium-tree-current-jp-reference"
+        }
+      ],
+      "title": "Maps and regions"
+    },
+    "quests": {
+      "criterion_id": "quest-content",
+      "historical_total_ceiling": {
+        "reason": "The complete historical Global quest source payload/catalog, record IDs, objective tables, encounter IDs, NPC states, limits, and permanent Hunter registration trigger are unresolved.",
+        "status": "UNKNOWABLE_FROM_CURRENT_EVIDENCE"
+      },
+      "objective_id": "QUEST_CONTENT",
+      "source_inventory": {
+        "file_sha256": "d2b85050601fa435c22d145f117cf9e1705ef21b93c03ea2d6de729727c4a5dc",
+        "ids": [
+          "opening-tutorial"
+        ],
+        "ids_sha256": "0e50bcd2c3cf97f8d4360918ae9dc75d4450fdf7fd1b41108d769a22324bbf80",
+        "path": "src/game/logres/generated/quests/LogresQuestContent.ts",
+        "schema_version": "quest-content-v1"
+      },
+      "targets": [
+        {
+          "disposition": "required",
+          "evidence_summary": "Original tutorial sequence is represented through an unresolved reconstructed quest instance without invented historical UID/map/room/objective IDs.",
+          "provenance_class": "CONFIRMED_ORIGINAL_VIDEO_RECONSTRUCTED_BINDING",
+          "stable_id": "opening-tutorial"
+        }
+      ],
+      "title": "Quests"
+    }
+  },
+  "evidence_policy": "Completion certifies only the fully enumerated currently recovered reconstruction corpus. Every stable ID extracted from each pinned generated source inventory must be required or explicitly ceiling/excluded. Unknown historical-total content remains an explicit evidence ceiling and is never implied complete.",
+  "historical_total_completeness": {
+    "reason": "The recovered Global client/bootstrap corpus does not enumerate the complete historical production catalog for all maps, actors, enemies, skills, items/equipment, and quests.",
+    "status": "UNKNOWABLE_FROM_CURRENT_EVIDENCE"
+  },
+  "inventory_anchor_sha": "444e8e613e5ff9f68964f4e8fa51fccb75fd2a2a",
+  "schema": "logres-project-completion-manifest-v2",
+  "version": "2026-09-24.2"
+}

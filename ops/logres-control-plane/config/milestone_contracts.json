@@ -527,12 +527,12 @@
     },
     "CONTENT-0.5": {
       "title": "Recovered content coverage",
-      "definition_of_done": "Declared reconstruction scope for maps, actors, combat, item and quest content is represented and coverage-tested.",
+      "definition_of_done": "Declared reconstruction scope is fully represented and accounted against pinned generated source inventories; unknowable historical-total completeness remains an explicit evidence ceiling.",
       "criteria": [
         {
           "id": "map-content",
-          "weight": 18,
-          "description": "Declared map/region reconstruction coverage is represented.",
+          "weight": 16,
+          "description": "Pinned full map/region source inventory is represented and corpus-accounted.",
           "check": {
             "type": "task_state",
             "task_id": "MISSION-MAP-CONTENT-001",
@@ -567,8 +567,8 @@
         },
         {
           "id": "actor-content",
-          "weight": 16,
-          "description": "Declared NPC/actor reconstruction coverage is represented.",
+          "weight": 14,
+          "description": "Pinned full NPC/actor source inventory is represented and corpus-accounted.",
           "check": {
             "type": "task_state",
             "task_id": "MISSION-ACTOR-CONTENT-001",
@@ -603,8 +603,8 @@
         },
         {
           "id": "combat-content",
-          "weight": 20,
-          "description": "Declared enemies, bosses and skills are represented.",
+          "weight": 18,
+          "description": "Pinned full enemy/skill/combat source inventory is represented and corpus-accounted.",
           "check": {
             "type": "task_state",
             "task_id": "MISSION-COMBAT-CONTENT-001",
@@ -639,8 +639,8 @@
         },
         {
           "id": "item-content",
-          "weight": 18,
-          "description": "Declared item/equipment data coverage is represented.",
+          "weight": 16,
+          "description": "Pinned full item/equipment source inventory is represented and corpus-accounted.",
           "check": {
             "type": "task_state",
             "task_id": "MISSION-ITEM-CONTENT-001",
@@ -675,8 +675,8 @@
         },
         {
           "id": "quest-content",
-          "weight": 18,
-          "description": "Declared quest content coverage is represented.",
+          "weight": 16,
+          "description": "Pinned full quest source inventory is represented and corpus-accounted.",
           "check": {
             "type": "task_state",
             "task_id": "MISSION-QUEST-CONTENT-001",
@@ -707,6 +707,20 @@
               "hard": [],
               "integration": []
             }
+          }
+        },
+        {
+          "id": "content-corpus-accounting",
+          "weight": 10,
+          "description": "The full currently known content corpus is pinned by source/version/hash and every stable ID is required or explicitly bounded.",
+          "check": {
+            "type": "task_state",
+            "task_id": "PROJECT-COMPLETION-MANIFEST-002",
+            "pass_statuses": [
+              "DONE",
+              "RESOLVED"
+            ],
+            "integration_required": true
           }
         },
         {

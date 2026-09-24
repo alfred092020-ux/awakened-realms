@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any
 
 from logres_goal_contract import evaluate_milestone
+from logres_mission_coverage import completion_manifest_report
 
 
 def now() -> str:
@@ -115,11 +116,20 @@ def build_certificate(
         root=root,
     ).to_dict()
     open_regressions = _open_regression_count(conn)
+    content_scope_report = None
+    content_scope_valid = True
+    if milestone_id == "CONTENT-0.5":
+        content_scope_report = completion_manifest_report(root)
+        content_scope_valid = bool(
+            content_scope_report.get("declared_scope_complete", False)
+        )
+
     valid = (
         result["state"] == "COMPLETE"
         and not result["unmet_criterion_ids"]
         and open_regressions == 0
         and len(integration_sha) == 40
+        and content_scope_valid
     )
     return {
         "schema": "logres-milestone-certificate-v1",
@@ -132,6 +142,15 @@ def build_certificate(
         ),
         "verification_rows": _verification_rows(conn, integration_sha),
         "open_regression_count": open_regressions,
+        "project_completion_scope": content_scope_report,
+        "completion_claim": (
+            "DECLARED_RECONSTRUCTION_SCOPE_ONLY"
+            if milestone_id == "CONTENT-0.5"
+            else None
+        ),
+        "historical_total_complete": (
+            False if milestone_id == "CONTENT-0.5" else None
+        ),
         "timestamp": timestamp or now(),
         "status": "PASS" if valid else "FAIL",
         "valid": valid,

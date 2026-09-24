@@ -145,6 +145,7 @@ PRODUCTION_FILES = (
     "lib/logres_supervisor.py",
     "lib/logres_throughput.py",
     "config/autoflow.default.json",
+    "config/completion_manifest.json",
     "config/milestone_contracts.json",
     "config/mission.default.json",
 )
