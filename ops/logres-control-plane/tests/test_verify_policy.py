@@ -14,6 +14,7 @@ SCRIPT = CONTROL_ROOT / "bin" / "logres-verify-farm"
 REPO_ROOT = CONTROL_ROOT.parents[1]
 VISUAL_VERIFIER = REPO_ROOT / "scripts" / "logres" / "verify_visual_checkpoint.py"
 BEHAVIOR_VERIFIER = REPO_ROOT / "scripts" / "logres" / "verify_behavior_checkpoint.py"
+BEHAVIOR_E2E = REPO_ROOT / "e2e" / "logres-behavioral-checkpoint.spec.mjs"
 
 
 def load_visual_verifier():
@@ -127,6 +128,12 @@ class VerifyFarmE2EPolicyTests(unittest.TestCase):
         self.assertIn('export LOGRES_VERIFY_SHA="$SHA"', text)
         self.assertIn('export LOGRES_RECORD_VISUAL_TRUTH=1', text)
         self.assertIn('export LOGRES_REQUIRE_VISUAL_TRUTH_RECORD=1', text)
+
+    def test_behavior_e2e_is_bootstrap_safe_but_prefers_canonical_output(self):
+        text = BEHAVIOR_E2E.read_text()
+        self.assertIn("process.env.LOGRES_BEHAVIOR_TRACE_OUT ||", text)
+        self.assertIn("testInfo.outputPath('logres-behavior-trace.json')", text)
+        self.assertNotIn("LOGRES_BEHAVIOR_TRACE_OUT is required", text)
 
     def test_canonical_farm_exports_and_persists_behavior_truth(self):
         text = SCRIPT.read_text()

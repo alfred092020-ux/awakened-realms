@@ -39,7 +39,7 @@ async function tapSelectedWeaponCover(page) {
   return result
 }
 
-test('production playable loop emits canonical behavioral checkpoint', async ({ page, request }) => {
+test('production playable loop emits canonical behavioral checkpoint', async ({ page, request }, testInfo) => {
   const field = await request.get(
     '/__logres_ref/renderer-proof/002_000_00001/002_000_00001.map.bin',
   )
@@ -225,9 +225,8 @@ test('production playable loop emits canonical behavioral checkpoint', async ({ 
     },
   }
 
-  const output = process.env.LOGRES_BEHAVIOR_TRACE_OUT
-  if (!output) {
-    throw new Error('LOGRES_BEHAVIOR_TRACE_OUT is required')
-  }
+  const output =
+    process.env.LOGRES_BEHAVIOR_TRACE_OUT ||
+    testInfo.outputPath('logres-behavior-trace.json')
   await writeFile(output, JSON.stringify(observed, null, 2) + '\n')
 })
