@@ -328,3 +328,20 @@ The deployment manifest now covers every runtime-safe `logres-*` control-plane e
 Manifest validation is two-dimensional: local Python import closure still prevents missing library dependencies, while runtime-surface closure prevents a newly committed helper from silently existing only inside repository worktrees.
 
 Two tools are deliberately excluded from runtime deployment: `logres-reconstruct` and `logres-truth`. Both intentionally import `scripts/logres` using repository-relative paths. Moving those wrappers into `/home/ubuntu/logres/bin` would change their computed repository root, so they remain repository-bound until their import contract is redesigned. The exclusion is explicit and tested rather than accidental.
+
+## Semantic regression deduplication
+
+Regression identity is now based on normalized root-cause semantics rather than volatile verifier output. `logres-regression-capture` strips transient worktree paths, exact SHAs, timestamps, durations, ports, process IDs, and similar noise before deriving a semantic fingerprint. Known infrastructure failure families such as missing behavior-trace output, visual-truth SQLite contention, and visual-truth record timeouts receive stable signatures.
+
+A repeated failure with the same semantic root cause attaches its new logs to the existing OPEN regression instead of manufacturing another repair task. Distinct product failures remain distinct.
+
+`logres-regression-dedupe` reconciles historical OPEN regression storms conservatively. It preserves every regression row and log artifact, selects an actively leased repair as canonical when one exists, otherwise keeps the oldest repair, and supersedes only inactive duplicate repair tasks. INTEGRATED and QUARANTINED integration rows are immutable and never rewritten by semantic dedupe. Historical rows whose referenced logs no longer exist are deliberately kept separate because missing evidence is not proof of equivalence.
+
+Autopilot runs semantic dedupe after evidence/frontier reconciliation, so repeated verifier infrastructure failures collapse automatically before they consume worker capacity.
+
+Useful commands:
+
+```bash
+logres-regression-dedupe
+logres-regression-dedupe --apply
+```

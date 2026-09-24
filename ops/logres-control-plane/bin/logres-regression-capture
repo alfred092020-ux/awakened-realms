@@ -1,0 +1,311 @@
+#!/usr/bin/env python3
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import re
+import sqlite3
+import subprocess
+import sys
+import time
+from datetime import datetime, timezone
+from pathlib import Path
+
+CONTROL_ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(CONTROL_ROOT / "lib"))
+
+from logres_regression_signature import (
+    find_semantic_duplicate,
+    normalize_failure_text,
+    read_logs,
+    semantic_fingerprint,
+)
+
+ROOT = Path(os.environ.get("LOGRES_ROOT", "/home/ubuntu/logres"))
+DB = Path(
+    os.environ.get(
+        "LOGRES_CONTROL_DB",
+        str(ROOT / "control/control.sqlite"),
+    )
+)
+BRAIN = os.environ.get(
+    "LOGRES_BRAIN",
+    str(ROOT / "bin/logres-brain"),
+)
+
+
+def interesting_lines(combined: str) -> list[str]:
+    lines: list[str] = []
+    for line in combined.splitlines():
+        low = line.lower()
+        if (
+            "fail" in low
+            or "error" in low
+            or "timeout" in low
+            or "expected" in low
+            or "received" in low
+            or re.search(r"\b[1-9]\d* failed\b", low)
+            or re.search(r"(e2e|tests?)/[^ :]+", line)
+        ):
+            clean = normalize_failure_text(line)
+            if clean:
+                lines.append(clean)
+    return lines
+
+
+def extract_scopes(combined: str) -> list[str]:
+    paths: list[str] = []
+    for match in re.finditer(
+        r"(?<![A-Za-z0-9_./-])"
+        r"((?:src|tests|e2e|scripts)/[A-Za-z0-9_./-]+\."
+        r"(?:ts|tsx|js|mjs|py|json))",
+        combined,
+    ):
+        path = match.group(1)
+        if path not in paths:
+            paths.append(path)
+    return paths[:12]
+
+
+def merge_logs(existing_json: str | None, new_logs: list[str]) -> list[str]:
+    try:
+        old = json.loads(existing_json or "[]")
+    except (json.JSONDecodeError, TypeError):
+        old = []
+    merged: list[str] = []
+    for item in [*(old if isinstance(old, list) else []), *new_logs]:
+        value = str(item)
+        if value not in merged:
+            merged.append(value)
+    return merged
+
+
+def connect() -> sqlite3.Connection:
+    conn = sqlite3.connect(DB, timeout=30)
+    conn.row_factory = sqlite3.Row
+    conn.execute("pragma journal_mode=WAL")
+    conn.execute("pragma busy_timeout=30000")
+    return conn
+
+
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(prog="logres-regression-capture")
+    parser.add_argument("--kind", required=True)
+    parser.add_argument("--ref", default="")
+    parser.add_argument("--sha", default="")
+    parser.add_argument("--log", action="append", default=[])
+    parser.add_argument("--summary", default="")
+    return parser
+
+
+def main() -> int:
+    args = build_parser().parse_args()
+    _, combined = read_logs(args.log)
+    interesting = interesting_lines(combined)
+    fingerprint, signature = semantic_fingerprint(
+        args.kind,
+        combined,
+        args.summary,
+    )
+    task_id = (
+        "REG-"
+        + re.sub(r"[^A-Z0-9]+", "-", args.kind.upper()).strip("-")
+        + "-"
+        + fingerprint[:8].upper()
+    )
+    summary = (
+        args.summary.strip()
+        or (interesting[-1] if interesting else "Automated regression capture")
+    )[:500]
+    paths = extract_scopes(combined)
+
+    conn = connect()
+    now = time.time()
+    stamp = datetime.now(timezone.utc).isoformat(timespec="seconds")
+
+    duplicate = find_semantic_duplicate(
+        conn,
+        kind=args.kind,
+        fingerprint=fingerprint,
+    )
+    if duplicate is not None:
+        logs = merge_logs(duplicate["logs_json"], args.log)
+        conn.execute(
+            """update regressions
+                  set logs_json=?,summary=?
+                where id=?""",
+            (json.dumps(logs), summary, duplicate["id"]),
+        )
+        conn.commit()
+        print(
+            "DEDUPED_SEMANTIC "
+            f"fingerprint={fingerprint[:12]} "
+            f"task={duplicate['task_id'] or '-'} "
+            f"regression={duplicate['id']}"
+        )
+        conn.close()
+        return 0
+
+    # Exact lookup remains as a cheap guard for races between two captures that
+    # computed the same semantic fingerprint concurrently.
+    existing = conn.execute(
+        "select * from regressions where fingerprint=?",
+        (fingerprint,),
+    ).fetchone()
+    if existing:
+        logs = merge_logs(existing["logs_json"], args.log)
+        conn.execute(
+            "update regressions set logs_json=?,summary=? where id=?",
+            (json.dumps(logs), summary, existing["id"]),
+        )
+        conn.commit()
+        print(
+            f"DEDUPED fingerprint={fingerprint[:12]} "
+            f"task={existing['task_id'] or '-'}"
+        )
+        conn.close()
+        return 0
+
+    if not conn.execute(
+        "select 1 from tasks where id=?",
+        (task_id,),
+    ).fetchone():
+        conn.execute(
+            """insert into tasks(
+                 id,priority,lane,title,status,branch,owner,note,updated_at
+               ) values(?,?,?,?,?,'',null,?,?)""",
+            (
+                task_id,
+                0,
+                "regression",
+                f"Fix automated {args.kind} regression: {summary}",
+                "READY",
+                (
+                    f"Auto-created from {args.kind} failure; "
+                    f"semantic_fingerprint={fingerprint}; "
+                    f"signature={signature[:240]}"
+                ),
+                stamp,
+            ),
+        )
+        conn.execute(
+            """insert into task_metadata(
+                 task_id,milestone,work_type,concurrency_key,
+                 expected_minutes,evidence_policy,created_at,updated_at
+               ) values(?,?,?,?,?,?,?,?)""",
+            (
+                task_id,
+                "DEMO-0.2",
+                "regression",
+                f"regression-semantic-{fingerprint[:8]}",
+                45,
+                (
+                    "Do not weaken, delete, skip, or bypass the failing "
+                    "verification to make the task pass."
+                ),
+                stamp,
+                stamp,
+            ),
+        )
+        criteria = [
+            "Reproduce and identify the semantic root cause represented by the attached failure logs.",
+            "Fix the root cause without weakening/removing/skipping the failing verification.",
+            "Run targeted verification, then the fast worker gate. Shared full-E2E runs once in merge preflight.",
+            "Document whether the regression was product code, test infrastructure, environment, or evidence mismatch.",
+        ]
+        for index, criterion in enumerate(criteria, 1):
+            conn.execute(
+                """insert into task_acceptance(
+                     task_id,ordinal,criterion
+                   ) values(?,?,?)""",
+                (task_id, index, criterion),
+            )
+        for path in paths:
+            conn.execute(
+                """insert or ignore into task_scopes(
+                     task_id,path_prefix
+                   ) values(?,?)""",
+                (task_id, path),
+            )
+
+    try:
+        conn.execute(
+            """insert into regressions(
+                 fingerprint,task_id,kind,ref,sha,summary,logs_json,
+                 created_at,created_epoch,status
+               ) values(?,?,?,?,?,?,?,?,?,'OPEN')""",
+            (
+                fingerprint,
+                task_id,
+                args.kind,
+                args.ref,
+                args.sha,
+                summary,
+                json.dumps(args.log),
+                stamp,
+                now,
+            ),
+        )
+        conn.commit()
+    except sqlite3.IntegrityError:
+        # Another process won the semantic-fingerprint race.
+        row = conn.execute(
+            "select * from regressions where fingerprint=?",
+            (fingerprint,),
+        ).fetchone()
+        if row is None:
+            raise
+        logs = merge_logs(row["logs_json"], args.log)
+        conn.execute(
+            "update regressions set logs_json=?,summary=? where id=?",
+            (json.dumps(logs), summary, row["id"]),
+        )
+        conn.commit()
+        print(
+            f"DEDUPED_RACE fingerprint={fingerprint[:12]} "
+            f"task={row['task_id'] or '-'}"
+        )
+        conn.close()
+        return 0
+
+    conn.close()
+
+    body = (
+        f"Automated regression task {task_id}. kind={args.kind} "
+        f"ref={args.ref or '-'} sha={args.sha or '-'} "
+        f"semantic_fingerprint={fingerprint[:12]} "
+        f"logs={','.join(args.log) or '-'} "
+        f"scopes={','.join(paths) or '-'}"
+    )
+    subprocess.run(
+        [
+            BRAIN,
+            "post",
+            "system",
+            "ALL",
+            "REGRESSION",
+            "CRITICAL",
+            f"Automated regression captured: {task_id}",
+            "--body",
+            body,
+            "--task",
+            task_id,
+            "--artifact",
+            args.log[-1] if args.log else "",
+            "--dedupe",
+            f"regression-semantic:{fingerprint}",
+        ],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        check=False,
+    )
+    print(
+        f"CREATED task={task_id} fingerprint={fingerprint[:12]} "
+        f"scopes={len(paths)}"
+    )
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
