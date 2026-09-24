@@ -64,6 +64,29 @@ def state():
     raw=phone('$HOME/bin/logres-cdp state')
     return json.loads(raw.splitlines()[-1])
 
+def cdp_eval(expression):
+    raw=phone(
+        f'$HOME/bin/logres-cdp eval {shlex.quote(expression)}'
+    )
+    return json.loads(raw.splitlines()[-1])
+
+def logical_game_size():
+    value=cdp_eval(
+        """(() => {
+          const g=window.__AWAKENED_REALMS_GAME__;
+          if(!g || !g.scale) return null;
+          return {width:g.scale.width,height:g.scale.height};
+        })()"""
+    )
+    if not isinstance(value,dict):
+        raise QAError("live Phaser game dimensions are unavailable")
+    width=value.get("width"); height=value.get("height")
+    if not isinstance(width,(int,float)) or not isinstance(height,(int,float)):
+        raise QAError(f"invalid live Phaser dimensions: {value!r}")
+    if width <= 0 or height <= 0:
+        raise QAError(f"non-positive live Phaser dimensions: {value!r}")
+    return {"width":float(width),"height":float(height)}
+
 def wait_scene(scene, timeout=25):
     raw=phone(f'$HOME/bin/logres-cdp wait-scene {shlex.quote(scene)} --timeout {float(timeout)}',
               timeout=int(timeout)+10)
@@ -81,16 +104,41 @@ def screenshot(out: Path):
 def save_state(out: Path, obj):
     out.write_text(json.dumps(obj,indent=2,sort_keys=True)+"\n")
 
-def playable_battle_plan(snapshot):
+def playable_battle_plan(snapshot, game_size):
     registry=snapshot.get("registry",{})
     presentation=registry.get("logres.battle.presentation") or {}
     if presentation.get("showDemoControls") is not False:
         raise QAError("canonical battle must not expose demo/harness controls")
-    stage=registry.get("logres.battle.stagePresentation") or {}
-    enemy=stage.get("enemy") or {}
-    x=enemy.get("x"); y=enemy.get("y")
-    if not isinstance(x,(int,float)) or not isinstance(y,(int,float)):
-        raise QAError("playable battle enemy tap target is missing")
+    panels=presentation.get("weaponPanels")
+    if not isinstance(panels,list) or len(panels) != 5:
+        raise QAError("canonical battle weapon panel list is unavailable")
+    eligible=[]
+    for panel in panels:
+        if not isinstance(panel,dict):
+            continue
+        if (
+            panel.get("unlocked") is True
+            and panel.get("weaponRef")
+            and panel.get("normalSkillRef")
+            and (
+                panel.get("specialSkillRef") is None
+                or panel.get("specialEpCost") is None
+            )
+        ):
+            eligible.append(panel)
+    if len(eligible) != 1:
+        raise QAError(
+            f"expected exactly one fallback-capable weapon panel, got {len(eligible)}"
+        )
+    slot=eligible[0].get("slotIndex")
+    if not isinstance(slot,int) or not 0 <= slot <= 4:
+        raise QAError(f"invalid fallback weapon slot={slot!r}")
+    width=game_size.get("width"); height=game_size.get("height")
+    if not isinstance(width,(int,float)) or not isinstance(height,(int,float)):
+        raise QAError(f"invalid live game size={game_size!r}")
+    spacing=112.0
+    x=float(width)/2.0-spacing*2.0+spacing*slot
+    y=float(height)-150.0
     authority=registry.get("logres.playableBattle.authority") or {}
     threshold=authority.get("victoryThreshold")
     accepted=authority.get("acceptedCommandCount")
@@ -98,13 +146,25 @@ def playable_battle_plan(snapshot):
         raise QAError(f"invalid playable victoryThreshold={threshold!r}")
     if not isinstance(accepted,int) or accepted < 0 or accepted > threshold:
         raise QAError(f"invalid playable acceptedCommandCount={accepted!r}")
-    return {"x":float(x),"y":float(y),"threshold":threshold,"accepted":accepted}
+    return {
+        "x":x,
+        "y":y,
+        "slotIndex":slot,
+        "threshold":threshold,
+        "accepted":accepted,
+        "inputProvenance":"RECONSTRUCTED_PLAYABILITY_FALLBACK",
+    }
 
 def require_command_progress(snapshot, expected_min, threshold):
     registry=snapshot.get("registry",{})
     status=registry.get("logres.playableBattle.status")
     authority=registry.get("logres.playableBattle.authority") or {}
     accepted=authority.get("acceptedCommandCount")
+    provenance=registry.get("logres.playableBattle.inputProvenance")
+    if provenance != "RECONSTRUCTED_PLAYABILITY_FALLBACK":
+        raise QAError(
+            f"unexpected playable battle input provenance={provenance!r}"
+        )
     if status == "FIELD_RETURN_READY":
         return accepted if isinstance(accepted,int) else threshold
     if not isinstance(accepted,int) or accepted < expected_min:
@@ -311,10 +371,14 @@ adb -s "$DEV" shell dumpsys thermalservice | grep -m1 "Thermal Status:"''')
         checks["touch_encounter_transition"]="PASS"
         checks["battle_render"]="PASS"
 
-        # Drive only the production battle surface. The canonical battle
-        # exposes the visible enemy itself as the normal-attack target; hidden
+        # Drive only the production battle surface. The final playable
+        # fallback reuses the existing equipped weapon panel and labels the
+        # command provenance RECONSTRUCTED_PLAYABILITY_FALLBACK; hidden
         # harness/demo resolve controls are rejected by playable_battle_plan().
-        plan=playable_battle_plan(states["battle"])
+        plan=playable_battle_plan(
+            states["battle"],
+            logical_game_size(),
+        )
         accepted=plan["accepted"]
         victory_state=states["battle"]
         for expected in range(accepted+1,plan["threshold"]+1):
