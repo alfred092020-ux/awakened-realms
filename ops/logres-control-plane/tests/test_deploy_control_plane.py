@@ -41,6 +41,7 @@ PRODUCTION_FILES = (
     "bin/logres-goal",
     "bin/logres-goal-executor",
     "bin/logres-goal-certify",
+    "bin/logres-hardware-qa",
     "bin/logres-finish-loop",
     "bin/logres-impact",
     "bin/logres-preview-reaper",
