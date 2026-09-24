@@ -1,0 +1,13 @@
+#!/usr/bin/env python3
+import argparse,json,os,sqlite3,sys
+from pathlib import Path
+ROOT=Path(os.environ.get("LOGRES_ROOT","/home/ubuntu/logres"));sys.path.insert(0,str(Path(__file__).resolve().parents[1]/"lib"))
+from logres_status import build_status,render_text
+DB=Path(os.environ.get("LOGRES_CONTROL_DB",ROOT/"control/control.sqlite"))
+def main():
+ p=argparse.ArgumentParser(prog="logres-status");p.add_argument("--json",action="store_true");a=p.parse_args()
+ c=sqlite3.connect(DB,timeout=30);c.row_factory=sqlite3.Row;c.execute("pragma busy_timeout=30000")
+ try:s=build_status(c)
+ finally:c.close()
+ print(json.dumps(s,indent=2,sort_keys=True) if a.json else render_text(s))
+if __name__=="__main__":main()
