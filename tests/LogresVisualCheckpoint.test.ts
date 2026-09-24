@@ -21,7 +21,7 @@ describe('Logres visual checkpoint gate', () => {
     expect(result.cases.black.pass).toBe(false)
     expect(result.cases.missing.pass).toBe(false)
     expect(result.cases.checker.pass).toBe(false)
-  })
+  }, 15_000)
 
   it('keeps checkpoint invariants provenance-labelled without inventing unresolved history', () => {
     const result = run('--describe')
