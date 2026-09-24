@@ -28,7 +28,7 @@ def _applied_preflight_result_satisfied(
               join integration_preflights p on p.id=i.preflight_id
              where i.task_id=?
                and i.candidate_sha=?
-               and p.status='APPLIED'
+               and p.status in ('APPLIED','STALE')
                and p.verification_mode='full-e2e'
                and p.result_sha is not null
              order by p.id desc
@@ -38,6 +38,10 @@ def _applied_preflight_result_satisfied(
     except sqlite3.OperationalError:
         # Older/runtime-minimal databases may not have preflight lineage tables.
         # Fail closed here; the direct integrated-ancestor path remains valid.
+        # STALE is accepted only through this helper, which is called solely
+        # for the exact candidate from an INTEGRATED queue row. This covers
+        # post-apply validation races without treating arbitrary stale
+        # preflights as canonical integration proof.
         return False
 
     for row in rows:
