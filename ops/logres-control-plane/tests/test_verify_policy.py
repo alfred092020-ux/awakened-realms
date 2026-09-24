@@ -13,12 +13,24 @@ CONTROL_ROOT = TEST_DIR.parent
 SCRIPT = CONTROL_ROOT / "bin" / "logres-verify-farm"
 REPO_ROOT = CONTROL_ROOT.parents[1]
 VISUAL_VERIFIER = REPO_ROOT / "scripts" / "logres" / "verify_visual_checkpoint.py"
+BEHAVIOR_VERIFIER = REPO_ROOT / "scripts" / "logres" / "verify_behavior_checkpoint.py"
 
 
 def load_visual_verifier():
     spec = importlib.util.spec_from_file_location(
         "verify_visual_checkpoint_test",
         VISUAL_VERIFIER,
+    )
+    module = importlib.util.module_from_spec(spec)
+    assert spec.loader is not None
+    spec.loader.exec_module(module)
+    return module
+
+
+def load_behavior_verifier():
+    spec = importlib.util.spec_from_file_location(
+        "verify_behavior_checkpoint_test",
+        BEHAVIOR_VERIFIER,
     )
     module = importlib.util.module_from_spec(spec)
     assert spec.loader is not None
@@ -115,6 +127,75 @@ class VerifyFarmE2EPolicyTests(unittest.TestCase):
         self.assertIn('export LOGRES_VERIFY_SHA="$SHA"', text)
         self.assertIn('export LOGRES_RECORD_VISUAL_TRUTH=1', text)
         self.assertIn('export LOGRES_REQUIRE_VISUAL_TRUTH_RECORD=1', text)
+
+    def test_canonical_farm_exports_and_persists_behavior_truth(self):
+        text = SCRIPT.read_text()
+        self.assertIn('export LOGRES_BEHAVIOR_TRACE_OUT="$E2E_WT/.logres-behavior-trace.json"', text)
+        self.assertIn('--sha "$SHA"', text)
+        self.assertIn('verify_behavior_checkpoint.py', text)
+        self.assertIn('behavior_rc', text)
+
+    def test_behavior_verifier_propagates_exact_sha_and_pass(self):
+        module = load_behavior_verifier()
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            observed = root / "observed.json"
+            observed.write_text(json.dumps(module.EXPECTED))
+            recorder = root / "recorder.py"
+            args_log = root / "args.json"
+            recorder.write_text(
+                "#!/usr/bin/env python3\n"
+                "import json,os,sys\n"
+                "open(os.environ['ARG_LOG'],'w').write(json.dumps(sys.argv[1:]))\n"
+                "print(json.dumps({'id':1,'verdict':'PASS','divergence':{}}))\n"
+            )
+            recorder.chmod(0o755)
+            with patch.dict(os.environ, {"ARG_LOG": str(args_log)}, clear=False):
+                result = module.record_behavior_truth(
+                    observed,
+                    sha="a" * 40,
+                    recorder=str(recorder),
+                )
+            self.assertEqual("PASS", result["verdict"])
+            args = json.loads(args_log.read_text())
+            self.assertIn("a" * 40, args)
+            self.assertIn(module.CHECKPOINT, args)
+            self.assertIn("--expected", args)
+            self.assertIn("--observed", args)
+
+    def test_behavior_verifier_preserves_divergence_fail(self):
+        module = load_behavior_verifier()
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            observed = root / "observed.json"
+            changed = dict(module.EXPECTED)
+            changed["events"] = ["FIELD_READY", "BATTLE_ACTIVE"]
+            observed.write_text(json.dumps(changed))
+            recorder = root / "recorder.py"
+            recorder.write_text(
+                "#!/usr/bin/env python3\n"
+                "import json\n"
+                "print(json.dumps({'id':2,'verdict':'FAIL','divergence':{'event_mismatches':[1]}}))\n"
+            )
+            recorder.chmod(0o755)
+            result = module.record_behavior_truth(
+                observed,
+                sha="b" * 40,
+                recorder=str(recorder),
+            )
+            self.assertEqual("FAIL", result["verdict"])
+            self.assertTrue(result["record"]["divergence"]["event_mismatches"])
+
+    def test_behavior_verifier_missing_observed_trace_fails_closed(self):
+        module = load_behavior_verifier()
+        with tempfile.TemporaryDirectory() as td:
+            missing = Path(td) / "missing.json"
+            with self.assertRaises(FileNotFoundError):
+                module.record_behavior_truth(
+                    missing,
+                    sha="c" * 40,
+                    recorder="/bin/false",
+                )
 
     def test_structural_truth_records_review_or_fail_never_pass(self):
         module = load_visual_verifier()

@@ -14,6 +14,7 @@ TEST_WT="$ROOT/verify-farm-$STAMP-test"
 E2E_WT="$ROOT/verify-farm-$STAMP-e2e"
 TEST_LOG="/home/ubuntu/logres/logs/verify-farm-$STAMP-test.log"
 E2E_LOG="/home/ubuntu/logres/logs/verify-farm-$STAMP-e2e.log"
+BEHAVIOR_LOG="/home/ubuntu/logres/logs/verify-farm-$STAMP-behavior.log"
 REMOTE_TEST_LOG="/home/ubuntu/logres/logs/verify-farm-$STAMP-remote-test.log"
 CACHE_JSON="/tmp/logres-verify-cache-$STAMP.json"
 START=$(date +%s)
@@ -264,6 +265,8 @@ export LOGRES_VERIFY_SHA="$SHA"
 export LOGRES_RECORD_VISUAL_TRUTH=1
 export LOGRES_REQUIRE_VISUAL_TRUTH_RECORD=1
 export LOGRES_VISUAL_TRUTH_BIN="${LOGRES_VISUAL_TRUTH_BIN:-/home/ubuntu/logres/bin/logres-visual-truth}"
+export LOGRES_BEHAVIOR_TRACE_OUT="$E2E_WT/.logres-behavior-trace.json"
+export LOGRES_BEHAVIOR_TRACE_BIN="${LOGRES_BEHAVIOR_TRACE_BIN:-/home/ubuntu/logres/bin/logres-behavior-trace}"
 (
   set -e
   hydrate "$E2E_WT"
@@ -323,17 +326,29 @@ fi
 e2e_rc=0
 wait "$e2e_pid" || e2e_rc=$?
 
-if (( test_rc != 0 || e2e_rc != 0 )); then
-  echo "VERIFY_FARM FAIL test_rc=$test_rc e2e_rc=$e2e_rc path=$VERIFY_PATH" >&2
+behavior_rc=0
+if (( e2e_rc == 0 )); then
+  python3 "$E2E_WT/scripts/logres/verify_behavior_checkpoint.py" \
+    --observed "$LOGRES_BEHAVIOR_TRACE_OUT" \
+    --sha "$SHA" \
+    --recorder "$LOGRES_BEHAVIOR_TRACE_BIN" \
+    >"$BEHAVIOR_LOG" 2>&1 || behavior_rc=$?
+fi
+
+if (( test_rc != 0 || e2e_rc != 0 || behavior_rc != 0 )); then
+  echo "VERIFY_FARM FAIL test_rc=$test_rc e2e_rc=$e2e_rc behavior_rc=$behavior_rc path=$VERIFY_PATH" >&2
   echo "--- test tail ---" >&2
   tail -80 "$TEST_LOG" >&2 || true
   echo "--- e2e tail ---" >&2
   tail -120 "$E2E_LOG" >&2 || true
-  /home/ubuntu/logres/bin/logres-regression-capture     --kind candidate-verify     --ref "$REF"     --sha "$SHA"     --summary "verify-farm test_rc=$test_rc e2e_rc=$e2e_rc path=$VERIFY_PATH+$E2E_VERIFY_TAG"     --log "$TEST_LOG"     --log "$E2E_LOG" >/dev/null 2>&1 || true
+  echo "--- behavior tail ---" >&2
+  tail -120 "$BEHAVIOR_LOG" >&2 || true
+  /home/ubuntu/logres/bin/logres-regression-capture     --kind candidate-verify     --ref "$REF"     --sha "$SHA"     --summary "verify-farm test_rc=$test_rc e2e_rc=$e2e_rc behavior_rc=$behavior_rc path=$VERIFY_PATH+$E2E_VERIFY_TAG"     --log "$TEST_LOG"     --log "$E2E_LOG" --log "$BEHAVIOR_LOG" >/dev/null 2>&1 || true
   exit 1
 fi
 
 dur=$(( $(date +%s)-START ))
-echo "VERIFY_FARM PASS ref=$REF sha=$SHA duration=${dur}s path=$VERIFY_PATH+$E2E_VERIFY_TAG"
+echo "VERIFY_FARM PASS ref=$REF sha=$SHA duration=${dur}s path=$VERIFY_PATH+$E2E_VERIFY_TAG+behavior-truth"
 echo "test_log=$TEST_LOG"
 echo "e2e_log=$E2E_LOG"
+echo "behavior_log=$BEHAVIOR_LOG"
