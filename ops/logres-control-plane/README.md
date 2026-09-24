@@ -299,3 +299,9 @@ logres-experiment-executor next
 logres-experiment-executor run <experiment-id>
 logres-governor list
 ```
+
+## SQLite contention resilience
+
+Route claiming and compare-and-swap transitions now treat short-lived SQLite writer contention as recoverable infrastructure pressure. `BEGIN IMMEDIATE` retries only `database is locked` / busy-style operational errors with bounded exponential backoff before failing normally.
+
+This prevents concurrent autonomy, swarm, AI, and Copilot routing from turning a momentary WAL writer collision into a false dispatch failure. Non-lock SQLite errors, invalid transitions, and stale-state conflicts are unchanged and still fail closed.
