@@ -1,0 +1,13 @@
+#!/usr/bin/env python3
+import argparse,json,os,sqlite3,sys
+from pathlib import Path
+ROOT=Path(os.environ.get("LOGRES_ROOT","/home/ubuntu/logres"));sys.path.insert(0,str(Path(__file__).resolve().parents[1]/"lib"))
+from logres_zero_human import analyze
+DB=Path(os.environ.get("LOGRES_CONTROL_DB",ROOT/"control/control.sqlite"))
+def main():
+ p=argparse.ArgumentParser(prog="logres-zero-human");p.add_argument("--apply",action="store_true");a=p.parse_args()
+ c=sqlite3.connect(DB,timeout=30);c.row_factory=sqlite3.Row;c.execute("pragma busy_timeout=30000")
+ try:out=analyze(c,persist=a.apply)
+ finally:c.close()
+ print(json.dumps(out,indent=2,sort_keys=True))
+if __name__=="__main__":main()
