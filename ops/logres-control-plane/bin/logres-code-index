@@ -1,0 +1,108 @@
+#!/usr/bin/env python3
+from __future__ import annotations
+import fcntl, json, os, sqlite3, subprocess, sys, time
+from pathlib import Path
+
+BASE=Path(os.environ.get("LOGRES_REPO_ROOT","/home/ubuntu/logres/src/awakened-realms"))
+DB=Path(os.environ.get("LOGRES_CODE_INDEX_DB","/home/ubuntu/logres/index/code-symbols.sqlite"))
+LOCK=Path(os.environ.get("LOGRES_CODE_INDEX_LOCK","/tmp/logres-code-index.lock"))
+mode=sys.argv[1] if len(sys.argv)>1 else "build"
+sha=subprocess.check_output(["git","rev-parse","HEAD"],cwd=BASE,text=True).strip()
+
+def indexed_sha():
+    if not DB.exists():
+        return None
+    try:
+        c=sqlite3.connect(DB)
+        row=c.execute("select value from meta where key='git_sha'").fetchone()
+        c.close()
+        return row[0] if row else None
+    except sqlite3.Error:
+        return None
+
+current=indexed_sha()
+if mode in ("status","--status"):
+    if current==sha:
+        print("code_index_current",sha[:12])
+        raise SystemExit(0)
+    print("code_index_stale","indexed="+str(current or "missing")[:12],"head="+sha[:12])
+    raise SystemExit(1)
+
+LOCK.parent.mkdir(parents=True,exist_ok=True)
+lock_handle=LOCK.open("a+")
+try:
+    fcntl.flock(lock_handle.fileno(),fcntl.LOCK_EX|fcntl.LOCK_NB)
+except BlockingIOError:
+    print("code_index_busy",sha[:12])
+    raise SystemExit(0)
+
+# Another builder may have finished between process start and lock acquisition.
+current=indexed_sha()
+if current==sha:
+    print("code_index_current",sha[:12])
+    raise SystemExit(0)
+
+DB.parent.mkdir(parents=True,exist_ok=True)
+
+if DB.exists():
+    pass
+
+cmd=[
+    "ctags","--output-format=json","--fields=+nKSE","--extras=-F",
+    "--languages=TypeScript,JavaScript,Python,Sh",
+    "-R","src","tests","scripts"
+]
+p=subprocess.run(cmd,cwd=BASE,text=True,stdout=subprocess.PIPE,
+                 stderr=subprocess.DEVNULL,check=True)
+
+tmp=DB.with_suffix(".sqlite.tmp")
+if tmp.exists(): tmp.unlink()
+c=sqlite3.connect(tmp)
+c.executescript("""
+pragma journal_mode=off;
+pragma synchronous=off;
+create table meta(key text primary key,value text);
+create table symbols(
+ id integer primary key,
+ name text not null,
+ path text not null,
+ line integer,
+ kind text,
+ language text,
+ scope text,
+ scope_kind text,
+ signature text,
+ pattern text
+);
+create index symbols_name_idx on symbols(name);
+create index symbols_path_idx on symbols(path);
+create virtual table symbols_fts using fts5(
+ name, path unindexed, scope, signature, content='symbols', content_rowid='id',
+ tokenize='unicode61'
+);
+""")
+count=0
+start=time.time()
+for line in p.stdout.splitlines():
+    try: x=json.loads(line)
+    except json.JSONDecodeError: continue
+    if x.get("_type")!="tag": continue
+    name=x.get("name")
+    path=x.get("path")
+    if not name or not path: continue
+    cur=c.execute("""insert into symbols(name,path,line,kind,language,scope,scope_kind,signature,pattern)
+                     values(?,?,?,?,?,?,?,?,?)""",
+      (name,path,x.get("line"),x.get("kind"),x.get("language"),x.get("scope"),
+       x.get("scopeKind"),x.get("signature"),x.get("pattern")))
+    c.execute("""insert into symbols_fts(rowid,name,path,scope,signature)
+                 values(?,?,?,?,?)""",
+      (cur.lastrowid,name,path,x.get("scope") or "",x.get("signature") or ""))
+    count+=1
+c.execute("insert into meta values('git_sha',?)",(sha,))
+c.execute("insert into meta values('built_at',datetime('now'))")
+c.execute("insert into symbols_fts(symbols_fts) values('optimize')")
+c.commit(); c.close()
+os.replace(tmp,DB)
+print("symbols",count)
+print("sha",sha)
+print("elapsed_sec",round(time.time()-start,3))
