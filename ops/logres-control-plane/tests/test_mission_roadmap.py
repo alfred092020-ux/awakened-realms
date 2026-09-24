@@ -128,6 +128,24 @@ class MissionRoadmapTests(unittest.TestCase):
                 checked += 1
         self.assertGreaterEqual(checked, 19)
 
+    def test_demo02_map_identity_uses_sealed_evidence_ceiling(self):
+        contracts = load_contracts(CONTRACT_CONFIG)
+        criterion = next(
+            item
+            for item in contracts["milestones"]["DEMO-0.2"]["criteria"]
+            if item["id"] == "millennium-tree-map-identity"
+        )
+        self.assertEqual("artifact", criterion["check"]["type"])
+        self.assertEqual(
+            "artifacts/tutorial-map-id-global3024-evidence-ceiling-20260924.json",
+            criterion["check"]["path"],
+        )
+        self.assertEqual(
+            "c98879a0024143020581f395952c1804c7c796947a50fe2909765fa1ac7f00c7",
+            criterion["check"]["sha256"],
+        )
+        self.assertNotIn("task_template", criterion)
+
     def test_future_milestones_keep_current_demo_first(self):
         conn = make_db()
         load_config(conn, MISSION_CONFIG)
