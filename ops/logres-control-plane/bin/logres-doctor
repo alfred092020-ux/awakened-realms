@@ -8,8 +8,45 @@ checks=[]
 fails=0
 warns=0
 
+SYSTEM_TOOL_DIRS=(
+    Path("/usr/local/sbin"),
+    Path("/usr/local/bin"),
+    Path("/usr/sbin"),
+    Path("/usr/bin"),
+    Path("/sbin"),
+    Path("/bin"),
+)
+
+def resolve_executable(value):
+    name=str(value)
+    if "/" in name:
+        return name
+    found=shutil.which(name)
+    if found:
+        return found
+    for root in SYSTEM_TOOL_DIRS:
+        candidate=root/name
+        if candidate.is_file() and os.access(candidate,os.X_OK):
+            return str(candidate)
+    return name
+
 def run(cmd):
-    return subprocess.run(cmd,text=True,stdout=subprocess.PIPE,stderr=subprocess.DEVNULL,check=False)
+    argv=[str(x) for x in cmd]
+    if argv:
+        argv[0]=resolve_executable(argv[0])
+    try:
+        return subprocess.run(
+            argv,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            check=False,
+        )
+    except FileNotFoundError:
+        # Health checks should report a missing optional/system binary as a
+        # failed check, never crash the entire doctor under a restricted cron
+        # or automation PATH.
+        return subprocess.CompletedProcess(argv,127,stdout="",stderr=None)
 
 def add(name,status,detail):
     global fails,warns
