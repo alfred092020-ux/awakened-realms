@@ -1,0 +1,465 @@
+#!/usr/bin/env python3
+from __future__ import annotations
+
+import argparse
+import hashlib
+import json
+from pathlib import Path
+from typing import Any
+
+SOURCE_TASK = "GJP-AUTONOMOUS-RECON-001"
+IMPLEMENTATION_CONFIDENCE = "RECONSTRUCTED"
+HARD_PACKET_LIMIT = 50
+STRONG_GLOBAL_AUTHORITY_PREFIXES = ("CONFIRMED_GLOBAL", "GLOBAL_")
+RECURSIVE_PREFIXES = ("AUTO-RE", "UNBLOCK")
+UNIVERSAL_DO_NOT_INFER = [
+    "Do not infer retired-server behavior that is not directly evidenced.",
+    "Do not mutate main or serialized integration authority.",
+]
+
+
+class AutopilotError(RuntimeError):
+    pass
+
+
+def canonical_json(value: Any) -> str:
+    return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+
+
+def load_json(path: Path) -> dict[str, Any]:
+    value = json.loads(path.read_text())
+    if not isinstance(value, dict):
+        raise AutopilotError(f"{path} must contain a top-level object")
+    return value
+
+
+def digest_facts(facts: list[dict[str, Any]]) -> str:
+    return hashlib.sha256(canonical_json(facts).encode("utf-8")).hexdigest()
+
+
+def assert_closure(closure: dict[str, Any]) -> None:
+    facts = closure.get("facts")
+    if not isinstance(facts, list):
+        raise AutopilotError("closure.facts must be a list")
+    expected = str(closure.get("facts_sha256") or "")
+    if not expected:
+        raise AutopilotError("closure.facts_sha256 is required")
+    actual = digest_facts(facts)
+    if expected != actual:
+        raise AutopilotError("closure facts_sha256 mismatch")
+
+
+def fact_actionable(fact: dict[str, Any]) -> bool:
+    authority = str(fact.get("authority") or "")
+    if not authority.startswith(STRONG_GLOBAL_AUTHORITY_PREFIXES):
+        return False
+    if fact.get("classification") != "evidence-known-not-implemented":
+        return False
+    if fact.get("domain") in {
+        "external_evidence_ceiling",
+        "jp_map_lineage_reference",
+    }:
+        return False
+    return True
+
+
+def scope_for_fact(fact: dict[str, Any]) -> list[str]:
+    domain = str(fact.get("domain") or "")
+    if domain == "critical_state_transition":
+        return ["src/game/logres/field/", "src/game/logres/net/"]
+    if domain == "protocol_message":
+        return ["src/game/logres/net/"]
+    if domain in {"lfs_class", "lfs_method"}:
+        return ["src/game/logres/"]
+    return ["src/game/logres/"]
+
+
+def acceptance_tests_for_fact(fact: dict[str, Any]) -> list[str]:
+    evidence = fact.get("evidence") or {}
+    tests = [
+        f"Implement only closure fact {fact.get('id')} at RECONSTRUCTED confidence.",
+        "Add focused deterministic tests scoped to this packet.",
+        "Run npm test and npm run build before handoff.",
+    ]
+    if fact.get("domain") == "critical_state_transition":
+        tests.insert(
+            1,
+            f"Preserve transition {evidence.get('from')} -> {evidence.get('to')} with exact cited trigger.",
+        )
+    if fact.get("domain") == "protocol_message":
+        tests.insert(
+            1,
+            f"Preserve protocol message {evidence.get('name')} ({evidence.get('hex') or evidence.get('id')}).",
+        )
+    return tests
+
+
+def do_not_infer_for_fact(fact: dict[str, Any], ceilings: list[str]) -> list[str]:
+    extra = []
+    if fact.get("domain") in {"critical_state_transition", "protocol_message"}:
+        extra.append(
+            "Do not infer server response payloads, ordering choices, or hidden guards."
+        )
+    if ceilings:
+        extra.append(
+            "Respect terminal external ceilings: "
+            + "; ".join(sorted(set(ceilings)))
+        )
+    return [*UNIVERSAL_DO_NOT_INFER, *extra]
+
+
+def extract_truth_refs(truth: dict[str, Any]) -> tuple[set[str], set[str], set[str]]:
+    fact_ids: set[str] = set()
+    evidence_ids: set[str] = set()
+    evidence_hashes: set[str] = set()
+    stack: list[Any] = [truth]
+    while stack:
+        current = stack.pop()
+        if isinstance(current, dict):
+            for key in ("fact_id", "source_fact_id"):
+                value = current.get(key)
+                if isinstance(value, str) and value:
+                    fact_ids.add(value)
+            for key in ("evidence_id", "artifact_id", "node_id"):
+                value = current.get(key)
+                if isinstance(value, str) and value:
+                    evidence_ids.add(value)
+            for key in ("sha256", "artifact_sha", "evidence_sha256"):
+                value = current.get(key)
+                if isinstance(value, str) and value:
+                    evidence_hashes.add(value)
+            stack.extend(current.values())
+        elif isinstance(current, list):
+            stack.extend(current)
+    return fact_ids, evidence_ids, evidence_hashes
+
+
+def differential_entries(value: dict[str, Any]) -> list[dict[str, Any]]:
+    for key in ("differential_divergences", "differential_gaps", "divergences", "gaps"):
+        rows = value.get(key)
+        if isinstance(rows, list):
+            return [row for row in rows if isinstance(row, dict)]
+    return []
+
+
+def classify_divergences(
+    rows: list[dict[str, Any]],
+) -> tuple[dict[str, dict[str, Any]], set[str], list[str], bool]:
+    actionable: dict[str, dict[str, Any]] = {}
+    research_like: set[str] = set()
+    external_ceilings: list[str] = []
+    unresolved_historical = False
+    for row in rows:
+        fact_id = str(row.get("fact_id") or row.get("source_fact_id") or "").strip()
+        kind = str(row.get("gap_type") or row.get("task_type") or "implementation").lower()
+        classification = str(row.get("classification") or row.get("status") or "").lower()
+        if str(row.get("status") or "").upper() == "BLOCKED_EVIDENCE":
+            unresolved_historical = True
+        if row.get("external_ceiling") or classification in {
+            "externally-unrecoverable",
+            "external_evidence_ceiling",
+        }:
+            text = str(row.get("ceiling") or row.get("reason") or row.get("status") or "").strip()
+            if text:
+                external_ceilings.append(text)
+            continue
+        if fact_id and kind in {"research", "unblock"}:
+            research_like.add(fact_id)
+            continue
+        if (
+            fact_id
+            and kind == "implementation"
+            and classification in {"", "evidence-known-not-implemented"}
+        ):
+            actionable[fact_id] = row
+    return actionable, research_like, external_ceilings, unresolved_historical
+
+
+def packet_priority(fact: dict[str, Any]) -> tuple[int, str]:
+    domain = str(fact.get("domain") or "")
+    rank = 0 if domain == "critical_state_transition" else 1
+    return rank, str(fact.get("id") or "")
+
+
+def build_packet(
+    fact: dict[str, Any],
+    *,
+    closure: dict[str, Any],
+    divergence: dict[str, Any],
+    truth_evidence_ids: set[str],
+    truth_evidence_hashes: set[str],
+    ceilings: list[str],
+) -> dict[str, Any]:
+    fact_id = str(fact["id"])
+    divergence_evidence = {
+        str(divergence.get("evidence_id") or "").strip(),
+        str(divergence.get("node_id") or "").strip(),
+    }
+    divergence_hashes = {
+        str(divergence.get("evidence_hash") or "").strip(),
+        str(divergence.get("sha256") or "").strip(),
+    }
+    evidence_ids = sorted(
+        {
+            f"closure-fact:{fact_id}",
+            *(item for item in truth_evidence_ids if item),
+            *(item for item in divergence_evidence if item),
+        }
+    )
+    evidence_hashes = sorted(
+        {
+            str(closure.get("facts_sha256") or ""),
+            *(item for item in truth_evidence_hashes if item),
+            *(item for item in divergence_hashes if item),
+        }
+        - {""}
+    )
+    claim = f"Implement bounded reconstruction for closure fact {fact_id}."
+    fingerprint_core = {
+        "fact_id": fact_id,
+        "claim": claim,
+        "evidence_ids": evidence_ids,
+        "file_scopes": scope_for_fact(fact),
+    }
+    fingerprint = hashlib.sha256(canonical_json(fingerprint_core).encode("utf-8")).hexdigest()
+    return {
+        "schema": "logres-reconstruction-autopilot-packet-v1",
+        "packet_id": f"AUTORECON-{fingerprint[:12].upper()}",
+        "packet_fingerprint": fingerprint,
+        "task_id": SOURCE_TASK,
+        "source_task_id": SOURCE_TASK,
+        "work_type": "implementation",
+        "claim": claim,
+        "source_fact": {
+            "id": fact_id,
+            "domain": fact.get("domain"),
+            "authority": fact.get("authority"),
+            "classification": fact.get("classification"),
+            "semantic_resolution": fact.get("semantic_resolution"),
+            "evidence": fact.get("evidence"),
+        },
+        "requested_claim_confidence": IMPLEMENTATION_CONFIDENCE,
+        "confidence_grade": IMPLEMENTATION_CONFIDENCE,
+        "evidence_ids": evidence_ids,
+        "evidence_hashes": evidence_hashes,
+        "file_scopes": scope_for_fact(fact),
+        "acceptance_tests": acceptance_tests_for_fact(fact),
+        "do_not_infer": do_not_infer_for_fact(fact, ceilings),
+        "rollback_conditions": [
+            "Rollback immediately if packet acceptance tests fail or diverge from cited evidence.",
+            "Rollback if implementation scope expands outside packet file_scopes.",
+            "If new historical ambiguity appears, stop and report BLOCKED_EVIDENCE.",
+        ],
+        "child_task_policy": {
+            "allow_research_children": False,
+            "allow_unblock_children": False,
+            "external_ceilings_terminal": True,
+        },
+        "automation": {
+            "create_task": False,
+            "write_code": False,
+            "commit": False,
+            "merge": False,
+            "deploy": False,
+            "modify_main": False,
+        },
+        "integration_authority": (
+            "Serialized integration to feat/logres-reconstruction remains authoritative."
+        ),
+    }
+
+
+def validate_packet(packet: dict[str, Any]) -> list[str]:
+    errors = []
+    if packet.get("schema") != "logres-reconstruction-autopilot-packet-v1":
+        errors.append("unsupported packet schema")
+    if packet.get("work_type") != "implementation":
+        errors.append("work_type must be implementation")
+    if packet.get("requested_claim_confidence") != IMPLEMENTATION_CONFIDENCE:
+        errors.append("requested confidence must be RECONSTRUCTED")
+    if str(packet.get("source_task_id") or "").startswith(RECURSIVE_PREFIXES):
+        errors.append("recursive AUTO-RE/UNBLOCK source task is forbidden")
+    source_fact = packet.get("source_fact") or {}
+    if source_fact.get("classification") != "evidence-known-not-implemented":
+        errors.append("source fact must be an evidence-known implementation gap")
+    authority = str(source_fact.get("authority") or "")
+    if not authority.startswith(STRONG_GLOBAL_AUTHORITY_PREFIXES):
+        errors.append("source authority is weaker than a Global truth-kernel predicate")
+    for field in (
+        "evidence_ids",
+        "evidence_hashes",
+        "file_scopes",
+        "acceptance_tests",
+        "do_not_infer",
+        "rollback_conditions",
+    ):
+        if not packet.get(field):
+            errors.append(f"missing required {field}")
+    policy = packet.get("child_task_policy") or {}
+    if policy.get("allow_research_children") or policy.get("allow_unblock_children"):
+        errors.append("recursive research/unblock child generation is forbidden")
+    automation = packet.get("automation") or {}
+    if any(bool(value) for value in automation.values()):
+        errors.append("automatic mutation is forbidden")
+    return errors
+
+
+def generate_packets(
+    closure: dict[str, Any],
+    truth: dict[str, Any],
+    differential: dict[str, Any],
+    *,
+    limit: int,
+) -> dict[str, Any]:
+    if limit < 1 or limit > HARD_PACKET_LIMIT:
+        raise AutopilotError(f"limit must be between 1 and {HARD_PACKET_LIMIT}")
+    assert_closure(closure)
+    truth_fact_ids, truth_evidence_ids, truth_evidence_hashes = extract_truth_refs(truth)
+    actionable, research_like, ceilings, unresolved_historical = classify_divergences(
+        differential_entries(differential)
+    )
+
+    selected: list[dict[str, Any]] = []
+    for fact in sorted(
+        [row for row in closure.get("facts", []) if isinstance(row, dict)],
+        key=packet_priority,
+    ):
+        fact_id = str(fact.get("id") or "")
+        if not fact_id or not fact_actionable(fact):
+            continue
+        if fact_id not in actionable:
+            continue
+        if truth_fact_ids and fact_id not in truth_fact_ids:
+            continue
+        if fact_id in research_like:
+            continue
+        selected.append(
+            build_packet(
+                fact,
+                closure=closure,
+                divergence=actionable[fact_id],
+                truth_evidence_ids=truth_evidence_ids,
+                truth_evidence_hashes=truth_evidence_hashes,
+                ceilings=ceilings,
+            )
+        )
+        if len(selected) >= limit:
+            break
+
+    packet_errors = {
+        packet.get("packet_id", str(index)): errors
+        for index, packet in enumerate(selected)
+        if (errors := validate_packet(packet))
+    }
+    if packet_errors:
+        raise AutopilotError(
+            "generated packet validation failed: " + canonical_json(packet_errors)
+        )
+
+    status = "READY" if selected else "NO_ACTIONABLE_GAPS"
+    if not selected and (ceilings or unresolved_historical):
+        status = "BLOCKED_EVIDENCE"
+    return {
+        "schema": "logres-reconstruction-autopilot-output-v1",
+        "task_id": SOURCE_TASK,
+        "status": status,
+        "closure_id": closure.get("closure_id"),
+        "closure_facts_sha256": closure.get("facts_sha256"),
+        "packets": selected,
+        "counts": {"packets": len(selected)},
+        "differential_summary": {
+            "actionable_gap_facts": sorted(actionable),
+            "research_or_unblock_facts": sorted(research_like),
+            "external_ceilings": sorted(set(ceilings)),
+            "unresolved_historical": bool(unresolved_historical),
+        },
+        "automation": {
+            "control_db_writes": False,
+            "task_creation": False,
+            "code_writes": False,
+            "commit": False,
+            "merge": False,
+            "deploy": False,
+            "modify_main": False,
+        },
+    }
+
+
+def generate_command(args: argparse.Namespace) -> int:
+    closure = load_json(args.closure)
+    truth = load_json(args.truth_kernel)
+    differential = load_json(args.differential)
+    output = generate_packets(
+        closure,
+        truth,
+        differential,
+        limit=args.limit,
+    )
+    text = json.dumps(output, indent=2, sort_keys=True) + "\n"
+    if args.output:
+        args.output.parent.mkdir(parents=True, exist_ok=True)
+        args.output.write_text(text)
+    print(text, end="")
+    return 0
+
+
+def validate_command(args: argparse.Namespace) -> int:
+    value = load_json(args.packet)
+    packets = value.get("packets")
+    if packets is None:
+        packets = [value]
+    if not isinstance(packets, list):
+        raise AutopilotError("packet input must be one packet object or include packets")
+    errors = {
+        str(packet.get("packet_id") or index): packet_errors
+        for index, packet in enumerate(packets)
+        if isinstance(packet, dict)
+        and (packet_errors := validate_packet(packet))
+    }
+    if errors:
+        print(json.dumps({"status": "REJECTED", "errors": errors}, indent=2, sort_keys=True))
+        return 2
+    print(json.dumps({"status": "PASS", "packets": len(packets)}, indent=2, sort_keys=True))
+    return 0
+
+
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(description=__doc__)
+    sub = parser.add_subparsers(dest="command", required=True)
+
+    generate = sub.add_parser("generate")
+    generate.add_argument("--closure", type=Path, required=True)
+    generate.add_argument("--truth-kernel", type=Path, required=True)
+    generate.add_argument("--differential", type=Path, required=True)
+    generate.add_argument("--output", type=Path)
+    generate.add_argument("--limit", type=int, default=12)
+    generate.set_defaults(func=generate_command)
+
+    validate = sub.add_parser("validate")
+    validate.add_argument("packet", type=Path)
+    validate.set_defaults(func=validate_command)
+    return parser
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = build_parser()
+    args = parser.parse_args(argv)
+    try:
+        return int(args.func(args))
+    except (AutopilotError, OSError, json.JSONDecodeError) as exc:
+        print(
+            json.dumps(
+                {
+                    "status": "REJECTED",
+                    "error": type(exc).__name__,
+                    "message": str(exc),
+                },
+                indent=2,
+                sort_keys=True,
+            )
+        )
+        return 2
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
