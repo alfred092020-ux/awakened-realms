@@ -19,6 +19,7 @@ class ScheduledJob:
     interval_seconds: int
     timeout_seconds: int
     background: bool = False
+    background_group: str | None = None
 
 
 def utc_now() -> str:
@@ -44,6 +45,7 @@ def default_jobs(root: Path) -> tuple[ScheduledJob, ...]:
             60,
             240,
             True,
+            "autonomy",
         ),
         ScheduledJob(
             "swarm",
@@ -63,11 +65,27 @@ def default_jobs(root: Path) -> tuple[ScheduledJob, ...]:
             ),
             300,
             180,
+            True,
+            "maintenance",
         ),
-        ScheduledJob("lead_snapshot", (str(b / "logres-lead-snapshot"),), 300, 180),
+        ScheduledJob(
+            "lead_snapshot",
+            (str(b / "logres-lead-snapshot"),),
+            300,
+            180,
+            True,
+            "maintenance",
+        ),
         ScheduledJob("code_index", (str(b / "logres-code-index"),), 300, 180),
         ScheduledJob("sync_health", (str(b / "logres-sync-health"), "--quiet"), 300, 180),
-        ScheduledJob("health_snapshot", (str(b / "logres-health-snapshot"),), 600, 120),
+        ScheduledJob(
+            "health_snapshot",
+            (str(b / "logres-health-snapshot"),),
+            600,
+            120,
+            True,
+            "maintenance",
+        ),
         ScheduledJob("control_backup", (str(b / "logres-control-backup"),), 600, 180),
         ScheduledJob("evidence_refresh", (str(b / "logres-evidence-refresh"),), 900, 600),
         ScheduledJob(
@@ -82,7 +100,14 @@ def default_jobs(root: Path) -> tuple[ScheduledJob, ...]:
             600,
             120,
         ),
-        ScheduledJob("maintenance", (str(b / "logres-maintain"),), 3600, 1200),
+        ScheduledJob(
+            "maintenance",
+            (str(b / "logres-maintain"),),
+            3600,
+            1200,
+            True,
+            "maintenance",
+        ),
     )
 
 
@@ -214,6 +239,25 @@ def should_run_job(
     # tick storm from bypassing the normal single-flight/autonomy cadence while
     # still allowing the next supervisor tick to react to newly queued work.
     return now_epoch - float(last) >= 10.0
+
+
+def background_lane_busy(
+    job: ScheduledJob,
+    jobs: tuple[ScheduledJob, ...],
+    state: dict,
+) -> bool:
+    if not job.background:
+        return False
+    group = job.background_group or job.name
+    for peer in jobs:
+        if peer.name == job.name or not peer.background:
+            continue
+        if (peer.background_group or peer.name) != group:
+            continue
+        peer_state = (state.get("last_runs") or {}).get(peer.name) or {}
+        if peer_state.get("running"):
+            return True
+    return False
 
 
 def append_log(root: Path, job: str, text: str) -> None:
@@ -511,6 +555,8 @@ def tick(
             now_epoch,
             integration_backlog=integration_backlog,
         ):
+            continue
+        if job.background and background_lane_busy(job, jobs, state):
             continue
         if job.background:
             result = launch_background_job(

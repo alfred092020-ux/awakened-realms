@@ -16,6 +16,7 @@ sys.path.insert(0, str(LIB_DIR))
 from logres_supervisor import (
     ScheduledJob,
     actionable_integration_backlog,
+    background_lane_busy,
     default_jobs,
     direct_child_pids,
     due,
@@ -59,8 +60,19 @@ class SupervisorTests(unittest.TestCase):
             }.issubset(names)
         )
         self.assertTrue(jobs["autonomy"].background)
-        self.assertFalse(jobs["swarm"].background)
-        self.assertFalse(jobs["maintenance"].background)
+        self.assertEqual("autonomy", jobs["autonomy"].background_group)
+        for name in ("autopilot", "lead_snapshot", "health_snapshot", "maintenance"):
+            self.assertTrue(jobs[name].background, name)
+            self.assertEqual("maintenance", jobs[name].background_group)
+        for name in (
+            "swarm",
+            "code_index",
+            "sync_health",
+            "control_backup",
+            "evidence_refresh",
+            "preview_reaper",
+        ):
+            self.assertFalse(jobs[name].background, name)
 
     def test_due_respects_interval(self):
         job = ScheduledJob("x", ("true",), 60, 10)
@@ -202,6 +214,95 @@ class SupervisorTests(unittest.TestCase):
             )
             self.assertEqual([["swarm", "tick"]], calls)
             self.assertEqual(1, len(popen.calls))
+
+    def test_housekeeping_lane_serializes_without_blocking_foreground(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            heartbeat = root / "heartbeat.json"
+            autonomy = ScheduledJob(
+                "autonomy",
+                ("autonomy", "cycle"),
+                60,
+                240,
+                True,
+                "autonomy",
+            )
+            first = ScheduledJob(
+                "health_snapshot",
+                ("health",),
+                600,
+                120,
+                True,
+                "maintenance",
+            )
+            second = ScheduledJob(
+                "maintenance",
+                ("maintain",),
+                3600,
+                1200,
+                True,
+                "maintenance",
+            )
+            quick = ScheduledJob("swarm", ("swarm", "tick"), 60, 10)
+            popen = FakePopen(pid=790)
+            foreground = []
+
+            def runner(argv, **kwargs):
+                foreground.append(list(argv))
+                return subprocess.CompletedProcess(argv, 0, "ok", "")
+
+            first_tick = tick(
+                root,
+                heartbeat,
+                jobs=(autonomy, first, second, quick),
+                runner=runner,
+                popen=popen,
+                now_epoch=100.0,
+                integration_backlog=1,
+            )
+            self.assertEqual(
+                ["autonomy", "health_snapshot", "swarm"],
+                first_tick["ran"],
+            )
+            self.assertEqual([["swarm", "tick"]], foreground)
+            self.assertEqual(2, len(popen.calls))
+            self.assertTrue(
+                background_lane_busy(
+                    second,
+                    (autonomy, first, second, quick),
+                    first_tick["state"],
+                )
+            )
+
+            def not_our_child(_pid, _flags):
+                raise ChildProcessError
+
+            second_tick = tick(
+                root,
+                heartbeat,
+                jobs=(autonomy, first, second, quick),
+                runner=runner,
+                popen=popen,
+                waitpid_fn=not_our_child,
+                pid_alive_fn=lambda _pid: True,
+                now_epoch=101.0,
+                integration_backlog=1,
+            )
+            self.assertEqual([], second_tick["ran"])
+            self.assertEqual(2, len(popen.calls))
+
+            third_tick = tick(
+                root,
+                heartbeat,
+                jobs=(autonomy, first, second, quick),
+                runner=runner,
+                popen=popen,
+                waitpid_fn=lambda pid, _flags: (pid, 0),
+                now_epoch=120.0,
+                integration_backlog=0,
+            )
+            self.assertEqual(["maintenance"], third_tick["ran"])
+            self.assertEqual(3, len(popen.calls))
 
     def test_running_background_autonomy_is_not_relaunched_after_restart(self):
         with tempfile.TemporaryDirectory() as td:
