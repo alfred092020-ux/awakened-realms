@@ -14,7 +14,13 @@ LIB_DIR = CONTROL_ROOT / "lib"
 sys.path.insert(0, str(LIB_DIR))
 
 from logres_copilot import SubprocessGitHubRunner
-from logres_copilot_router import copilot_eligibility, dispatch_task
+from logres_copilot_router import (
+    SubprocessCommandRunner,
+    active_copilot_jobs,
+    copilot_eligibility,
+    dispatch_task,
+    reconcile_copilot_job,
+)
 from logres_route_store import ensure_route_schema
 
 
@@ -62,6 +68,7 @@ def main() -> int:
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--task")
     parser.add_argument("--limit", type=int, default=1)
+    parser.add_argument("--reconcile-only", action="store_true")
     args = parser.parse_args()
 
     db_path = Path(os.environ.get("LOGRES_CONTROL_DB", str(DEFAULT_DB)))
@@ -97,12 +104,48 @@ def main() -> int:
             print(json.dumps({"dry_run": True, "candidates": rows}, indent=2))
         return 0
 
-    if not ids:
+    github = SubprocessGitHubRunner()
+    commands = SubprocessCommandRunner()
+    reconciled = []
+    for job in active_copilot_jobs(conn):
+        result = reconcile_copilot_job(
+            job,
+            gh_runner=github,
+            command_runner=commands,
+            current_integration_sha=sha,
+            conn=conn,
+        )
+        reconciled.append(
+            {
+                "task_id": result.task_id,
+                "route_job_id": result.route_job_id,
+                "branch": result.branch,
+                "candidate_sha": result.candidate_sha,
+                "state": result.state,
+                "revalidation_required": result.revalidation_required,
+            }
+        )
+
+    if args.reconcile_only or not dispatch_enabled:
         conn.close()
-        print(json.dumps({"dispatched": 0, "reason": "no READY tasks"}))
+        print(
+            json.dumps(
+                {
+                    "reconciled": reconciled,
+                    "dispatched": 0,
+                    "dispatch_enabled": dispatch_enabled,
+                    "reason": "reconcile-only" if args.reconcile_only else "dispatch disabled",
+                },
+                indent=2,
+            )
+        )
         return 0
 
-    github = SubprocessGitHubRunner()
+    if not ids:
+        conn.close()
+        print(json.dumps({"reconciled": reconciled, "dispatched": 0, "reason": "no READY tasks"}))
+        return 0
+
     results = []
     for task_id in ids:
         result = dispatch_task(conn, task_id, sha, config, github)
@@ -117,7 +160,12 @@ def main() -> int:
             }
         )
     conn.close()
-    print(json.dumps({"dispatched": len(results), "jobs": results}, indent=2))
+    print(
+        json.dumps(
+            {"reconciled": reconciled, "dispatched": len(results), "jobs": results},
+            indent=2,
+        )
+    )
     return 0
 
 
