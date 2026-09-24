@@ -24,6 +24,7 @@ from logres_autonomy import (
     latest_verified_preflight,
     load_config,
     load_state,
+    normalize_runtime_environment,
     parse_route_failures,
     record_failure,
     record_success,
@@ -31,6 +32,8 @@ from logres_autonomy import (
     resource_state,
 )
 
+
+normalize_runtime_environment()
 
 ROOT = Path(os.environ.get("LOGRES_ROOT", "/home/ubuntu/logres"))
 DB = Path(

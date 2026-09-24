@@ -10,6 +10,7 @@ import re
 import subprocess
 import sys
 import tempfile
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -107,6 +108,19 @@ def sha256_file(path: Path) -> str:
     return digest.hexdigest()
 
 
+def scheduler_recent(
+    path: Path,
+    *,
+    max_age_seconds: float = 180.0,
+    now_epoch: float | None = None,
+) -> tuple[bool, float | None]:
+    if not path.is_file():
+        return False, None
+    now_epoch = time.time() if now_epoch is None else now_epoch
+    age = max(0.0, now_epoch - path.stat().st_mtime)
+    return age <= max_age_seconds, age
+
+
 def atomic_json(path: Path, payload: dict) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     fd, temp_name = tempfile.mkstemp(
@@ -149,6 +163,9 @@ def deploy_runtime(
     stamp_path: Path,
     deploy_fn=None,
     runner=subprocess.run,
+    scheduler_log_path: Path | None = None,
+    scheduler_max_age_seconds: float = 180.0,
+    now_epoch: float | None = None,
 ) -> dict:
     sha = validate_integration_source(repo, sha, runner=runner)
     deploy_fn = deploy_fn or load_deploy_function(repo)
@@ -160,16 +177,6 @@ def deploy_runtime(
         raise RuntimeDeployError(
             f"control-plane manifest deployment failed: {exc}"
         ) from exc
-
-    cron = run_command(
-        [root / "bin" / "logres-autonomy-cron", "install"],
-        runner=runner,
-    )
-    if cron.returncode:
-        detail = (cron.stderr or cron.stdout or "").strip()
-        raise RuntimeDeployError(
-            f"managed cron reconciliation failed: {detail}"
-        )
 
     files = {}
     for item in deployments:
@@ -187,14 +194,53 @@ def deploy_runtime(
             )
         files[str(destination.relative_to(root))] = source_hash
 
+    cron = run_command(
+        [root / "bin" / "logres-autonomy-cron", "install"],
+        runner=runner,
+    )
+    cron_reconciled = cron.returncode == 0
+    cron_diagnostic = ""
+    scheduler_age_seconds = None
+    if not cron_reconciled:
+        cron_diagnostic = (
+            (cron.stderr or cron.stdout or "").strip()[:800]
+        )
+        scheduler_log = (
+            scheduler_log_path
+            if scheduler_log_path is not None
+            else root / "logs" / "autonomy-cron.log"
+        )
+        recent, scheduler_age_seconds = scheduler_recent(
+            scheduler_log,
+            max_age_seconds=scheduler_max_age_seconds,
+            now_epoch=now_epoch,
+        )
+        if not recent:
+            age_text = (
+                "missing"
+                if scheduler_age_seconds is None
+                else f"{scheduler_age_seconds:.1f}s"
+            )
+            raise RuntimeDeployError(
+                "managed cron reconciliation failed and autonomy "
+                f"scheduler is stale ({age_text}): {cron_diagnostic}"
+            )
+
     payload = {
-        "schema": 1,
+        "schema": 2,
         "integration_sha": sha,
         "deployed_at": datetime.now(timezone.utc).isoformat(
             timespec="seconds"
         ),
         "file_count": len(files),
         "files": files,
+        "cron_reconciled": cron_reconciled,
+        "cron_diagnostic": cron_diagnostic,
+        "scheduler_age_seconds": (
+            round(scheduler_age_seconds, 3)
+            if scheduler_age_seconds is not None
+            else None
+        ),
     }
     atomic_json(stamp_path, payload)
     return payload
@@ -218,10 +264,14 @@ def main() -> int:
     if args.json:
         print(json.dumps(payload, indent=2, sort_keys=True))
     else:
+        cron_state = (
+            "ok" if payload.get("cron_reconciled") else "degraded-live"
+        )
         print(
             "RUNTIME_DEPLOYED "
             f"sha={payload['integration_sha']} "
             f"files={payload['file_count']} "
+            f"cron={cron_state} "
             f"stamp={STAMP}"
         )
     return 0
