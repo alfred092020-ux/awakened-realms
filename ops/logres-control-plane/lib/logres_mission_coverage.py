@@ -221,8 +221,9 @@ def scan(conn,persist=False,manifest_path=None):
             completion=_content_status(manifest,obj["id"],refs,manifest_error)
             content_completion[completion.get("category_id") or obj["id"]]=completion
             if not completion["complete"]:
+                kind="DECLARED_CONTENT_GAP"
                 if state=="COMPLETE" or completion.get("error"):
-                    state,kind="UNCOVERED","DECLARED_CONTENT_GAP"
+                    state="UNCOVERED"
         item={"objective_id":obj["id"],"title":obj["title"],"definition_of_done":obj["definition_of_done"],
               "state":state,"gap_kind":kind,"references":refs}
         if completion is not None: item["content_completion"]=completion

@@ -44,6 +44,12 @@ class CoverageTests(unittest.TestCase):
   self.assertEqual(["millennium-tree-field"],summary["missing_ids"])
   self.assertEqual(["placeholder-map"],summary["undeclared_represented_ids"])
   self.assertEqual("DECLARED_CONTENT_GAP",r["gaps"][0]["gap_kind"])
+ def test_blocked_content_still_reports_declared_content_gap(self):
+  c=self.db(); self.add_leaf(c,"MAP_CONTENT","Maps")
+  self.add_task(c,"MAP_CONTENT",status="BLOCKED_EVIDENCE")
+  r=scan(c)
+  self.assertEqual("WAITING_EXTERNAL",r["gaps"][0]["state"])
+  self.assertEqual("DECLARED_CONTENT_GAP",r["gaps"][0]["gap_kind"])
  def test_content_category_reports_required_represented_and_bounded_counts(self):
   c=self.db(); self.add_leaf(c,"MAP_CONTENT","Maps")
   self.add_task(c,"MAP_CONTENT",note=self.coverage_note("maps_regions",represented=["millennium-tree-field"],ceiling=["millennium-tree-internal-map-id"]))
