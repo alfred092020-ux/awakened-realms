@@ -17,6 +17,8 @@ PRODUCTION_FILES = (
     "bin/logres-copilot-router",
     "bin/logres-doctor",
     "bin/logres-lead",
+    "bin/logres-lead-snapshot",
+    "bin/logres-lead-takeover",
     "bin/logres-route-reconcile",
     "bin/logres-verify-all-ref",
     "lib/logres_ai_common.py",

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
-ROOT=/home/ubuntu/logres
+ROOT="${LOGRES_ROOT:-/home/ubuntu/logres}"
 SNAP="$ROOT/control/LEAD_SNAPSHOT.txt"
 UPDATED="$ROOT/control/LEAD_SNAPSHOT.updated"
 
@@ -74,6 +74,10 @@ case "$cmd" in
     ;;
   routes)
     "$ROOT/bin/logres-route-reconcile" --status
+    ;;
+  takeover)
+    shift
+    "$ROOT/bin/logres-lead-takeover" "$@"
     ;;
   nexus)
     shift
@@ -160,7 +164,7 @@ case "$cmd" in
     "$ROOT/bin/logres-protocol" "$@"
     ;;
   *)
-    echo "usage: logres-lead {brief|refresh|json|health|verify-all|brain|ai|routes|nexus|queue|next|preflight|packet|allocate|claim|release|task|branch|search|find|symbol|ast|inspect|unpack|jadx|apktool|doctext|frame|capabilities|snapshot|container|py|duck|ramrun|native|decompile|protocol}" >&2
+    echo "usage: logres-lead {brief|refresh|json|health|verify-all|brain|ai|routes|takeover|nexus|queue|next|preflight|packet|allocate|claim|release|task|branch|search|find|symbol|ast|inspect|unpack|jadx|apktool|doctext|frame|capabilities|snapshot|container|py|duck|ramrun|native|decompile|protocol}" >&2
     exit 2
     ;;
 esac

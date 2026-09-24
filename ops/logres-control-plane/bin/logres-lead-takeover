@@ -1,0 +1,204 @@
+#!/usr/bin/env python3
+from __future__ import annotations
+import argparse, fcntl, json, os, sqlite3, subprocess, time
+from datetime import datetime, timezone
+from pathlib import Path
+
+ROOT=Path(os.environ.get("LOGRES_ROOT", "/home/ubuntu/logres"))
+DB=Path(os.environ.get("LOGRES_CONTROL_DB", str(ROOT/"control/control.sqlite")))
+BASE=Path(os.environ.get("LOGRES_REPO_ROOT", str(ROOT/"src/awakened-realms")))
+OUT=Path(os.environ.get("LOGRES_LEAD_TAKEOVER_OUT", str(ROOT/"control/LEAD_TAKEOVER.txt")))
+LOCK=Path(os.environ.get("LOGRES_INTEGRATION_LOCK", "/tmp/logres-integration.lock"))
+BRAIN=os.environ.get("LOGRES_BRAIN", str(ROOT/"bin/logres-brain"))
+INTEGRATION=os.environ.get("LOGRES_INTEGRATION_BRANCH", "feat/logres-reconstruction")
+
+ap=argparse.ArgumentParser(prog="logres-lead-takeover")
+ap.add_argument("--apply",action="store_true",
+                help="perform the failover; default is a non-mutating readiness check")
+args=ap.parse_args()
+
+def run(cmd):
+    return subprocess.run(cmd,text=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE,check=False)
+
+def sha(ref):
+    p=run(["git","-C",str(BASE),"rev-parse",ref])
+    return p.stdout.strip() if p.returncode==0 else None
+
+def branch_worktree(branch):
+    out=run(["git","-C",str(BASE),"worktree","list","--porcelain"]).stdout.splitlines()
+    cur=None
+    for line in out:
+        if line.startswith("worktree "):
+            cur=line.split(" ",1)[1]
+        elif line==f"branch refs/heads/{branch}" and cur:
+            return cur
+    return None
+
+def dirty_count(wt):
+    if not wt:
+        return 0
+    p=run(["git","-C",wt,"status","--porcelain","--untracked-files=all"])
+    if p.returncode:
+        return -1
+    return len([x for x in p.stdout.splitlines() if x.strip()])
+
+# Refuse takeover during an active integration mutation.
+LOCK.parent.mkdir(parents=True, exist_ok=True)
+OUT.parent.mkdir(parents=True, exist_ok=True)
+LOCK.touch(exist_ok=True)
+lf=LOCK.open("a+")
+try:
+    fcntl.flock(lf.fileno(),fcntl.LOCK_EX|fcntl.LOCK_NB)
+except BlockingIOError:
+    raise SystemExit("LEAD_TAKEOVER_BLOCKED: an integration operation currently holds the global lock")
+
+# Ensure local integration agrees with origin before creating the takeover packet.
+fetch=run(["git","-C",str(BASE),"fetch","--prune","origin"])
+if fetch.returncode:
+    raise SystemExit("LEAD_TAKEOVER_BLOCKED: git fetch origin failed")
+
+local=sha(INTEGRATION)
+remote=sha("origin/"+INTEGRATION)
+if not local or local!=remote:
+    raise SystemExit(
+        f"LEAD_TAKEOVER_BLOCKED: integration not synchronized "
+        f"local={(local or '-')[:12]} remote={(remote or '-')[:12]}"
+    )
+if run(["git","-C",str(BASE),"status","--porcelain"]).stdout.strip():
+    raise SystemExit("LEAD_TAKEOVER_BLOCKED: integration worktree is dirty")
+
+c=sqlite3.connect(DB,timeout=30)
+c.row_factory=sqlite3.Row
+c.execute("pragma journal_mode=WAL")
+now=time.time()
+stamp=datetime.now(timezone.utc).isoformat(timespec="seconds")
+
+row=c.execute("select value from meta where key='lead_generation'").fetchone()
+generation=(int(row["value"]) if row else 0)+1
+
+legacy=[]
+leases=list(c.execute("""select l.*,t.status,t.title,t.note task_note
+  from brain_task_leases l left join tasks t on t.id=l.task_id
+  where l.chat_id='lead'"""))
+
+if not args.apply:
+    print("LEAD_TAKEOVER_CHECK PASS")
+    print(f"integration={local}")
+    print(f"origin_integration={remote}")
+    print(f"legacy_lead_leases={len(leases)}")
+    for lease in leases:
+        branch=lease["branch"]
+        wt=branch_worktree(branch) if branch else None
+        dirty=dirty_count(wt)
+        head=sha(branch) if branch else None
+        print(
+            f"- task={lease['task_id']} branch={branch or '-'} "
+            f"head={(head or '-')[:12]} dirty={dirty} worktree={wt or '-'}"
+        )
+    print("apply=logres-lead-takeover --apply")
+    c.close()
+    raise SystemExit(0)
+
+for lease in leases:
+    task=lease["task_id"]
+    branch=lease["branch"]
+    wt=branch_worktree(branch) if branch else None
+    dirty=dirty_count(wt)
+    head=sha(branch) if branch else None
+
+    recovery=None
+    if dirty>0:
+        rp=run([str(ROOT/"bin/logres-stale-work-recover"),"--task",task,"--quiet"])
+        lines=[x for x in rp.stdout.splitlines() if x.strip()]
+        recovery=lines[-1] if lines else None
+
+    # Preserve the branch/worktree. The next non-Lead worker can resume it.
+    c.execute("delete from brain_task_leases where task_id=?",(task,))
+    c.execute("delete from claims where task_id=?",(task,))
+    c.execute("""update tasks
+      set status='READY',owner=null,branch=?,note=?,updated_at=?
+      where id=?""",
+      (branch,
+       f"Lead generation {generation} failover: legacy Lead development work requeued; "
+       f"branch preserved={branch or '-'} head={(head or '-')}. "
+       + (f"Recovery={recovery}." if recovery else f"dirty_count={dirty}."),
+       stamp,task))
+    legacy.append({
+        "task":task,"title":lease["title"],"branch":branch,"head":head,
+        "worktree":wt,"dirty":dirty,"recovery":recovery,
+    })
+
+c.execute("""insert into meta(key,value) values('lead_generation',?)
+  on conflict(key) do update set value=excluded.value""",(str(generation),))
+c.execute("""insert into meta(key,value) values('lead_takeover_at',?)
+  on conflict(key) do update set value=excluded.value""",(stamp,))
+c.execute("""update brain_members
+  set status='ACTIVE',last_seen_epoch=? where chat_id='lead'""",(now,))
+c.commit()
+c.close()
+
+# Refresh all canonical control-plane surfaces after the handoff.
+run([str(ROOT/"bin/logres-coordinator"),"reconcile"])
+run([str(ROOT/"bin/logres-merge-train"),"status"])
+run([str(ROOT/"bin/logres-integration-pager")])
+
+preflight=run([str(ROOT/"bin/logres-merge-preflight"),"status"]).stdout.strip()
+train=run([str(ROOT/"bin/logres-merge-train"),"status"]).stdout.strip()
+plan=run([str(ROOT/"bin/logres-coordinator"),"plan","--limit","10"]).stdout.strip()
+brain=run([BRAIN,"digest","--limit","15"]).stdout.strip()
+lead_action=(ROOT/"control/LEAD_ACTION.txt").read_text() if (ROOT/"control/LEAD_ACTION.txt").exists() else ""
+
+lines=[
+    "LOGRES LEAD TAKEOVER",
+    f"generation={generation}",
+    f"taken_over_at={stamp}",
+    f"integration={local}",
+    f"origin_integration={remote}",
+    f"legacy_lead_tasks_requeued={len(legacy)}",
+]
+for x in legacy:
+    lines.extend([
+        f"- task={x['task']} title={x['title']}",
+        f"  branch={x['branch'] or '-'} head={x['head'] or '-'} dirty={x['dirty']}",
+        f"  worktree={x['worktree'] or '-'} recovery={x['recovery'] or '-'}",
+    ])
+lines.extend([
+    "",
+    "=== LEAD PRIORITY ACTION ===",
+    lead_action.strip() or "none",
+    "",
+    "=== MERGE PREFLIGHT ===",
+    preflight or "none",
+    "",
+    "=== MERGE TRAIN ===",
+    train or "none",
+    "",
+    "=== COORDINATION PLAN ===",
+    plan or "none",
+    "",
+    "=== RECENT HIGH-SIGNAL BRAIN ===",
+    brain or "none",
+    "",
+    "NEW LEAD RULES",
+    "- Lead is integration/review reserve; do not pull development packets.",
+    "- Exact verified path: logres-merge-preflight -> logres-merge-train apply-preflight.",
+    "- Global integration lock + origin sync + immutable candidate SHA checks prevent duplicate/stale integration.",
+    "- Requeued legacy Lead work must be picked up by a non-Lead worker.",
+])
+OUT.write_text("\n".join(lines)+"\n")
+
+subprocess.run([
+    BRAIN,"post","system","ALL","DECISION","CRITICAL",
+    f"Lead failover generation {generation}",
+    "--body",
+    f"Logical Lead transferred to a fresh session. integration={local[:12]} "
+    f"legacy_dev_requeued={len(legacy)}. New Lead must remain integration/review-only. "
+    f"Takeover packet={OUT}",
+    "--artifact",str(OUT),
+    "--dedupe",f"lead-takeover:{generation}",
+],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,check=False)
+
+print(f"LEAD_TAKEOVER_READY generation={generation}")
+print(f"integration={local}")
+print(f"legacy_requeued={len(legacy)}")
+print(f"packet={OUT}")

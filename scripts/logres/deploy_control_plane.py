@@ -15,6 +15,8 @@ MANIFEST: dict[str, tuple[str, int]] = {
     "bin/logres-copilot-router": ("bin/logres-copilot-router", 0o755),
     "bin/logres-doctor": ("bin/logres-doctor", 0o700),
     "bin/logres-lead": ("bin/logres-lead", 0o700),
+    "bin/logres-lead-snapshot": ("bin/logres-lead-snapshot", 0o755),
+    "bin/logres-lead-takeover": ("bin/logres-lead-takeover", 0o755),
     "bin/logres-route-reconcile": ("bin/logres-route-reconcile", 0o755),
     "bin/logres-verify-all-ref": ("bin/logres-verify-all-ref", 0o755),
     "lib/logres_ai_common.py": ("lib/logres_ai_common.py", 0o600),
