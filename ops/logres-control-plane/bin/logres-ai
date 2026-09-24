@@ -9,6 +9,7 @@ from pathlib import Path
 from openai import OpenAI
 
 sys.path.insert(0, "/home/ubuntu/logres/lib")
+from logres_ai_common import brain_post_dedupe_key
 from logres_ai_runner import analyze_artifact, cli_summary
 
 DB = Path("/home/ubuntu/logres/control/control.sqlite")
@@ -60,7 +61,11 @@ if args.post_brain:
     if len(body) > 7600:
         body = body[:7600] + "..."
     subject = f"AI analysis: {Path(args.artifact).name} [{out['result']['confidence']}]"
-    cmd = [BRAIN, "post", "ai", "ALL", "EVIDENCE", "NORMAL", subject, "--body", body]
+    cmd = [
+        BRAIN, "post", "ai", "ALL", "EVIDENCE", "NORMAL", subject,
+        "--body", body,
+        "--dedupe", brain_post_dedupe_key(out["artifact_sha"], args.question),
+    ]
     if args.task:
         cmd += ["--task", args.task]
     subprocess.run(cmd, check=True)

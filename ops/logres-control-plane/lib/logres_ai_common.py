@@ -88,3 +88,8 @@ def validate_result(obj: dict) -> dict:
         if not isinstance(obj[key], list):
             raise ValueError(f"{key} must be a list")
     return obj
+
+
+def brain_post_dedupe_key(artifact_sha: str, question: str) -> str:
+    question_sha = hashlib.sha256(question.encode("utf-8")).hexdigest()
+    return f"ai-analysis:{artifact_sha}:{question_sha}"

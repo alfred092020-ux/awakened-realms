@@ -156,13 +156,30 @@ def seed_route(
     route_kind="AI",
     task_id="T1",
     external_ref=None,
+    source_event_id=None,
+    artifact_sha=None,
+    meta_json="{}",
+    base_sha=None,
 ):
     now = "2026-09-23T19:00:00-07:00"
     cursor = conn.execute(
         """insert into route_jobs(
-             dedupe_key,task_id,route_kind,state,external_ref,meta_json,created_at,updated_at
-           ) values(?,?,?,?,?,'{}',?,?)""",
-        (dedupe_key, task_id, route_kind, state, external_ref, now, now),
+             dedupe_key,source_event_id,task_id,route_kind,state,artifact_sha,
+             base_sha,external_ref,meta_json,created_at,updated_at
+           ) values(?,?,?,?,?,?,?,?,?,?,?)""",
+        (
+            dedupe_key,
+            source_event_id,
+            task_id,
+            route_kind,
+            state,
+            artifact_sha,
+            base_sha,
+            external_ref,
+            meta_json,
+            now,
+            now,
+        ),
     )
     conn.commit()
     return int(cursor.lastrowid)

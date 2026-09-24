@@ -172,6 +172,31 @@ class SubprocessGitHubRunner:
         )
         return json.loads(result.stdout or "[]")
 
+    def search_issue(self, task_id: str, repo: str = DEFAULT_REPO) -> dict | None:
+        result = subprocess.run(
+            [
+                "gh", "issue", "list",
+                "--repo", repo,
+                "--state", "open",
+                "--search", f"{task_id} in:title",
+                "--limit", "20",
+                "--json", "number,title,body,state",
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        rows = json.loads(result.stdout or "[]")
+        title_token = f"[Copilot] {task_id}:"
+        body_token = f"Task ID: {task_id}"
+        matches = [
+            row
+            for row in rows
+            if title_token in str(row.get("title") or "")
+            or body_token in str(row.get("body") or "")
+        ]
+        return matches[0] if len(matches) == 1 else None
+
     def assign_copilot(self, repo: str, issue_number: int, payload: dict) -> None:
         with tempfile.NamedTemporaryFile("w", encoding="utf-8", delete=False) as handle:
             json.dump(payload, handle)

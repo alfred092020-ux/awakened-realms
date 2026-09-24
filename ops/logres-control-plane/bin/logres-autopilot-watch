@@ -115,6 +115,24 @@ subprocess.run(["/home/ubuntu/logres/bin/logres-blocker-router"],
                stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,check=False)
 subprocess.run(["/home/ubuntu/logres/bin/logres-coordinator","reconcile"],
                stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,check=False)
+
+# The existing five-minute cron is the single periodic autoflow trigger.
+# Each specialist helper also gets its own non-blocking flock so a slow cycle
+# cannot overlap the next invocation.
+lock_dir=Path("/home/ubuntu/logres/control/locks")
+lock_dir.mkdir(parents=True,exist_ok=True)
+def run_locked_helper(name,*args):
+    return subprocess.run(
+        [
+            "flock","-n",str(lock_dir/f"{name}.lock"),
+            f"/home/ubuntu/logres/bin/{name}",*args,
+        ],
+        stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,check=False,
+    )
+
+run_locked_helper("logres-route-reconcile")
+run_locked_helper("logres-ai-router")
+run_locked_helper("logres-copilot-router")
 subprocess.run(["/home/ubuntu/logres/bin/logres-autoflow-plan"],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,check=False)
 
 # If the worker pool has spare capacity, surface only the scheduler's mutually
