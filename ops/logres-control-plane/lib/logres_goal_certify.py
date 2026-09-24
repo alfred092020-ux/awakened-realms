@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from logres_goal_contract import evaluate_milestone
+from logres_goal_contract import evaluate_milestone, resolve_device_proof
 from logres_mission_coverage import completion_manifest_report
 
 
@@ -61,6 +61,37 @@ def _artifact_hashes(
                 "criterion_id": str(criterion["id"]),
                 "path": str(path),
                 "sha256": digest,
+            }
+        )
+    return out
+
+
+def _device_proof_rows(
+    conn: sqlite3.Connection,
+    contracts: dict[str, Any],
+    milestone_id: str,
+    *,
+    integration_sha: str,
+    root: Path,
+) -> list[dict[str, Any]]:
+    out: list[dict[str, Any]] = []
+    milestone = contracts["milestones"][milestone_id]
+    for criterion in milestone["criteria"]:
+        check = criterion["check"]
+        if check.get("type") != "device_proof":
+            continue
+        evidence, _reason = resolve_device_proof(
+            conn,
+            check,
+            integration_sha=integration_sha,
+            root=root,
+        )
+        if evidence is None:
+            continue
+        out.append(
+            {
+                "criterion_id": str(criterion["id"]),
+                **evidence,
             }
         )
     return out
@@ -141,6 +172,13 @@ def build_certificate(
             contracts, milestone_id, root
         ),
         "verification_rows": _verification_rows(conn, integration_sha),
+        "device_proof_rows": _device_proof_rows(
+            conn,
+            contracts,
+            milestone_id,
+            integration_sha=integration_sha,
+            root=root,
+        ),
         "open_regression_count": open_regressions,
         "project_completion_scope": content_scope_report,
         "completion_claim": (

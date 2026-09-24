@@ -20,6 +20,7 @@ SUPPORTED_CHECKS = {
     "dependency_state",
     "evidence_state",
     "external_manual",
+    "device_proof",
 }
 PASS_TASK_STATES = {"DONE", "RESOLVED"}
 TERMINAL_TASK_STATES = {"DONE", "RESOLVED", "SUPERSEDED", "CANCELLED"}
@@ -125,6 +126,19 @@ def validate_contracts(payload: dict[str, Any]) -> None:
                     f"{milestone_id}/{criterion_id}: "
                     "integration_required must be boolean"
                 )
+            if check_type == "device_proof":
+                checkpoint = str(check.get("checkpoint") or "").strip()
+                if not checkpoint:
+                    raise ValueError(
+                        f"{milestone_id}/{criterion_id}: "
+                        "device_proof checkpoint is required"
+                    )
+                wanted_status = str(check.get("status") or "PASS").strip()
+                if not wanted_status:
+                    raise ValueError(
+                        f"{milestone_id}/{criterion_id}: "
+                        "device_proof status must be non-empty"
+                    )
             template = item.get("task_template")
             if template is not None:
                 _validate_task_template(milestone_id, criterion_id, template)
@@ -453,6 +467,156 @@ def _evaluate_external_manual(
     )
 
 
+def _table_exists(
+    conn: sqlite3.Connection,
+    name: str,
+) -> bool:
+    return (
+        conn.execute(
+            "select 1 from sqlite_master where type='table' and name=?",
+            (name,),
+        ).fetchone()
+        is not None
+    )
+
+
+def resolve_device_proof(
+    conn: sqlite3.Connection,
+    check: dict[str, Any],
+    *,
+    integration_sha: str,
+    root: Path,
+) -> tuple[dict[str, Any] | None, str]:
+    checkpoint = str(check.get("checkpoint") or "").strip()
+    wanted_status = str(check.get("status") or "PASS").strip()
+
+    if not checkpoint:
+        return None, "device proof checkpoint is missing"
+    if not _table_exists(conn, "device_proofs"):
+        return None, "device_proofs table does not exist"
+
+    row = conn.execute(
+        """select id,sha,apk_sha256,checkpoint,status,artifact_path,
+                  note,created_at,created_epoch
+             from device_proofs
+            where sha=? and checkpoint=?
+            order by created_epoch desc,id desc
+            limit 1""",
+        (integration_sha, checkpoint),
+    ).fetchone()
+
+    if row is None:
+        return (
+            None,
+            "no device proof exists for exact current integration SHA "
+            f"{integration_sha} checkpoint={checkpoint}",
+        )
+
+    status = str(row[4] or "")
+    if status != wanted_status:
+        return (
+            None,
+            f"current-SHA device proof status={status or 'MISSING'}; "
+            f"required {wanted_status}",
+        )
+
+    raw_artifact = str(row[5] or "").strip()
+    if not raw_artifact:
+        return None, "current-SHA device proof has no artifact_path"
+
+    raw_path = Path(raw_artifact)
+    artifact_path = raw_path if raw_path.is_absolute() else root / raw_path
+    if not artifact_path.is_file():
+        return None, f"device proof artifact missing: {artifact_path}"
+
+    try:
+        payload = json.loads(artifact_path.read_text())
+    except (OSError, json.JSONDecodeError) as exc:
+        return None, f"device proof artifact is unreadable JSON: {exc}"
+    if not isinstance(payload, dict):
+        return None, "device proof artifact must be a JSON object"
+
+    embedded_sha = str(
+        payload.get("canonical_sha")
+        or payload.get("git_sha")
+        or ""
+    ).strip()
+    if not embedded_sha:
+        return None, "device proof artifact does not declare canonical_sha/git_sha"
+    if embedded_sha != integration_sha:
+        return (
+            None,
+            "device proof artifact SHA mismatch: "
+            f"artifact={embedded_sha} current={integration_sha}",
+        )
+
+    artifact_checkpoint = str(payload.get("checkpoint") or "").strip()
+    if artifact_checkpoint and artifact_checkpoint != checkpoint:
+        return (
+            None,
+            "device proof artifact checkpoint mismatch: "
+            f"artifact={artifact_checkpoint} required={checkpoint}",
+        )
+
+    row_apk_sha = str(row[2] or "").strip() or None
+    artifact_apk_sha = None
+    raw_apk = payload.get("apk")
+    if isinstance(raw_apk, dict):
+        artifact_apk_sha = str(raw_apk.get("sha256") or "").strip() or None
+    if artifact_apk_sha is None:
+        artifact_apk_sha = str(payload.get("apk_sha256") or "").strip() or None
+
+    if (
+        row_apk_sha is not None
+        and artifact_apk_sha is not None
+        and row_apk_sha != artifact_apk_sha
+    ):
+        return (
+            None,
+            "device proof APK SHA mismatch between DB row and artifact",
+        )
+
+    artifact_sha256 = hashlib.sha256(artifact_path.read_bytes()).hexdigest()
+    evidence = {
+        "id": int(row[0]),
+        "sha": str(row[1]),
+        "apk_sha256": row_apk_sha,
+        "checkpoint": str(row[3]),
+        "status": status,
+        "artifact_path": str(artifact_path),
+        "artifact_sha256": artifact_sha256,
+        "artifact_embedded_sha": embedded_sha,
+        "artifact_checkpoint": artifact_checkpoint or None,
+        "artifact_apk_sha256": artifact_apk_sha,
+        "note": str(row[6] or ""),
+        "created_at": str(row[7] or ""),
+        "created_epoch": float(row[8]),
+    }
+    return evidence, (
+        f"device proof id={evidence['id']} status={status} "
+        f"sha={integration_sha} checkpoint={checkpoint} "
+        f"artifact_sha256={artifact_sha256}"
+    )
+
+
+def _evaluate_device_proof(
+    conn: sqlite3.Connection,
+    criterion: dict[str, Any],
+    *,
+    integration_sha: str,
+    root: Path,
+) -> tuple[str, bool, str, str | None]:
+    evidence, reason = resolve_device_proof(
+        conn,
+        criterion["check"],
+        integration_sha=integration_sha,
+        root=root,
+    )
+    if evidence is None:
+        return "BLOCKED_EXTERNAL", False, reason, None
+    return "PASS", True, reason, None
+
+
 def evaluate_criterion(
     conn: sqlite3.Connection,
     criterion: dict[str, Any],
@@ -480,6 +644,13 @@ def evaluate_criterion(
         result = _evaluate_evidence_state(conn, criterion)
     elif check_type == "external_manual":
         result = _evaluate_external_manual(conn, criterion)
+    elif check_type == "device_proof":
+        result = _evaluate_device_proof(
+            conn,
+            criterion,
+            integration_sha=integration_sha,
+            root=root,
+        )
     else:
         raise ValueError(f"unsupported criterion check: {check_type}")
 
