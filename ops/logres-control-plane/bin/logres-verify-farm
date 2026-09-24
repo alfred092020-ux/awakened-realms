@@ -16,7 +16,13 @@ TEST_LOG="/home/ubuntu/logres/logs/verify-farm-$STAMP-test.log"
 E2E_LOG="/home/ubuntu/logres/logs/verify-farm-$STAMP-e2e.log"
 BEHAVIOR_LOG="/home/ubuntu/logres/logs/verify-farm-$STAMP-behavior.log"
 REMOTE_TEST_LOG="/home/ubuntu/logres/logs/verify-farm-$STAMP-remote-test.log"
+VISUAL_TRUTH_MERGE_LOG="/home/ubuntu/logres/logs/verify-farm-$STAMP-visual-truth-merge.log"
 CACHE_JSON="/tmp/logres-verify-cache-$STAMP.json"
+VISUAL_TRUTH_DB="$ROOT/verify-farm-$STAMP-visual-truth.sqlite"
+VISUAL_TRUTH_WRAPPER="$ROOT/verify-farm-$STAMP-visual-truth-recorder"
+VISUAL_TRUTH_REAL_BIN="${LOGRES_VISUAL_TRUTH_BIN:-/home/ubuntu/logres/bin/logres-visual-truth}"
+CANONICAL_CONTROL_DB="${LOGRES_CANONICAL_CONTROL_DB:-/home/ubuntu/logres/control/control.sqlite}"
+VISUAL_TRUTH_MERGE_TIMEOUT_MS="${LOGRES_VISUAL_TRUTH_MERGE_TIMEOUT_MS:-4000}"
 START=$(date +%s)
 SHA=unknown
 VERIFY_PATH="local-test+local-build-e2e"
@@ -175,7 +181,7 @@ cleanup() {
   trap - EXIT INT TERM
   git -C "$BASE" worktree remove --force "$TEST_WT" >/dev/null 2>&1 || true
   git -C "$BASE" worktree remove --force "$E2E_WT" >/dev/null 2>&1 || true
-  rm -f "/tmp/logres-remote-pool-health-$STAMP.json" "$CACHE_JSON"
+  rm -f     "/tmp/logres-remote-pool-health-$STAMP.json"     "$CACHE_JSON"     "$VISUAL_TRUTH_DB"     "$VISUAL_TRUTH_DB-shm"     "$VISUAL_TRUTH_DB-wal"     "$VISUAL_TRUTH_WRAPPER"
   dur=$(( $(date +%s)-START ))
   status=FAIL; [[ $rc -eq 0 ]] && status=PASS
   "$CONTROL" record-verify "$REF" "$SHA" full-e2e "$status" "$dur"     "verify-farm:$VERIFY_PATH+$E2E_VERIFY_TAG" >/dev/null 2>&1 || true
@@ -193,6 +199,48 @@ prepare_deps() {
   else
     (cd "$wt" && npm ci --prefer-offline --no-audit --no-fund)
   fi
+}
+
+initialize_visual_truth_isolation() {
+  [[ -x "$VISUAL_TRUTH_REAL_BIN" ]] || {
+    echo "VERIFY_FARM visual truth recorder missing: $VISUAL_TRUTH_REAL_BIN" >&2
+    return 1
+  }
+  [[ "$VISUAL_TRUTH_DB" != "$CANONICAL_CONTROL_DB" ]] || {
+    echo "VERIFY_FARM isolated visual truth DB must differ from canonical control DB" >&2
+    return 1
+  }
+
+  rm -f     "$VISUAL_TRUTH_DB"     "$VISUAL_TRUTH_DB-shm"     "$VISUAL_TRUTH_DB-wal"     "$VISUAL_TRUTH_WRAPPER"
+
+  LOGRES_CONTROL_DB="$VISUAL_TRUTH_DB"     "$VISUAL_TRUTH_REAL_BIN" init >/dev/null
+
+  [[ -s "$VISUAL_TRUTH_DB" ]] || {
+    echo "VERIFY_FARM failed to initialize isolated visual truth DB: $VISUAL_TRUTH_DB" >&2
+    return 1
+  }
+
+  {
+    printf '%s
+' '#!/usr/bin/env bash'
+    printf '%s
+' 'set -euo pipefail'
+    printf 'export LOGRES_CONTROL_DB=%q
+' "$VISUAL_TRUTH_DB"
+    printf 'exec %q "$@"
+' "$VISUAL_TRUTH_REAL_BIN"
+  } >"$VISUAL_TRUTH_WRAPPER"
+  chmod 700 "$VISUAL_TRUTH_WRAPPER"
+}
+
+merge_visual_truth_isolation() {
+  local merger="$E2E_WT/scripts/logres/merge_visual_truth_records.py"
+  [[ -f "$merger" ]] || {
+    echo "VERIFY_FARM visual truth merger missing from exact candidate SHA: $merger" >&2
+    return 1
+  }
+
+  python3 "$merger"     --source "$VISUAL_TRUTH_DB"     --target "$CANONICAL_CONTROL_DB"     --busy-timeout-ms "$VISUAL_TRUTH_MERGE_TIMEOUT_MS"     >"$VISUAL_TRUTH_MERGE_LOG" 2>&1
 }
 
 hydrate() {
@@ -260,11 +308,13 @@ s=s.replace("--port 4174",f"--port {port}")
 p.write_text(s)
 PY
 
+initialize_visual_truth_isolation
+
 export PLAYWRIGHT_BROWSERS_PATH=/home/ubuntu/logres/cache/playwright
 export LOGRES_VERIFY_SHA="$SHA"
 export LOGRES_RECORD_VISUAL_TRUTH=1
 export LOGRES_REQUIRE_VISUAL_TRUTH_RECORD=1
-export LOGRES_VISUAL_TRUTH_BIN="${LOGRES_VISUAL_TRUTH_BIN:-/home/ubuntu/logres/bin/logres-visual-truth}"
+export LOGRES_VISUAL_TRUTH_BIN="$VISUAL_TRUTH_WRAPPER"
 export LOGRES_BEHAVIOR_TRACE_OUT="$E2E_WT/.logres-behavior-trace.json"
 export LOGRES_BEHAVIOR_TRACE_BIN="${LOGRES_BEHAVIOR_TRACE_BIN:-/home/ubuntu/logres/bin/logres-behavior-trace}"
 (
@@ -347,8 +397,17 @@ if (( test_rc != 0 || e2e_rc != 0 || behavior_rc != 0 )); then
   exit 1
 fi
 
+if ! merge_visual_truth_isolation; then
+  echo "VERIFY_FARM FAIL visual truth merge failed closed sha=${SHA:0:12}" >&2
+  echo "--- visual truth merge tail ---" >&2
+  tail -120 "$VISUAL_TRUTH_MERGE_LOG" >&2 || true
+  /home/ubuntu/logres/bin/logres-regression-capture     --kind candidate-verify     --ref "$REF"     --sha "$SHA"     --summary "visual-truth isolated merge failed after successful E2E"     --log "$VISUAL_TRUTH_MERGE_LOG" >/dev/null 2>&1 || true
+  exit 1
+fi
+
 dur=$(( $(date +%s)-START ))
 echo "VERIFY_FARM PASS ref=$REF sha=$SHA duration=${dur}s path=$VERIFY_PATH+$E2E_VERIFY_TAG+behavior-truth"
 echo "test_log=$TEST_LOG"
 echo "e2e_log=$E2E_LOG"
 echo "behavior_log=$BEHAVIOR_LOG"
+echo "visual_truth_merge_log=$VISUAL_TRUTH_MERGE_LOG"

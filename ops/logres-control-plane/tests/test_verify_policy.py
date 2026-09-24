@@ -204,6 +204,76 @@ class VerifyFarmE2EPolicyTests(unittest.TestCase):
                     recorder="/bin/false",
                 )
 
+    def test_visual_truth_recorder_is_isolated_from_canonical_control_db(self):
+        text = SCRIPT.read_text()
+        self.assertIn(
+            'VISUAL_TRUTH_DB="$ROOT/verify-farm-$STAMP-visual-truth.sqlite"',
+            text,
+        )
+        self.assertIn(
+            'CANONICAL_CONTROL_DB="${LOGRES_CANONICAL_CONTROL_DB:-/home/ubuntu/logres/control/control.sqlite}"',
+            text,
+        )
+        self.assertIn(
+            'LOGRES_CONTROL_DB="$VISUAL_TRUTH_DB" \
+    "$VISUAL_TRUTH_REAL_BIN" init',
+            text,
+        )
+        self.assertIn(
+            'export LOGRES_VISUAL_TRUTH_BIN="$VISUAL_TRUTH_WRAPPER"',
+            text,
+        )
+        self.assertIn(
+            """printf 'export LOGRES_CONTROL_DB=%q\n' "$VISUAL_TRUTH_DB" """.strip(),
+            text,
+        )
+        self.assertNotIn(
+            'export LOGRES_CONTROL_DB="$CANONICAL_CONTROL_DB"',
+            text,
+        )
+
+    def test_isolated_truth_merge_occurs_only_after_successful_e2e(self):
+        text = SCRIPT.read_text()
+        wait_index = text.index('wait "$e2e_pid" || e2e_rc=$?')
+        behavior_index = text.index('behavior_rc=0')
+        failure_index = text.index(
+            'if (( test_rc != 0 || e2e_rc != 0 || behavior_rc != 0 )); then'
+        )
+        merge_index = text.index('if ! merge_visual_truth_isolation; then')
+        pass_index = text.index('VERIFY_FARM PASS ref=')
+        self.assertLess(wait_index, behavior_index)
+        self.assertLess(behavior_index, failure_index)
+        self.assertLess(failure_index, merge_index)
+        self.assertLess(merge_index, pass_index)
+        self.assertIn('--source "$VISUAL_TRUTH_DB"', text)
+        self.assertIn('--target "$CANONICAL_CONTROL_DB"', text)
+        self.assertIn(
+            '--busy-timeout-ms "$VISUAL_TRUTH_MERGE_TIMEOUT_MS"',
+            text,
+        )
+
+    def test_visual_truth_merge_failure_fails_verification_closed(self):
+        text = SCRIPT.read_text()
+        self.assertIn(
+            'VERIFY_FARM FAIL visual truth merge failed closed',
+            text,
+        )
+        merge_start = text.index(
+            'if ! merge_visual_truth_isolation; then'
+        )
+        fail_block = text[
+            merge_start:
+            text.index(
+                'dur=$(( $(date +%s)-START ))',
+                merge_start,
+            )
+        ]
+        self.assertIn('exit 1', fail_block)
+        self.assertIn(
+            'visual_truth_merge_log=$VISUAL_TRUTH_MERGE_LOG',
+            text,
+        )
+
     def test_structural_truth_records_review_or_fail_never_pass(self):
         module = load_visual_verifier()
         for passed, expected in ((True, "REVIEW"), (False, "FAIL")):
