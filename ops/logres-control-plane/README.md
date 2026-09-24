@@ -150,3 +150,21 @@ logres-supervisor status --json
 logres-supervisor ensure
 logres-supervisor tick
 ```
+
+## Adaptive resource broker
+
+`logres-resource-broker` is the placement layer between the task optimizer and the available execution engines. It keeps authority and provenance policy separate from compute choice.
+
+For exact-SHA verification, the broker scores the Heavy and Light UpCloud workers using live reachability, free slots, CPU, available memory, observed success rate, and script-specific median runtime. New remote results persist the npm script that produced them, so placement improves from real workload history instead of static machine labels. Legacy results remain a weak role-level prior.
+
+`logres-verify-farm` now asks the remote pool for `auto` placement. The selected machine may change as capacity and measured performance change. Local private-hydrated build/E2E remains authoritative, and any remote failure still falls back to the local unit-test lane. Remote workers retain no merge/deploy/push authority.
+
+The broker also exposes bounded plans for research and implementation. Safe research prefers the budget-gated OpenAI lane, scoped implementation prefers Copilot, and any task whose evidence policy is private/local-only is forced to the local lane.
+
+Useful commands:
+
+```bash
+logres-resource-broker remote-role test --json
+logres-resource-broker plan --workload verification --script test
+logres-resource-broker task GJP-FUNC-MATCH-001
+```

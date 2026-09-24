@@ -15,6 +15,7 @@ sys.path.insert(0, str(CONTROL_ROOT / "lib"))
 from logres_ai_runner import automatic_api_allowed, budget_state
 from logres_knowledge import graph_stats, refresh_graph
 from logres_optimizer import record_swarm_observations
+from logres_resource_broker import infer_task_workload, plan_workload
 from logres_swarm import (
     acquire_task,
     available_worker_ids,
@@ -23,6 +24,7 @@ from logres_swarm import (
     load_config,
     mark_job_running,
     prior_failures,
+    ready_tasks,
     reconcile_jobs,
     register_worker,
     select_research_tasks,
@@ -240,6 +242,39 @@ def dispatch_research(
     return dispatched
 
 
+def placement_hints(
+    conn: sqlite3.Connection,
+    task_ids: list[str],
+) -> list[dict]:
+    hints = []
+    for task_id in task_ids[:8]:
+        try:
+            workload, sensitivity = infer_task_workload(conn, task_id)
+            plan = plan_workload(
+                workload=workload,
+                sensitivity=sensitivity,
+            )
+        except Exception as exc:
+            hints.append(
+                {
+                    "task_id": task_id,
+                    "selected_lane": None,
+                    "error": f"{type(exc).__name__}: {exc}",
+                }
+            )
+            continue
+        hints.append(
+            {
+                "task_id": task_id,
+                "workload": workload,
+                "sensitivity": sensitivity,
+                "selected_lane": plan.selected_lane,
+                "policy": plan.policy,
+            }
+        )
+    return hints
+
+
 def dispatch_copilot(limit: int) -> dict:
     if limit <= 0:
         return {"dispatched": 0, "jobs": []}
@@ -317,6 +352,10 @@ def tick(dry_run: bool = False) -> dict:
                 before.free_slots,
             )
         ]
+        payload["placement_hints"] = placement_hints(
+            conn,
+            [task["id"] for task in ready_tasks(conn)],
+        )
         payload["after"] = before.__dict__
         conn.close()
         return payload
@@ -369,6 +408,10 @@ def main() -> int:
         record_swarm_observations(conn)
         out = status_dict(conn, cfg)
         out["knowledge_graph"] = graph_stats(conn)
+        out["placement_hints"] = placement_hints(
+            conn,
+            [item["task_id"] for item in out.get("ready", [])],
+        )
         conn.close()
         print(json.dumps(out, indent=2, sort_keys=True))
         return 0
