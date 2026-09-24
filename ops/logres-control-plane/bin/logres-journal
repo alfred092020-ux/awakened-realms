@@ -1,26 +1,193 @@
 #!/usr/bin/env python3
-import argparse, json, os, sqlite3, sys
+import argparse
+import json
+import os
+import sqlite3
+import sys
 from pathlib import Path
-ROOT=Path(os.environ.get("LOGRES_ROOT","/home/ubuntu/logres"))
-sys.path.insert(0,str(Path(__file__).resolve().parents[1]/"lib"))
-from logres_journal import append_event, add_decision, decisions, entity_history, tail
-DB=Path(os.environ.get("LOGRES_CONTROL_DB",ROOT/"control/control.sqlite"))
+
+ROOT = Path(os.environ.get("LOGRES_ROOT", "/home/ubuntu/logres"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "lib"))
+from logres_journal import (
+    add_decision,
+    append_event,
+    decisions,
+    entity_history,
+    export_chat,
+    ingest_jsonl,
+    list_chats,
+    open_chat,
+    search_chat,
+    show_chat,
+    tail,
+)
+
+DB = Path(os.environ.get("LOGRES_CONTROL_DB", ROOT / "control/control.sqlite"))
+
+
 def conn():
-    c=sqlite3.connect(DB,timeout=30); c.row_factory=sqlite3.Row; c.execute("pragma busy_timeout=30000"); return c
+    DB.parent.mkdir(parents=True, exist_ok=True)
+    c = sqlite3.connect(DB, timeout=30)
+    c.row_factory = sqlite3.Row
+    c.execute("pragma busy_timeout=30000")
+    return c
+
+
+def _json_object(value: str) -> dict:
+    parsed = json.loads(value)
+    if not isinstance(parsed, dict):
+        raise argparse.ArgumentTypeError("value must decode to a JSON object")
+    return parsed
+
+
 def main():
-    p=argparse.ArgumentParser(prog="logres-journal"); s=p.add_subparsers(dest="cmd",required=True)
-    a=s.add_parser("append"); a.add_argument("actor"); a.add_argument("entity_type"); a.add_argument("entity_id"); a.add_argument("action"); a.add_argument("--cause",default=""); a.add_argument("--sha"); a.add_argument("--artifact"); a.add_argument("--payload",default="{}"); a.add_argument("--dedupe")
-    t=s.add_parser("tail"); t.add_argument("--limit",type=int,default=50)
-    h=s.add_parser("entity"); h.add_argument("entity_type"); h.add_argument("entity_id")
-    d=s.add_parser("decision"); d.add_argument("actor"); d.add_argument("scope"); d.add_argument("subject"); d.add_argument("selected"); d.add_argument("--why",required=True); d.add_argument("--alternative",action="append",default=[]); d.add_argument("--evidence",action="append",default=[]); d.add_argument("--expected",default=""); d.add_argument("--task"); d.add_argument("--sha")
-    dl=s.add_parser("decisions"); dl.add_argument("--scope")
-    x=p.parse_args(); c=conn()
+    p = argparse.ArgumentParser(prog="logres-journal")
+    s = p.add_subparsers(dest="cmd", required=True)
+
+    a = s.add_parser("append")
+    a.add_argument("actor")
+    a.add_argument("entity_type")
+    a.add_argument("entity_id")
+    a.add_argument("action")
+    a.add_argument("--cause", default="")
+    a.add_argument("--sha")
+    a.add_argument("--artifact")
+    a.add_argument("--payload", default="{}")
+    a.add_argument("--dedupe")
+
+    t = s.add_parser("tail")
+    t.add_argument("--limit", type=int, default=50)
+
+    h = s.add_parser("entity")
+    h.add_argument("entity_type")
+    h.add_argument("entity_id")
+
+    d = s.add_parser("decision")
+    d.add_argument("actor")
+    d.add_argument("scope")
+    d.add_argument("subject")
+    d.add_argument("selected")
+    d.add_argument("--why", required=True)
+    d.add_argument("--alternative", action="append", default=[])
+    d.add_argument("--evidence", action="append", default=[])
+    d.add_argument("--expected", default="")
+    d.add_argument("--task")
+    d.add_argument("--sha")
+
+    dl = s.add_parser("decisions")
+    dl.add_argument("--scope")
+
+    co = s.add_parser("chat-open")
+    co.add_argument("chat_id")
+    co.add_argument("--session")
+    co.add_argument("--title", default="")
+    co.add_argument("--source", default="chatgpt")
+    co.add_argument("--metadata", type=_json_object, default={})
+    co.add_argument("--archive-root")
+
+    ci = s.add_parser("chat-ingest")
+    ci.add_argument("session_id")
+    ci.add_argument("path")
+    ci.add_argument("--archive-root")
+
+    cl = s.add_parser("chat-list")
+    cl.add_argument("--chat-id")
+    cl.add_argument("--limit", type=int, default=100)
+
+    cs = s.add_parser("chat-show")
+    cs.add_argument("session_id")
+    cs.add_argument("--after", type=int, default=0)
+    cs.add_argument("--limit", type=int, default=100)
+
+    csearch = s.add_parser("chat-search")
+    csearch.add_argument("query")
+    csearch.add_argument("--session")
+    csearch.add_argument("--chat-id")
+    csearch.add_argument("--limit", type=int, default=50)
+
+    ce = s.add_parser("chat-export")
+    ce.add_argument("session_id")
+    ce.add_argument("path")
+
+    x = p.parse_args()
+    c = conn()
     try:
-        if x.cmd=="append": out=append_event(c,actor=x.actor,entity_type=x.entity_type,entity_id=x.entity_id,action=x.action,cause=x.cause,sha=x.sha,artifact_path=x.artifact,payload=json.loads(x.payload),dedupe_key=x.dedupe)
-        elif x.cmd=="tail": out=tail(c,x.limit)
-        elif x.cmd=="entity": out=entity_history(c,x.entity_type,x.entity_id)
-        elif x.cmd=="decision": out={"id":add_decision(c,actor=x.actor,scope=x.scope,subject=x.subject,why=x.why,alternatives=x.alternative,selected=x.selected,evidence=x.evidence,expected_outcome=x.expected,task_id=x.task,sha=x.sha)}
-        else: out=decisions(c,x.scope)
-    finally: c.close()
-    print(json.dumps(out,indent=2,sort_keys=True))
-if __name__=="__main__": main()
+        if x.cmd == "append":
+            out = append_event(
+                c,
+                actor=x.actor,
+                entity_type=x.entity_type,
+                entity_id=x.entity_id,
+                action=x.action,
+                cause=x.cause,
+                sha=x.sha,
+                artifact_path=x.artifact,
+                payload=json.loads(x.payload),
+                dedupe_key=x.dedupe,
+            )
+        elif x.cmd == "tail":
+            out = tail(c, x.limit)
+        elif x.cmd == "entity":
+            out = entity_history(c, x.entity_type, x.entity_id)
+        elif x.cmd == "decision":
+            out = {
+                "id": add_decision(
+                    c,
+                    actor=x.actor,
+                    scope=x.scope,
+                    subject=x.subject,
+                    why=x.why,
+                    alternatives=x.alternative,
+                    selected=x.selected,
+                    evidence=x.evidence,
+                    expected_outcome=x.expected,
+                    task_id=x.task,
+                    sha=x.sha,
+                )
+            }
+        elif x.cmd == "decisions":
+            out = decisions(c, x.scope)
+        elif x.cmd == "chat-open":
+            out = open_chat(
+                c,
+                chat_id=x.chat_id,
+                session_id=x.session,
+                title=x.title,
+                source=x.source,
+                metadata=x.metadata,
+                archive_root=x.archive_root,
+            )
+        elif x.cmd == "chat-ingest":
+            out = ingest_jsonl(
+                c,
+                session_id=x.session_id,
+                transcript_path=x.path,
+                archive_root=x.archive_root,
+            )
+        elif x.cmd == "chat-list":
+            out = list_chats(c, chat_id=x.chat_id, limit=x.limit)
+        elif x.cmd == "chat-show":
+            out = show_chat(
+                c,
+                x.session_id,
+                after_ordinal=x.after,
+                limit=x.limit,
+            )
+        elif x.cmd == "chat-search":
+            out = search_chat(
+                c,
+                x.query,
+                session_id=x.session,
+                chat_id=x.chat_id,
+                limit=x.limit,
+            )
+        else:
+            out = export_chat(c, x.session_id, x.path)
+    finally:
+        c.close()
+
+    print(json.dumps(out, indent=2, sort_keys=True, ensure_ascii=False))
+
+
+if __name__ == "__main__":
+    main()
