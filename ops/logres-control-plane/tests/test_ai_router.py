@@ -230,6 +230,101 @@ class AIRouterTests(unittest.TestCase):
             ).fetchone()[0],
         )
 
+    def test_generated_autoflow_child_unresolved_does_not_spawn_descendant(self):
+        conn = make_test_db()
+        ensure_route_schema(conn)
+        task_id = "AUTO-RE-T1-abc123"
+        seed_task(
+            conn,
+            task_id=task_id,
+            work_type="research",
+            evidence_policy="Global evidence required",
+        )
+        parent = claim_route(
+            conn,
+            RouteSpec(dedupe_key="generated-unresolved", route_kind="AI", task_id=task_id),
+        )
+        result = {
+            "confidence": "UNRESOLVED",
+            "summary": "still unresolved",
+            "findings": [],
+            "contradictions": [],
+            "unresolved": ["missing primary evidence"],
+            "recommended_next_search": "recover primary evidence",
+        }
+
+        decision = route_ai_result(
+            conn,
+            parent.id,
+            result,
+            {
+                "id": task_id,
+                "priority": 0,
+                "status": "BLOCKED_EVIDENCE",
+                "note": "Autoflow research child from AI evidence routing.",
+            },
+            {
+                "work_type": "research",
+                "milestone": "autoflow",
+                "evidence_policy": "Global evidence required",
+            },
+            provenance="CONFIRMED_GLOBAL_2017",
+        )
+
+        self.assertEqual("REVIEW_REQUIRED", decision.route)
+        self.assertIsNone(decision.child_task_id)
+        self.assertEqual(
+            0,
+            conn.execute(
+                "select count(*) from tasks "
+                "where note='Autoflow research child from AI evidence routing.'"
+            ).fetchone()[0],
+        )
+
+    def test_auto_routed_unblock_conflict_does_not_spawn_descendant(self):
+        conn = make_test_db()
+        ensure_route_schema(conn)
+        task_id = "UNBLOCK-AUTO-RE-T1-ABCDEF01"
+        seed_task(
+            conn,
+            task_id=task_id,
+            work_type="research",
+            evidence_policy="Global evidence required",
+        )
+        parent = claim_route(
+            conn,
+            RouteSpec(dedupe_key="generated-conflict", route_kind="AI", task_id=task_id),
+        )
+        result = {
+            "confidence": "SUPPORTED INFERENCE",
+            "summary": "conflicting evidence remains",
+            "findings": [],
+            "contradictions": ["source A conflicts with source B"],
+            "unresolved": ["historical identity"],
+            "recommended_next_search": "recover a primary source",
+        }
+
+        decision = route_ai_result(
+            conn,
+            parent.id,
+            result,
+            {
+                "id": task_id,
+                "priority": 0,
+                "status": "BLOCKED_EVIDENCE",
+                "note": "Auto-routed from Brain event 123.",
+            },
+            {
+                "work_type": "research",
+                "milestone": "DEMO-0.2",
+                "evidence_policy": "Global evidence required",
+            },
+            provenance="CONFIRMED_GLOBAL_2017",
+        )
+
+        self.assertEqual("REVIEW_REQUIRED", decision.route)
+        self.assertIsNone(decision.child_task_id)
+
     def test_terminal_task_evidence_is_skipped_without_ai_or_child(self):
         conn = make_test_db()
         ensure_route_schema(conn)

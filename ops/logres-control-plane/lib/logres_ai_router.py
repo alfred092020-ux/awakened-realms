@@ -101,6 +101,18 @@ def _task_priority(task: dict) -> int:
         return 1
 
 
+def _is_generated_research_child(task: dict, metadata: dict) -> bool:
+    if str(metadata.get("work_type") or "").lower() != "research":
+        return False
+    note = str(task.get("note") or "").lower()
+    milestone = str(metadata.get("milestone") or "").lower()
+    return (
+        milestone == "autoflow"
+        or "autoflow research child from ai evidence routing" in note
+        or "auto-routed from brain event" in note
+    )
+
+
 def _insert_research_task(
     conn: sqlite3.Connection,
     *,
@@ -228,6 +240,26 @@ def route_ai_result(
         marker in task_note
         for marker in (*external_action_markers, *evidence_ceiling_markers)
     )
+    generated_research_child = _is_generated_research_child(
+        task_row,
+        metadata_row,
+    )
+
+    if generated_research_child and (
+        contradictions or confidence in {"UNRESOLVED", "VERSION SENSITIVE"}
+    ):
+        reason = (
+            "generated research child reached its routing ceiling; "
+            "retain unresolved evidence for parent review without spawning descendants"
+        )
+        append_decision(
+            conn,
+            route_job_id,
+            "RESEARCH_CEILING",
+            reason,
+            task_id=task_id,
+        )
+        return RouteDecision("REVIEW_REQUIRED", reason)
 
     if contradictions and (
         not task_id
