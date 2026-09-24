@@ -62,12 +62,20 @@ def apply(conn):
                          (stamp,a["id"],a["from_state"]))
         elif a["engine"]=="route":
             state=a["from_state"]
+            ok=False
+            conn.execute("savepoint route_terminal_reconcile")
             for nxt in ROUTE_TERMINAL_PATH.get(state,["SUPERSEDED"]):
                 cur=conn.execute("update route_jobs set state=?,updated_at=? where id=? and state=?",
                                  (nxt,stamp,a["id"],state))
                 if cur.rowcount!=1:
                     break
                 state=nxt
+            ok=state=="SUPERSEDED"
+            if ok:
+                conn.execute("release savepoint route_terminal_reconcile")
+            else:
+                conn.execute("rollback to savepoint route_terminal_reconcile")
+                conn.execute("release savepoint route_terminal_reconcile")
         elif a["engine"]=="swarm":
             conn.execute("""update swarm_jobs set state='SUPERSEDED',updated_at=?,finished_at=coalesce(finished_at,?)
               where id=? and state=?""",(stamp,stamp,a["id"],a["from_state"]))
