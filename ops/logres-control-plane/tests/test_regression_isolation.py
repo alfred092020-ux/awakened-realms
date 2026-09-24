@@ -122,6 +122,12 @@ class RegressionIsolationTests(unittest.TestCase):
         self.assertIn('min(decision.batch_limit, int(isolation["batch_limit"]))', script)
         self.assertIn('"isolation": isolation', script)
 
+    def test_merge_train_reconciles_regression_lineage_before_classification(self):
+        script = (CONTROL_ROOT / "bin" / "logres-merge-train").read_text()
+        reconcile_at = script.index('run([COORD,"reconcile"])')
+        queue_scan_at = script.index('rows=list(c.execute("""select q.*,t.priority,t.title')
+        self.assertLess(reconcile_at, queue_scan_at)
+
 
 if __name__ == "__main__":
     unittest.main()
