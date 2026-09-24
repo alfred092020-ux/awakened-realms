@@ -84,7 +84,7 @@ export const LOGRES_GLOBAL_3024_EVIDENCE_CEILINGS =
   Object.freeze([
     'Retired Global server authoritative validation, persistence, matchmaking, economy and dynamic-event decisions are not present in the APK.',
     'Historical production host endpoints, server tables and runtime payload values not cached in the APK remain external evidence.',
-    'Transport below the confirmed oneup Packetize layer and the concrete encryption algorithm/policy are not fully recovered.',
+    'The Global GmCl transport chain is recovered as SplitToContract -> Snappy Compressor -> Packetize; linked Blowfish code has no proven active GmCl checkpoint.',
     'Remote patch assets absent from the recovered Global cache cannot be reconstructed byte-for-byte from the bootstrap APK.',
     'Historical store catalogs, server receipt verification, GCM scheduling and GPS reward/anti-abuse decisions remain server/service facts.',
     'Device-specific GPU rasterization, driver behavior and exact real-time presentation require original runtime hardware and matching assets.',

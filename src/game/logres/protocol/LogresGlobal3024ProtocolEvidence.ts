@@ -42,7 +42,28 @@ export const LOGRES_GLOBAL_3024_MESSAGE_ENVELOPE = Object.freeze({
     payload: 'TransactionData bytes containing GmCl FUNCTION_ID + typed payload',
     reverseParser: 'confirmed by Packetize::transferBackward',
   } as const),
-  socketTransportBeyondPacketize: 'UNRESOLVED',
+  transportChain: Object.freeze({
+    channelFactory:
+      'stock oneup::ChannelFactory; NetworkManager::connect passes NULL factory',
+    checkpointOrder: Object.freeze([
+      'SplitToContract',
+      'Compressor',
+      'Packetize',
+    ] as const),
+    compression: Object.freeze({
+      algorithm: 'Snappy',
+      minimumAttemptBytes: 0x401,
+    } as const),
+    encryption: Object.freeze({
+      transactionProperty: 'Encryption',
+      defaultValue: false,
+      activeCryptoCheckpoint: false,
+      blowfishLinked: true,
+      classification:
+        'LINKED_LIBRARY_CAPABILITY_NOT_PROVEN_ACTIVE_FOR_GMCL',
+    } as const),
+    socket: 'oneup::foundation::TCPSocket',
+  } as const),
 } as const)
 
 export const LOGRES_GLOBAL_3024_CORE_TYPES = Object.freeze({
@@ -149,9 +170,8 @@ export const LOGRES_GLOBAL_3024_SERVER_PUSHES = Object.freeze({
 } as const)
 
 export const LOGRES_GLOBAL_3024_PROTOCOL_UNRESOLVED = Object.freeze([
-  'transport bytes below the confirmed oneup Packetize layer, if any',
-  'transport encryption/compression policy for every connection/message class',
   'semantic field names for primitive parameters whose native signatures expose only C++ types',
   'server-side validation and persistence behavior not present in the client binary',
-  'historical production server addresses and HostEntry values',
+  'historical production HostEntry response values and retired server-side routing tables',
+  'non-GmCl or dormant uses of the linked oneup::Blowfish capability, if any',
 ] as const)

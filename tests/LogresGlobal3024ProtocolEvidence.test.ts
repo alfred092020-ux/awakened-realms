@@ -32,7 +32,6 @@ describe('Global 3.0.24 GmCl protocol evidence', () => {
       functionIdBytes: 4,
       functionIdPosition: 'first-field',
       functionIdByteOrder: 'little-endian-on-original-AArch64-client',
-      socketTransportBeyondPacketize: 'UNRESOLVED',
     })
     expect(LOGRES_GLOBAL_3024_MESSAGE_ENVELOPE.senderProperties)
       .toEqual({ ContractId: '0x31318435', Encryption: 'bool' })
@@ -40,6 +39,16 @@ describe('Global 3.0.24 GmCl protocol evidence', () => {
       .toMatchObject({ marker: '0x01', sequence: 'uint32 little-endian incrementing counter' })
     expect(LOGRES_GLOBAL_3024_MESSAGE_ENVELOPE.senderBehavior)
       .toContain('call oneup::Connection::sendData')
+    expect(LOGRES_GLOBAL_3024_MESSAGE_ENVELOPE.transportChain)
+      .toMatchObject({
+        checkpointOrder: ['SplitToContract', 'Compressor', 'Packetize'],
+        compression: { algorithm: 'Snappy', minimumAttemptBytes: 0x401 },
+        encryption: {
+          defaultValue: false,
+          activeCryptoCheckpoint: false,
+          blowfishLinked: true,
+        },
+      })
   })
 
   it('recovers login and onboarding opcodes and result values', () => {
@@ -93,10 +102,12 @@ describe('Global 3.0.24 GmCl protocol evidence', () => {
     })
   })
 
-  it('keeps unresolved transport and server semantics explicit', () => {
+  it('keeps only genuine external or dormant semantics unresolved', () => {
     expect(LOGRES_GLOBAL_3024_PROTOCOL_UNRESOLVED)
-      .toContain('transport bytes below the confirmed oneup Packetize layer, if any')
+      .not.toContain('transport bytes below the confirmed oneup Packetize layer, if any')
     expect(LOGRES_GLOBAL_3024_PROTOCOL_UNRESOLVED)
       .toContain('server-side validation and persistence behavior not present in the client binary')
+    expect(LOGRES_GLOBAL_3024_PROTOCOL_UNRESOLVED)
+      .toContain('non-GmCl or dormant uses of the linked oneup::Blowfish capability, if any')
   })
 })
