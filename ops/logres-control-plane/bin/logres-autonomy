@@ -20,6 +20,7 @@ from logres_autonomy import (
     actionable_open_regressions,
     autonomy_decision,
     doctor_stability,
+    failed_preflight_isolation,
     integration_backlog,
     latest_verified_preflight,
     legacy_cron_should_defer,
@@ -302,6 +303,10 @@ def cycle(*, dry_run: bool = False) -> int:
                 conn,
                 current_base,
             )
+            isolation = failed_preflight_isolation(
+                conn,
+                current_base,
+            )
         finally:
             conn.close()
 
@@ -358,6 +363,12 @@ def cycle(*, dry_run: bool = False) -> int:
             ready_count=backlog,
         )
 
+        batch_limit = (
+            min(decision.batch_limit, int(isolation["batch_limit"]))
+            if isolation is not None
+            else decision.batch_limit
+        )
+
         result = {
             "status": "DEFERRED",
             "dry_run": dry_run,
@@ -365,7 +376,8 @@ def cycle(*, dry_run: bool = False) -> int:
             "decision": {
                 "allowed": decision.allowed,
                 "reasons": list(decision.reasons),
-                "batch_limit": decision.batch_limit,
+                "batch_limit": batch_limit,
+                "isolation": isolation,
             },
             "doctor": {
                 "ok": doctor_state.ok,
@@ -397,10 +409,11 @@ def cycle(*, dry_run: bool = False) -> int:
         ):
             result["preflight"] = {
                 "requested": True,
-                "batch_limit": decision.batch_limit,
+                "batch_limit": batch_limit,
+                "isolation": isolation,
             }
             if not dry_run:
-                pf_run = run_preflight(cfg, decision.batch_limit)
+                pf_run = run_preflight(cfg, batch_limit)
                 result["preflight"]["returncode"] = pf_run.returncode
                 result["preflight"]["stdout"] = (pf_run.stdout or "")[-4000:]
                 if pf_run.returncode != 0:

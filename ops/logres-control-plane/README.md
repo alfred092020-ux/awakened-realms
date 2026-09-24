@@ -169,3 +169,10 @@ logres-resource-broker plan --workload verification --script test
 logres-resource-broker task GJP-FUNC-MATCH-001
 ```
 \n## Health and index self-healing\n\nThe user supervisor keeps both `logres-sync-health` and `logres-code-index` fresh every five minutes. This closes a gap where the environment could remain healthy but report a stale synchronization failure or code-index SHA after canonical advanced.\n\n`logres-sync-health` treats SQLite `database is locked` from concurrent Brain writers as transient infrastructure contention. Brain health/ownership probes retry with bounded exponential backoff before declaring synchronization failed. Persistent failures still fail closed.\n\n`logres-code-index` now has a single-flight lock, an explicit non-mutating `status` mode, environment-overridable repo/index paths for verification, and keeps its existing atomic SQLite replacement. Concurrent index refreshes return a successful `code_index_busy` no-op instead of duplicating expensive ctags work.\n\nSupervisor order refreshes the code index and environment synchronization before the periodic doctor snapshot, so canonical changes converge automatically without depending on manual maintenance.\n
+## Automatic regression isolation
+
+A failed shared preflight no longer has to stall every good candidate behind it. If an exact-SHA full-E2E preflight fails with multiple candidates, the next autonomy cycle automatically reduces the batch to one candidate. This turns the merge train into a deterministic isolation pass without guessing which commit was responsible.
+
+If that single immutable candidate fails full E2E by itself, its exact integration-queue row becomes `QUARANTINED`. The branch, SHA, failed preflight packet, logs, and generated regression remain preserved. The queue does not mutate or silently retry the failed SHA, and unrelated READY candidates can continue through verification.
+
+Failures on an old integration base do not reduce later batch sizes, and a single-candidate failure does not poison future unrelated batches. This keeps isolation local to the evidence that actually failed.
