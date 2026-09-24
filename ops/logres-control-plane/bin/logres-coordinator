@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
 from __future__ import annotations
-import argparse, json, os, re, sqlite3, subprocess, time
+import argparse, json, os, re, sqlite3, subprocess, sys, time
 from datetime import datetime, timezone
 from pathlib import Path
 
 ROOT=Path(os.environ.get("LOGRES_ROOT","/home/ubuntu/logres"))
+LIB=Path(os.environ.get("LOGRES_LIB",str(ROOT/"lib")))
+sys.path.insert(0,str(LIB))
+from logres_regression_reconcile import reconcile_regression_states
 DB=Path(os.environ.get("LOGRES_CONTROL_DB",str(ROOT/"control/control.sqlite")))
 REPO=Path(os.environ.get("LOGRES_REPO_ROOT",str(ROOT/"src/awakened-realms")))
 BRAIN=os.environ.get("LOGRES_BRAIN",str(ROOT/"bin/logres-brain"))
@@ -386,19 +389,10 @@ def reconcile(c,verbose=True):
             changed.append((task_id,"ACTIVE(live-lease-post-deps)"))
     head=git_sha("feat/logres-reconstruction")
 
-    # A regression repair is resolved once its dedicated repair task has been
-    # integrated. Keep the historical record, but do not leave it OPEN forever.
-    c.execute(
-        """update regressions
-              set status='RESOLVED'
-            where status='OPEN'
-              and task_id is not null
-              and exists (
-                select 1 from integration_queue iq
-                 where iq.task_id=regressions.task_id
-                   and iq.status='INTEGRATED'
-              )"""
-    )
+    # Keep regression telemetry aligned with the lifecycle of its dedicated
+    # repair task. Integrated repairs resolve the row; safely superseded repair
+    # tasks supersede their now-obsolete row. Other task states remain OPEN.
+    reconcile_regression_states(c)
 
     # Only completed tasks belong in the integration queue. A newly-created
     # worker branch initially points at integration HEAD; that must never be
