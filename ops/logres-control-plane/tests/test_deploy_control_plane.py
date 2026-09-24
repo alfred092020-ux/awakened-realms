@@ -23,6 +23,7 @@ PRODUCTION_FILES = (
     "bin/logres-swarm",
     "bin/logres-supervisor",
     "bin/logres-coordinator",
+    "bin/logres-claims-reconcile",
     "bin/logres-copilot-router",
     "bin/logres-merge-preflight",
     "bin/logres-merge-train",
@@ -42,6 +43,7 @@ PRODUCTION_FILES = (
     "lib/logres_ai_router.py",
     "lib/logres_ai_runner.py",
     "lib/logres_autonomy.py",
+    "lib/logres_claims_reconcile.py",
     "lib/logres_copilot.py",
     "lib/logres_copilot_router.py",
     "lib/logres_frontier.py",
@@ -96,7 +98,13 @@ class DeployControlPlaneTests(unittest.TestCase):
             )
             self.assertTrue((target / "lib" / "logres_reconcile.py").is_file())
             self.assertTrue(
+                (target / "lib" / "logres_claims_reconcile.py").is_file()
+            )
+            self.assertTrue(
                 (target / "lib" / "logres_regression_reconcile.py").is_file()
+            )
+            self.assertTrue(
+                (target / "bin" / "logres-claims-reconcile").is_file()
             )
             self.assertTrue((target / "config" / "autoflow.default.json").is_file())
             self.assertEqual(

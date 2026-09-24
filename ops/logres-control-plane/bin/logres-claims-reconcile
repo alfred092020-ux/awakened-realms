@@ -1,0 +1,89 @@
+#!/usr/bin/env python3
+from __future__ import annotations
+
+import os
+import sqlite3
+import subprocess
+import sys
+import time
+from pathlib import Path
+
+
+CONTROL_ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(CONTROL_ROOT / "lib"))
+
+from logres_claims_reconcile import claim_releasable
+
+
+ROOT = Path(os.environ.get("LOGRES_ROOT", "/home/ubuntu/logres"))
+DB = Path(
+    os.environ.get(
+        "LOGRES_CONTROL_DB",
+        str(ROOT / "control" / "control.sqlite"),
+    )
+)
+CONTROL = os.environ.get(
+    "LOGRES_CONTROL",
+    str(ROOT / "bin" / "logres-control"),
+)
+
+
+def main() -> int:
+    now = time.time()
+    conn = sqlite3.connect(DB, timeout=30)
+    conn.row_factory = sqlite3.Row
+    conn.execute("pragma busy_timeout=30000")
+    try:
+        active_leases = {
+            row["task_id"]
+            for row in conn.execute(
+                "select task_id from brain_task_leases "
+                "where lease_until_epoch > ?",
+                (now,),
+            )
+        }
+        tasks = list(
+            conn.execute(
+                "select distinct cl.task_id,t.status "
+                "from claims cl left join tasks t on t.id=cl.task_id"
+            )
+        )
+    finally:
+        conn.close()
+
+    released = 0
+    kept = 0
+
+    for row in tasks:
+        task = row["task_id"]
+        status = row["status"] or "UNKNOWN"
+        if not claim_releasable(
+            status,
+            has_active_lease=task in active_leases,
+        ):
+            kept += 1
+            continue
+
+        result = subprocess.run(
+            [CONTROL, "release", task],
+            text=True,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.PIPE,
+            check=False,
+        )
+        if result.returncode == 0:
+            released += 1
+            print(f"RELEASED stale claims task={task} status={status}")
+        else:
+            kept += 1
+            print(
+                f"SKIP release-failed task={task}: "
+                f"{result.stderr.strip()[:240]}"
+            )
+
+    print(f"SUMMARY released={released} kept={kept}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
