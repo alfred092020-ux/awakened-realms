@@ -48,14 +48,14 @@ class StateConflict(RuntimeError):
 
 VALID_TRANSITIONS = {
     "NEW": {"ROUTED", "SKIPPED_DETERMINISTIC", "DUPLICATE_CACHE"},
-    "ROUTED": {"AI_RUNNING", "ASSIGNING", "FAILED_BOUNDED"},
+    "ROUTED": {"AI_RUNNING", "ASSIGNING", "FAILED_BOUNDED", "SUPERSEDED"},
     "AI_RUNNING": {"AI_VALIDATED", "FAILED_BOUNDED"},
     "AI_VALIDATED": {"BRAIN_POSTED", "FAILED_BOUNDED"},
     "BRAIN_POSTED": {"COMPLETE"},
-    "ASSIGNING": {"ACTIVE", "FAILED_BOUNDED"},
+    "ASSIGNING": {"ACTIVE", "FAILED_BOUNDED", "SUPERSEDED"},
     "ACTIVE": {"PR_READY", "SUPERSEDED", "BLOCKED_EVIDENCE", "FAILED_BOUNDED"},
     "PR_READY": {"VERIFYING", "SCOPE_VIOLATION", "SUPERSEDED"},
-    "VERIFYING": {"QUEUED", "FAILED_BOUNDED", "SCOPE_VIOLATION"},
+    "VERIFYING": {"QUEUED", "FAILED_BOUNDED", "SCOPE_VIOLATION", "SUPERSEDED"},
     # Exact-cache recovery may reopen an AI bounded failure after the model
     # result is durably present. Zero-cost transient AI failures may also be
     # requeued by the router under a strict bounded-attempt policy.
