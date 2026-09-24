@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+import hashlib
 import json
+import os
 import re
 import subprocess
 import tempfile
+from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -32,6 +35,20 @@ class CopilotPacket:
 class AssignmentResult:
     issue_number: int
     payload: dict
+
+
+@dataclass(frozen=True)
+class CopilotJobRecord:
+    id: int
+    route_job_id: int
+    task_id: str
+    issue_number: int | None
+    pr_number: int | None
+    branch: str | None
+    base_sha: str
+    candidate_sha: str | None
+    state: str
+    last_error: str | None
 
 
 def _instructions(packet: CopilotPacket) -> str:
@@ -141,6 +158,20 @@ class SubprocessGitHubRunner:
         if not match:
             raise RuntimeError(f"could not parse issue number from gh output: {output!r}")
         return int(match.group(1))
+    def list_prs(self, repo: str) -> list[dict]:
+        result = subprocess.run(
+            [
+                "gh", "pr", "list",
+                "--repo", repo,
+                "--state", "open",
+                "--json", "number,headRefName,headRefOid,baseRefName,isDraft,body",
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        return json.loads(result.stdout or "[]")
+
     def assign_copilot(self, repo: str, issue_number: int, payload: dict) -> None:
         with tempfile.NamedTemporaryFile("w", encoding="utf-8", delete=False) as handle:
             json.dump(payload, handle)
@@ -161,3 +192,169 @@ class SubprocessGitHubRunner:
             )
         finally:
             payload_path.unlink(missing_ok=True)
+
+
+class SubprocessCommandRunner:
+    repo_root = "/home/ubuntu/logres/src/awakened-realms"
+    bin_root = "/home/ubuntu/logres/bin"
+
+    @staticmethod
+    def _run(argv: list[str], **kwargs):
+        return subprocess.run(
+            argv,
+            check=False,
+            capture_output=True,
+            text=True,
+            **kwargs,
+        )
+
+    def prepare_ref(self, branch: str) -> str:
+        if not branch.startswith("copilot/"):
+            raise PolicyError(f"refusing non-Copilot branch: {branch!r}")
+        remote_ref = f"origin/{branch}"
+        result = self._run([
+            "git",
+            "-C",
+            self.repo_root,
+            "fetch",
+            "origin",
+            f"+refs/heads/{branch}:refs/remotes/origin/{branch}",
+        ])
+        if result.returncode != 0:
+            raise RuntimeError(
+                f"failed to fetch Copilot branch {branch}: {result.stderr.strip()}"
+            )
+        return remote_ref
+
+    def resolve_sha(self, ref: str) -> str:
+        result = self._run([
+            "git",
+            "-C",
+            self.repo_root,
+            "rev-parse",
+            ref,
+        ])
+        if result.returncode != 0:
+            raise RuntimeError(
+                f"failed to resolve Copilot ref {ref}: {result.stderr.strip()}"
+            )
+        sha = result.stdout.strip().lower()
+        if re.fullmatch(r"[0-9a-f]{40}", sha) is None:
+            raise RuntimeError(f"invalid SHA resolved for {ref}: {sha!r}")
+        return sha
+
+    def scope_check(self, task_id: str, branch: str) -> int:
+        return int(
+            self._run([
+                f"{self.bin_root}/logres-scope-check",
+                task_id,
+                branch,
+            ]).returncode
+        )
+
+    @staticmethod
+    def _sha256(path: Path) -> str:
+        return hashlib.sha256(path.read_bytes()).hexdigest()
+
+    @contextmanager
+    def verification_worktree(self, ref: str):
+        repo = Path(self.repo_root)
+        temp_root = Path("/home/ubuntu/logres/tmp")
+        temp_root.mkdir(parents=True, exist_ok=True)
+        worktree = Path(tempfile.mkdtemp(prefix="copilot-fast.", dir=temp_root))
+        worktree.rmdir()
+
+        added = self._run([
+            "git", "-C", str(repo),
+            "worktree", "add", "--detach", str(worktree), ref,
+        ])
+        if added.returncode != 0:
+            raise RuntimeError(
+                f"failed to create verification worktree for {ref}: {added.stderr.strip()}"
+            )
+
+        try:
+            base_lock = repo / "package-lock.json"
+            ref_lock = worktree / "package-lock.json"
+            base_modules = repo / "node_modules"
+            target_modules = worktree / "node_modules"
+            if (
+                base_lock.is_file()
+                and ref_lock.is_file()
+                and self._sha256(base_lock) == self._sha256(ref_lock)
+                and base_modules.is_dir()
+            ):
+                os.symlink(base_modules, target_modules, target_is_directory=True)
+            else:
+                install = self._run(
+                    ["npm", "ci", "--prefer-offline", "--no-audit", "--no-fund"],
+                    cwd=worktree,
+                )
+                if install.returncode != 0:
+                    raise RuntimeError(
+                        f"npm ci failed in verification worktree: {install.stderr.strip()}"
+                    )
+            yield worktree
+        finally:
+            self._run([
+                "git", "-C", str(repo),
+                "worktree", "remove", "--force", str(worktree),
+            ])
+
+    def fast_gate(self, branch: str) -> int:
+        with self.verification_worktree(branch) as worktree:
+            return int(
+                self._run(
+                    [
+                        f"{self.bin_root}/logres-gate",
+                        "fast",
+                        branch,
+                    ],
+                    cwd=worktree,
+                ).returncode
+            )
+
+    def coordinator_reconcile(
+        self,
+        conn,
+        task_id: str,
+        branch: str,
+        sha: str,
+    ) -> int:
+        del conn, task_id, branch, sha
+        return int(
+            self._run([
+                f"{self.bin_root}/logres-coordinator",
+                "reconcile",
+            ]).returncode
+        )
+
+    def capture_regression(self, task_id: str, branch: str, sha: str) -> None:
+        self._run([
+            f"{self.bin_root}/logres-regression-capture",
+            "--kind",
+            "copilot-fast-gate",
+            "--ref",
+            branch,
+            "--sha",
+            sha,
+            "--summary",
+            f"Copilot candidate fast gate failed for {task_id}",
+        ])
+
+    def post_scope_conflict(self, task_id: str, branch: str, sha: str) -> None:
+        self._run([
+            f"{self.bin_root}/logres-brain",
+            "post",
+            "copilot",
+            "ALL",
+            "CONFLICT",
+            "HIGH",
+            f"Copilot scope violation: {task_id}",
+            "--body",
+            f"branch={branch} sha={sha}; candidate failed existing scope policy.",
+            "--task",
+            task_id,
+            "--dedupe",
+            f"copilot-scope:{task_id}:{sha}",
+        ])
