@@ -17,6 +17,7 @@ REPO=Path(os.environ.get("LOGRES_REPO_ROOT",str(ROOT/"src/awakened-realms")))
 BRAIN=os.environ.get("LOGRES_BRAIN",str(ROOT/"bin/logres-brain"))
 CONTROL=os.environ.get("LOGRES_CONTROL",str(ROOT/"bin/logres-control"))
 SATISFIED={"DONE","RESOLVED","INTEGRATED"}
+PRESERVED_QUEUE_STATES={"INTEGRATED","SUPERSEDED","QUARANTINED"}
 
 def iso():
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
@@ -292,6 +293,57 @@ def branch_commit(branch):
             return p.stdout.strip()
     return None
 
+def upsert_integration_candidate(
+    c,
+    *,
+    task_id,
+    sha,
+    branch,
+    status,
+    verification_mode,
+    stamp,
+):
+    """Insert/update one immutable task+SHA queue row.
+
+    Terminal history is authoritative for the exact queued SHA. Reconciliation
+    may enqueue a distinct repaired SHA, but it must never resurrect an
+    INTEGRATED, SUPERSEDED, or QUARANTINED row.
+    """
+    existing=c.execute(
+        "select status from integration_queue where task_id=? and sha=?",
+        (task_id,sha),
+    ).fetchone()
+    if existing and existing["status"] in PRESERVED_QUEUE_STATES:
+        return False
+
+    c.execute("""insert into integration_queue
+      (task_id,sha,branch,status,verification_mode,queued_at,updated_at,note,ready_at,integrated_at)
+      values(?,?,?,?,?,?,?,'',
+             case when ?='READY_FOR_INTEGRATION' then ? else null end,
+             case when ?='INTEGRATED' then ? else null end)
+      on conflict(task_id,sha) do update set
+        branch=excluded.branch,
+        status=excluded.status,
+        verification_mode=excluded.verification_mode,
+        updated_at=case
+          when integration_queue.status<>excluded.status
+            or coalesce(integration_queue.verification_mode,'')<>coalesce(excluded.verification_mode,'')
+          then excluded.updated_at else integration_queue.updated_at end,
+        ready_at=case
+          when excluded.status='READY_FOR_INTEGRATION'
+          then coalesce(integration_queue.ready_at,excluded.updated_at)
+          else integration_queue.ready_at end,
+        integrated_at=case
+          when excluded.status='INTEGRATED'
+          then coalesce(integration_queue.integrated_at,excluded.updated_at)
+          else integration_queue.integrated_at end""",
+      (
+          task_id,sha,branch,status,verification_mode,stamp,stamp,
+          status,stamp,status,stamp,
+      ))
+    return True
+
+
 def reconcile(c,verbose=True):
     run(["python3","/home/ubuntu/logres/bin/logres-claims-reconcile"])
     changed=[]
@@ -407,7 +459,8 @@ def reconcile(c,verbose=True):
     # worker branch initially points at integration HEAD; that must never be
     # mistaken for an already-integrated ACTIVE task.
     c.execute("""delete from integration_queue
-                 where task_id in (select id from tasks where status!='DONE')""")
+                 where status not in ('INTEGRATED','SUPERSEDED','QUARANTINED')
+                   and task_id in (select id from tasks where status!='DONE')""")
 
     for t in c.execute(
         "select id,branch,status,coalesce(owner,'') owner "
@@ -419,7 +472,7 @@ def reconcile(c,verbose=True):
                 """update integration_queue
                       set status='SUPERSEDED',updated_at=?,note=?
                     where task_id=?
-                      and status not in ('INTEGRATED','SUPERSEDED')""",
+                      and status not in ('INTEGRATED','SUPERSEDED','QUARANTINED')""",
                 (
                     iso(),
                     "Regression repair is terminal; candidate remains historical only.",
@@ -452,7 +505,7 @@ def reconcile(c,verbose=True):
                 """update integration_queue
                       set status='SUPERSEDED',updated_at=?,note=?
                     where task_id=? and sha<>?
-                      and status not in ('INTEGRATED','SUPERSEDED')""",
+                      and status not in ('INTEGRATED','SUPERSEDED','QUARANTINED')""",
                 (
                     iso(),
                     f"Superseded by verified Copilot candidate {sha}.",
@@ -483,34 +536,22 @@ def reconcile(c,verbose=True):
         c.execute("""update integration_queue
                      set status='CANDIDATE_MOVED',updated_at=?,note=?
                      where task_id=? and branch=? and sha<>?
-                       and status not in ('INTEGRATED','SUPERSEDED','CANDIDATE_MOVED')""",
+                       and status not in ('INTEGRATED','SUPERSEDED','QUARANTINED','CANDIDATE_MOVED')""",
                   (moved_at,
                    f"branch advanced after immutable queue snapshot; replacement={sha}",
                    t["id"],branch,sha))
+        # insert into integration_queue is centralized in the immutable
+        # task+SHA upsert helper below so terminal rows cannot be resurrected.
         stamp=iso()
-        c.execute("""insert into integration_queue
-          (task_id,sha,branch,status,verification_mode,queued_at,updated_at,note,ready_at,integrated_at)
-          values(?,?,?,?,?,?,?,'',
-                 case when ?='READY_FOR_INTEGRATION' then ? else null end,
-                 case when ?='INTEGRATED' then ? else null end)
-          on conflict(task_id,sha) do update set
-            branch=excluded.branch,
-            status=excluded.status,
-            verification_mode=excluded.verification_mode,
-            updated_at=case
-              when integration_queue.status<>excluded.status
-                or coalesce(integration_queue.verification_mode,'')<>coalesce(excluded.verification_mode,'')
-              then excluded.updated_at else integration_queue.updated_at end,
-            ready_at=case
-              when excluded.status='READY_FOR_INTEGRATION'
-              then coalesce(integration_queue.ready_at,excluded.updated_at)
-              else integration_queue.ready_at end,
-            integrated_at=case
-              when excluded.status='INTEGRATED'
-              then coalesce(integration_queue.integrated_at,excluded.updated_at)
-              else integration_queue.integrated_at end""",
-          (t["id"],sha,branch,qstatus,vmode["mode"] if vmode else None,
-           stamp,stamp,qstatus,stamp,qstatus,stamp))
+        upsert_integration_candidate(
+            c,
+            task_id=t["id"],
+            sha=sha,
+            branch=branch,
+            status=qstatus,
+            verification_mode=vmode["mode"] if vmode else None,
+            stamp=stamp,
+        )
     c.commit()
     for task_id,chat_id,reason in reclaimed:
         subprocess.run([

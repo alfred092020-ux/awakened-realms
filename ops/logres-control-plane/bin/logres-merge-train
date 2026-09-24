@@ -179,7 +179,7 @@ def refresh(c):
     conflict_routes=[]
     rows=list(c.execute("""select q.*,t.priority,t.title from integration_queue q
       left join tasks t on t.id=q.task_id
-      where q.status not in ('INTEGRATED','SUPERSEDED')
+      where q.status not in ('INTEGRATED','SUPERSEDED','QUARANTINED')
       order by coalesce(t.priority,99),q.queued_at"""))
     for q in rows:
         branch=q["branch"]; candidate=q["sha"]
@@ -263,7 +263,7 @@ def rows_ready(c):
 def cmd_status(c,args):
     n=refresh(c)
     print(f"LOGRES MERGE TRAIN refreshed={n}")
-    history="" if getattr(args,"history",False) else "where q.status not in ('INTEGRATED','SUPERSEDED')"
+    history="" if getattr(args,"history",False) else "where q.status not in ('INTEGRATED','SUPERSEDED','QUARANTINED')"
     rows=list(c.execute(f"""select q.*,t.priority,t.title from integration_queue q
       left join tasks t on t.id=q.task_id
       {history}
@@ -618,15 +618,22 @@ def cmd_apply(c,args):
     )
     print(f"INTEGRATED task={r['task_id']} head={after}")
 
-ap=argparse.ArgumentParser(prog="logres-merge-train")
-sub=ap.add_subparsers(dest="cmd",required=True)
-x=sub.add_parser("status"); x.add_argument("--history",action="store_true"); x.set_defaults(fn=cmd_status)
-x=sub.add_parser("next"); x.set_defaults(fn=cmd_next)
-x=sub.add_parser("batch-plan"); x.add_argument("--max",type=int,default=3); x.set_defaults(fn=cmd_batch_plan)
-x=sub.add_parser("apply-batch"); x.add_argument("--actor",required=True); x.add_argument("--max",type=int,default=3); x.set_defaults(fn=cmd_apply_batch)
-x=sub.add_parser("apply-preflight"); x.add_argument("--actor",required=True); x.add_argument("id",type=int); x.set_defaults(fn=cmd_apply_preflight)
-x=sub.add_parser("apply"); x.add_argument("--actor",required=True); x.add_argument("--task"); x.set_defaults(fn=cmd_apply)
-args=ap.parse_args()
-c=sqlite3.connect(DB,timeout=30); c.row_factory=sqlite3.Row
-try: args.fn(c,args)
-finally: c.close()
+def main():
+    ap=argparse.ArgumentParser(prog="logres-merge-train")
+    sub=ap.add_subparsers(dest="cmd",required=True)
+    x=sub.add_parser("status"); x.add_argument("--history",action="store_true"); x.set_defaults(fn=cmd_status)
+    x=sub.add_parser("next"); x.set_defaults(fn=cmd_next)
+    x=sub.add_parser("batch-plan"); x.add_argument("--max",type=int,default=3); x.set_defaults(fn=cmd_batch_plan)
+    x=sub.add_parser("apply-batch"); x.add_argument("--actor",required=True); x.add_argument("--max",type=int,default=3); x.set_defaults(fn=cmd_apply_batch)
+    x=sub.add_parser("apply-preflight"); x.add_argument("--actor",required=True); x.add_argument("id",type=int); x.set_defaults(fn=cmd_apply_preflight)
+    x=sub.add_parser("apply"); x.add_argument("--actor",required=True); x.add_argument("--task"); x.set_defaults(fn=cmd_apply)
+    args=ap.parse_args()
+    c=sqlite3.connect(DB,timeout=30); c.row_factory=sqlite3.Row
+    try:
+        args.fn(c,args)
+    finally:
+        c.close()
+
+
+if __name__=="__main__":
+    main()
