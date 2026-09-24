@@ -221,3 +221,11 @@ Configuration refreshes are idempotent and preserve the runtime database as the
 operational source of truth. The current goal watchdog remains the descriptive
 milestone-progress layer. Mission planning sits above it and does not replace
 task optimizer or merge authority.
+
+## Regression repair lifecycle
+
+A regression repair is not considered resolved merely because the worker finishes its branch. `logres-finish-task` now leaves the regression row `OPEN` after the repair candidate passes its fast gate and is handed off.
+
+The coordinator is allowed to queue that immutable repair SHA normally. Only after the repair candidate reaches `INTEGRATED` does regression reconciliation move the regression to `RESOLVED`; at that point the original conflicting candidate can be superseded safely.
+
+This prevents a circular failure mode where finishing the repair made the regression terminal too early, which caused the coordinator to suppress the repair candidate before shared full-E2E preflight could ever run.

@@ -1,0 +1,85 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+CHAT="${1:?usage: logres-finish-task <chat-id> <task-id> [branch]}"
+TASK="${2:?usage: logres-finish-task <chat-id> <task-id> [branch]}"
+REQUESTED="${3:-}"
+BASE=/home/ubuntu/logres/src/awakened-realms
+DB=/home/ubuntu/logres/control/control.sqlite
+LOGDIR=/home/ubuntu/logres/logs
+mkdir -p "$LOGDIR"
+
+row=$(sqlite3 -readonly -separator "|" "$DB"   "select coalesce(l.branch,t.branch,''),coalesce(l.chat_id,''),t.status
+   from tasks t left join brain_task_leases l on l.task_id=t.id
+   where t.id='${TASK//\'/\'\'}';")
+[[ -n "$row" ]] || { echo "unknown task: $TASK" >&2; exit 2; }
+IFS="|" read -r LEASE_BRANCH OWNER STATUS <<<"$row"
+
+BRANCH="${REQUESTED:-$LEASE_BRANCH}"
+[[ -n "$BRANCH" ]] || { echo "task has no branch: $TASK" >&2; exit 3; }
+[[ "$BRANCH" != "main" && "$BRANCH" != "feat/logres-reconstruction" ]] || {
+  echo "refusing to finish directly from protected integration/main branch" >&2
+  exit 4
+}
+[[ "$OWNER" == "$CHAT" ]] || {
+  echo "task lease is not owned by $CHAT (owner=${OWNER:-none})" >&2
+  exit 5
+}
+
+WT=$(git -C "$BASE" worktree list --porcelain | awk -v b="refs/heads/$BRANCH" '
+  $1=="worktree"{p=$2}
+  $1=="branch" && $2==b && !found {print p; found=1}
+')
+[[ -n "$WT" ]] || { echo "no worktree registered for $BRANCH" >&2; exit 6; }
+
+dirty=$(git -C "$WT" status --porcelain)
+[[ -z "$dirty" ]] || {
+  echo "worktree is dirty; commit or clean scoped changes before handoff:" >&2
+  printf "%s\n" "$dirty" >&2
+  exit 7
+}
+
+git -C "$WT" diff --check
+SHA=$(git -C "$WT" rev-parse HEAD)
+/home/ubuntu/logres/bin/logres-scope-check "$TASK" "$BRANCH"
+STAMP=$(date +%Y%m%dT%H%M%S)
+LOG="$LOGDIR/finish-${TASK}-${SHA:0:12}-$STAMP.log"
+
+echo "[finish] worker gate $TASK $BRANCH @ ${SHA:0:12}" | tee "$LOG"
+if [[ "${LOGRES_FINISH_FULL:-0}" == "1" ]]; then
+  LOGRES_GATE_FORCE=1 /home/ubuntu/logres/bin/logres-gate candidate "$SHA" 2>&1 | tee -a "$LOG"
+  VERIFY_NOTE="Exact candidate full-e2e PASS at ${SHA:0:12}"
+else
+  (
+    cd "$WT"
+    /home/ubuntu/logres/bin/logres-gate fast
+  ) 2>&1 | tee -a "$LOG"
+  VERIFY_NOTE="Fast worker gate PASS at ${SHA:0:12}; queued for shared merge preflight"
+fi
+
+git -C "$WT" push -u origin "$BRANCH"
+/home/ubuntu/logres/bin/logres-brain progress "$CHAT" "$TASK" 100   --note "$VERIFY_NOTE" >/dev/null
+/home/ubuntu/logres/bin/logres-brain done "$CHAT" "$TASK"   --note "$VERIFY_NOTE." >/dev/null
+/home/ubuntu/logres/bin/logres-control release "$TASK" >/dev/null 2>&1 || true
+python3 - "$DB" "$TASK" <<'PY'
+import sqlite3,sys
+db,task=sys.argv[1],sys.argv[2]
+c=sqlite3.connect(db)
+c.execute("update task_recovery set status='CONSUMED' where task_id=? and status in ('AVAILABLE','CLAIMED')",(task,))
+# Finishing a regression repair proves only that its candidate is ready for
+# integration. Keep the regression OPEN until the repair SHA is actually
+# INTEGRATED; coordinator reconciliation resolves it at that point.
+c.commit()
+PY
+/home/ubuntu/logres/bin/logres-integration-review "$BRANCH" >/dev/null 2>&1 || true
+/home/ubuntu/logres/bin/logres-coordinator reconcile >/dev/null
+MANIFEST=$(/home/ubuntu/logres/bin/logres-handoff-manifest "$TASK" "$BRANCH" "$SHA" --verification-log "$LOG")
+
+/home/ubuntu/logres/bin/logres-brain post "$CHAT" lead HANDOFF HIGH   "Worker handoff: $TASK"   --body "branch=$BRANCH sha=$SHA $VERIFY_NOTE. Shared merge preflight/integration remains Lead-controlled. Structured handoff manifest attached."   --task "$TASK" --artifact "$MANIFEST"   --dedupe "verified-handoff:$TASK:$SHA" >/dev/null
+
+echo "HANDOFF_READY"
+echo "task=$TASK"
+echo "branch=$BRANCH"
+echo "sha=$SHA"
+echo "log=$LOG"
+echo "manifest=$MANIFEST"
