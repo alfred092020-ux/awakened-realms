@@ -139,7 +139,7 @@ def task_context(conn: sqlite3.Connection, task_id: str) -> dict:
     acceptance = [
         row[0]
         for row in conn.execute(
-            "select criterion from task_acceptance where task_id=? order by idx",
+            "select criterion from task_acceptance where task_id=? order by ordinal",
             (task_id,),
         )
     ]

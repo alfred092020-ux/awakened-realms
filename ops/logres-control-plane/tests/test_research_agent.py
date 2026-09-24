@@ -17,6 +17,7 @@ from logres_research_agent import (
     can_complete,
     record_usage,
     run_research,
+    task_context,
 )
 
 
@@ -64,6 +65,30 @@ def result_json(status="DONE", checks=None):
 
 
 class ResearchAgentTests(unittest.TestCase):
+    def test_task_context_uses_production_ordinal_acceptance_schema(self):
+        conn = make_test_db()
+        conn.row_factory = sqlite3.Row
+        seed_task(
+            conn,
+            task_id="T1",
+            work_type="research",
+            status="ACTIVE",
+        )
+        conn.execute("delete from task_acceptance where task_id='T1'")
+        conn.execute(
+            "insert into task_acceptance(task_id,ordinal,criterion) values(?,?,?)",
+            ("T1", 2, "second"),
+        )
+        conn.execute(
+            "insert into task_acceptance(task_id,ordinal,criterion) values(?,?,?)",
+            ("T1", 1, "first"),
+        )
+        conn.commit()
+
+        context = task_context(conn, "T1")
+
+        self.assertEqual(["first", "second"], context["acceptance"])
+
     def test_completion_requires_every_acceptance_check_to_pass(self):
         good = json.loads(result_json())
         self.assertTrue(can_complete(good, 1))
