@@ -12,6 +12,43 @@ def dependency_requires_integration(kind: str | None) -> bool:
     return str(kind or "").lower() == "integration"
 
 
+def _applied_preflight_result_satisfied(
+    conn: sqlite3.Connection,
+    depends_on: str,
+    candidate_sha: str,
+    *,
+    integration_head: str,
+    ancestor_checker: Callable[[str, str], bool],
+) -> bool:
+    try:
+        rows = conn.execute(
+            """
+            select p.result_sha
+              from integration_preflight_items i
+              join integration_preflights p on p.id=i.preflight_id
+             where i.task_id=?
+               and i.candidate_sha=?
+               and p.status='APPLIED'
+               and p.verification_mode='full-e2e'
+               and p.result_sha is not null
+             order by p.id desc
+            """,
+            (depends_on, candidate_sha),
+        ).fetchall()
+    except sqlite3.OperationalError:
+        # Older/runtime-minimal databases may not have preflight lineage tables.
+        # Fail closed here; the direct integrated-ancestor path remains valid.
+        return False
+
+    for row in rows:
+        result_sha = str(row[0] or "")
+        if len(result_sha) != 40:
+            continue
+        if ancestor_checker(result_sha, integration_head):
+            return True
+    return False
+
+
 def integration_prerequisite_satisfied(
     conn: sqlite3.Connection,
     depends_on: str,
@@ -51,6 +88,14 @@ def integration_prerequisite_satisfied(
         if len(candidate) != 40:
             continue
         if ancestor_checker(candidate, integration_head):
+            return True
+        if _applied_preflight_result_satisfied(
+            conn,
+            depends_on,
+            candidate,
+            integration_head=integration_head,
+            ancestor_checker=ancestor_checker,
+        ):
             return True
     return False
 

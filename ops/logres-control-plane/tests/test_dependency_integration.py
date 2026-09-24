@@ -41,6 +41,43 @@ def make_db():
     return conn
 
 
+def add_preflight_tables(conn):
+    conn.execute(
+        """create table integration_preflights(
+             id integer primary key,
+             result_sha text,
+             status text not null,
+             verification_mode text
+           )"""
+    )
+    conn.execute(
+        """create table integration_preflight_items(
+             preflight_id integer not null,
+             task_id text not null,
+             candidate_sha text not null
+           )"""
+    )
+
+
+def add_preflight(
+    conn,
+    *,
+    candidate,
+    result,
+    status="APPLIED",
+    verification_mode="full-e2e",
+    task_id="DEP",
+):
+    conn.execute(
+        "insert into integration_preflights values(1,?,?,?)",
+        (result, status, verification_mode),
+    )
+    conn.execute(
+        "insert into integration_preflight_items values(1,?,?)",
+        (task_id, candidate),
+    )
+
+
 def is_ancestor(expected):
     def check(candidate, head):
         return candidate in expected and head == "h" * 40
@@ -112,6 +149,182 @@ class DependencyIntegrationTests(unittest.TestCase):
                 "CHILD",
                 integration_head="h" * 40,
                 ancestor_checker=is_ancestor({"a" * 40}),
+            )
+        )
+
+    def test_applied_full_e2e_preflight_result_satisfies_dependency(self):
+        conn = make_db()
+        add_preflight_tables(conn)
+        candidate = "c" * 40
+        result = "r" * 40
+        conn.execute("insert into tasks values('DEP','DONE')")
+        conn.execute("insert into tasks values('CHILD','BLOCKED_DEP')")
+        conn.execute(
+            "insert into task_dependencies values("
+            "'CHILD','DEP','integration','uses canonical API')"
+        )
+        conn.execute(
+            "insert into integration_queue values(?,?,?)",
+            ("DEP", candidate, "INTEGRATED"),
+        )
+        add_preflight(conn, candidate=candidate, result=result)
+
+        self.assertTrue(
+            hard_dependencies_satisfied(
+                conn,
+                "CHILD",
+                integration_head="h" * 40,
+                ancestor_checker=is_ancestor({result}),
+            )
+        )
+
+    def test_verified_but_unapplied_preflight_stays_blocked(self):
+        conn = make_db()
+        add_preflight_tables(conn)
+        candidate = "c" * 40
+        result = "r" * 40
+        conn.execute("insert into tasks values('DEP','DONE')")
+        conn.execute(
+            "insert into integration_queue values(?,?,?)",
+            ("DEP", candidate, "INTEGRATED"),
+        )
+        add_preflight(
+            conn,
+            candidate=candidate,
+            result=result,
+            status="VERIFIED",
+        )
+
+        self.assertFalse(
+            integration_prerequisite_satisfied(
+                conn,
+                "DEP",
+                integration_head="h" * 40,
+                ancestor_checker=is_ancestor({result}),
+            )
+        )
+
+    def test_non_full_e2e_applied_preflight_stays_blocked(self):
+        conn = make_db()
+        add_preflight_tables(conn)
+        candidate = "c" * 40
+        result = "r" * 40
+        conn.execute("insert into tasks values('DEP','DONE')")
+        conn.execute(
+            "insert into integration_queue values(?,?,?)",
+            ("DEP", candidate, "INTEGRATED"),
+        )
+        add_preflight(
+            conn,
+            candidate=candidate,
+            result=result,
+            verification_mode="fast",
+        )
+
+        self.assertFalse(
+            integration_prerequisite_satisfied(
+                conn,
+                "DEP",
+                integration_head="h" * 40,
+                ancestor_checker=is_ancestor({result}),
+            )
+        )
+
+    def test_mismatched_preflight_candidate_stays_blocked(self):
+        conn = make_db()
+        add_preflight_tables(conn)
+        candidate = "c" * 40
+        result = "r" * 40
+        conn.execute("insert into tasks values('DEP','DONE')")
+        conn.execute(
+            "insert into integration_queue values(?,?,?)",
+            ("DEP", candidate, "INTEGRATED"),
+        )
+        add_preflight(
+            conn,
+            candidate="x" * 40,
+            result=result,
+        )
+
+        self.assertFalse(
+            integration_prerequisite_satisfied(
+                conn,
+                "DEP",
+                integration_head="h" * 40,
+                ancestor_checker=is_ancestor({result}),
+            )
+        )
+
+    def test_mismatched_preflight_task_stays_blocked(self):
+        conn = make_db()
+        add_preflight_tables(conn)
+        candidate = "c" * 40
+        result = "r" * 40
+        conn.execute("insert into tasks values('DEP','DONE')")
+        conn.execute(
+            "insert into integration_queue values(?,?,?)",
+            ("DEP", candidate, "INTEGRATED"),
+        )
+        add_preflight(
+            conn,
+            candidate=candidate,
+            result=result,
+            task_id="OTHER",
+        )
+
+        self.assertFalse(
+            integration_prerequisite_satisfied(
+                conn,
+                "DEP",
+                integration_head="h" * 40,
+                ancestor_checker=is_ancestor({result}),
+            )
+        )
+
+    def test_failed_preflight_stays_blocked(self):
+        conn = make_db()
+        add_preflight_tables(conn)
+        candidate = "c" * 40
+        result = "r" * 40
+        conn.execute("insert into tasks values('DEP','DONE')")
+        conn.execute(
+            "insert into integration_queue values(?,?,?)",
+            ("DEP", candidate, "INTEGRATED"),
+        )
+        add_preflight(
+            conn,
+            candidate=candidate,
+            result=result,
+            status="FAILED",
+        )
+
+        self.assertFalse(
+            integration_prerequisite_satisfied(
+                conn,
+                "DEP",
+                integration_head="h" * 40,
+                ancestor_checker=is_ancestor({result}),
+            )
+        )
+
+    def test_applied_preflight_result_not_on_current_ancestry_stays_blocked(self):
+        conn = make_db()
+        add_preflight_tables(conn)
+        candidate = "c" * 40
+        result = "r" * 40
+        conn.execute("insert into tasks values('DEP','DONE')")
+        conn.execute(
+            "insert into integration_queue values(?,?,?)",
+            ("DEP", candidate, "INTEGRATED"),
+        )
+        add_preflight(conn, candidate=candidate, result=result)
+
+        self.assertFalse(
+            integration_prerequisite_satisfied(
+                conn,
+                "DEP",
+                integration_head="h" * 40,
+                ancestor_checker=is_ancestor({"z" * 40}),
             )
         )
 
