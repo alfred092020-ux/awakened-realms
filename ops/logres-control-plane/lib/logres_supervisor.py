@@ -63,6 +63,8 @@ def default_jobs(root: Path) -> tuple[ScheduledJob, ...]:
             180,
         ),
         ScheduledJob("lead_snapshot", (str(b / "logres-lead-snapshot"),), 300, 180),
+        ScheduledJob("code_index", (str(b / "logres-code-index"),), 300, 180),
+        ScheduledJob("sync_health", (str(b / "logres-sync-health"), "--quiet"), 300, 180),
         ScheduledJob("health_snapshot", (str(b / "logres-health-snapshot"),), 600, 120),
         ScheduledJob("control_backup", (str(b / "logres-control-backup"),), 600, 180),
         ScheduledJob("evidence_refresh", (str(b / "logres-evidence-refresh"),), 900, 600),

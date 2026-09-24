@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+set +e
+TMP=/home/ubuntu/logres/control/HEALTH.txt.tmp
+OUT=/home/ubuntu/logres/control/HEALTH.txt
+/home/ubuntu/logres/bin/logres-doctor > "$TMP" 2>&1
+rc=$?
+mv "$TMP" "$OUT"
+exit $rc

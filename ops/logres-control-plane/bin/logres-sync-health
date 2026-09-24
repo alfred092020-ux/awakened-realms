@@ -1,0 +1,164 @@
+#!/usr/bin/env python3
+from __future__ import annotations
+import hashlib, json, subprocess, sys, time
+from pathlib import Path
+
+ROOT=Path('/home/ubuntu/logres')
+OUT=ROOT/'control/SYNC_HEALTH.txt'
+JSON_OUT=ROOT/'control/SYNC_HEALTH.json'
+STATE=ROOT/'control/SYNC_HEALTH.state'
+QUIET='--quiet' in sys.argv
+checks=[]
+fails=0
+warnings=0
+
+def run(cmd, *, retry_locked=False, attempts=5):
+    last=None
+    for attempt in range(max(1,attempts)):
+        try:
+            last=subprocess.run(
+                cmd,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+                timeout=30,
+            )
+        except subprocess.TimeoutExpired as exc:
+            last=subprocess.CompletedProcess(
+                cmd,124,
+                stdout=exc.stdout or "",
+                stderr=exc.stderr or "timeout",
+            )
+        detail=((last.stderr or "")+"\n"+(last.stdout or "")).lower()
+        if (
+            retry_locked
+            and last.returncode != 0
+            and "database is locked" in detail
+            and attempt + 1 < attempts
+        ):
+            time.sleep(0.20 * (2 ** attempt))
+            continue
+        return last
+    return last
+
+def add(name,status,detail):
+    global fails,warnings
+    checks.append({'name':name,'status':status,'detail':detail})
+    if status=='FAIL': fails+=1
+    elif status=='WARN': warnings+=1
+
+for unit in ('nexus-privileged-executor.service','nexus-control-plane@ubuntu.service','nexus-agent.service'):
+    p=run(['systemctl','is-active',unit])
+    state=p.stdout.strip()
+    add(unit,'PASS' if state=='active' else 'FAIL',state or 'unknown')
+
+public_state=run(['systemctl','is-enabled','nexus-mcp-http@ubuntu.service']).stdout.strip()
+add('nexus-public-mcp','PASS' if public_state=='masked' else 'WARN',public_state or 'unknown')
+
+p=run([str(ROOT/'bin/logres-nexus'),'status'])
+try:
+    data=json.loads(p.stdout)
+    db=data.get('database','')
+    add('nexus-state','PASS' if db=='/var/lib/nexus-commander/nexus.sqlite' else 'FAIL',db or 'invalid')
+except Exception:
+    add('nexus-state','FAIL',(p.stderr or p.stdout)[-300:])
+
+p=run([str(ROOT/'bin/logres-nexus'),'machine-list'])
+try:
+    machines=json.loads(p.stdout)
+    machine=next((x for x in machines if x.get('id')=='oci-dev-1'),None)
+    online=bool(machine and machine.get('status')=='ONLINE')
+    add('nexus-machine','PASS' if online else 'FAIL','oci-dev-1 ONLINE' if online else 'oci-dev-1 not ONLINE')
+except Exception:
+    add('nexus-machine','FAIL',(p.stderr or p.stdout)[-300:])
+
+repo=Path('/home/ubuntu/nexus-commander/dist/src/mcp/stdio.js')
+installed=Path('/opt/nexus-commander/dist/src/mcp/stdio.js')
+def sha(path):
+    return hashlib.sha256(path.read_bytes()).hexdigest() if path.exists() else ''
+repo_sha,installed_sha=sha(repo),sha(installed)
+same=bool(repo_sha and repo_sha==installed_sha)
+add('nexus-build-parity','PASS' if same else 'FAIL',
+    repo_sha[:12] if same else 'repo='+repo_sha[:12]+' installed='+installed_sha[:12])
+
+p=run(
+    [str(ROOT/'bin/logres-brain'),'health'],
+    retry_locked=True,
+    attempts=6,
+)
+brain_ok=p.returncode==0 and 'fails=0' in p.stdout
+add('brain-network','PASS' if brain_ok else 'FAIL',
+    'healthy' if brain_ok else (p.stdout+p.stderr)[-300:])
+
+who=run(
+    [str(ROOT/'bin/logres-brain'),'who'],
+    retry_locked=True,
+    attempts=6,
+).stdout
+stale=[line.strip() for line in who.splitlines() if ' STALE ' in line and 'work=-' not in line]
+add('stale-active-owners','WARN' if stale else 'PASS','; '.join(stale[:4]) if stale else 'none')
+
+game=Path('/home/ubuntu/logres/src/awakened-realms')
+branch=run(['git','-C',str(game),'symbolic-ref','--short','HEAD']).stdout.strip()
+add('integration-branch','PASS' if branch=='feat/logres-reconstruction' else 'FAIL',branch or 'detached')
+dirty=run(['git','-C',str(game),'status','--porcelain']).stdout.strip()
+add('integration-clean','PASS' if not dirty else 'FAIL','clean' if not dirty else dirty[:300])
+delta=run(['git','-C',str(game),'rev-list','--left-right','--count',
+           'origin/feat/logres-reconstruction...feat/logres-reconstruction']).stdout.strip()
+try:
+    origin_ahead, local_ahead = [int(x) for x in delta.split()]
+    if origin_ahead == 0:
+        add('integration-origin-delta','PASS',f'local_ahead={local_ahead}')
+    elif local_ahead == 0:
+        add('integration-origin-delta','WARN',f'behind_origin={origin_ahead}')
+    else:
+        add('integration-origin-delta','FAIL',
+            f'diverged origin_ahead={origin_ahead} local_ahead={local_ahead}')
+except Exception:
+    add('integration-origin-delta','WARN',delta or 'unknown')
+worktrees=run(['git','-C',str(game),'worktree','list','--porcelain']).stdout.count('worktree ')
+add('worktree-inventory','PASS',str(worktrees)+' worktrees; owner-controlled cleanup only')
+
+legacy=Path('/home/ubuntu/.local/state/nexus-commander/nexus.sqlite')
+add('legacy-user-nexus-state','WARN' if legacy.exists() else 'PASS',str(legacy) if legacy.exists() else 'absent')
+
+status='FAIL' if fails else ('DEGRADED' if warnings else 'HEALTHY')
+payload={'generatedAt':time.strftime('%Y-%m-%dT%H:%M:%SZ',time.gmtime()),
+         'status':status,'fails':fails,'warnings':warnings,'checks':checks}
+lines=['SYNC_STATUS='+status+' fails='+str(fails)+' warnings='+str(warnings)+' checks='+str(len(checks))]
+for check in checks:
+    lines.append('{:<4} {:30} {}'.format(check['status'],check['name'],check['detail']))
+tmp=OUT.with_suffix('.txt.tmp')
+tmp.write_text('\n'.join(lines)+'\n')
+tmp.replace(OUT)
+jtmp=JSON_OUT.with_suffix('.json.tmp')
+jtmp.write_text(json.dumps(payload,indent=2)+'\n')
+jtmp.replace(JSON_OUT)
+
+nexus_names={'nexus-privileged-executor.service','nexus-control-plane@ubuntu.service',
+             'nexus-agent.service','nexus-state','nexus-machine','nexus-build-parity'}
+nexus_ok=all(c['status']=='PASS' for c in checks if c['name'] in nexus_names)
+if nexus_ok:
+    run(
+        [str(ROOT/'bin/logres-brain'),'heartbeat','nexus'],
+        retry_locked=True,
+        attempts=4,
+    )
+
+old=STATE.read_text().strip() if STATE.exists() else ''
+if old != status:
+    event_type='BLOCKER' if status=='FAIL' else 'INFO'
+    priority='HIGH' if status=='FAIL' else 'NORMAL'
+    body='fails='+str(fails)+' warnings='+str(warnings)+'; see '+str(OUT)
+    run(
+        [str(ROOT/'bin/logres-brain'),'post','nexus','ALL',event_type,priority,
+         'Environment synchronization -> '+status,'--body',body],
+        retry_locked=True,
+        attempts=4,
+    )
+    STATE.write_text(status+'\n')
+
+if not QUIET:
+    print(OUT.read_text(),end='')
+raise SystemExit(1 if fails else 0)

@@ -41,6 +41,8 @@ class SupervisorTests(unittest.TestCase):
                 "swarm",
                 "autopilot",
                 "lead_snapshot",
+                "code_index",
+                "sync_health",
                 "health_snapshot",
                 "control_backup",
                 "evidence_refresh",
