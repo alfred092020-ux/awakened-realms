@@ -238,6 +238,142 @@ class VisualTruthMergeTests(unittest.TestCase):
             conn.close()
         self.assertEqual(1, count)
 
+    def test_persistent_lock_durably_spools_then_flushes_exactly_once(self):
+        source = make_db(self.source)
+        initial_target = make_db(self.target)
+        try:
+            record_sample(source)
+        finally:
+            source.close()
+            initial_target.close()
+
+        spool = self.root / "visual-spool"
+        holder = sqlite3.connect(self.target)
+        holder.execute("begin immediate")
+        try:
+            result = merge_module.merge(
+                source=self.source,
+                target=self.target,
+                busy_timeout_ms=10,
+                spool_dir=spool,
+            )
+        finally:
+            holder.rollback()
+            holder.close()
+
+        self.assertEqual("PASS", result["status"])
+        self.assertEqual("DURABLE_SPOOL", result["persistence_mode"])
+        self.assertEqual(1, result["source_rows"])
+        self.assertEqual(0, result["canonical_direct_rows"])
+        self.assertEqual(1, result["spooled_rows"])
+        self.assertTrue(result["canonical_flush_required"])
+        self.assertFalse(result["evidence_loss"])
+        self.assertEqual(1, len(result["spool_paths"]))
+        self.assertTrue(Path(result["spool_paths"][0]).is_file())
+
+        writer = sqlite3.connect(self.target)
+        writer.row_factory = sqlite3.Row
+        try:
+            flushed = visual.flush_spool(
+                writer,
+                spool,
+                busy_timeout_ms=500,
+            )
+            self.assertEqual(1, flushed["flushed"])
+            self.assertEqual(0, flushed["deduped"])
+            self.assertEqual(0, flushed["remaining"])
+
+            second = visual.flush_spool(
+                writer,
+                spool,
+                busy_timeout_ms=500,
+            )
+            self.assertEqual(0, second["flushed"])
+            self.assertEqual(0, second["remaining"])
+
+            count = writer.execute(
+                "select count(*) from visual_truth_checks"
+            ).fetchone()[0]
+            self.assertEqual(1, count)
+        finally:
+            writer.close()
+
+    def test_spool_fallback_rejects_malformed_isolated_json(self):
+        source = make_db(self.source)
+        initial_target = make_db(self.target)
+        try:
+            record_sample(source)
+            source.execute(
+                "update visual_truth_checks set viewport_json='[]'"
+            )
+            source.commit()
+        finally:
+            source.close()
+            initial_target.close()
+
+        holder = sqlite3.connect(self.target)
+        holder.execute("begin immediate")
+        try:
+            with self.assertRaisesRegex(
+                merge_module.MergeError,
+                "viewport_json must be a JSON object",
+            ):
+                merge_module.merge(
+                    source=self.source,
+                    target=self.target,
+                    busy_timeout_ms=10,
+                    spool_dir=self.root / "spool",
+                )
+        finally:
+            holder.rollback()
+            holder.close()
+
+        self.assertEqual(
+            [],
+            list((self.root / "spool").glob("*.json")),
+        )
+
+    def test_cli_can_acknowledge_durable_spool_under_persistent_lock(self):
+        source = make_db(self.source)
+        initial_target = make_db(self.target)
+        try:
+            record_sample(source)
+        finally:
+            source.close()
+            initial_target.close()
+
+        spool = self.root / "cli-spool"
+        holder = sqlite3.connect(self.target)
+        holder.execute("begin immediate")
+        try:
+            run = subprocess.run(
+                [
+                    sys.executable,
+                    str(SCRIPT),
+                    "--source",
+                    str(self.source),
+                    "--target",
+                    str(self.target),
+                    "--busy-timeout-ms",
+                    "10",
+                    "--spool-dir",
+                    str(spool),
+                ],
+                cwd=REPO,
+                text=True,
+                capture_output=True,
+            )
+        finally:
+            holder.rollback()
+            holder.close()
+
+        self.assertEqual(0, run.returncode, run.stdout + run.stderr)
+        payload = json.loads(run.stdout)
+        self.assertEqual("PASS", payload["status"])
+        self.assertEqual("DURABLE_SPOOL", payload["persistence_mode"])
+        self.assertEqual(1, payload["spooled_rows"])
+        self.assertEqual(1, len(list(spool.glob("*.json"))))
+
     def test_locked_canonical_database_fails_closed_with_bounded_timeout(self):
         source = make_db(self.source)
         target = make_db(self.target)

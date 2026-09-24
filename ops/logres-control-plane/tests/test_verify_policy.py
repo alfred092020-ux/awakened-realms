@@ -372,6 +372,25 @@ class VerifyFarmE2EPolicyTests(unittest.TestCase):
             text,
         )
 
+    def test_visual_truth_merge_uses_standard_wait_then_durable_spool(self):
+        text = SCRIPT.read_text()
+        self.assertIn(
+            'VISUAL_TRUTH_MERGE_TIMEOUT_MS="${LOGRES_VISUAL_TRUTH_MERGE_TIMEOUT_MS:-15000}"',
+            text,
+        )
+        self.assertIn(
+            'VISUAL_TRUTH_SPOOL_DIR="${LOGRES_VISUAL_TRUTH_SPOOL_DIR:-/home/ubuntu/logres/control/visual-truth-spool}"',
+            text,
+        )
+        self.assertIn(
+            '--spool-dir "$VISUAL_TRUTH_SPOOL_DIR"',
+            text,
+        )
+        self.assertIn(
+            '--busy-timeout-ms "$VISUAL_TRUTH_MERGE_TIMEOUT_MS"',
+            text,
+        )
+
     def test_visual_truth_merge_failure_fails_verification_closed(self):
         text = SCRIPT.read_text()
         self.assertIn(
