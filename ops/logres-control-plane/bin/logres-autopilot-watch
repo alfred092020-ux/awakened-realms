@@ -130,6 +130,7 @@ def run_locked_helper(name,*args):
         stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,check=False,
     )
 
+run_locked_helper("logres-frontier","reconcile","--apply")
 run_locked_helper("logres-route-reconcile")
 run_locked_helper("logres-ai-router")
 # Let the critical-path-ranked Copilot router fill safe implementation capacity.

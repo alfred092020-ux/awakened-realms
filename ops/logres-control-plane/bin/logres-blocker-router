@@ -1,7 +1,16 @@
 #!/usr/bin/env python3
 from __future__ import annotations
-import hashlib, os, sqlite3, subprocess, time
+import hashlib, os, sqlite3, subprocess, sys, time
 from datetime import datetime, timezone
+from pathlib import Path
+
+CONTROL_ROOT=Path(__file__).resolve().parents[1]
+sys.path.insert(0,str(CONTROL_ROOT/"lib"))
+from logres_frontier import (
+    claim_frontier,
+    is_generated_research_task,
+    register_child,
+)
 
 DB=os.environ.get("LOGRES_CONTROL_DB","/home/ubuntu/logres/control/control.sqlite")
 BRAIN=os.environ.get("LOGRES_BRAIN","/home/ubuntu/logres/bin/logres-brain")
@@ -55,16 +64,7 @@ for e in events:
         "select work_type,milestone from task_metadata where task_id=?",
         (parent,),
     ).fetchone()
-    generated_research_parent = (
-        meta is not None
-        and str(meta["work_type"] or "").lower()=="research"
-        and (
-            str(meta["milestone"] or "").lower()=="autoflow"
-            or "autoflow research child from ai evidence routing" in str(pt["note"] or "").lower()
-            or "auto-routed from brain event" in str(pt["note"] or "").lower()
-        )
-    )
-    if generated_research_parent:
+    if is_generated_research_task(c,parent):
         # A generated research/unblock task is already the bounded escalation.
         # Never manufacture another UNBLOCK descendant from its evidence result.
         continue
@@ -94,9 +94,53 @@ for e in events:
         ):
             continue
 
-    digest=hashlib.sha256(f"{e['id']}:{e['subject']}:{e['body']}".encode()).hexdigest()[:8].upper()
+    predicate_text=(
+        f"{e['event_type']}: {e['subject']}\n{e['body']}"
+    )
+    frontier=claim_frontier(
+        c,
+        parent_task_id=parent,
+        predicate_text=predicate_text,
+        origin_kind="BRAIN_BLOCKER",
+        origin_id=e["id"],
+        max_attempts=1,
+    )
+    if not frontier.create_allowed:
+        if frontier.state=="SATURATED":
+            c.execute(
+                """update tasks
+                      set status='BLOCKED_EVIDENCE',
+                          note=?,updated_at=?
+                    where id=? and status in ('READY','ACTIVE','BLOCKED_DEP')""",
+                (
+                    "Evidence ceiling reached by research frontier governor. "
+                    "Wait for genuinely new evidence rather than spawning "
+                    "recursive unblock work.",
+                    stamp,
+                    parent,
+                ),
+            )
+            if frontier.child_task_id:
+                c.execute(
+                    """update task_dependencies
+                          set kind='evidence',
+                              rationale=rationale || ' [frontier saturated]'
+                        where task_id=? and depends_on=? and kind='hard'
+                          and lower(coalesce(rationale,'')) like '%auto-routed blocker%'""",
+                    (parent,frontier.child_task_id),
+                )
+        continue
+
+    digest=frontier.predicate_sha[:8].upper()
     task_id=f"UNBLOCK-{parent}-{digest}"
     if c.execute("select 1 from tasks where id=?",(task_id,)).fetchone():
+        register_child(
+            c,
+            frontier,
+            child_task_id=task_id,
+            origin_kind="BRAIN_BLOCKER",
+            origin_id=e["id"],
+        )
         continue
 
     priority=max(0,int(pt["priority"] or 0))
@@ -108,7 +152,7 @@ for e in events:
     c.execute("""insert into task_metadata
       (task_id,milestone,work_type,concurrency_key,expected_minutes,evidence_policy,created_at,updated_at)
       values(?,?,?,?,?,?,?,?)""",
-      (task_id,"DEMO-0.2","research",f"unblock-{parent}",45,
+      (task_id,"autoflow","research",f"frontier:{frontier.root_task_id}",45,
        "Evidence-first. Resolve the exact blocker; do not broaden scope or invent unresolved historical facts.",
        stamp,stamp))
     for i,criterion in enumerate([
@@ -122,6 +166,13 @@ for e in events:
     c.execute("""insert or ignore into task_dependencies(task_id,depends_on,kind,rationale)
       values(?,?,'hard',?)""",
       (parent,task_id,f"Auto-routed blocker event {e['id']}: {e['subject']}"))
+    register_child(
+        c,
+        frontier,
+        child_task_id=task_id,
+        origin_kind="BRAIN_BLOCKER",
+        origin_id=e["id"],
+    )
 
     # Stop new implementation on the parent. Existing lease is not forcibly
     # destroyed here; the worker can hand off safely, while scheduling will no
