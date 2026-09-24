@@ -270,6 +270,21 @@ def dispatch_task(
     if not eligibility.allowed:
         raise PolicyError(f"task {task_id} is not Copilot eligible: {eligibility.reason}")
 
+    task_row = conn.execute(
+        """select coalesce(m.work_type,'implementation') work_type
+             from tasks t left join task_metadata m on m.task_id=t.id
+            where t.id=?""",
+        (task_id,),
+    ).fetchone()
+    work_type = str(task_row["work_type"]) if task_row is not None else "implementation"
+    mode = str(config.get("routing", {}).get("copilot_mode", "report_only"))
+    if mode == "report_only" and work_type != "review":
+        raise PolicyError(
+            f"Copilot mode report_only blocks work_type {work_type!r}"
+        )
+    if mode not in {"report_only", "bounded_implementation"}:
+        raise PolicyError(f"unknown Copilot mode: {mode!r}")
+
     route = claim_route(
         conn,
         RouteSpec(
