@@ -5,10 +5,48 @@ import {
 } from 'vitest'
 
 import {
+  applyReconstructedLogresQuestAccept,
+  applyReconstructedLogresQuestCompletion,
+  applyReconstructedLogresQuestProgress,
+  applyReconstructedLogresQuestRewardGrant,
+  createReconstructedLogresQuestFlowState,
   createReconstructedLogresQuestInstance,
   createUnresolvedTutorialQuestInstance,
   LOGRES_RECONSTRUCTED_QUEST_INSTANCE_PROVENANCE,
 } from '../src/game/logres/server/LogresQuestInstanceAuthority'
+
+function createQuestInstanceForFlow() {
+  return createReconstructedLogresQuestInstance({
+    instanceKey:
+      'flow-instance',
+    questRecordId:
+      null,
+    mapId:
+      null,
+    roomId:
+      null,
+    playerSpawn:
+      null,
+    objectiveIds:
+      [],
+    encounterIds:
+      [],
+    npcStateIds:
+      [],
+    tutorialOverlayIds:
+      [],
+    rules: {
+      timeLimitSeconds:
+        null,
+      defeatLimit:
+        null,
+      battleCapacity:
+        null,
+      requiredPower:
+        null,
+    },
+  })
+}
 
 describe(
   'reconstructed Logres quest-instance authority',
@@ -291,6 +329,285 @@ describe(
         ).toBe(
           true,
         )
+      },
+    )
+
+    it(
+      'keeps accept/progress/completion/reward transitions server-authoritative and idempotent',
+      () => {
+        const authenticator = {
+          actorRef:
+            'player-1',
+          sessionToken:
+            'session-1',
+        }
+
+        const issued =
+          createReconstructedLogresQuestFlowState({
+            instance:
+              createQuestInstanceForFlow(),
+            authenticator,
+            originalQuestUid:
+              null,
+          })
+
+        const accepted =
+          applyReconstructedLogresQuestAccept(
+            issued,
+            {
+              requestId:
+                'accept-req-1',
+              authenticator,
+            },
+          )
+
+        expect(
+          accepted.applied,
+        ).toBe(
+          true,
+        )
+        expect(
+          accepted.state.phase,
+        ).toBe(
+          'accepted',
+        )
+
+        const acceptRetry =
+          applyReconstructedLogresQuestAccept(
+            accepted.state,
+            {
+              requestId:
+                'accept-req-1',
+              authenticator,
+            },
+          )
+
+        expect(
+          acceptRetry.applied,
+        ).toBe(
+          false,
+        )
+        expect(
+          acceptRetry.state,
+        ).toBe(
+          accepted.state,
+        )
+
+        const progressed =
+          applyReconstructedLogresQuestProgress(
+            accepted.state,
+            {
+              requestId:
+                'progress-req-1',
+              progressKey:
+                'kill-1-slime',
+              authenticator,
+            },
+          )
+
+        expect(
+          progressed.applied,
+        ).toBe(
+          true,
+        )
+        expect(
+          progressed.state.phase,
+        ).toBe(
+          'in-progress',
+        )
+        expect(
+          progressed.state.progressKeys,
+        ).toEqual([
+          'kill-1-slime',
+        ])
+
+        const progressRetry =
+          applyReconstructedLogresQuestProgress(
+            progressed.state,
+            {
+              requestId:
+                'progress-req-1',
+              progressKey:
+                'kill-1-slime',
+              authenticator,
+            },
+          )
+
+        expect(
+          progressRetry.applied,
+        ).toBe(
+          false,
+        )
+        expect(
+          progressRetry.state,
+        ).toBe(
+          progressed.state,
+        )
+
+        const completed =
+          applyReconstructedLogresQuestCompletion(
+            progressed.state,
+            {
+              requestId:
+                'complete-req-1',
+              authenticator,
+              originalCompletionRef:
+                null,
+            },
+          )
+
+        expect(
+          completed.applied,
+        ).toBe(
+          true,
+        )
+        expect(
+          completed.state.phase,
+        ).toBe(
+          'completed',
+        )
+        expect(
+          completed.state.originalCompletionRef,
+        ).toBeNull()
+
+        const completeRetry =
+          applyReconstructedLogresQuestCompletion(
+            completed.state,
+            {
+              requestId:
+                'complete-req-1',
+              authenticator,
+              originalCompletionRef:
+                'ignored-on-retry',
+            },
+          )
+
+        expect(
+          completeRetry.applied,
+        ).toBe(
+          false,
+        )
+        expect(
+          completeRetry.state,
+        ).toBe(
+          completed.state,
+        )
+
+        const rewarded =
+          applyReconstructedLogresQuestRewardGrant(
+            completed.state,
+            {
+              grantKey:
+                'grant-1',
+              authenticator,
+              originalRewardRef:
+                null,
+            },
+          )
+
+        expect(
+          rewarded.applied,
+        ).toBe(
+          true,
+        )
+        expect(
+          rewarded.state.phase,
+        ).toBe(
+          'reward-granted',
+        )
+        expect(
+          rewarded.state.originalRewardRef,
+        ).toBeNull()
+
+        const rewardRetry =
+          applyReconstructedLogresQuestRewardGrant(
+            rewarded.state,
+            {
+              grantKey:
+                'grant-1',
+              authenticator,
+              originalRewardRef:
+                'ignored-on-retry',
+            },
+          )
+
+        expect(
+          rewardRetry.applied,
+        ).toBe(
+          false,
+        )
+        expect(
+          rewardRetry.state,
+        ).toBe(
+          rewarded.state,
+        )
+      },
+    )
+
+    it(
+      'requires authenticated actor/session ownership for persistence mutations',
+      () => {
+        const state =
+          createReconstructedLogresQuestFlowState({
+            instance:
+              createQuestInstanceForFlow(),
+            authenticator: {
+              actorRef:
+                'player-1',
+              sessionToken:
+                'session-1',
+            },
+            originalQuestUid:
+              null,
+          })
+
+        expect(
+          () =>
+            applyReconstructedLogresQuestAccept(
+              state,
+              {
+                requestId:
+                  'accept-1',
+                authenticator: {
+                  actorRef:
+                    'player-2',
+                  sessionToken:
+                    'session-1',
+                },
+              },
+            ),
+        ).toThrow(
+          'unauthenticated actor/session pair',
+        )
+      },
+    )
+
+    it(
+      'keeps unresolved historical quest identifiers nullable in persisted flow state',
+      () => {
+        const flow =
+          createReconstructedLogresQuestFlowState({
+            instance:
+              createQuestInstanceForFlow(),
+            authenticator: {
+              actorRef:
+                'player-1',
+              sessionToken:
+                'session-1',
+            },
+            originalQuestUid:
+              null,
+          })
+
+        expect(
+          flow.originalQuestUid,
+        ).toBeNull()
+        expect(
+          flow.originalCompletionRef,
+        ).toBeNull()
+        expect(
+          flow.originalRewardRef,
+        ).toBeNull()
       },
     )
   },

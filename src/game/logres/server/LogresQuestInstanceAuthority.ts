@@ -378,3 +378,594 @@ export function createUnresolvedTutorialQuestInstance():
     })
   )
 }
+
+export type ReconstructedLogresQuestFlowPhase =
+  | 'issued'
+  | 'accepted'
+  | 'in-progress'
+  | 'completed'
+  | 'reward-granted'
+
+export interface ReconstructedLogresQuestAuthenticator {
+  actorRef: string
+  sessionToken: string
+}
+
+export interface ReconstructedLogresQuestFlowState {
+  provenance:
+    typeof LOGRES_RECONSTRUCTED_QUEST_INSTANCE_PROVENANCE
+  revision: number
+  instance:
+    Readonly<ReconstructedLogresQuestInstance>
+  phase:
+    ReconstructedLogresQuestFlowPhase
+  authenticatedActorRef: string
+  authenticatedSessionToken: string
+  originalQuestUid:
+    | string
+    | null
+  progressKeys:
+    readonly string[]
+  appliedProgressRequestIds:
+    readonly string[]
+  acceptRequestId:
+    | string
+    | null
+  completionRequestId:
+    | string
+    | null
+  rewardGrantKey:
+    | string
+    | null
+  originalCompletionRef:
+    | string
+    | null
+  originalRewardRef:
+    | string
+    | null
+}
+
+export interface ReconstructedLogresQuestFlowApplyResult {
+  applied: boolean
+  state:
+    Readonly<ReconstructedLogresQuestFlowState>
+}
+
+function requireAuthenticator(
+  auth:
+    ReconstructedLogresQuestAuthenticator,
+): ReconstructedLogresQuestAuthenticator {
+  return {
+    actorRef:
+      requireNonEmptyLocalKey(
+        auth.actorRef,
+      ),
+    sessionToken:
+      requireNonEmptyLocalKey(
+        auth.sessionToken,
+      ),
+  }
+}
+
+function assertAuthenticatedQuestMutation(
+  state:
+    Readonly<ReconstructedLogresQuestFlowState>,
+  auth:
+    ReconstructedLogresQuestAuthenticator,
+): void {
+  const normalizedAuth =
+    requireAuthenticator(
+      auth,
+    )
+
+  if (
+    normalizedAuth.actorRef !==
+      state.authenticatedActorRef ||
+    normalizedAuth.sessionToken !==
+      state.authenticatedSessionToken
+  ) {
+    throw new Error(
+      'Quest flow mutation rejected for unauthenticated actor/session pair',
+    )
+  }
+}
+
+function validateQuestFlowState(
+  state:
+    Readonly<ReconstructedLogresQuestFlowState>,
+): void {
+  if (
+    state.provenance !==
+    LOGRES_RECONSTRUCTED_QUEST_INSTANCE_PROVENANCE
+  ) {
+    throw new Error(
+      'Quest flow state provenance must be RECONSTRUCTED',
+    )
+  }
+
+  if (
+    !Number.isSafeInteger(
+      state.revision,
+    ) ||
+    state.revision < 0
+  ) {
+    throw new Error(
+      'Quest flow revision must be a non-negative safe integer',
+    )
+  }
+}
+
+function nextQuestFlowState(
+  state:
+    Readonly<ReconstructedLogresQuestFlowState>,
+  patch: {
+    phase?:
+      ReconstructedLogresQuestFlowPhase
+    progressKeys?:
+      readonly string[]
+    appliedProgressRequestIds?:
+      readonly string[]
+    acceptRequestId?:
+      | string
+      | null
+    completionRequestId?:
+      | string
+      | null
+    rewardGrantKey?:
+      | string
+      | null
+    originalCompletionRef?:
+      | string
+      | null
+    originalRewardRef?:
+      | string
+      | null
+  },
+): Readonly<ReconstructedLogresQuestFlowState> {
+  if (
+    state.revision ===
+    Number.MAX_SAFE_INTEGER
+  ) {
+    throw new Error(
+      'Quest flow revision exceeds safe integer range',
+    )
+  }
+
+  return Object.freeze({
+    provenance:
+      LOGRES_RECONSTRUCTED_QUEST_INSTANCE_PROVENANCE,
+    revision:
+      state.revision +
+      1,
+    instance:
+      state.instance,
+    phase:
+      patch.phase ??
+      state.phase,
+    authenticatedActorRef:
+      state.authenticatedActorRef,
+    authenticatedSessionToken:
+      state.authenticatedSessionToken,
+    originalQuestUid:
+      state.originalQuestUid,
+    progressKeys:
+      Object.freeze([
+        ...(
+          patch.progressKeys ??
+          state.progressKeys
+        ),
+      ]),
+    appliedProgressRequestIds:
+      Object.freeze([
+        ...(
+          patch.appliedProgressRequestIds ??
+          state.appliedProgressRequestIds
+        ),
+      ]),
+    acceptRequestId:
+      patch.acceptRequestId ??
+      state.acceptRequestId,
+    completionRequestId:
+      patch.completionRequestId ??
+      state.completionRequestId,
+    rewardGrantKey:
+      patch.rewardGrantKey ??
+      state.rewardGrantKey,
+    originalCompletionRef:
+      patch.originalCompletionRef ??
+      state.originalCompletionRef,
+    originalRewardRef:
+      patch.originalRewardRef ??
+      state.originalRewardRef,
+  })
+}
+
+/**
+ * Creates a reconstruction-local quest flow state that remains explicitly
+ * server-authoritative and authenticated.
+ *
+ * RECONSTRUCTED contract:
+ * - accept/progress/completion/reward transitions are applied by the authority
+ *   state only
+ * - unknown historical identifiers remain nullable
+ * - actor/session ownership is explicit for persistence and replay safety
+ */
+export function createReconstructedLogresQuestFlowState(
+  input: {
+    instance:
+      Readonly<ReconstructedLogresQuestInstance>
+    authenticator:
+      ReconstructedLogresQuestAuthenticator
+    originalQuestUid:
+      | string
+      | null
+  },
+): Readonly<ReconstructedLogresQuestFlowState> {
+  const authenticator =
+    requireAuthenticator(
+      input.authenticator,
+    )
+
+  return Object.freeze({
+    provenance:
+      LOGRES_RECONSTRUCTED_QUEST_INSTANCE_PROVENANCE,
+    revision:
+      0,
+    instance:
+      input.instance,
+    phase:
+      'issued',
+    authenticatedActorRef:
+      authenticator.actorRef,
+    authenticatedSessionToken:
+      authenticator.sessionToken,
+    originalQuestUid:
+      requireOptionalString(
+        input.originalQuestUid,
+        'Quest originalQuestUid',
+      ),
+    progressKeys:
+      Object.freeze(
+        [],
+      ),
+    appliedProgressRequestIds:
+      Object.freeze(
+        [],
+      ),
+    acceptRequestId:
+      null,
+    completionRequestId:
+      null,
+    rewardGrantKey:
+      null,
+    originalCompletionRef:
+      null,
+    originalRewardRef:
+      null,
+  })
+}
+
+export function applyReconstructedLogresQuestAccept(
+  state:
+    Readonly<ReconstructedLogresQuestFlowState>,
+  input: {
+    requestId: string
+    authenticator:
+      ReconstructedLogresQuestAuthenticator
+  },
+): ReconstructedLogresQuestFlowApplyResult {
+  validateQuestFlowState(
+    state,
+  )
+  assertAuthenticatedQuestMutation(
+    state,
+    input.authenticator,
+  )
+
+  const requestId =
+    requireNonEmptyLocalKey(
+      input.requestId,
+    )
+
+  if (
+    state.acceptRequestId ===
+    requestId
+  ) {
+    return {
+      applied:
+        false,
+      state,
+    }
+  }
+
+  if (
+    state.acceptRequestId !==
+    null
+  ) {
+    throw new Error(
+      'Quest flow already accepted by a different request id',
+    )
+  }
+
+  if (
+    state.phase !==
+    'issued'
+  ) {
+    throw new Error(
+      'Quest accept requires issued phase',
+    )
+  }
+
+  return {
+    applied:
+      true,
+    state:
+      nextQuestFlowState(
+        state,
+        {
+          phase:
+            'accepted',
+          acceptRequestId:
+            requestId,
+        },
+      ),
+  }
+}
+
+export function applyReconstructedLogresQuestProgress(
+  state:
+    Readonly<ReconstructedLogresQuestFlowState>,
+  input: {
+    requestId: string
+    progressKey: string
+    authenticator:
+      ReconstructedLogresQuestAuthenticator
+  },
+): ReconstructedLogresQuestFlowApplyResult {
+  validateQuestFlowState(
+    state,
+  )
+  assertAuthenticatedQuestMutation(
+    state,
+    input.authenticator,
+  )
+
+  const requestId =
+    requireNonEmptyLocalKey(
+      input.requestId,
+    )
+
+  if (
+    state
+      .appliedProgressRequestIds
+      .includes(
+        requestId,
+      )
+  ) {
+    return {
+      applied:
+        false,
+      state,
+    }
+  }
+
+  if (
+    state.phase ===
+    'issued'
+  ) {
+    throw new Error(
+      'Quest progress requires accepted phase',
+    )
+  }
+
+  if (
+    state.phase ===
+      'completed' ||
+    state.phase ===
+      'reward-granted'
+  ) {
+    throw new Error(
+      'Quest progress cannot advance after completion',
+    )
+  }
+
+  const progressKey =
+    requireNonEmptyLocalKey(
+      input.progressKey,
+    )
+
+  if (
+    state.progressKeys.includes(
+      progressKey,
+    )
+  ) {
+    return {
+      applied:
+        false,
+      state,
+    }
+  }
+
+  return {
+    applied:
+      true,
+    state:
+      nextQuestFlowState(
+        state,
+        {
+          phase:
+            'in-progress',
+          progressKeys: [
+            ...state.progressKeys,
+            progressKey,
+          ],
+          appliedProgressRequestIds:
+            [
+              ...state.appliedProgressRequestIds,
+              requestId,
+            ],
+        },
+      ),
+  }
+}
+
+export function applyReconstructedLogresQuestCompletion(
+  state:
+    Readonly<ReconstructedLogresQuestFlowState>,
+  input: {
+    requestId: string
+    authenticator:
+      ReconstructedLogresQuestAuthenticator
+    originalCompletionRef:
+      | string
+      | null
+  },
+): ReconstructedLogresQuestFlowApplyResult {
+  validateQuestFlowState(
+    state,
+  )
+  assertAuthenticatedQuestMutation(
+    state,
+    input.authenticator,
+  )
+
+  const requestId =
+    requireNonEmptyLocalKey(
+      input.requestId,
+    )
+
+  if (
+    state.completionRequestId ===
+    requestId
+  ) {
+    return {
+      applied:
+        false,
+      state,
+    }
+  }
+
+  if (
+    state.completionRequestId !==
+    null
+  ) {
+    throw new Error(
+      'Quest completion already recorded by a different request id',
+    )
+  }
+
+  if (
+    state.phase ===
+    'issued'
+  ) {
+    throw new Error(
+      'Quest completion requires accepted or in-progress phase',
+    )
+  }
+
+  if (
+    state.phase ===
+    'reward-granted'
+  ) {
+    throw new Error(
+      'Quest completion cannot be changed after reward grant',
+    )
+  }
+
+  return {
+    applied:
+      true,
+    state:
+      nextQuestFlowState(
+        state,
+        {
+          phase:
+            'completed',
+          completionRequestId:
+            requestId,
+          originalCompletionRef:
+            requireOptionalString(
+              input.originalCompletionRef,
+              'Quest originalCompletionRef',
+            ),
+        },
+      ),
+  }
+}
+
+export function applyReconstructedLogresQuestRewardGrant(
+  state:
+    Readonly<ReconstructedLogresQuestFlowState>,
+  input: {
+    grantKey: string
+    authenticator:
+      ReconstructedLogresQuestAuthenticator
+    originalRewardRef:
+      | string
+      | null
+  },
+): ReconstructedLogresQuestFlowApplyResult {
+  validateQuestFlowState(
+    state,
+  )
+  assertAuthenticatedQuestMutation(
+    state,
+    input.authenticator,
+  )
+
+  const grantKey =
+    requireNonEmptyLocalKey(
+      input.grantKey,
+    )
+
+  if (
+    state.rewardGrantKey ===
+    grantKey
+  ) {
+    return {
+      applied:
+        false,
+      state,
+    }
+  }
+
+  if (
+    state.rewardGrantKey !==
+    null
+  ) {
+    throw new Error(
+      'Quest reward already granted by a different grant key',
+    )
+  }
+
+  if (
+    state.phase !==
+      'completed' &&
+    state.phase !==
+      'reward-granted'
+  ) {
+    throw new Error(
+      'Quest reward grant requires completed phase',
+    )
+  }
+
+  return {
+    applied:
+      true,
+    state:
+      nextQuestFlowState(
+        state,
+        {
+          phase:
+            'reward-granted',
+          rewardGrantKey:
+            grantKey,
+          originalRewardRef:
+            requireOptionalString(
+              input.originalRewardRef,
+              'Quest originalRewardRef',
+            ),
+        },
+      ),
+  }
+}
