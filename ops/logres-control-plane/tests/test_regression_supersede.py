@@ -19,7 +19,8 @@ def make_db():
           status text not null,
           tasks_json text not null,
           result_sha text,
-          created_epoch real not null
+          created_epoch real not null,
+          verification_mode text
         );
         create table regressions(
           id integer primary key,
@@ -49,12 +50,29 @@ def make_db():
     return conn
 
 
-def preflight(conn, row_id, status, tasks, result, created):
+def preflight(
+    conn,
+    row_id,
+    status,
+    tasks,
+    result,
+    created,
+    verification_mode=None,
+):
     import json
 
+    if verification_mode is None and status in {"VERIFIED", "APPLIED"}:
+        verification_mode = "full-e2e"
     conn.execute(
-        "insert into integration_preflights values(?,?,?,?,?)",
-        (row_id, status, json.dumps(tasks), result, created),
+        "insert into integration_preflights values(?,?,?,?,?,?)",
+        (
+            row_id,
+            status,
+            json.dumps(tasks),
+            result,
+            created,
+            verification_mode,
+        ),
     )
 
 
@@ -110,6 +128,107 @@ class RegressionSupersedeTests(unittest.TestCase):
             {"REG-MERGE", "REG-CAND-YES"},
             {item.task_id for item in targets},
         )
+
+    def test_exact_full_e2e_result_supersedes_pruned_failure_rows(self):
+        conn = make_db()
+        sha = "e" * 40
+        preflight(conn, 20, "APPLIED", ["REPAIR"], sha, 20)
+        regression(conn, 1, "REG-CAND", "candidate-verify", sha, 10)
+        regression(conn, 2, "REG-MERGE", "merge-preflight", sha, 11)
+
+        targets = plan_supersede(conn, 20)
+
+        self.assertEqual([1, 2], [item.regression_id for item in targets])
+        self.assertEqual(
+            {"exact-result-sha"},
+            {item.proof for item in targets},
+        )
+        self.assertTrue(
+            all(item.failed_preflight_id is None for item in targets)
+        )
+
+    def test_exact_result_requires_full_e2e(self):
+        conn = make_db()
+        sha = "e" * 40
+        preflight(
+            conn,
+            20,
+            "APPLIED",
+            ["REPAIR"],
+            sha,
+            20,
+            verification_mode="fast",
+        )
+        regression(conn, 1, "REG-CAND", "candidate-verify", sha, 10)
+
+        self.assertEqual([], plan_supersede(conn, 20))
+
+    def test_exact_result_does_not_touch_different_sha(self):
+        conn = make_db()
+        sha = "e" * 40
+        preflight(conn, 20, "VERIFIED", ["REPAIR"], sha, 20)
+        regression(
+            conn,
+            1,
+            "REG-CAND",
+            "candidate-verify",
+            "x" * 40,
+            10,
+        )
+
+        self.assertEqual([], plan_supersede(conn, 20))
+
+    def test_exact_result_preserves_active_repair_task(self):
+        conn = make_db()
+        sha = "e" * 40
+        preflight(conn, 20, "APPLIED", ["REPAIR"], sha, 20)
+        regression(conn, 1, "REG-CAND", "candidate-verify", sha, 10)
+        conn.execute(
+            "update tasks set status='ACTIVE' where id='REG-CAND'"
+        )
+
+        result = apply_supersede(
+            conn,
+            20,
+            active_task_ids={"REG-CAND"},
+        )
+
+        self.assertEqual(
+            ["REG-CAND"],
+            result["preserved_active_tasks"],
+        )
+        self.assertEqual(
+            "SUPERSEDED",
+            conn.execute(
+                "select status from regressions where id=1"
+            ).fetchone()[0],
+        )
+        self.assertEqual(
+            "ACTIVE",
+            conn.execute(
+                "select status from tasks where id='REG-CAND'"
+            ).fetchone()[0],
+        )
+        self.assertEqual(
+            "exact-result-sha",
+            result["superseded"][0]["proof"],
+        )
+
+    def test_exact_result_apply_is_idempotent(self):
+        conn = make_db()
+        sha = "e" * 40
+        preflight(conn, 20, "APPLIED", ["REPAIR"], sha, 20)
+        regression(conn, 1, "REG-CAND", "candidate-verify", sha, 10)
+
+        first = apply_supersede(conn, 20)
+        second = apply_supersede(conn, 20)
+
+        self.assertEqual(1, len(first["superseded"]))
+        self.assertEqual([], second["superseded"])
+        note = conn.execute(
+            "select note from tasks where id='REG-CAND'"
+        ).fetchone()[0]
+        self.assertIn("exact result SHA", note)
 
     def test_apply_is_idempotent(self):
         conn = make_db()
