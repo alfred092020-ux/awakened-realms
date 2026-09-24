@@ -1,0 +1,249 @@
+#!/usr/bin/env python3
+from __future__ import annotations
+
+import argparse
+import hashlib
+import json
+import os
+import sqlite3
+import sys
+import uuid
+from datetime import datetime, timezone
+from pathlib import Path
+
+ROOT = Path(os.environ.get("LOGRES_ROOT", "/home/ubuntu/logres"))
+LIB = Path(__file__).resolve().parents[1] / "lib"
+sys.path.insert(0, str(LIB))
+
+from logres_journal import append_chat_message, open_chat
+
+DB = Path(os.environ.get("LOGRES_CONTROL_DB", ROOT / "control/control.sqlite"))
+STATE_ROOT = Path(
+    os.environ.get("LOGRES_CHAT_STATE_ROOT", ROOT / "control/chat-runtime")
+)
+
+
+def _compact(value) -> str:
+    return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+
+
+def _safe_state_name(chat_id: str) -> str:
+    stem = "".join(c if c.isalnum() or c in "._-" else "-" for c in chat_id)
+    stem = stem.strip("-._") or "chat"
+    digest = hashlib.sha256(chat_id.encode("utf-8")).hexdigest()[:10]
+    return f"{stem[:80]}-{digest}.json"
+
+
+def _state_path(chat_id: str) -> Path:
+    return STATE_ROOT / _safe_state_name(chat_id)
+
+
+def _conn() -> sqlite3.Connection:
+    DB.parent.mkdir(parents=True, exist_ok=True)
+    c = sqlite3.connect(DB, timeout=30)
+    c.row_factory = sqlite3.Row
+    c.execute("pragma busy_timeout=30000")
+    return c
+
+
+def _json_object(value: str) -> dict:
+    parsed = json.loads(value)
+    if not isinstance(parsed, dict):
+        raise argparse.ArgumentTypeError("value must decode to a JSON object")
+    return parsed
+
+
+def _read_state(chat_id: str) -> dict | None:
+    path = _state_path(chat_id)
+    if not path.is_file():
+        return None
+    data = json.loads(path.read_text(encoding="utf-8"))
+    if data.get("chat_id") != chat_id:
+        raise ValueError(f"chat runtime state mismatch: {path}")
+    return data
+
+
+def _write_state(chat_id: str, payload: dict) -> Path:
+    STATE_ROOT.mkdir(parents=True, exist_ok=True)
+    os.chmod(STATE_ROOT, 0o700)
+    path = _state_path(chat_id)
+    temp = path.with_name(path.name + f".tmp.{os.getpid()}")
+    temp.write_text(_compact(payload) + "\n", encoding="utf-8")
+    os.chmod(temp, 0o600)
+    with temp.open("r+", encoding="utf-8") as handle:
+        handle.flush()
+        os.fsync(handle.fileno())
+    os.replace(temp, path)
+    os.chmod(path, 0o600)
+    return path
+
+
+def _new_session_id(chat_id: str) -> str:
+    stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    return f"{chat_id}-{stamp}-{uuid.uuid4().hex[:10]}"
+
+
+def ensure_session(
+    chat_id: str,
+    *,
+    session_id: str | None = None,
+    new: bool = False,
+    title: str = "",
+    source: str = "chatgpt",
+    metadata: dict | None = None,
+) -> dict:
+    state = None if new or session_id else _read_state(chat_id)
+    selected = session_id or (state or {}).get("session_id") or _new_session_id(chat_id)
+    c = _conn()
+    try:
+        session = open_chat(
+            c,
+            chat_id=chat_id,
+            session_id=selected,
+            title=title,
+            source=source,
+            metadata=metadata or {},
+        )
+    finally:
+        c.close()
+    payload = {
+        "chat_id": chat_id,
+        "session_id": selected,
+        "source": source,
+        "title": title or session.get("title", ""),
+        "updated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+    }
+    state_path = _write_state(chat_id, payload)
+    session["state_path"] = str(state_path)
+    session["resumed"] = bool(state and state.get("session_id") == selected)
+    return session
+
+
+def current_session(chat_id: str) -> dict:
+    state = _read_state(chat_id)
+    if not state:
+        raise ValueError(f"no active chat-memory session for {chat_id}")
+    c = _conn()
+    try:
+        session = open_chat(
+            c,
+            chat_id=chat_id,
+            session_id=state["session_id"],
+            source=state.get("source", "chatgpt"),
+        )
+    finally:
+        c.close()
+    session["state_path"] = str(_state_path(chat_id))
+    return session
+
+
+def append_live(
+    chat_id: str,
+    role: str,
+    content: str,
+    *,
+    external_id: str | None = None,
+    ts: str | None = None,
+    metadata: dict | None = None,
+) -> dict:
+    state = _read_state(chat_id)
+    if not state:
+        ensure_session(chat_id)
+        state = _read_state(chat_id)
+    assert state is not None
+    c = _conn()
+    try:
+        result = append_chat_message(
+            c,
+            session_id=state["session_id"],
+            role=role,
+            content=content,
+            external_id=external_id,
+            ts=ts,
+            metadata=metadata or {},
+            source_path="live-chat",
+        )
+    finally:
+        c.close()
+    result["chat_id"] = chat_id
+    return result
+
+
+def _read_content(args) -> str:
+    if args.text is not None:
+        return args.text
+    if args.file is not None:
+        return Path(args.file).read_text(encoding="utf-8")
+    return sys.stdin.read()
+
+
+def main() -> int:
+    p = argparse.ArgumentParser(prog="logres-chat-memory")
+    sub = p.add_subparsers(dest="cmd", required=True)
+
+    ensure = sub.add_parser("ensure")
+    ensure.add_argument("chat_id")
+    ensure.add_argument("--session")
+    ensure.add_argument("--new", action="store_true")
+    ensure.add_argument("--title", default="")
+    ensure.add_argument("--source", default="chatgpt")
+    ensure.add_argument("--metadata", type=_json_object, default={})
+
+    new = sub.add_parser("new")
+    new.add_argument("chat_id")
+    new.add_argument("--title", default="")
+    new.add_argument("--source", default="chatgpt")
+    new.add_argument("--metadata", type=_json_object, default={})
+
+    current = sub.add_parser("current")
+    current.add_argument("chat_id")
+
+    append = sub.add_parser("append")
+    append.add_argument("chat_id")
+    append.add_argument(
+        "role",
+        choices=("user", "assistant", "tool-summary", "system-note"),
+    )
+    source = append.add_mutually_exclusive_group()
+    source.add_argument("--text")
+    source.add_argument("--file")
+    append.add_argument("--external-id")
+    append.add_argument("--ts")
+    append.add_argument("--metadata", type=_json_object, default={})
+
+    args = p.parse_args()
+    if args.cmd == "ensure":
+        out = ensure_session(
+            args.chat_id,
+            session_id=args.session,
+            new=args.new,
+            title=args.title,
+            source=args.source,
+            metadata=args.metadata,
+        )
+    elif args.cmd == "new":
+        out = ensure_session(
+            args.chat_id,
+            new=True,
+            title=args.title,
+            source=args.source,
+            metadata=args.metadata,
+        )
+    elif args.cmd == "current":
+        out = current_session(args.chat_id)
+    else:
+        out = append_live(
+            args.chat_id,
+            args.role,
+            _read_content(args),
+            external_id=args.external_id,
+            ts=args.ts,
+            metadata=args.metadata,
+        )
+
+    print(json.dumps(out, indent=2, sort_keys=True, ensure_ascii=False))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

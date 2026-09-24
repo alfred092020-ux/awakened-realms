@@ -243,6 +243,100 @@ def open_chat(conn: sqlite3.Connection, *, chat_id: str, session_id: str | None 
     return _session_dict(row, message_count=_message_count(conn, session_id))
 
 
+
+def append_chat_message(conn: sqlite3.Connection, *, session_id: str, role: str,
+                        content: str, ts: str | None = None,
+                        external_id: str | None = None,
+                        metadata: dict | None = None,
+                        source_path: str = "live") -> dict:
+    """Append one live message with an ordinal allocated under a SQLite write lock."""
+    ensure_schema(conn)
+    role = str(role).strip()
+    if not role:
+        raise ValueError("role must not be empty")
+    if not isinstance(content, str):
+        raise TypeError("content must be a string")
+    if metadata is not None and not isinstance(metadata, dict):
+        raise TypeError("metadata must be a dict")
+
+    session = conn.execute(
+        "select archive_path from chat_sessions where session_id=?", (session_id,)
+    ).fetchone()
+    if not session:
+        raise ValueError(f"unknown chat session: {session_id}")
+    archive_path = Path(session[0])
+
+    conn.execute("begin immediate")
+    try:
+        if external_id:
+            prior = conn.execute(
+                """select id,session_id,ordinal,ts,role,content,external_id,
+                          message_sha256,metadata_json,source_path,ingested_at
+                     from chat_messages
+                    where session_id=? and external_id=?
+                    order by ordinal limit 1""",
+                (session_id, external_id),
+            ).fetchone()
+            if prior:
+                if prior[4] != role or prior[5] != content:
+                    raise ValueError(
+                        f"external_id {external_id!r} already exists with different content"
+                    )
+                conn.commit()
+                out = _message_dict(prior)
+                out.update({"inserted": False, "archive_appended": 0})
+                return out
+
+        ordinal = int(conn.execute(
+            "select coalesce(max(ordinal),0)+1 from chat_messages where session_id=?",
+            (session_id,),
+        ).fetchone()[0])
+        stamp = ts or now()
+        source_record = {
+            "ordinal": ordinal,
+            "ts": stamp,
+            "role": role,
+            "content": content,
+            "id": external_id,
+            "metadata": metadata or {},
+        }
+        raw_json = _compact(source_record)
+        record = _normalize_message(
+            source_record, line_no=ordinal, raw_json=raw_json
+        )
+        cur = conn.execute(
+            """insert into chat_messages(
+                 session_id,ordinal,ts,role,content,external_id,message_sha256,
+                 raw_json,metadata_json,source_path,ingested_at
+               ) values(?,?,?,?,?,?,?,?,?,?,?)""",
+            (
+                session_id, ordinal, record["ts"], record["role"],
+                record["content"], record["external_id"], record["message_sha256"],
+                record["raw_json"], _compact(record["metadata"]),
+                source_path, now(),
+            ),
+        )
+        conn.execute(
+            "update chat_sessions set updated_at=? where session_id=?",
+            (now(), session_id),
+        )
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+
+    archived = _append_archive_records(archive_path, session_id, [record])
+    row = conn.execute(
+        """select id,session_id,ordinal,ts,role,content,external_id,message_sha256,
+                  metadata_json,source_path,ingested_at
+             from chat_messages where id=?""",
+        (int(cur.lastrowid),),
+    ).fetchone()
+    out = _message_dict(row)
+    out.update({"inserted": True, "archive_appended": archived})
+    return out
+
+
 def list_chats(conn: sqlite3.Connection, *, chat_id: str | None = None,
                limit: int = 100) -> list[dict]:
     ensure_schema(conn)

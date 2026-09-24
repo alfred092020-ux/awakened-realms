@@ -1,0 +1,115 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT="${LOGRES_ROOT:-/home/ubuntu/logres}"
+CHAT="${1:?usage: logres-chat-start <chat-id> [--name NAME] [--title TITLE] [--session ID|--new-session]}"
+shift
+
+DISPLAY=""
+TITLE=""
+SESSION=""
+NEW_SESSION=0
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --name)
+      DISPLAY="${2:?--name requires a value}"
+      shift 2
+      ;;
+    --title)
+      TITLE="${2:?--title requires a value}"
+      shift 2
+      ;;
+    --session)
+      SESSION="${2:?--session requires a value}"
+      shift 2
+      ;;
+    --new-session)
+      NEW_SESSION=1
+      shift
+      ;;
+    *)
+      echo "unknown argument: $1" >&2
+      exit 2
+      ;;
+  esac
+done
+
+[[ -n "$DISPLAY" ]] || DISPLAY="$CHAT"
+
+"$ROOT/bin/logres-brain" join "$CHAT" --name "$DISPLAY" >/dev/null
+
+MEMORY_ARGS=(ensure "$CHAT" --title "$TITLE")
+if [[ -n "$SESSION" ]]; then
+  MEMORY_ARGS+=(--session "$SESSION")
+fi
+if [[ "$NEW_SESSION" == "1" ]]; then
+  MEMORY_ARGS+=(--new)
+fi
+
+MEMORY_JSON="$("$ROOT/bin/logres-chat-memory" "${MEMORY_ARGS[@]}")"
+SESSION_ID="$(printf '%s' "$MEMORY_JSON" | python3 -c 'import json,sys; print(json.load(sys.stdin)["session_id"])')"
+echo "CHAT_MEMORY_SESSION=$SESSION_ID"
+
+CATCHUP_LIMIT=40
+[[ "$CHAT" == "lead" ]] || CATCHUP_LIMIT=20
+"$ROOT/bin/logres-brain" catchup "$CHAT" --limit "$CATCHUP_LIMIT"
+"$ROOT/bin/logres-sync-health" --quiet || true
+
+echo
+echo "=== COORDINATION BRIEF ==="
+"$ROOT/bin/logres-coordinator" brief "$CHAT" || true
+
+if [[ "$CHAT" == "lead" ]]; then
+  "$ROOT/bin/logres-integration-pager" >/dev/null 2>&1 || true
+  echo
+  echo "=== LEAD PRIORITY ACTION ==="
+  cat "$ROOT/control/LEAD_ACTION.txt" 2>/dev/null || true
+  echo
+  echo "=== FAST INTEGRATION PREFLIGHT ==="
+  "$ROOT/bin/logres-merge-preflight" status || true
+  echo
+  echo "=== VERIFIED MERGE TRAIN ==="
+  "$ROOT/bin/logres-merge-train" status || true
+  echo
+  echo "=== ACTIVE CONTROL PLANE ==="
+  "$ROOT/bin/logres-brain" who || true
+  echo
+  echo "=== INTEGRATION WORKTREE ==="
+  git -C "$ROOT/src/awakened-realms" status --short --branch || true
+elif [[ "$CHAT" == "brain" ]]; then
+  echo
+  echo "=== SAFE PARALLEL WORK WAVE ==="
+  "$ROOT/bin/logres-coordinator" wave --count 5 || true
+fi
+
+echo
+echo "=== SHARED ENVIRONMENT ==="
+head -1 "$ROOT/control/SYNC_HEALTH.txt" 2>/dev/null || echo "SYNC_STATUS=UNKNOWN"
+"$ROOT/bin/logres-nexus" status 2>/dev/null || echo "Nexus status unavailable"
+echo "Nexus primary helper: $ROOT/bin/logres-nexus"
+echo "Desktop Commander: bridge/bootstrap/emergency fallback."
+
+cat <<RULES
+
+BRAIN NETWORK RULES
+- This bootstrap auto-registers unknown chat IDs and opens/resumes durable chat memory.
+- Current transcript session: $SESSION_ID
+- Record each user turn before work with:
+  logres-chat-memory append $CHAT user --text "<exact user turn>"
+- Record the final assistant response before sending it with:
+  logres-chat-memory append $CHAT assistant --text "<exact assistant response>"
+- Record only useful tool/result context as tool-summary instead of duplicating large raw logs.
+- Start a genuinely new conversation history with:
+  logres-chat-start $CHAT --new-session
+- Non-Lead work is pull-based and roleless: if you have no lease, use logres-worker-start <chat-id> AUTO.
+- Lead is permanently reserved for integration/review and never pulls normal development work.
+- One bounded work package per chat at a time; TASK_BUSY means do not duplicate.
+- Acceptance criteria and planned file scopes come from the worker packet.
+- Post only meaningful checkpoints/findings/blockers/decisions.
+- Store large evidence once; send path/hash, not duplicated content.
+- Finish with logres-finish-task <chat-id> <task-id>; it runs the fast worker gate, then queues the immutable SHA for shared full-E2E preflight.
+- Use logres-nexus for suitable execution; minimize direct Desktop Commander calls.
+- Never steal a live lease or mutate/delete another owner's dirty worktree.
+- Brain may coordinate/assign work; Lead remains the only integration authority.
+RULES
