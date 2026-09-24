@@ -15,6 +15,15 @@ MANIFEST: dict[str, tuple[str, int]] = {
     "bin/logres-autonomy": ("bin/logres-autonomy", 0o755),
     "bin/logres-autonomy-cron": ("bin/logres-autonomy-cron", 0o755),
     "bin/logres-autopilot-watch": ("bin/logres-autopilot-watch", 0o755),
+    "bin/logres-architecture-pressure": ("bin/logres-architecture-pressure", 0o755),
+    "bin/logres-code-index": ("bin/logres-code-index", 0o755),
+    "bin/logres-decision-bridge": ("bin/logres-decision-bridge", 0o755),
+    "bin/logres-experiment-executor": ("bin/logres-experiment-executor", 0o755),
+    "bin/logres-governor": ("bin/logres-governor", 0o755),
+    "bin/logres-lifecycle-guard": ("bin/logres-lifecycle-guard", 0o755),
+    "bin/logres-mission-contract-proposals": ("bin/logres-mission-contract-proposals", 0o755),
+    "bin/logres-sync-health": ("bin/logres-sync-health", 0o755),
+    "bin/logres-temporal": ("bin/logres-temporal", 0o755),
     "bin/logres-health-snapshot": ("bin/logres-health-snapshot", 0o755),
     "bin/logres-maintain": ("bin/logres-maintain", 0o755),
     "bin/logres-blocker-router": ("bin/logres-blocker-router", 0o755),
@@ -68,7 +77,15 @@ MANIFEST: dict[str, tuple[str, int]] = {
     "bin/logres-verify-all-ref": ("bin/logres-verify-all-ref", 0o755),
     "bin/logres-verify-farm": ("bin/logres-verify-farm", 0o755),
     "lib/logres_ai_common.py": ("lib/logres_ai_common.py", 0o600),
+    "lib/logres_architecture_pressure.py": ("lib/logres_architecture_pressure.py", 0o600),
     "lib/logres_behavior_trace.py": ("lib/logres_behavior_trace.py", 0o600),
+    "lib/logres_decision_bridge.py": ("lib/logres_decision_bridge.py", 0o600),
+    "lib/logres_experiment_executor.py": ("lib/logres_experiment_executor.py", 0o600),
+    "lib/logres_governor.py": ("lib/logres_governor.py", 0o600),
+    "lib/logres_lifecycle_guard.py": ("lib/logres_lifecycle_guard.py", 0o600),
+    "lib/logres_mission_contract_proposals.py": ("lib/logres_mission_contract_proposals.py", 0o600),
+    "lib/logres_temporal.py": ("lib/logres_temporal.py", 0o600),
+    "lib/logres_temporal_drift.py": ("lib/logres_temporal_drift.py", 0o600),
     "lib/logres_bottleneck.py": ("lib/logres_bottleneck.py", 0o600),
     "lib/logres_engine_reconcile.py": ("lib/logres_engine_reconcile.py", 0o600),
     "lib/logres_fault_injection.py": ("lib/logres_fault_injection.py", 0o600),
@@ -118,6 +135,14 @@ MANIFEST: dict[str, tuple[str, int]] = {
     "config/mission.default.json": ("config/mission.default.json", 0o600),
 }
 
+# These helpers intentionally execute from the repository because they import
+# scripts/logres modules using repository-relative paths. Deploying them into
+# /home/ubuntu/logres/bin would silently resolve the wrong repository root.
+REPO_BOUND_TOOL_EXCLUSIONS = {
+    "bin/logres-reconstruct",
+    "bin/logres-truth",
+}
+
 
 @dataclass(frozen=True)
 class Deployment:
@@ -155,6 +180,40 @@ def _local_logres_imports(path: Path) -> set[str]:
     return modules
 
 
+def _runtime_surface_files(source_root: Path) -> set[str]:
+    files: set[str] = set()
+    bin_root = source_root / "bin"
+    if bin_root.is_dir():
+        files.update(
+            f"bin/{path.name}"
+            for path in bin_root.iterdir()
+            if path.is_file() and path.name.startswith("logres-")
+        )
+    lib_root = source_root / "lib"
+    if lib_root.is_dir():
+        files.update(
+            f"lib/{path.name}"
+            for path in lib_root.iterdir()
+            if (
+                path.is_file()
+                and path.name.startswith("logres_")
+                and path.suffix == ".py"
+            )
+        )
+    return files
+
+
+def _validate_runtime_surface_coverage(source_root: Path) -> None:
+    runtime_files = _runtime_surface_files(source_root)
+    allowed = set(MANIFEST) | REPO_BOUND_TOOL_EXCLUSIONS
+    missing = sorted(runtime_files - allowed)
+    if missing:
+        raise ValueError(
+            "deployment manifest missing runtime-safe control-plane files: "
+            + ", ".join(missing)
+        )
+
+
 def _validate_import_closure(source_root: Path) -> None:
     manifest_sources = set(MANIFEST)
     missing: dict[str, list[str]] = {}
@@ -190,6 +249,7 @@ def _validate_source(source_root: Path) -> list[Deployment]:
             )
         )
     _validate_import_closure(source_root)
+    _validate_runtime_surface_coverage(source_root)
     return deployments
 
 
