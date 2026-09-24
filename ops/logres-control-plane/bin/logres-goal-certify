@@ -1,0 +1,126 @@
+#!/usr/bin/env python3
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import sqlite3
+import subprocess
+import sys
+from pathlib import Path
+
+ROOT = Path(os.environ.get("LOGRES_ROOT", "/home/ubuntu/logres"))
+LIB = Path(os.environ.get("LOGRES_LIB", str(ROOT / "lib")))
+SOURCE_LIB = Path(__file__).resolve().parents[1] / "lib"
+sys.path.insert(0, str(LIB))
+sys.path.insert(0, str(SOURCE_LIB))
+
+from logres_goal_contract import load_contracts
+from logres_goal_certify import (
+    apply_milestone_completion,
+    build_certificate,
+    current_certificate_valid,
+    write_certificate,
+)
+
+
+def integration_sha() -> str:
+    override = os.environ.get("LOGRES_INTEGRATION_SHA")
+    if override:
+        return override.strip()
+    repo = Path(
+        os.environ.get(
+            "LOGRES_REPO",
+            str(ROOT / "src" / "awakened-realms"),
+        )
+    )
+    return subprocess.check_output(
+        ["git", "-C", str(repo), "rev-parse", "feat/logres-reconstruction"],
+        text=True,
+    ).strip()
+
+
+def connect(db: str) -> sqlite3.Connection:
+    conn = sqlite3.connect(db, timeout=30)
+    conn.row_factory = sqlite3.Row
+    conn.execute("pragma busy_timeout=30000")
+    return conn
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(prog="logres-goal-certify")
+    parser.add_argument(
+        "milestone_id",
+        nargs="?",
+        default="DEMO-0.2",
+    )
+    parser.add_argument("--apply", action="store_true")
+    parser.add_argument("--check-current", action="store_true")
+    parser.add_argument(
+        "--config",
+        default=os.environ.get(
+            "LOGRES_MILESTONE_CONTRACTS",
+            str(ROOT / "config" / "milestone_contracts.json"),
+        ),
+    )
+    parser.add_argument(
+        "--db",
+        default=os.environ.get(
+            "LOGRES_CONTROL_DB",
+            str(ROOT / "control" / "control.sqlite"),
+        ),
+    )
+    parser.add_argument(
+        "--artifact-dir",
+        default=str(ROOT / "artifacts" / "milestone-certificates"),
+    )
+    args = parser.parse_args()
+
+    contracts = load_contracts(Path(args.config))
+    sha = integration_sha()
+    conn = connect(args.db)
+    try:
+        if args.check_current:
+            payload = {
+                "milestone_id": args.milestone_id,
+                "integration_sha": sha,
+                "valid": current_certificate_valid(
+                    conn,
+                    contracts,
+                    args.milestone_id,
+                    integration_sha=sha,
+                    root=ROOT,
+                ),
+            }
+        else:
+            cert = build_certificate(
+                conn,
+                contracts,
+                args.milestone_id,
+                integration_sha=sha,
+                root=ROOT,
+            )
+            written = write_certificate(
+                conn,
+                cert,
+                artifact_dir=Path(args.artifact_dir),
+            )
+            applied = False
+            if args.apply:
+                applied = apply_milestone_completion(conn, cert)
+            payload = {
+                "certificate": cert,
+                "artifact": written,
+                "milestone_updated": applied,
+            }
+    finally:
+        conn.close()
+
+    print(json.dumps(payload, indent=2, sort_keys=True))
+    if args.apply and not payload.get("milestone_updated", False):
+        return 2
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
