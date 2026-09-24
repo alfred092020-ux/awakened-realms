@@ -5,6 +5,7 @@ import argparse
 import json
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 CHECKPOINT = "playable-field-battle-reward-return"
@@ -34,6 +35,21 @@ PROVENANCE = {
     "historical_enemy_hp": "UNRESOLVED",
     "playable_resolution": "RECONSTRUCTED_SERVER_AUTHORITY_STUB",
 }
+
+RECORDER_LOCK_ATTEMPTS = 3
+RECORDER_LOCK_BACKOFF_SECONDS = 0.20
+
+
+def is_transient_recorder_failure(proc: subprocess.CompletedProcess[str]) -> bool:
+    detail = ((proc.stderr or "") + "\n" + (proc.stdout or "")).lower()
+    return (
+        proc.returncode != 0
+        and (
+            "database is locked" in detail
+            or "database is busy" in detail
+            or "database table is locked" in detail
+        )
+    )
 
 
 def load_observed(path: Path) -> dict:
@@ -74,23 +90,44 @@ def record_behavior_truth(
     sha: str,
     recorder: str,
     runner=subprocess.run,
+    sleeper=time.sleep,
+    max_attempts: int = RECORDER_LOCK_ATTEMPTS,
 ) -> dict:
     observed = load_observed(observed_path)
-    proc = runner(
-        recorder_argv(recorder, sha, observed),
-        text=True,
-        capture_output=True,
-        check=False,
-    )
-    if proc.returncode not in (0, 1):
+    argv = recorder_argv(recorder, sha, observed)
+    proc = None
+    for attempt in range(max(1, int(max_attempts))):
+        proc = runner(
+            argv,
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+        if proc.returncode == 0:
+            break
+        if (
+            is_transient_recorder_failure(proc)
+            and attempt + 1 < max_attempts
+        ):
+            sleeper(
+                RECORDER_LOCK_BACKOFF_SECONDS * (2 ** attempt)
+            )
+            continue
+        detail = (proc.stderr or proc.stdout or "").strip()
         raise RuntimeError(
             "behavior truth recorder failed: "
-            + ((proc.stderr or proc.stdout or "").strip())
+            + (detail or f"exit {proc.returncode}")
         )
+
+    assert proc is not None
     try:
         payload = json.loads((proc.stdout or "").strip())
     except json.JSONDecodeError as exc:
-        raise RuntimeError("behavior truth recorder returned invalid JSON") from exc
+        detail = (proc.stderr or "").strip()
+        raise RuntimeError(
+            "behavior truth recorder returned invalid JSON"
+            + (f": {detail}" if detail else "")
+        ) from exc
     verdict = str(payload.get("verdict") or "")
     if verdict not in {"PASS", "FAIL"}:
         raise RuntimeError(f"unexpected behavior truth verdict: {verdict!r}")
