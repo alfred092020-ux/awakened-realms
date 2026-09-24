@@ -29,7 +29,8 @@ VISUAL_TRUTH_WRAPPER="$ROOT/verify-farm-$STAMP-visual-truth-recorder"
 VISUAL_TRUTH_REAL_BIN="${LOGRES_VISUAL_TRUTH_BIN:-/home/ubuntu/logres/bin/logres-visual-truth}"
 CANONICAL_CONTROL_DB="${LOGRES_CANONICAL_CONTROL_DB:-/home/ubuntu/logres/control/control.sqlite}"
 BEHAVIOR_TRACE_MERGE_TIMEOUT_MS="${LOGRES_BEHAVIOR_TRACE_MERGE_TIMEOUT_MS:-4000}"
-VISUAL_TRUTH_MERGE_TIMEOUT_MS="${LOGRES_VISUAL_TRUTH_MERGE_TIMEOUT_MS:-4000}"
+VISUAL_TRUTH_MERGE_TIMEOUT_MS="${LOGRES_VISUAL_TRUTH_MERGE_TIMEOUT_MS:-15000}"
+VISUAL_TRUTH_SPOOL_DIR="${LOGRES_VISUAL_TRUTH_SPOOL_DIR:-/home/ubuntu/logres/control/visual-truth-spool}"
 START=$(date +%s)
 SHA=unknown
 VERIFY_PATH="local-test+local-build-e2e"
@@ -318,7 +319,7 @@ merge_visual_truth_isolation() {
     return 1
   }
 
-  python3 "$merger"     --source "$VISUAL_TRUTH_DB"     --target "$CANONICAL_CONTROL_DB"     --busy-timeout-ms "$VISUAL_TRUTH_MERGE_TIMEOUT_MS"     >"$VISUAL_TRUTH_MERGE_LOG" 2>&1
+  python3 "$merger"     --source "$VISUAL_TRUTH_DB"     --target "$CANONICAL_CONTROL_DB"     --busy-timeout-ms "$VISUAL_TRUTH_MERGE_TIMEOUT_MS"     --spool-dir "$VISUAL_TRUTH_SPOOL_DIR"     >"$VISUAL_TRUTH_MERGE_LOG" 2>&1
 }
 
 preserve_visual_truth_failure() {

@@ -17,6 +17,12 @@ import sqlite3
 import sys
 import time
 
+REPO_ROOT = Path(__file__).resolve().parents[2]
+VISUAL_TRUTH_LIB = REPO_ROOT / "ops/logres-control-plane/lib"
+sys.path.insert(0, str(VISUAL_TRUTH_LIB))
+
+from logres_visual_truth import durable_record
+
 COLUMNS = (
     "sha",
     "checkpoint",
@@ -202,11 +208,187 @@ def is_lock_error(exc: BaseException) -> bool:
     return "database is locked" in text or "database is busy" in text
 
 
+def _source_rows_for_durable_persistence(
+    source: Path,
+) -> list[sqlite3.Row]:
+    conn = sqlite3.connect(
+        f"file:{source}?mode=ro",
+        uri=True,
+        timeout=1,
+    )
+    conn.row_factory = sqlite3.Row
+    try:
+        require_schema(
+            conn,
+            "main",
+        )
+        return list(
+            conn.execute(
+                """select id,sha,checkpoint,objective_id,reference_artifact,
+                          observed_artifact,viewport_json,device_json,
+                          metrics_json,verdict,created_at,created_epoch
+                     from visual_truth_checks
+                    order by id"""
+            )
+        )
+    finally:
+        conn.close()
+
+
+def _json_object(
+    raw: str,
+    label: str,
+) -> dict[str, object]:
+    try:
+        value = json.loads(raw)
+    except json.JSONDecodeError as exc:
+        raise MergeError(
+            f"isolated visual-truth {label} is invalid JSON: {exc}"
+        ) from exc
+    if not isinstance(value, dict):
+        raise MergeError(
+            f"isolated visual-truth {label} must be a JSON object"
+        )
+    return value
+
+
+def _durably_spool_after_lock_exhaustion(
+    *,
+    source: Path,
+    target: Path,
+    spool_dir: Path,
+) -> dict[str, object]:
+    """Persist exact isolated rows through the canonical durable spool."""
+    rows = _source_rows_for_durable_persistence(
+        source,
+    )
+    if not rows:
+        return {
+            "status": "PASS",
+            "source": str(source),
+            "target": str(target),
+            "source_rows": 0,
+            "inserted_rows": 0,
+            "deduped_rows": 0,
+            "canonical_direct_rows": 0,
+            "spooled_rows": 0,
+            "persistence_mode": "EMPTY_SOURCE",
+            "spool_dir": str(spool_dir),
+            "spool_paths": [],
+            "canonical_flush_required": False,
+            "evidence_loss": False,
+        }
+
+    conn = sqlite3.connect(
+        target,
+        timeout=0.25,
+    )
+    conn.row_factory = sqlite3.Row
+    conn.execute(
+        "pragma busy_timeout=250"
+    )
+
+    direct = 0
+    spooled = 0
+    spool_paths: list[str] = []
+    fingerprints: list[str] = []
+    try:
+        for row in rows:
+            viewport = _json_object(
+                str(row["viewport_json"]),
+                "viewport_json",
+            )
+            device = _json_object(
+                str(row["device_json"]),
+                "device_json",
+            )
+            metrics = _json_object(
+                str(row["metrics_json"]),
+                "metrics_json",
+            )
+            try:
+                result = durable_record(
+                    conn,
+                    spool_dir,
+                    sha=str(row["sha"]),
+                    checkpoint=str(row["checkpoint"]),
+                    objective_id=row["objective_id"],
+                    reference_artifact=row["reference_artifact"],
+                    observed_artifact=str(row["observed_artifact"]),
+                    viewport=viewport,
+                    device=device,
+                    metrics=metrics,
+                    verdict=str(row["verdict"]),
+                    created_at=str(row["created_at"]),
+                )
+            except (sqlite3.Error, OSError, ValueError) as exc:
+                raise MergeError(
+                    "durable visual-truth persistence failed after "
+                    f"canonical lock exhaustion: {exc}"
+                ) from exc
+
+            fingerprints.append(
+                str(result["fingerprint"])
+            )
+            if result["spooled"]:
+                spooled += 1
+                spool_path = result.get(
+                    "spool_path"
+                )
+                if not spool_path:
+                    raise MergeError(
+                        "durable visual-truth persistence reported spooled "
+                        "without a spool path"
+                    )
+                spool_paths.append(
+                    str(spool_path)
+                )
+            else:
+                direct += 1
+    finally:
+        conn.close()
+
+    if direct + spooled != len(rows):
+        raise MergeError(
+            "durable visual-truth persistence row-count mismatch"
+        )
+
+    return {
+        "status": "PASS",
+        "source": str(source),
+        "target": str(target),
+        "source_rows": len(rows),
+        "inserted_rows": direct,
+        "deduped_rows": 0,
+        "canonical_direct_rows": direct,
+        "spooled_rows": spooled,
+        "persistence_mode": (
+            "DURABLE_SPOOL"
+            if spooled and not direct
+            else (
+                "CANONICAL_AND_DURABLE_SPOOL"
+                if spooled
+                else "CANONICAL_DIRECT_FALLBACK"
+            )
+        ),
+        "spool_dir": str(spool_dir),
+        "spool_paths": sorted(
+            spool_paths
+        ),
+        "fingerprints": sorted(
+            fingerprints
+        ),
+        "canonical_flush_required": spooled > 0,
+        "evidence_loss": False,
+    }
+
+
 def merge(
     *,
     source: Path,
     target: Path,
     busy_timeout_ms: int,
+    spool_dir: Path | None = None,
 ) -> dict[str, object]:
     """Merge with bounded retries for transient canonical SQLite contention.
 
@@ -233,6 +415,17 @@ def merge(
             time.sleep(LOCK_RETRY_BASE_SECONDS * (2 ** (attempt - 1)))
 
     assert last_error is not None
+    if spool_dir is not None:
+        result = _durably_spool_after_lock_exhaustion(
+            source=source,
+            target=target,
+            spool_dir=spool_dir,
+        )
+        result["lock_retry_count"] = MAX_LOCK_ATTEMPTS
+        result["lock_attempts"] = MAX_LOCK_ATTEMPTS
+        result["canonical_merge_error"] = str(last_error)
+        return result
+
     raise MergeError(
         f"{last_error}; exhausted {MAX_LOCK_ATTEMPTS} bounded lock attempts"
     ) from last_error
@@ -255,7 +448,16 @@ def parser() -> argparse.ArgumentParser:
     p.add_argument(
         "--busy-timeout-ms",
         type=int,
-        default=4_000,
+        default=15_000,
+    )
+    p.add_argument(
+        "--spool-dir",
+        type=Path,
+        default=None,
+        help=(
+            "Optional durable visual-truth spool used only after bounded "
+            "canonical SQLite lock retries are exhausted."
+        ),
     )
     return p
 
@@ -267,6 +469,7 @@ def main(argv: list[str] | None = None) -> int:
             source=args.source,
             target=args.target,
             busy_timeout_ms=args.busy_timeout_ms,
+            spool_dir=args.spool_dir,
         )
     except (MergeError, OSError) as exc:
         print(
