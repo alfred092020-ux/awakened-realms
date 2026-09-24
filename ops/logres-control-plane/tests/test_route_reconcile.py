@@ -10,7 +10,7 @@ sys.path.insert(0, str(TEST_DIR))
 sys.path.insert(0, str(LIB_DIR))
 
 from fixtures import make_test_db, seed_ai_run, seed_route, seed_task, test_config
-from logres_reconcile import SQLiteAICache, backpressure, reconcile_routes
+from logres_reconcile import SQLiteAICache, backpressure, reconcile_routes, route_cursor, route_status
 from logres_route_store import ensure_route_schema
 
 
@@ -197,6 +197,42 @@ class RouteReconcileTests(unittest.TestCase):
             "FAILED_BOUNDED",
             conn.execute("select state from route_jobs where id=?", (route_id,)).fetchone()[0],
         )
+
+    def test_zero_cost_failed_ai_route_stays_retryable_not_failed_health(self):
+        conn = make_test_db()
+        ensure_route_schema(conn)
+        seed_task(conn, task_id="T1", work_type="research", status="ACTIVE")
+        route_id = seed_route(
+            conn,
+            state="FAILED_BOUNDED",
+            dedupe_key="retryable-zero-cost",
+            route_kind="AI",
+            task_id="T1",
+            source_event_id=50,
+            artifact_sha="a" * 64,
+            meta_json=json.dumps({"question": "q"}),
+        )
+        conn.execute(
+            "update route_jobs set attempt_count=1 where id=?",
+            (route_id,),
+        )
+        conn.commit()
+
+        self.assertEqual(49, route_cursor(conn))
+        self.assertEqual(0, route_status(conn, test_config()).failed)
+
+        conn.execute(
+            """insert into api_usage(
+                 route_job_id,task_id,artifact_sha,model,input_tokens,
+                 cached_input_tokens,output_tokens,reasoning_tokens,
+                 estimated_cost_usd,status,created_at
+               ) values(?,?,?,?,0,0,0,0,0.0,'FAIL',datetime('now'))""",
+            (route_id, "T1", "a" * 64, "gpt-5.6-luna"),
+        )
+        conn.commit()
+
+        self.assertEqual(50, route_cursor(conn))
+        self.assertEqual(1, route_status(conn, test_config()).failed)
 
     def test_existing_copilot_issue_is_adopted_after_crash(self):
         conn = make_test_db()

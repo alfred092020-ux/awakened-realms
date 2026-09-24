@@ -57,6 +57,13 @@ class AutoflowHealthTests(unittest.TestCase):
                 "created_at,updated_at) values(?,?,?,'FAILED_BOUNDED','x',datetime('now'),datetime('now'))",
                 (key, task_id, "AI"),
             )
+        # Zero-cost transient AI failures are retryable and intentionally do
+        # not poison health. Mark the unscoped fixture as retry-exhausted so
+        # this test still proves one genuinely actionable bounded failure.
+        conn.execute(
+            "update route_jobs set attempt_count=2 "
+            "where dedupe_key='failed-actionable'"
+        )
         conn.commit()
 
         status = route_status(conn, test_config())

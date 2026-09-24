@@ -233,21 +233,57 @@ def cycle(*, dry_run: bool = False) -> int:
     try:
         cfg = config()
         state = load_state(STATE)
-        resources = resource_state()
 
-        # Heal cheap deterministic control-plane state first.
+        # Cheap deterministic refresh first. An idle one-minute cron tick must
+        # not run the expensive doctor/resource probes when there is nothing
+        # to integrate.
         run([COORD, "reconcile"])
         run([TRAIN, "status"])
-        routes = run([ROUTES, "--status"])
-        doctor = run([DOCTOR])
+        current_base = integration_sha()
 
         conn = connect()
         try:
             backlog = integration_backlog(conn)
             regressions = actionable_open_regressions(conn)
+            existing_verified = latest_verified_preflight(
+                conn,
+                current_base,
+            )
         finally:
             conn.close()
 
+        auto = cfg.get("autonomy", {})
+        policy_enabled = bool(auto.get("enabled", False))
+        circuit_open = bool(state.get("tripped", False))
+        if backlog == 0 and existing_verified is None:
+            idle_reasons = []
+            if not policy_enabled:
+                idle_reasons.append("autonomy disabled")
+            if circuit_open:
+                idle_reasons.append("circuit breaker tripped")
+            print(
+                json.dumps(
+                    {
+                        "status": "IDLE_FAST",
+                        "dry_run": dry_run,
+                        "base_sha": current_base,
+                        "decision": {
+                            "allowed": policy_enabled and not circuit_open,
+                            "reasons": idle_reasons,
+                            "batch_limit": 0,
+                        },
+                        "preflight": None,
+                        "apply": None,
+                    },
+                    indent=2,
+                    sort_keys=True,
+                )
+            )
+            return 0
+
+        resources = resource_state()
+        routes = run([ROUTES, "--status"])
+        doctor = run([DOCTOR])
         route_failures = parse_route_failures(
             (routes.stdout or "") + "\n" + (routes.stderr or "")
         )
@@ -264,7 +300,7 @@ def cycle(*, dry_run: bool = False) -> int:
         result = {
             "status": "DEFERRED",
             "dry_run": dry_run,
-            "base_sha": integration_sha(),
+            "base_sha": current_base,
             "decision": {
                 "allowed": decision.allowed,
                 "reasons": list(decision.reasons),

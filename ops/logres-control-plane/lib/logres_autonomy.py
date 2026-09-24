@@ -37,6 +37,37 @@ def load_config(path: Path) -> dict:
     return json.loads(path.read_text())
 
 
+AUTONOMY_CRON_MARKER = "# LOGRES_AUTONOMY_V3"
+AUTONOMY_CRON_LINE = (
+    "* * * * * flock -n /tmp/logres-autonomy.cron.lock "
+    "nice -n 10 ionice -c3 /home/ubuntu/logres/bin/logres-autonomy cycle "
+    ">>/home/ubuntu/logres/logs/autonomy-cron.log 2>&1 "
+    + AUTONOMY_CRON_MARKER
+)
+
+
+def rewrite_crontab(existing: str, *, install: bool = True) -> str:
+    kept: list[str] = []
+    for raw in existing.splitlines():
+        line = raw.rstrip()
+        if not line:
+            kept.append("")
+            continue
+        if AUTONOMY_CRON_MARKER in line:
+            continue
+        # Autonomy v3 owns integration preflight cadence. Remove the old
+        # standalone producer to avoid duplicate full-E2E work and races.
+        if "logres-merge-preflight run" in line:
+            continue
+        kept.append(line)
+
+    while kept and kept[-1] == "":
+        kept.pop()
+    if install:
+        kept.append(AUTONOMY_CRON_LINE)
+    return "\n".join(kept) + ("\n" if kept else "")
+
+
 def load_state(path: Path) -> dict:
     if not path.is_file():
         return {

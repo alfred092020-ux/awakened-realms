@@ -43,6 +43,31 @@ class FakeAIRunner:
             "usage": None,
             "ai_run_id": 1,
         }
+class FlakyAIRunner:
+    def __init__(self):
+        self.calls = 0
+
+    def run(self, **kwargs):
+        self.calls += 1
+        if self.calls == 1:
+            raise RuntimeError("transient transport failure before API usage")
+        return {
+            "cached": False,
+            "model": "gpt-5-mini",
+            "artifact_sha": kwargs["artifact_sha"],
+            "result": {
+                "summary": "retry ok",
+                "confidence": "UNRESOLVED",
+                "findings": [],
+                "contradictions": [],
+                "unresolved": ["follow-up"],
+                "recommended_next_search": "deterministic follow-up",
+            },
+            "usage": None,
+            "ai_run_id": 1,
+        }
+
+
 class FakeBrainRunner:
     def __init__(self):
         self.events = []
@@ -339,6 +364,68 @@ class AIRouterTests(unittest.TestCase):
 
         self.assertEqual("COMPLETE", job.state)
         self.assertEqual(1, fake_ai.calls)
+
+    def test_zero_cost_transient_ai_failure_retries_once(self):
+        conn = make_test_db()
+        ensure_route_schema(conn)
+        seed_task(conn, task_id="T1", priority=0, work_type="research")
+        with tempfile.TemporaryDirectory() as td:
+            artifact = Path(td) / "retry.txt"
+            artifact.write_text("Global transient retry evidence")
+            sha = hashlib.sha256(artifact.read_bytes()).hexdigest()
+            seed_event(
+                conn,
+                event_id=15,
+                task_id="T1",
+                artifact_path=str(artifact),
+                artifact_sha=sha,
+                meta={
+                    "artifact_bytes": 6000,
+                    "kind": "native_trace",
+                    "provenance": "CONFIRMED_GLOBAL_2017",
+                },
+            )
+            config = test_config()
+            config["routing"]["ai_dispatch_enabled"] = True
+            config["openai"]["auto_model"] = "gpt-5-mini"
+            config["openai"]["model_rates_per_million"] = {
+                "gpt-5-mini": {
+                    "input": 1.0,
+                    "cached_input": 0.5,
+                    "output": 2.0,
+                }
+            }
+            fake_ai = FlakyAIRunner()
+
+            with self.assertRaisesRegex(RuntimeError, "transient transport"):
+                route_event(conn, 15, config, False, fake_ai)
+
+            failed = conn.execute(
+                "select id,state,attempt_count from route_jobs "
+                "where source_event_id=15"
+            ).fetchone()
+            self.assertEqual("FAILED_BOUNDED", failed[1])
+            self.assertEqual(1, failed[2])
+            self.assertEqual(
+                0,
+                conn.execute(
+                    "select count(*) from api_usage where route_job_id=?",
+                    (failed[0],),
+                ).fetchone()[0],
+            )
+
+            job = route_event(conn, 15, config, False, fake_ai)
+
+        self.assertEqual("COMPLETE", job.state)
+        self.assertEqual(2, fake_ai.calls)
+        self.assertEqual(
+            1,
+            conn.execute(
+                "select count(*) from route_decisions "
+                "where route_job_id=? and decision='AI_ZERO_COST_RETRY'",
+                (job.id,),
+            ).fetchone()[0],
+        )
 
     def test_contradiction_emits_one_brain_conflict_event(self):
         conn = make_test_db()

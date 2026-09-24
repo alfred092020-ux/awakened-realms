@@ -14,6 +14,7 @@ PRODUCTION_FILES = (
     "bin/logres-ai",
     "bin/logres-ai-router",
     "bin/logres-autonomy",
+    "bin/logres-autonomy-cron",
     "bin/logres-autopilot-watch",
     "bin/logres-coordinator",
     "bin/logres-copilot-router",

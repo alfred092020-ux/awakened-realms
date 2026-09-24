@@ -53,3 +53,13 @@ logres-autonomy reset-circuit
 ```
 
 Copilot READY-task selection is critical-path aware rather than alphabetical: priority still dominates, then tasks are favored when they shorten the longest remaining dependency chain or unlock more downstream work. Runtime Copilot capacity remains bounded by the existing eligibility, scope, dependency, concurrency, and backpressure checks.
+
+### Autonomy v3 hot-loop scheduling
+
+Autonomy v3 separates the hot paths so they do not block each other. The five-minute `logres-autopilot-watch` owns Brain, AI/Copilot, lease, blocker and VM-health orchestration. A dedicated one-minute `logres-autonomy cycle` cron owns merge/preflight progression.
+
+Idle autonomy ticks use a cheap fast path: coordinator/merge state is refreshed and, when there is no integration backlog or verified current-base preflight, the cycle exits without running the heavy doctor/resource probes.
+
+Use `logres-autonomy-cron install` to install the managed one-minute autonomy line and remove the obsolete standalone `logres-merge-preflight run` cron. The installer is idempotent and saves the previous crontab under `control/cron-backups/`.
+
+Copilot dispatch now scans beyond ineligible READY tasks. Research/manual/leased/conflicting tasks are skipped with reasons while the router keeps scanning for the next safe critical-path implementation candidate, up to the configured dispatch limit.

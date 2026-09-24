@@ -465,8 +465,41 @@ def reconcile_routes(
 def route_cursor(conn: sqlite3.Connection) -> int:
     ensure_route_schema(conn)
     pending = conn.execute(
-        """select min(source_event_id) from route_jobs
-             where state='NEW' and source_event_id is not null"""
+        """select min(r.source_event_id)
+             from route_jobs r
+             left join tasks t on t.id=r.task_id
+            where r.source_event_id is not null
+              and (
+                r.state='NEW'
+                or (
+                  r.route_kind='AI'
+                  and r.state='FAILED_BOUNDED'
+                  and r.attempt_count < 2
+                  and not exists (
+                    select 1 from api_usage u
+                     where u.route_job_id=r.id
+                  )
+                  and (
+                    r.task_id is null
+                    or t.id is null
+                    or (
+                      t.status not in (
+                        'DONE','RESOLVED','SUPERSEDED','CANCELLED'
+                      )
+                      and not (
+                        t.status='BLOCKED_EVIDENCE'
+                        and (
+                          lower(coalesce(t.note,'')) like '%real-device proof%'
+                          or lower(coalesce(t.note,'')) like '%device proof%'
+                          or lower(coalesce(t.note,'')) like '%no adb device%'
+                          or lower(coalesce(t.note,'')) like '%physical device%'
+                          or lower(coalesce(t.note,'')) like '%hardware-dependent%'
+                        )
+                      )
+                    )
+                  )
+                )
+              )"""
     ).fetchone()[0]
     if pending is not None:
         return max(0, int(pending) - 1)
@@ -504,6 +537,13 @@ def route_status(conn: sqlite3.Connection, config: dict) -> RouteStatus:
                  from route_jobs r
                  left join tasks t on t.id=r.task_id
                 where r.state='FAILED_BOUNDED'
+                  and not (
+                    r.route_kind='AI'
+                    and r.attempt_count < 2
+                    and not exists (
+                      select 1 from api_usage u where u.route_job_id=r.id
+                    )
+                  )
                   and (
                     r.task_id is null
                     or t.id is null

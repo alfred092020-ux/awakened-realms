@@ -25,6 +25,7 @@ DEFAULT_QUESTION = (
     "deterministic next search. Do not promote later/current JP evidence to "
     "Global 2017 truth."
 )
+MAX_ZERO_COST_AI_FAILURES = 2
 
 
 @dataclass(frozen=True)
@@ -349,6 +350,25 @@ def route_ai_result(
         "EVIDENCE_PACKET_REVIEW",
         "deterministic evidence review required before implementation",
     )
+def _zero_cost_ai_retryable(
+    conn: sqlite3.Connection,
+    job: RouteJob,
+) -> bool:
+    if (
+        job.route_kind != "AI"
+        or job.state != "FAILED_BOUNDED"
+        or job.attempt_count >= MAX_ZERO_COST_AI_FAILURES
+    ):
+        return False
+    usage = int(
+        conn.execute(
+            "select count(*) from api_usage where route_job_id=?",
+            (job.id,),
+        ).fetchone()[0]
+    )
+    return usage == 0
+
+
 def route_event(
     conn: sqlite3.Connection,
     source_event_id: int,
@@ -449,6 +469,27 @@ def route_event(
             meta={"provenance": provenance, "question": question},
         ),
     )
+    if _zero_cost_ai_retryable(conn, job):
+        legacy_failure_count = max(1, int(job.attempt_count or 0))
+        job = transition_route(
+            conn,
+            job.id,
+            "FAILED_BOUNDED",
+            "NEW",
+            attempt_count=legacy_failure_count,
+            last_error=None,
+        )
+        append_decision(
+            conn,
+            job.id,
+            "AI_ZERO_COST_RETRY",
+            (
+                "retrying transient AI failure because no API usage was "
+                f"recorded ({legacy_failure_count}/{MAX_ZERO_COST_AI_FAILURES})"
+            ),
+            source_event_id=source_event_id,
+            task_id=event.get("task_id"),
+        )
     if job.state != "NEW":
         return job
 
@@ -549,6 +590,7 @@ def route_event(
             "AI_RUNNING",
             "FAILED_BOUNDED",
             last_error=str(exc),
+            attempt_count=int(job.attempt_count or 0) + 1,
         )
         append_decision(
             conn,

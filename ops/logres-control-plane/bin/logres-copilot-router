@@ -14,7 +14,7 @@ LIB_DIR = CONTROL_ROOT / "lib"
 sys.path.insert(0, str(LIB_DIR))
 
 from logres_autonomy import rank_ready_tasks
-from logres_copilot import SubprocessGitHubRunner
+from logres_copilot import PolicyError, SubprocessGitHubRunner
 from logres_copilot_router import (
     SubprocessCommandRunner,
     active_copilot_jobs,
@@ -73,7 +73,9 @@ def main() -> int:
     conn.row_factory = sqlite3.Row
     ensure_route_schema(conn)
 
-    ids = candidate_ids(conn, args.task, max(1, args.limit))
+    max_dispatch = max(1, args.limit)
+    scan_limit = 1 if args.task else max(16, max_dispatch * 4)
+    ids = candidate_ids(conn, args.task, scan_limit)
     dispatch_enabled = bool(
         config.get("routing", {}).get("copilot_dispatch_enabled", False)
     )
@@ -142,8 +144,43 @@ def main() -> int:
         return 0
 
     results = []
+    skipped = []
     for task_id in ids:
-        result = dispatch_task(conn, task_id, sha, config, github)
+        if len(results) >= max_dispatch:
+            break
+        eligibility = copilot_eligibility(
+            conn,
+            task_id,
+            sha,
+            config,
+        )
+        if not eligibility.allowed:
+            skipped.append(
+                {
+                    "task_id": task_id,
+                    "reason": eligibility.reason,
+                }
+            )
+            continue
+        try:
+            result = dispatch_task(
+                conn,
+                task_id,
+                sha,
+                config,
+                github,
+            )
+        except PolicyError as exc:
+            # Eligibility can change between ranking and dispatch if another
+            # worker/route acquires overlapping capacity. Skip safely and keep
+            # scanning instead of aborting the whole autonomous cycle.
+            skipped.append(
+                {
+                    "task_id": task_id,
+                    "reason": str(exc),
+                }
+            )
+            continue
         results.append(
             {
                 "task_id": task_id,
@@ -157,7 +194,13 @@ def main() -> int:
     conn.close()
     print(
         json.dumps(
-            {"reconciled": reconciled, "dispatched": len(results), "jobs": results},
+            {
+                "reconciled": reconciled,
+                "dispatched": len(results),
+                "jobs": results,
+                "skipped": skipped,
+                "scanned": len(ids),
+            },
             indent=2,
         )
     )

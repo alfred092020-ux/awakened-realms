@@ -12,6 +12,7 @@ MANIFEST: dict[str, tuple[str, int]] = {
     "bin/logres-ai": ("bin/logres-ai", 0o700),
     "bin/logres-ai-router": ("bin/logres-ai-router", 0o755),
     "bin/logres-autonomy": ("bin/logres-autonomy", 0o755),
+    "bin/logres-autonomy-cron": ("bin/logres-autonomy-cron", 0o755),
     "bin/logres-autopilot-watch": ("bin/logres-autopilot-watch", 0o755),
     "bin/logres-coordinator": ("bin/logres-coordinator", 0o755),
     "bin/logres-copilot-router": ("bin/logres-copilot-router", 0o755),

@@ -1,0 +1,102 @@
+#!/usr/bin/env python3
+from __future__ import annotations
+
+import argparse
+import datetime
+import os
+import subprocess
+import sys
+from pathlib import Path
+
+
+CONTROL_ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(CONTROL_ROOT / "lib"))
+
+from logres_autonomy import rewrite_crontab
+
+
+ROOT = Path(os.environ.get("LOGRES_ROOT", "/home/ubuntu/logres"))
+BACKUPS = ROOT / "control" / "cron-backups"
+
+
+def read_crontab() -> str:
+    result = subprocess.run(
+        ["crontab", "-l"],
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    if result.returncode not in (0, 1):
+        raise SystemExit(
+            "failed to read crontab: "
+            + (result.stderr or result.stdout).strip()
+        )
+    return result.stdout or ""
+
+
+def install_crontab(text: str) -> None:
+    result = subprocess.run(
+        ["crontab", "-"],
+        input=text,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    if result.returncode:
+        raise SystemExit(
+            "failed to install crontab: "
+            + (result.stderr or result.stdout).strip()
+        )
+
+
+def backup(text: str) -> Path:
+    BACKUPS.mkdir(parents=True, exist_ok=True)
+    stamp = datetime.datetime.now(
+        datetime.timezone.utc
+    ).strftime("%Y%m%dT%H%M%SZ")
+    path = BACKUPS / f"pre-autonomy-v3-{stamp}.crontab"
+    path.write_text(text)
+    return path
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(prog="logres-autonomy-cron")
+    parser.add_argument(
+        "action",
+        choices=("install", "remove", "status"),
+    )
+    parser.add_argument("--dry-run", action="store_true")
+    args = parser.parse_args()
+
+    before = read_crontab()
+    if args.action == "status":
+        desired = rewrite_crontab(before, install=True)
+        print(
+            "AUTONOMY_CRON "
+            + ("CURRENT" if desired == before else "DRIFT")
+        )
+        return 0 if desired == before else 1
+
+    after = rewrite_crontab(
+        before,
+        install=args.action == "install",
+    )
+    if args.dry_run:
+        print(after, end="")
+        return 0
+
+    if after == before:
+        print("AUTONOMY_CRON unchanged")
+        return 0
+
+    saved = backup(before)
+    install_crontab(after)
+    print(
+        f"AUTONOMY_CRON {args.action.upper()} "
+        f"backup={saved}"
+    )
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

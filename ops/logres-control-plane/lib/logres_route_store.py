@@ -56,8 +56,9 @@ VALID_TRANSITIONS = {
     "PR_READY": {"VERIFYING", "SCOPE_VIOLATION", "SUPERSEDED"},
     "VERIFYING": {"QUEUED", "FAILED_BOUNDED", "SCOPE_VIOLATION"},
     # Exact-cache recovery may reopen an AI bounded failure after the model
-    # result is durably present. Callers must prove artifact/question identity.
-    "FAILED_BOUNDED": {"AI_VALIDATED"},
+    # result is durably present. Zero-cost transient AI failures may also be
+    # requeued by the router under a strict bounded-attempt policy.
+    "FAILED_BOUNDED": {"NEW", "AI_VALIDATED"},
     # Preserve the live immutable-candidate guard when a queued PR head moves.
     "QUEUED": {"SUPERSEDED"},
 }

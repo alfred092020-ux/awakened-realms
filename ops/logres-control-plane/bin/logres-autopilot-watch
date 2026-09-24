@@ -155,9 +155,7 @@ if wave_data.get("count",0)>0:
          "Use logres-worker-start <chat-id> AUTO; atomic acquire prevents duplication.",
          None,f"worker-capacity:{bucket}:{names}")
 
-# Autonomy remains fail-closed by committed default. When explicitly enabled
-# in runtime config it may preflight and apply only exact-SHA full-E2E verified
-# batches through its separate circuit breaker and resource governor.
-run_locked_helper("logres-autonomy","cycle")
-
+# Integration autonomy has its own one-minute managed cron. Keep this
+# five-minute watcher focused on Brain, AI/Copilot, lease, blocker and VM health
+# so a long full-E2E preflight never stretches the worker-orchestration cadence.
 print(f"autopilot_ok leases={len(leases)} load1={load1:.2f} mem_avail_gib={avail/1024**3:.1f} disk_free_gib={disk.free/1024**3:.1f}")
