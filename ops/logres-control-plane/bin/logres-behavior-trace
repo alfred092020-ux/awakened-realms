@@ -1,0 +1,18 @@
+#!/usr/bin/env python3
+import argparse,json,os,sqlite3,sys
+from pathlib import Path
+ROOT=Path(os.environ.get("LOGRES_ROOT","/home/ubuntu/logres")); sys.path.insert(0,str(Path(__file__).resolve().parents[1]/"lib"))
+from logres_behavior_trace import failures,latest,record
+DB=Path(os.environ.get("LOGRES_CONTROL_DB",ROOT/"control/control.sqlite"))
+def main():
+ p=argparse.ArgumentParser(prog="logres-behavior-trace"); s=p.add_subparsers(dest="cmd",required=True)
+ r=s.add_parser("record"); r.add_argument("sha"); r.add_argument("checkpoint"); r.add_argument("--expected",required=True); r.add_argument("--observed",required=True); r.add_argument("--objective"); r.add_argument("--provenance",default="{}")
+ l=s.add_parser("latest"); l.add_argument("checkpoint",nargs="?"); s.add_parser("failures")
+ a=p.parse_args(); c=sqlite3.connect(DB,timeout=30); c.row_factory=sqlite3.Row; c.execute("pragma busy_timeout=30000")
+ try:
+  if a.cmd=="record": out=record(c,sha=a.sha,checkpoint=a.checkpoint,expected=json.loads(a.expected),observed=json.loads(a.observed),objective_id=a.objective,provenance=json.loads(a.provenance))
+  elif a.cmd=="latest": out=latest(c,a.checkpoint)
+  else: out=failures(c)
+ finally:c.close()
+ print(json.dumps(out,indent=2,sort_keys=True))
+if __name__=="__main__":main()
