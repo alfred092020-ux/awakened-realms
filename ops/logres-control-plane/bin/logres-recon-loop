@@ -1,0 +1,121 @@
+#!/usr/bin/env python3
+from __future__ import annotations
+
+import argparse
+import json
+import os
+from pathlib import Path
+import sqlite3
+import sys
+
+sys.path.insert(
+    0,
+    str(Path(__file__).resolve().parents[1] / "lib"),
+)
+from logres_recon_loop import (
+    ReconLoopError,
+    history,
+    issue,
+    plan,
+    reconcile_one,
+)
+
+
+ROOT = Path(os.environ.get("LOGRES_ROOT", "/home/ubuntu/logres"))
+DEFAULT_DB = ROOT / "control/control.sqlite"
+DEFAULT_REPO = ROOT / "src/awakened-realms"
+DEFAULT_SYNTHESIS = (
+    ROOT / "artifacts/minimal-reconstruction-delta-20260924.json"
+)
+DEFAULT_DIFFERENTIAL = (
+    ROOT / "artifacts/global3024-differential-emulator-current-20260924.json"
+)
+DEFAULT_TRACE = ROOT / "artifacts/global3024-trace-certificate-20260924.json"
+DEFAULT_COORDINATOR = str(ROOT / "bin/logres-coordinator")
+
+
+def open_db(path: Path) -> sqlite3.Connection:
+    conn = sqlite3.connect(path, timeout=15)
+    conn.row_factory = sqlite3.Row
+    conn.execute("pragma busy_timeout=15000")
+    return conn
+
+
+def emit(value, *, code=0):
+    print(json.dumps(value, indent=2, sort_keys=True))
+    return code
+
+
+def parser() -> argparse.ArgumentParser:
+    p = argparse.ArgumentParser(prog="logres-recon-loop")
+    p.add_argument("--db", type=Path, default=DEFAULT_DB)
+    p.add_argument("--repo", type=Path, default=DEFAULT_REPO)
+    p.add_argument("--synthesis", type=Path, default=DEFAULT_SYNTHESIS)
+    p.add_argument("--coordinator", default=DEFAULT_COORDINATOR)
+    sub = p.add_subparsers(dest="cmd", required=True)
+
+    sub.add_parser("plan")
+    sub.add_parser("issue")
+    sub.add_parser("history")
+
+    reconcile = sub.add_parser("reconcile")
+    reconcile.add_argument("fingerprint")
+    reconcile.add_argument(
+        "--current-differential",
+        type=Path,
+        default=DEFAULT_DIFFERENTIAL,
+    )
+    reconcile.add_argument(
+        "--trace-certificate",
+        type=Path,
+        default=DEFAULT_TRACE,
+    )
+    return p
+
+
+def main(argv=None) -> int:
+    args = parser().parse_args(argv)
+    try:
+        conn = open_db(args.db)
+        try:
+            if args.cmd == "plan":
+                result = plan(
+                    conn,
+                    synthesis_path=args.synthesis,
+                    repo=args.repo,
+                ).to_dict()
+                return emit(result)
+            if args.cmd == "issue":
+                result = issue(
+                    conn,
+                    synthesis_path=args.synthesis,
+                    repo=args.repo,
+                    coordinator=args.coordinator,
+                )
+                return emit(result)
+            if args.cmd == "history":
+                return emit({"repairs": history(conn)})
+            if args.cmd == "reconcile":
+                result = reconcile_one(
+                    conn,
+                    args.fingerprint,
+                    current_differential=args.current_differential,
+                    trace_certificate=args.trace_certificate,
+                )
+                return emit(result)
+            raise AssertionError(args.cmd)
+        finally:
+            conn.close()
+    except (ReconLoopError, OSError, sqlite3.Error, ValueError) as exc:
+        return emit(
+            {
+                "status": "FAIL_CLOSED",
+                "error": type(exc).__name__,
+                "message": str(exc),
+            },
+            code=2,
+        )
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
