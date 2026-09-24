@@ -1,0 +1,126 @@
+#!/usr/bin/env python3
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import sqlite3
+import subprocess
+import sys
+from pathlib import Path
+
+ROOT = Path(os.environ.get("LOGRES_ROOT", "/home/ubuntu/logres"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "lib"))
+
+from logres_regression_supersede import apply_supersede, plan_supersede
+
+DB = Path(
+    os.environ.get(
+        "LOGRES_CONTROL_DB",
+        str(ROOT / "control" / "control.sqlite"),
+    )
+)
+BRAIN = str(ROOT / "bin" / "logres-brain")
+
+
+def connect() -> sqlite3.Connection:
+    conn = sqlite3.connect(DB, timeout=30)
+    conn.row_factory = sqlite3.Row
+    conn.execute("pragma busy_timeout=30000")
+    return conn
+
+
+def active_leases(conn: sqlite3.Connection) -> dict[str, sqlite3.Row]:
+    try:
+        rows = conn.execute("select * from brain_task_leases").fetchall()
+    except sqlite3.OperationalError:
+        return {}
+    return {
+        str(row["task_id"]): row
+        for row in rows
+        if str(row["task_id"] or "")
+    }
+
+
+def notify_active(preflight_id: int, leases: dict[str, sqlite3.Row], task_ids: list[str]) -> None:
+    for task_id in sorted(set(task_ids)):
+        lease = leases.get(task_id)
+        if lease is None:
+            continue
+        chat_id = str(lease["chat_id"] or "")
+        if not chat_id:
+            continue
+        subprocess.run(
+            [
+                BRAIN,
+                "post",
+                "system",
+                chat_id,
+                "DECISION",
+                "HIGH",
+                f"Stop superseded regression: {task_id}",
+                "--body",
+                (
+                    f"Successful preflight {preflight_id} proves the earlier failed "
+                    "preflight task set. Preserve any dirty worktree, but do not "
+                    "continue or integrate this obsolete regression repair."
+                ),
+                "--task",
+                task_id,
+                "--dedupe",
+                f"regression-lineage-supersede:{task_id}:{preflight_id}",
+            ],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            check=False,
+        )
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(prog="logres-regression-supersede")
+    parser.add_argument("preflight_id", type=int)
+    parser.add_argument("--apply", action="store_true")
+    args = parser.parse_args()
+
+    conn = connect()
+    try:
+        leases = active_leases(conn)
+        if not args.apply:
+            targets = plan_supersede(conn, args.preflight_id)
+            payload = {
+                "preflight_id": args.preflight_id,
+                "targets": [
+                    {
+                        "regression_id": item.regression_id,
+                        "task_id": item.task_id,
+                        "kind": item.kind,
+                        "ref": item.ref,
+                        "failed_preflight_id": item.failed_preflight_id,
+                        "failed_tasks": list(item.failed_tasks),
+                        "active": item.task_id in leases,
+                    }
+                    for item in targets
+                ],
+            }
+        else:
+            payload = apply_supersede(
+                conn,
+                args.preflight_id,
+                active_task_ids=set(leases),
+            )
+    finally:
+        conn.close()
+
+    if args.apply:
+        notify_active(
+            args.preflight_id,
+            leases,
+            payload["preserved_active_tasks"],
+        )
+
+    print(json.dumps(payload, indent=2, sort_keys=True))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
