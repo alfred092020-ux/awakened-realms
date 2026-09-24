@@ -16,6 +16,8 @@ PRODUCTION_FILES = (
     "bin/logres-autonomy",
     "bin/logres-autonomy-cron",
     "bin/logres-autopilot-watch",
+    "bin/logres-blocker-router",
+    "bin/logres-preview-reaper",
     "bin/logres-research-agent",
     "bin/logres-swarm",
     "bin/logres-coordinator",
@@ -40,6 +42,7 @@ PRODUCTION_FILES = (
     "lib/logres_copilot_router.py",
     "lib/logres_knowledge.py",
     "lib/logres_optimizer.py",
+    "lib/logres_preview_reaper.py",
     "lib/logres_reconcile.py",
     "lib/logres_remote_pool.py",
     "lib/logres_route_policy.py",
@@ -89,6 +92,24 @@ class DeployControlPlaneTests(unittest.TestCase):
                 0o755,
                 stat.S_IMODE(
                     (target / "bin" / "logres-route-reconcile").stat().st_mode
+                ),
+            )
+            self.assertEqual(
+                0o755,
+                stat.S_IMODE(
+                    (target / "bin" / "logres-blocker-router").stat().st_mode
+                ),
+            )
+            self.assertEqual(
+                0o755,
+                stat.S_IMODE(
+                    (target / "bin" / "logres-preview-reaper").stat().st_mode
+                ),
+            )
+            self.assertEqual(
+                0o600,
+                stat.S_IMODE(
+                    (target / "lib" / "logres_preview_reaper.py").stat().st_mode
                 ),
             )
             self.assertFalse((target / "secret.txt").exists())

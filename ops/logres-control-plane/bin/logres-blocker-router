@@ -1,0 +1,145 @@
+#!/usr/bin/env python3
+from __future__ import annotations
+import hashlib, os, sqlite3, subprocess, time
+from datetime import datetime, timezone
+
+DB=os.environ.get("LOGRES_CONTROL_DB","/home/ubuntu/logres/control/control.sqlite")
+BRAIN=os.environ.get("LOGRES_BRAIN","/home/ubuntu/logres/bin/logres-brain")
+
+c=sqlite3.connect(DB,timeout=30); c.row_factory=sqlite3.Row
+c.execute("pragma journal_mode=WAL")
+max_id=c.execute("select coalesce(max(id),0) from brain_events").fetchone()[0]
+row=c.execute("select value from meta where key='blocker_router_last_id'").fetchone()
+if row is None:
+    c.execute("insert into meta(key,value) values('blocker_router_last_id',?)",(str(max_id),))
+    c.commit(); c.close()
+    print(f"INITIALIZED cursor={max_id}")
+    raise SystemExit(0)
+
+last=int(row["value"])
+events=list(c.execute("""select * from brain_events
+    where id>? and event_type in ('BLOCKER','EVIDENCE_CONFLICT')
+    order by id""",(last,)))
+created=[]
+stamp=datetime.now(timezone.utc).isoformat(timespec="seconds")
+
+for e in events:
+    parent=e["task_id"]
+    if not parent:
+        continue
+
+    blocker_text=(str(e["subject"] or "")+"\n"+str(e["body"] or "")).lower()
+    external_action_markers=(
+        "real-device proof",
+        "device proof",
+        "no adb device",
+        "physical device",
+        "awaiting real-device",
+        "hardware-dependent",
+    )
+    if any(marker in blocker_text for marker in external_action_markers):
+        # Hardware/user-action blockers are intentionally not research work.
+        # Keep the parent blocked without manufacturing unblock packets.
+        continue
+
+    pt=c.execute("select * from tasks where id=?",(parent,)).fetchone()
+    if pt is None:
+        continue
+
+    # Never reopen terminal work from a later AI interpretation of historical
+    # evidence. Terminal task state is authoritative over evidence-routing noise.
+    if pt["status"] in ("DONE","RESOLVED","SUPERSEDED","CANCELLED"):
+        continue
+
+    meta=c.execute(
+        "select work_type,milestone from task_metadata where task_id=?",
+        (parent,),
+    ).fetchone()
+    generated_research_parent = (
+        meta is not None
+        and str(meta["work_type"] or "").lower()=="research"
+        and (
+            str(meta["milestone"] or "").lower()=="autoflow"
+            or "autoflow research child from ai evidence routing" in str(pt["note"] or "").lower()
+            or "auto-routed from brain event" in str(pt["note"] or "").lower()
+        )
+    )
+    if generated_research_parent:
+        # A generated research/unblock task is already the bounded escalation.
+        # Never manufacture another UNBLOCK descendant from its evidence result.
+        continue
+
+    # If the parent is explicitly waiting on external hardware/user action,
+    # AI evidence conflicts are advisory only and must not manufacture a new
+    # hard research dependency.
+    if e["event_type"]=="EVIDENCE_CONFLICT" and pt["status"]=="BLOCKED_EVIDENCE":
+        latest_blocker=c.execute(
+            """select subject,body from brain_events
+                 where task_id=? and event_type='BLOCKER'
+                 order by id desc limit 1""",
+            (parent,),
+        ).fetchone()
+        parent_text=(str(pt["note"] or "")+"\n")
+        if latest_blocker:
+            parent_text += str(latest_blocker["subject"] or "")+"\n"+str(latest_blocker["body"] or "")
+        parent_text=parent_text.lower()
+        evidence_ceiling_markers=(
+            "evidence ceiling reached",
+            "reviewed evidence ceiling",
+            "evidence ceiling",
+        )
+        if any(
+            marker in parent_text
+            for marker in (*external_action_markers, *evidence_ceiling_markers)
+        ):
+            continue
+
+    digest=hashlib.sha256(f"{e['id']}:{e['subject']}:{e['body']}".encode()).hexdigest()[:8].upper()
+    task_id=f"UNBLOCK-{parent}-{digest}"
+    if c.execute("select 1 from tasks where id=?",(task_id,)).fetchone():
+        continue
+
+    priority=max(0,int(pt["priority"] or 0))
+    title=f"Resolve blocker for {parent}: {e['subject']}"[:240]
+    c.execute("""insert into tasks(id,priority,lane,title,status,branch,owner,note,updated_at)
+      values(?,?,?,?,?,'',null,?,?)""",
+      (task_id,priority,"research",title,"READY",
+       f"Auto-routed from Brain event {e['id']}.\n{e['body']}",stamp))
+    c.execute("""insert into task_metadata
+      (task_id,milestone,work_type,concurrency_key,expected_minutes,evidence_policy,created_at,updated_at)
+      values(?,?,?,?,?,?,?,?)""",
+      (task_id,"DEMO-0.2","research",f"unblock-{parent}",45,
+       "Evidence-first. Resolve the exact blocker; do not broaden scope or invent unresolved historical facts.",
+       stamp,stamp))
+    for i,criterion in enumerate([
+        "Answer the exact blocker using indexed/recovered evidence before launching new broad reverse engineering.",
+        "Attach the strongest supporting artifact/path/hash and provenance classification.",
+        "State remaining uncertainty explicitly; do not turn inference into CONFIRMED ORIGINAL.",
+        f"Post a DONE/EVIDENCE handoff that allows {parent} to resume or explains why it must remain blocked.",
+    ],1):
+        c.execute("insert into task_acceptance(task_id,ordinal,criterion) values(?,?,?)",
+                  (task_id,i,criterion))
+    c.execute("""insert or ignore into task_dependencies(task_id,depends_on,kind,rationale)
+      values(?,?,'hard',?)""",
+      (parent,task_id,f"Auto-routed blocker event {e['id']}: {e['subject']}"))
+
+    # Stop new implementation on the parent. Existing lease is not forcibly
+    # destroyed here; the worker can hand off safely, while scheduling will no
+    # longer offer the parent as READY.
+    if pt["status"] in ("READY","ACTIVE"):
+        c.execute("update tasks set status='BLOCKED_DEP',note=?,updated_at=? where id=?",
+                  (f"Blocked by {task_id} from Brain event {e['id']}.",stamp,parent))
+    created.append((task_id,parent,e["id"]))
+
+c.execute("insert or replace into meta(key,value) values('blocker_router_last_id',?)",(str(max_id),))
+c.commit(); c.close()
+
+for task_id,parent,event_id in created:
+    subprocess.run([
+        BRAIN,"post","system","ALL","ASSIGNMENT","HIGH",
+        f"Auto-routed blocker: {task_id}",
+        "--body",f"Created focused research/unblock packet for parent={parent} from Brain event={event_id}.",
+        "--task",task_id,"--dedupe",f"blocker-router:{event_id}",
+    ],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,check=False)
+
+print(f"ROUTED created={len(created)} cursor={max_id}")

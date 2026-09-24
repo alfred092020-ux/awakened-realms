@@ -9,6 +9,8 @@ sys.path.insert(0, str(LIB_DIR))
 from logres_autonomy import (
     AUTONOMY_CRON_LINE,
     AUTONOMY_CRON_MARKER,
+    PREVIEW_REAPER_CRON_LINE,
+    PREVIEW_REAPER_CRON_MARKER,
     SWARM_CRON_LINE,
     SWARM_CRON_MARKER,
     rewrite_crontab,
@@ -26,6 +28,7 @@ class AutonomyCronTests(unittest.TestCase):
         self.assertNotIn("logres-merge-preflight run", after)
         self.assertIn(AUTONOMY_CRON_LINE, after)
         self.assertIn(SWARM_CRON_LINE, after)
+        self.assertIn(PREVIEW_REAPER_CRON_LINE, after)
         self.assertEqual(
             after,
             rewrite_crontab(after, install=True),
@@ -37,6 +40,8 @@ class AutonomyCronTests(unittest.TestCase):
             + AUTONOMY_CRON_LINE
             + "\n"
             + SWARM_CRON_LINE
+            + "\n"
+            + PREVIEW_REAPER_CRON_LINE
             + "\n* * * * * /home/ubuntu/logres/bin/logres-merge-preflight run\n"
         )
         after = rewrite_crontab(before, install=False)
@@ -44,6 +49,7 @@ class AutonomyCronTests(unittest.TestCase):
         self.assertEqual("1 2 * * * /bin/keep-me\n", after)
         self.assertNotIn(AUTONOMY_CRON_MARKER, after)
         self.assertNotIn(SWARM_CRON_MARKER, after)
+        self.assertNotIn(PREVIEW_REAPER_CRON_MARKER, after)
 
 
 if __name__ == "__main__":

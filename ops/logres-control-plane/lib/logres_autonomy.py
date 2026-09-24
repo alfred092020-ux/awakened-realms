@@ -71,6 +71,13 @@ SWARM_CRON_LINE = (
     ">>/home/ubuntu/logres/logs/swarm-cron.log 2>&1 "
     + SWARM_CRON_MARKER
 )
+PREVIEW_REAPER_CRON_MARKER = "# LOGRES_PREVIEW_REAPER_V1"
+PREVIEW_REAPER_CRON_LINE = (
+    "*/10 * * * * flock -n /tmp/logres-preview-reaper.lock "
+    "nice -n 15 ionice -c3 /home/ubuntu/logres/bin/logres-preview-reaper "
+    "--apply --age-hours 2 >>/home/ubuntu/logres/logs/preview-reaper.log 2>&1 "
+    + PREVIEW_REAPER_CRON_MARKER
+)
 
 
 def rewrite_crontab(existing: str, *, install: bool = True) -> str:
@@ -80,7 +87,11 @@ def rewrite_crontab(existing: str, *, install: bool = True) -> str:
         if not line:
             kept.append("")
             continue
-        if AUTONOMY_CRON_MARKER in line or SWARM_CRON_MARKER in line:
+        if (
+            AUTONOMY_CRON_MARKER in line
+            or SWARM_CRON_MARKER in line
+            or PREVIEW_REAPER_CRON_MARKER in line
+        ):
             continue
         # Autonomy v3 owns integration preflight cadence. Remove the old
         # standalone producer to avoid duplicate full-E2E work and races.
@@ -93,6 +104,7 @@ def rewrite_crontab(existing: str, *, install: bool = True) -> str:
     if install:
         kept.append(AUTONOMY_CRON_LINE)
         kept.append(SWARM_CRON_LINE)
+        kept.append(PREVIEW_REAPER_CRON_LINE)
     return "\n".join(kept) + ("\n" if kept else "")
 
 
