@@ -10,11 +10,21 @@ from pathlib import Path
 
 MANIFEST: dict[str, tuple[str, int]] = {
     "bin/logres-ai": ("bin/logres-ai", 0o700),
+    "bin/logres-ai-router": ("bin/logres-ai-router", 0o755),
     "bin/logres-autopilot-watch": ("bin/logres-autopilot-watch", 0o755),
+    "bin/logres-copilot-router": ("bin/logres-copilot-router", 0o755),
     "bin/logres-doctor": ("bin/logres-doctor", 0o700),
     "bin/logres-lead": ("bin/logres-lead", 0o700),
+    "bin/logres-route-reconcile": ("bin/logres-route-reconcile", 0o755),
     "lib/logres_ai_common.py": ("lib/logres_ai_common.py", 0o600),
+    "lib/logres_ai_router.py": ("lib/logres_ai_router.py", 0o600),
     "lib/logres_ai_runner.py": ("lib/logres_ai_runner.py", 0o600),
+    "lib/logres_copilot.py": ("lib/logres_copilot.py", 0o600),
+    "lib/logres_copilot_router.py": ("lib/logres_copilot_router.py", 0o600),
+    "lib/logres_reconcile.py": ("lib/logres_reconcile.py", 0o600),
+    "lib/logres_route_policy.py": ("lib/logres_route_policy.py", 0o600),
+    "lib/logres_route_store.py": ("lib/logres_route_store.py", 0o600),
+    "config/autoflow.default.json": ("config/autoflow.default.json", 0o600),
 }
 
 

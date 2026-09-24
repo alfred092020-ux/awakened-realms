@@ -10,64 +10,84 @@ sys.path.insert(0, str(REPO_ROOT / "scripts" / "logres"))
 from deploy_control_plane import deploy
 
 
+PRODUCTION_FILES = (
+    "bin/logres-ai",
+    "bin/logres-ai-router",
+    "bin/logres-autopilot-watch",
+    "bin/logres-copilot-router",
+    "bin/logres-doctor",
+    "bin/logres-lead",
+    "bin/logres-route-reconcile",
+    "lib/logres_ai_common.py",
+    "lib/logres_ai_router.py",
+    "lib/logres_ai_runner.py",
+    "lib/logres_copilot.py",
+    "lib/logres_copilot_router.py",
+    "lib/logres_reconcile.py",
+    "lib/logres_route_policy.py",
+    "lib/logres_route_store.py",
+    "config/autoflow.default.json",
+)
+
+
+def make_source(root: Path) -> Path:
+    source = root / "source"
+    for relative in PRODUCTION_FILES:
+        path = source / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        if relative == "bin/logres-ai":
+            path.write_text("#!/bin/sh\necho ai\n")
+        else:
+            path.write_text(relative + "\n")
+    (source / "secret.txt").write_text("must-not-deploy\n")
+    return source
+
+
 class DeployControlPlaneTests(unittest.TestCase):
-    def test_deploy_copies_only_manifested_files_and_preserves_modes(self):
+    def test_deploy_copies_complete_production_manifest_and_preserves_modes(self):
         with tempfile.TemporaryDirectory() as td:
             root = Path(td)
-            source = root / "source"
+            source = make_source(root)
             target = root / "target"
-            (source / "bin").mkdir(parents=True)
-            (source / "lib").mkdir()
-            files = {
-                "bin/logres-ai": "#!/bin/sh\necho ai\n",
-                "bin/logres-autopilot-watch": "#!/bin/sh\necho watch\n",
-                "bin/logres-doctor": "#!/bin/sh\necho doctor\n",
-                "bin/logres-lead": "#!/bin/sh\necho lead\n",
-                "lib/logres_ai_common.py": "VALUE = 'common'\n",
-                "lib/logres_ai_runner.py": "VALUE = 'runner'\n",
-            }
-            for relative, content in files.items():
-                path = source / relative
-                path.parent.mkdir(parents=True, exist_ok=True)
-                path.write_text(content)
-            (source / "secret.txt").write_text("must-not-deploy\n")
 
             deployed = deploy(source, target, dry_run=False)
 
+            self.assertEqual(set(PRODUCTION_FILES), {
+                str(item.destination.relative_to(target)) for item in deployed
+            })
             self.assertEqual(
                 "#!/bin/sh\necho ai\n",
                 (target / "bin" / "logres-ai").read_text(),
             )
-            self.assertTrue((target / "lib" / "logres_ai_runner.py").is_file())
+            self.assertTrue((target / "lib" / "logres_reconcile.py").is_file())
+            self.assertTrue((target / "config" / "autoflow.default.json").is_file())
             self.assertEqual(
                 0o700,
                 stat.S_IMODE((target / "bin" / "logres-ai").stat().st_mode),
+            )
+            self.assertEqual(
+                0o755,
+                stat.S_IMODE(
+                    (target / "bin" / "logres-route-reconcile").stat().st_mode
+                ),
             )
             self.assertFalse((target / "secret.txt").exists())
             self.assertTrue(
                 all("openai_api_key" not in str(item.destination) for item in deployed)
             )
 
-    def test_dry_run_makes_no_changes(self):
+    def test_dry_run_makes_no_changes_and_lists_complete_manifest(self):
         with tempfile.TemporaryDirectory() as td:
             root = Path(td)
-            source = root / "source"
+            source = make_source(root)
             target = root / "target"
-            for relative in (
-                "bin/logres-ai",
-                "bin/logres-autopilot-watch",
-                "bin/logres-doctor",
-                "bin/logres-lead",
-                "lib/logres_ai_common.py",
-                "lib/logres_ai_runner.py",
-            ):
-                path = source / relative
-                path.parent.mkdir(parents=True, exist_ok=True)
-                path.write_text(relative + "\n")
 
             deployed = deploy(source, target, dry_run=True)
 
-            self.assertEqual(6, len(deployed))
+            self.assertEqual(len(PRODUCTION_FILES), len(deployed))
+            self.assertEqual(set(PRODUCTION_FILES), {
+                str(item.destination.relative_to(target)) for item in deployed
+            })
             self.assertFalse(target.exists())
 
 

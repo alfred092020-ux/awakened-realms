@@ -175,6 +175,37 @@ class CopilotRouterTests(unittest.TestCase):
         self.assertIn("src/a.ts", body)
         self.assertIn("BLOCKED_EVIDENCE", body)
 
+
+    def test_report_only_mode_blocks_implementation_dispatch(self):
+        conn = make_test_db()
+        ensure_route_schema(conn)
+        seed_task(conn, task_id="IMP", work_type="implementation", status="READY")
+        add_scope(conn, "IMP", "src/a.ts")
+        config = test_config()
+        config["routing"]["copilot_dispatch_enabled"] = True
+        config["routing"]["copilot_mode"] = "report_only"
+        github = FakeGitHub()
+
+        with self.assertRaises(PolicyError):
+            dispatch_task(conn, "IMP", "b" * 40, config, github)
+
+        self.assertEqual(0, github.issue_create_calls)
+
+    def test_report_only_mode_allows_review_dispatch(self):
+        conn = make_test_db()
+        ensure_route_schema(conn)
+        seed_task(conn, task_id="REV", work_type="review", status="READY")
+        add_scope(conn, "REV", "docs/review")
+        config = test_config()
+        config["routing"]["copilot_dispatch_enabled"] = True
+        config["routing"]["copilot_mode"] = "report_only"
+        github = FakeGitHub()
+
+        result = dispatch_task(conn, "REV", "b" * 40, config, github)
+
+        self.assertEqual("ACTIVE", result.job.state)
+        self.assertEqual(1, github.issue_create_calls)
+
     def test_dispatch_is_disabled_by_default(self):
         conn = make_test_db()
         ensure_route_schema(conn)
@@ -196,6 +227,7 @@ class CopilotRouterTests(unittest.TestCase):
         add_scope(conn, "T1", "src/a.ts")
         config = test_config()
         config["routing"]["copilot_dispatch_enabled"] = True
+        config["routing"]["copilot_mode"] = "bounded_implementation"
         github = FakeGitHub()
 
         first = dispatch_task(conn, "T1", "b" * 40, config, github)
