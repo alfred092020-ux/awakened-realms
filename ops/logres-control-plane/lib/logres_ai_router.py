@@ -207,6 +207,42 @@ def route_ai_result(
     confidence = result.get("confidence", "UNRESOLVED")
     contradictions = result.get("contradictions") or []
 
+    terminal_statuses = {"DONE","RESOLVED","SUPERSEDED","CANCELLED"}
+    task_status = str(task_row.get("status") or "")
+    task_note = str(task_row.get("note") or "").lower()
+    external_action_markers = (
+        "real-device proof",
+        "device proof",
+        "no adb device",
+        "physical device",
+        "awaiting real-device",
+        "hardware-dependent",
+    )
+
+    if contradictions and (
+        not task_id
+        or task_status in terminal_statuses
+        or (
+            task_status == "BLOCKED_EVIDENCE"
+            and any(marker in task_note for marker in external_action_markers)
+        )
+    ):
+        reason = (
+            "contradiction retained for review without creating research work: "
+            + ("unscoped evidence" if not task_id else f"parent status={task_status}")
+        )
+        append_decision(
+            conn,
+            route_job_id,
+            "EVIDENCE_CONFLICT_ADVISORY",
+            reason,
+            task_id=task_id,
+        )
+        return RouteDecision(
+            "REVIEW_REQUIRED",
+            reason,
+        )
+
     if contradictions:
         child_task_id, _ = _insert_research_task(
             conn,
@@ -228,6 +264,22 @@ def route_ai_result(
             "contradictory evidence requires review",
             child_task_id,
         )
+
+    if confidence in {"UNRESOLVED", "VERSION SENSITIVE"} and (
+        not task_id or task_status in terminal_statuses
+    ):
+        reason = (
+            f"{confidence} retained for review without research child: "
+            + ("unscoped evidence" if not task_id else f"parent status={task_status}")
+        )
+        append_decision(
+            conn,
+            route_job_id,
+            "FOCUSED_RESEARCH_SKIPPED",
+            reason,
+            task_id=task_id,
+        )
+        return RouteDecision("REVIEW_REQUIRED", reason)
 
     if confidence in {"UNRESOLVED", "VERSION SENSITIVE"}:
         resolution = (
@@ -305,6 +357,51 @@ def route_event(
     ai_runner,
 ) -> RouteJob:
     event, task, metadata = _event_context(conn, source_event_id)
+
+    task_status = str(task.get("status") or "")
+    task_note = str(task.get("note") or "").lower()
+    terminal_statuses = {"DONE","RESOLVED","SUPERSEDED","CANCELLED"}
+    external_action_markers = (
+        "real-device proof",
+        "device proof",
+        "no adb device",
+        "physical device",
+        "awaiting real-device",
+        "hardware-dependent",
+    )
+    skip_reason = None
+    if task and task_status in terminal_statuses:
+        skip_reason = f"parent task is terminal ({task_status})"
+    elif (
+        task
+        and task_status == "BLOCKED_EVIDENCE"
+        and any(marker in task_note for marker in external_action_markers)
+    ):
+        skip_reason = "parent task is waiting on external hardware/device proof"
+
+    if skip_reason:
+        job = claim_route(
+            conn,
+            RouteSpec(
+                dedupe_key=f"event:{source_event_id}:TASK_STATE_SKIP",
+                route_kind="DETERMINISTIC",
+                source_event_id=source_event_id,
+                task_id=event.get("task_id"),
+                artifact_sha=event.get("artifact_sha256"),
+            ),
+        )
+        if job.state == "NEW":
+            job = transition_route(conn, job.id, "NEW", "SKIPPED_DETERMINISTIC")
+            append_decision(
+                conn,
+                job.id,
+                "SKIP_TASK_STATE",
+                skip_reason,
+                source_event_id=source_event_id,
+                task_id=event.get("task_id"),
+            )
+        return job
+
     decision = classify_evidence_event(event, task, metadata, config)
 
     if decision.route != "AI":

@@ -62,5 +62,24 @@ class RoutePolicyTests(unittest.TestCase):
         self.assertEqual("SKIP_DETERMINISTIC", decision.route)
 
 
+    def test_control_plane_rollout_evidence_never_uses_gameplay_ai_lane(self):
+        event = {
+            "event_type": "EVIDENCE",
+            "subject": "Finder staged autoflow rollout complete",
+            "artifact_path": "/tmp/finder-autoflow-rollout-proof.json",
+            "artifact_sha256": "b" * 64,
+            "meta_json": '{"artifact_bytes":90000,"kind":"report"}',
+        }
+        decision = classify_evidence_event(
+            event,
+            {"id": "CONTROL", "priority": 0},
+            {"work_type": "research", "evidence_policy": ""},
+            test_config(),
+        )
+        self.assertEqual("SKIP_DETERMINISTIC", decision.route)
+        self.assertIn("control-plane", decision.reason)
+
+
+
 if __name__ == "__main__":
     unittest.main()

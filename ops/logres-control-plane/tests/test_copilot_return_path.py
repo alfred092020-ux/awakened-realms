@@ -142,7 +142,7 @@ class CopilotReturnPathTests(unittest.TestCase):
         github.list_prs_result[0]["isDraft"] = True
         self.assertEqual(9, _matching_pr(job, github)["number"])
 
-    def test_stale_base_requires_revalidation_not_auto_queue(self):
+    def test_stale_base_runs_fast_gate_then_queues_for_shared_preflight(self):
         conn = make_test_db()
         job = seed_pr_ready_job(conn, base_sha="a" * 40)
         commands = FakeCommandRunner()
@@ -155,11 +155,14 @@ class CopilotReturnPathTests(unittest.TestCase):
             conn=conn,
         )
 
-        self.assertEqual("VERIFYING", result.state)
+        self.assertEqual("QUEUED", result.state)
         self.assertTrue(result.revalidation_required)
-        self.assertEqual([], commands.gate_calls)
         self.assertEqual(
-            0,
+            [["logres-gate", "fast", "copilot/t1"]],
+            commands.gate_calls,
+        )
+        self.assertEqual(
+            1,
             conn.execute("select count(*) from integration_queue").fetchone()[0],
         )
 
@@ -442,6 +445,55 @@ class CopilotReturnPathTests(unittest.TestCase):
             ).fetchone()[0],
         )
 
+    def test_queued_candidate_is_superseded_if_remote_branch_moves(self):
+        conn = make_test_db()
+        job = seed_pr_ready_job(conn, candidate_sha="c" * 40)
+        first = reconcile_copilot_job(
+            job,
+            gh_runner=FakeGitHub(),
+            command_runner=FakeCommandRunner(),
+            current_integration_sha="b" * 40,
+            conn=conn,
+        )
+        self.assertEqual("QUEUED", first.state)
+
+        queued = CopilotJobRecord(
+            id=job.id,
+            route_job_id=job.route_job_id,
+            task_id=job.task_id,
+            issue_number=job.issue_number,
+            pr_number=job.pr_number,
+            branch=job.branch,
+            base_sha=job.base_sha,
+            candidate_sha="c" * 40,
+            state="QUEUED",
+            last_error=None,
+        )
+
+        class DriftRunner(FakeCommandRunner):
+            def prepare_ref(self, branch):
+                return f"origin/{branch}"
+
+            def resolve_sha(self, ref):
+                return "d" * 40
+
+        result = reconcile_copilot_job(
+            queued,
+            gh_runner=FakeGitHub(),
+            command_runner=DriftRunner(),
+            current_integration_sha="b" * 40,
+            conn=conn,
+        )
+
+        self.assertEqual("SUPERSEDED", result.state)
+        self.assertEqual(
+            "SUPERSEDED",
+            conn.execute(
+                "select status from integration_queue where task_id='T1' and sha=?",
+                ("c" * 40,),
+            ).fetchone()[0],
+        )
+
     def test_prepared_remote_ref_is_used_for_verification_and_queue(self):
         conn = make_test_db()
         job = seed_pr_ready_job(conn)
@@ -473,11 +525,11 @@ class CopilotReturnPathTests(unittest.TestCase):
             [["logres-gate", "fast", "origin/copilot/t1"]],
             commands.gate_calls,
         )
-        self.assertEqual("origin/copilot/t1", result.branch)
+        self.assertEqual("copilot/t1", result.branch)
         task = conn.execute(
             "select branch from tasks where id='T1'"
         ).fetchone()
-        self.assertEqual("origin/copilot/t1", task[0])
+        self.assertEqual("copilot/t1", task[0])
 
 
 if __name__ == "__main__":

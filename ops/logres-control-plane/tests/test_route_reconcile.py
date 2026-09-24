@@ -10,7 +10,7 @@ sys.path.insert(0, str(TEST_DIR))
 sys.path.insert(0, str(LIB_DIR))
 
 from fixtures import make_test_db, seed_ai_run, seed_route, seed_task, test_config
-from logres_reconcile import backpressure, reconcile_routes
+from logres_reconcile import SQLiteAICache, backpressure, reconcile_routes
 from logres_route_store import ensure_route_schema
 
 
@@ -72,13 +72,131 @@ class RouteReconcileTests(unittest.TestCase):
             current_integration_sha="b" * 40,
         )[0]
 
-        self.assertEqual("BRAIN_POSTED", result.state)
+        self.assertEqual("COMPLETE", result.state)
         self.assertEqual(0, ai_cache.openai_calls)
         self.assertEqual(1, ai_cache.brain_posts)
         stored = conn.execute(
             "select state from route_jobs where id=?", (route_id,)
         ).fetchone()[0]
-        self.assertEqual("BRAIN_POSTED", stored)
+        self.assertEqual("COMPLETE", stored)
+        self.assertEqual(
+            1,
+            conn.execute(
+                "select count(*) from tasks where note='Autoflow research child from AI evidence routing.'"
+            ).fetchone()[0],
+        )
+
+    def test_failed_ai_route_recovers_exact_cached_result_without_second_call(self):
+        conn = make_test_db()
+        ensure_route_schema(conn)
+        seed_task(conn, task_id="T1", work_type="research", status="ACTIVE")
+        route_id = seed_route(
+            conn,
+            state="FAILED_BOUNDED",
+            dedupe_key="failed-ai",
+            route_kind="AI",
+            task_id="T1",
+            artifact_sha="a" * 64,
+            meta_json=json.dumps({
+                "question": "q",
+                "provenance": "CONFIRMED_GLOBAL_2017",
+            }),
+        )
+        conn.execute(
+            "update route_jobs set last_error='transient subprocess failure' where id=?",
+            (route_id,),
+        )
+        conn.commit()
+        seed_ai_run(conn, artifact_sha="a" * 64, question="q", status="PASS")
+        ai_cache = FakeAICache(
+            {"ai_run_id": 1, "result": VALID_RESULT, "model": "gpt-5.6-luna"}
+        )
+
+        results = reconcile_routes(
+            conn,
+            ai_cache=ai_cache,
+            github=Mock(),
+            command_runner=FakeCommandRunner(),
+            config=test_config(),
+            current_integration_sha="b" * 40,
+        )
+
+        self.assertEqual(1, len(results))
+        self.assertEqual("COMPLETE", results[0].state)
+        self.assertEqual(0, ai_cache.openai_calls)
+        self.assertEqual(1, ai_cache.brain_posts)
+        row = conn.execute(
+            "select state,last_error from route_jobs where id=?", (route_id,)
+        ).fetchone()
+        self.assertEqual("COMPLETE", row[0])
+        self.assertIsNone(row[1])
+        self.assertEqual(
+            1,
+            conn.execute(
+                "select count(*) from route_decisions "
+                "where route_job_id=? and decision='AI_CACHE_RECOVERED_AFTER_FAILURE'",
+                (route_id,),
+            ).fetchone()[0],
+        )
+
+    def test_failed_ai_route_does_not_recover_from_different_artifact_sha(self):
+        conn = make_test_db()
+        ensure_route_schema(conn)
+        seed_task(conn, task_id="T1", work_type="research", status="ACTIVE")
+        route_id = seed_route(
+            conn,
+            state="FAILED_BOUNDED",
+            dedupe_key="failed-wrong-cache",
+            route_kind="AI",
+            task_id="T1",
+            artifact_sha="a" * 64,
+            meta_json=json.dumps({"question": "q"}),
+        )
+        seed_ai_run(conn, artifact_sha="b" * 64, question="q", status="PASS")
+
+        results = reconcile_routes(
+            conn,
+            ai_cache=SQLiteAICache(runner=Mock()),
+            github=Mock(),
+            command_runner=FakeCommandRunner(),
+            config=test_config(),
+            current_integration_sha="c" * 40,
+        )
+
+        self.assertEqual([], results)
+        self.assertEqual(
+            "FAILED_BOUNDED",
+            conn.execute("select state from route_jobs where id=?", (route_id,)).fetchone()[0],
+        )
+
+    def test_failed_ai_route_without_cache_remains_terminal(self):
+        conn = make_test_db()
+        ensure_route_schema(conn)
+        seed_task(conn, task_id="T1", work_type="research", status="ACTIVE")
+        route_id = seed_route(
+            conn,
+            state="FAILED_BOUNDED",
+            dedupe_key="failed-no-cache",
+            route_kind="AI",
+            task_id="T1",
+            artifact_sha="a" * 64,
+            meta_json=json.dumps({"question": "q"}),
+        )
+
+        results = reconcile_routes(
+            conn,
+            ai_cache=FakeAICache(record=None),
+            github=Mock(),
+            command_runner=FakeCommandRunner(),
+            config=test_config(),
+            current_integration_sha="b" * 40,
+        )
+
+        self.assertEqual([], results)
+        self.assertEqual(
+            "FAILED_BOUNDED",
+            conn.execute("select state from route_jobs where id=?", (route_id,)).fetchone()[0],
+        )
 
     def test_existing_copilot_issue_is_adopted_after_crash(self):
         conn = make_test_db()

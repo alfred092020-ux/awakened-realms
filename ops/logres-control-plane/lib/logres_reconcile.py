@@ -6,6 +6,7 @@ import subprocess
 from dataclasses import dataclass
 
 from logres_ai_common import brain_post_dedupe_key
+from logres_ai_router import route_ai_result
 from logres_ai_runner import budget_state
 from logres_copilot import CopilotJobRecord
 from logres_copilot_router import reconcile_copilot_job
@@ -175,37 +176,112 @@ def _close_superseded(
     )
 
 
+AI_RESULT_DECISIONS = {
+    "EVIDENCE_CONFLICT_ADVISORY",
+    "EVIDENCE_CONFLICT",
+    "FOCUSED_RESEARCH_SKIPPED",
+    "FOCUSED_RESEARCH",
+    "REVIEW_REQUIRED",
+    "EVIDENCE_PACKET_REVIEW",
+}
+
+
+def _ai_result_already_routed(conn: sqlite3.Connection, route_id: int) -> bool:
+    placeholders = ",".join("?" for _ in AI_RESULT_DECISIONS)
+    return conn.execute(
+        f"select 1 from route_decisions where route_job_id=? "
+        f"and decision in ({placeholders}) limit 1",
+        (route_id, *sorted(AI_RESULT_DECISIONS)),
+    ).fetchone() is not None
+
+
+def _route_recovered_ai_result(
+    conn: sqlite3.Connection,
+    route: RouteJob,
+    record: dict,
+) -> None:
+    if _ai_result_already_routed(conn, route.id):
+        return
+    task_row = None
+    metadata_row = None
+    if route.task_id:
+        row = conn.execute("select * from tasks where id=?", (route.task_id,)).fetchone()
+        task_row = dict(row) if row is not None else None
+        row = conn.execute(
+            "select * from task_metadata where task_id=?", (route.task_id,)
+        ).fetchone()
+        metadata_row = dict(row) if row is not None else None
+    try:
+        meta = json.loads(route.meta_json or "{}")
+    except json.JSONDecodeError:
+        meta = {}
+    route_ai_result(
+        conn,
+        route.id,
+        record.get("result") or {},
+        task_row,
+        metadata_row,
+        provenance=str(meta.get("provenance") or ""),
+    )
+
+
 def _recover_ai(
     conn: sqlite3.Connection,
     route: RouteJob,
     ai_cache,
 ) -> RouteRecoveryResult | None:
-    if route.state not in {"AI_RUNNING", "AI_VALIDATED", "BRAIN_POSTED"}:
+    if route.state not in {
+        "AI_RUNNING",
+        "AI_VALIDATED",
+        "BRAIN_POSTED",
+        "FAILED_BOUNDED",
+    }:
         return None
 
     if route.state == "BRAIN_POSTED":
+        route = transition_route(conn, route.id, "BRAIN_POSTED", "COMPLETE")
+        append_decision(
+            conn,
+            route.id,
+            "AI_RECOVERY_COMPLETE",
+            "durable Brain post finalized after restart",
+            task_id=route.task_id,
+        )
         return RouteRecoveryResult(
             route.id,
-            "BRAIN_POSTED",
+            "COMPLETE",
             route.task_id,
             route.route_kind,
-            reason="Brain post already durable",
+            reason="Brain-posted AI route finalized",
         )
 
     record = ai_cache.recover(conn, route)
     if record is None:
         return None
 
-    if route.state == "AI_RUNNING":
-        route = transition_route(conn, route.id, "AI_RUNNING", "AI_VALIDATED")
+    if route.state in {"AI_RUNNING", "FAILED_BOUNDED"}:
+        previous_state = route.state
+        route = transition_route(
+            conn,
+            route.id,
+            previous_state,
+            "AI_VALIDATED",
+            last_error=None,
+        )
+        decision = (
+            "AI_CACHE_RECOVERED_AFTER_FAILURE"
+            if previous_state == "FAILED_BOUNDED"
+            else "AI_CACHE_RECOVERED"
+        )
         append_decision(
             conn,
             route.id,
-            "AI_CACHE_RECOVERED",
-            "completed ai_runs result recovered after crash",
+            decision,
+            "exact artifact/question PASS recovered from ai_runs without another API call",
             task_id=route.task_id,
         )
 
+    _route_recovered_ai_result(conn, route, record)
     ai_cache.ensure_brain_post(route, record)
     route = transition_route(conn, route.id, "AI_VALIDATED", "BRAIN_POSTED")
     append_decision(
@@ -215,12 +291,20 @@ def _recover_ai(
         "cached AI result posted/reconciled without another API call",
         task_id=route.task_id,
     )
+    route = transition_route(conn, route.id, "BRAIN_POSTED", "COMPLETE")
+    append_decision(
+        conn,
+        route.id,
+        "AI_RECOVERY_COMPLETE",
+        "cached AI route fully reconciled",
+        task_id=route.task_id,
+    )
     return RouteRecoveryResult(
         route.id,
-        "BRAIN_POSTED",
+        "COMPLETE",
         route.task_id,
         route.route_kind,
-        reason="cached AI result recovered",
+        reason="cached AI result recovered and finalized",
     )
 
 
@@ -322,6 +406,7 @@ def reconcile_routes(
                'COMPLETE','SKIPPED_DETERMINISTIC','DUPLICATE_CACHE',
                'FAILED_BOUNDED','SUPERSEDED','SCOPE_VIOLATION','QUEUED'
              )
+                or (route_kind='AI' and state='FAILED_BOUNDED')
              order by id"""
     ).fetchall()
     results: list[RouteRecoveryResult] = []
@@ -415,7 +500,27 @@ def route_status(conn: sqlite3.Connection, config: dict) -> RouteStatus:
     )
     failed = int(
         conn.execute(
-            "select count(*) from route_jobs where state='FAILED_BOUNDED'"
+            """select count(*)
+                 from route_jobs r
+                 left join tasks t on t.id=r.task_id
+                where r.state='FAILED_BOUNDED'
+                  and (
+                    r.task_id is null
+                    or t.id is null
+                    or (
+                      t.status not in ('DONE','RESOLVED','SUPERSEDED','CANCELLED')
+                      and not (
+                        t.status='BLOCKED_EVIDENCE'
+                        and (
+                          lower(coalesce(t.note,'')) like '%real-device proof%'
+                          or lower(coalesce(t.note,'')) like '%device proof%'
+                          or lower(coalesce(t.note,'')) like '%no adb device%'
+                          or lower(coalesce(t.note,'')) like '%physical device%'
+                          or lower(coalesce(t.note,'')) like '%hardware-dependent%'
+                        )
+                      )
+                    )
+                  )"""
         ).fetchone()[0]
     )
     ai_active = int(
@@ -447,7 +552,14 @@ def route_status(conn: sqlite3.Connection, config: dict) -> RouteStatus:
     )
     copilot_queued = int(
         conn.execute(
-            "select count(*) from copilot_jobs where state='QUEUED'"
+            """select count(*) from copilot_jobs cj
+                 where cj.state='QUEUED'
+                   and not exists (
+                     select 1 from integration_queue iq
+                      where iq.task_id=cj.task_id
+                        and iq.sha=cj.candidate_sha
+                        and iq.status='INTEGRATED'
+                   )"""
         ).fetchone()[0]
     )
     copilot_prs = int(
