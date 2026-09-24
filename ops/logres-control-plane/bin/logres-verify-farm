@@ -260,6 +260,10 @@ p.write_text(s)
 PY
 
 export PLAYWRIGHT_BROWSERS_PATH=/home/ubuntu/logres/cache/playwright
+export LOGRES_VERIFY_SHA="$SHA"
+export LOGRES_RECORD_VISUAL_TRUTH=1
+export LOGRES_REQUIRE_VISUAL_TRUTH_RECORD=1
+export LOGRES_VISUAL_TRUTH_BIN="${LOGRES_VISUAL_TRUTH_BIN:-/home/ubuntu/logres/bin/logres-visual-truth}"
 (
   set -e
   hydrate "$E2E_WT"

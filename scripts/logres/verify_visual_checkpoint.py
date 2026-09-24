@@ -9,7 +9,9 @@ from __future__ import annotations
 import argparse
 import json
 import math
+import os
 import struct
+import subprocess
 import sys
 import zlib
 from collections import Counter
@@ -52,6 +54,96 @@ PROFILES = {
 }
 
 PNG_SIG = b"\x89PNG\r\n\x1a\n"
+
+
+def _truth_enabled() -> bool:
+    return os.environ.get("LOGRES_RECORD_VISUAL_TRUTH", "").lower() in {
+        "1",
+        "true",
+        "yes",
+    }
+
+
+def _truth_required() -> bool:
+    return os.environ.get("LOGRES_REQUIRE_VISUAL_TRUTH_RECORD", "").lower() in {
+        "1",
+        "true",
+        "yes",
+    }
+
+
+def record_visual_truth(checkpoint: str, image: Path, result: dict) -> dict:
+    if not _truth_enabled():
+        return {"recorded": False, "reason": "DISABLED"}
+
+    sha = os.environ.get("LOGRES_VERIFY_SHA", "")
+    truth_bin = os.environ.get(
+        "LOGRES_VISUAL_TRUTH_BIN",
+        "/home/ubuntu/logres/bin/logres-visual-truth",
+    )
+    if len(sha) != 40 or any(ch not in "0123456789abcdef" for ch in sha):
+        message = "canonical visual truth recording requires exact lowercase SHA"
+        if _truth_required():
+            raise RuntimeError(message)
+        return {"recorded": False, "reason": "INVALID_SHA", "error": message}
+    if not Path(truth_bin).is_file():
+        message = f"visual truth recorder missing: {truth_bin}"
+        if _truth_required():
+            raise RuntimeError(message)
+        return {"recorded": False, "reason": "RECORDER_MISSING", "error": message}
+
+    verdict = "REVIEW" if result.get("pass") else "FAIL"
+    metrics = dict(result.get("metrics") or {})
+    metrics["structural_provenance"] = result.get("provenance") or {}
+    metrics["structural_failures"] = result.get("failures") or []
+    viewport = {
+        "width": metrics.get("width"),
+        "height": metrics.get("height"),
+        "source": "playwright-canvas",
+    }
+    completed = subprocess.run(
+        [
+            truth_bin,
+            "record",
+            sha,
+            checkpoint,
+            str(image),
+            verdict,
+            "--viewport",
+            json.dumps(viewport, sort_keys=True),
+            "--device",
+            json.dumps(
+                {
+                    "runner": "canonical-playwright",
+                    "gate": "structural",
+                },
+                sort_keys=True,
+            ),
+            "--metrics",
+            json.dumps(metrics, sort_keys=True),
+        ],
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    if completed.returncode != 0:
+        message = (completed.stderr or completed.stdout or "recording failed").strip()
+        if _truth_required():
+            raise RuntimeError(f"visual truth recording failed: {message}")
+        return {
+            "recorded": False,
+            "reason": "RECORDER_FAILED",
+            "error": message,
+        }
+    try:
+        payload = json.loads(completed.stdout)
+    except Exception:
+        payload = {"raw": completed.stdout.strip()}
+    return {
+        "recorded": True,
+        "verdict": verdict,
+        "record": payload,
+    }
 
 
 def paeth(a: int, b: int, c: int) -> int:
@@ -267,6 +359,11 @@ def main():
         parser.error("--checkpoint and --image are required unless --describe/--self-test is used")
     width, height, pixels = decode_png(args.image)
     result = result_for(args.checkpoint, width, height, pixels)
+    result["truth_record"] = record_visual_truth(
+        args.checkpoint,
+        args.image,
+        result,
+    )
     print(json.dumps(result, sort_keys=True))
     return 0 if result["pass"] else 2
 

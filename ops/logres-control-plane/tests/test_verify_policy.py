@@ -1,12 +1,29 @@
+import importlib.util
+import json
 import os
 import subprocess
+import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 
 TEST_DIR = Path(__file__).resolve().parent
 CONTROL_ROOT = TEST_DIR.parent
 SCRIPT = CONTROL_ROOT / "bin" / "logres-verify-farm"
+REPO_ROOT = CONTROL_ROOT.parents[1]
+VISUAL_VERIFIER = REPO_ROOT / "scripts" / "logres" / "verify_visual_checkpoint.py"
+
+
+def load_visual_verifier():
+    spec = importlib.util.spec_from_file_location(
+        "verify_visual_checkpoint_test",
+        VISUAL_VERIFIER,
+    )
+    module = importlib.util.module_from_spec(spec)
+    assert spec.loader is not None
+    spec.loader.exec_module(module)
+    return module
 
 
 def policy_env(**updates):
@@ -91,6 +108,57 @@ class VerifyFarmE2EPolicyTests(unittest.TestCase):
             'E2E_VERIFY_TAG="e2e-w${E2E_WORKERS}"',
             text,
         )
+
+
+    def test_canonical_farm_exports_exact_sha_for_visual_truth(self):
+        text = SCRIPT.read_text()
+        self.assertIn('export LOGRES_VERIFY_SHA="$SHA"', text)
+        self.assertIn('export LOGRES_RECORD_VISUAL_TRUTH=1', text)
+        self.assertIn('export LOGRES_REQUIRE_VISUAL_TRUTH_RECORD=1', text)
+
+    def test_structural_truth_records_review_or_fail_never_pass(self):
+        module = load_visual_verifier()
+        for passed, expected in ((True, "REVIEW"), (False, "FAIL")):
+            with self.subTest(passed=passed), tempfile.TemporaryDirectory() as td:
+                root = Path(td)
+                recorder = root / "recorder.py"
+                args_log = root / "args.json"
+                recorder.write_text(
+                    "#!/usr/bin/env python3\n"
+                    "import json,os,sys\n"
+                    "open(os.environ['ARG_LOG'],'w').write(json.dumps(sys.argv[1:]))\n"
+                    "print(json.dumps({'id': 7}))\n"
+                )
+                recorder.chmod(0o755)
+                image = root / "checkpoint.png"
+                image.write_bytes(b"placeholder")
+                result = {
+                    "pass": passed,
+                    "metrics": {"width": 720, "height": 1280},
+                    "provenance": {"layout": "SUPPORTED_INFERENCE"},
+                    "failures": [] if passed else ["structural failure"],
+                }
+                with patch.dict(
+                    os.environ,
+                    {
+                        "LOGRES_RECORD_VISUAL_TRUTH": "1",
+                        "LOGRES_REQUIRE_VISUAL_TRUTH_RECORD": "1",
+                        "LOGRES_VERIFY_SHA": "a" * 40,
+                        "LOGRES_VISUAL_TRUTH_BIN": str(recorder),
+                        "ARG_LOG": str(args_log),
+                    },
+                    clear=False,
+                ):
+                    recorded = module.record_visual_truth(
+                        "title",
+                        image,
+                        result,
+                    )
+                self.assertTrue(recorded["recorded"])
+                self.assertEqual(expected, recorded["verdict"])
+                args = json.loads(args_log.read_text())
+                self.assertIn(expected, args)
+                self.assertNotIn("PASS", args)
 
 
 if __name__ == "__main__":
