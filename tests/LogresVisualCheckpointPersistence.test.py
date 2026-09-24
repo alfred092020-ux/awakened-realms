@@ -89,6 +89,42 @@ class VisualCheckpointPersistenceTests(unittest.TestCase):
         self.assertTrue(result["recorded"])
         self.assertEqual({"id": 7}, result["record"])
         self.assertEqual(0.25, run.call_args.kwargs["timeout"])
+        self.assertEqual(
+            "0.25",
+            run.call_args.kwargs["env"][
+                "LOGRES_VISUAL_TRUTH_DB_TIMEOUT_SECONDS"
+            ],
+        )
+
+    def test_explicit_db_timeout_override_is_preserved(self):
+        with tempfile.TemporaryDirectory() as td:
+            recorder = Path(td) / "recorder"
+            recorder.write_text("#!/bin/sh\n")
+            with self.recorder_env(
+                recorder,
+                LOGRES_VISUAL_TRUTH_DB_TIMEOUT_SECONDS="1.5",
+            ), mock.patch.object(
+                MODULE.subprocess,
+                "run",
+                return_value=SimpleNamespace(
+                    returncode=0,
+                    stdout='{"id": 8}',
+                    stderr="",
+                ),
+            ) as run:
+                result = MODULE.record_visual_truth(
+                    "field",
+                    Path("field.png"),
+                    RESULT,
+                )
+
+        self.assertTrue(result["recorded"])
+        self.assertEqual(
+            "1.5",
+            run.call_args.kwargs["env"][
+                "LOGRES_VISUAL_TRUTH_DB_TIMEOUT_SECONDS"
+            ],
+        )
 
     def test_optional_timeout_preserves_structural_result(self):
         with tempfile.TemporaryDirectory() as td:

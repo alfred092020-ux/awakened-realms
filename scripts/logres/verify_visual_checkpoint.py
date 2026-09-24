@@ -116,6 +116,11 @@ def record_visual_truth(checkpoint: str, image: Path, result: dict) -> dict:
         "height": metrics.get("height"),
         "source": "playwright-canvas",
     }
+    recorder_env = os.environ.copy()
+    recorder_env.setdefault(
+        "LOGRES_VISUAL_TRUTH_DB_TIMEOUT_SECONDS",
+        "0.25",
+    )
     try:
         completed = subprocess.run(
             [
@@ -142,6 +147,7 @@ def record_visual_truth(checkpoint: str, image: Path, result: dict) -> dict:
             capture_output=True,
             check=False,
             timeout=_truth_timeout_seconds(),
+            env=recorder_env,
         )
     except subprocess.TimeoutExpired as exc:
         message = (
