@@ -238,6 +238,121 @@ class FrontierTests(unittest.TestCase):
         self.assertEqual("SUPERSEDED", row["status"])
         self.assertIn("evidence artifacts remain preserved", row["note"])
 
+    def test_terminal_root_resolves_leftover_saturated_frontier(self):
+        claim = claim_frontier(
+            self.conn,
+            parent_task_id="ROOT",
+            predicate_text="recover bounded missing evidence",
+            origin_kind="AI_ROUTE",
+            origin_id=60,
+        )
+        seed_task(
+            self.conn,
+            task_id="CHILD_TERM",
+            work_type="research",
+            status="BLOCKED_EVIDENCE",
+        )
+        mark_generated(
+            self.conn,
+            "CHILD_TERM",
+            note="Autoflow research child from AI evidence routing.",
+        )
+        register_child(
+            self.conn,
+            claim,
+            child_task_id="CHILD_TERM",
+            origin_kind="AI_ROUTE",
+            origin_id=60,
+        )
+        self.conn.execute("update tasks set status='DONE' where id='ROOT'")
+        self.conn.commit()
+
+        report = reconcile(self.conn, apply=True)
+
+        row = self.conn.execute(
+            "select state from research_frontier where root_task_id='ROOT'"
+        ).fetchone()
+        self.assertEqual("RESOLVED", row["state"])
+        self.assertEqual(1, report["stats"]["terminal_root_resolved"])
+
+    def test_blocked_evidence_root_keeps_saturated_frontier(self):
+        claim = claim_frontier(
+            self.conn,
+            parent_task_id="ROOT",
+            predicate_text="still requires genuinely new primary evidence",
+            origin_kind="AI_ROUTE",
+            origin_id=61,
+        )
+        seed_task(
+            self.conn,
+            task_id="CHILD_BLOCKED",
+            work_type="research",
+            status="BLOCKED_EVIDENCE",
+        )
+        mark_generated(
+            self.conn,
+            "CHILD_BLOCKED",
+            note="Autoflow research child from AI evidence routing.",
+        )
+        register_child(
+            self.conn,
+            claim,
+            child_task_id="CHILD_BLOCKED",
+            origin_kind="AI_ROUTE",
+            origin_id=61,
+        )
+        self.conn.execute(
+            "update tasks set status='BLOCKED_EVIDENCE' where id='ROOT'"
+        )
+        self.conn.commit()
+
+        report = reconcile(self.conn, apply=True)
+
+        row = self.conn.execute(
+            "select state from research_frontier where root_task_id='ROOT'"
+        ).fetchone()
+        self.assertEqual("SATURATED", row["state"])
+        self.assertEqual(0, report["stats"]["terminal_root_resolved"])
+
+    def test_terminal_root_frontier_reconcile_is_idempotent(self):
+        claim = claim_frontier(
+            self.conn,
+            parent_task_id="ROOT",
+            predicate_text="historical search already satisfied elsewhere",
+            origin_kind="AI_ROUTE",
+            origin_id=62,
+        )
+        seed_task(
+            self.conn,
+            task_id="CHILD_IDEMP",
+            work_type="research",
+            status="BLOCKED_EVIDENCE",
+        )
+        mark_generated(
+            self.conn,
+            "CHILD_IDEMP",
+            note="Autoflow research child from AI evidence routing.",
+        )
+        register_child(
+            self.conn,
+            claim,
+            child_task_id="CHILD_IDEMP",
+            origin_kind="AI_ROUTE",
+            origin_id=62,
+        )
+        self.conn.execute("update tasks set status='SUPERSEDED' where id='ROOT'")
+        self.conn.commit()
+
+        first = reconcile(self.conn, apply=True)
+        second = reconcile(self.conn, apply=True)
+
+        self.assertEqual(1, first["stats"]["terminal_root_resolved"])
+        self.assertEqual(0, second["stats"]["terminal_root_resolved"])
+        row = self.conn.execute(
+            "select state from research_frontier where root_task_id='ROOT'"
+        ).fetchone()
+        self.assertEqual("RESOLVED", row["state"])
+
     def test_saturated_auto_blocker_turns_root_into_evidence_ceiling(self):
         seed_task(
             self.conn,
