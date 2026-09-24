@@ -1,0 +1,67 @@
+#!/usr/bin/env python3
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import sys
+import time
+from pathlib import Path
+
+CONTROL_ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(CONTROL_ROOT / "lib"))
+
+from logres_supervisor import ensure_running, run_forever, supervisor_health, tick
+
+ROOT = Path(os.environ.get("LOGRES_ROOT", "/home/ubuntu/logres"))
+HEARTBEAT = Path(os.environ.get("LOGRES_SUPERVISOR_HEARTBEAT", str(ROOT / "control/supervisor-heartbeat.json")))
+LOCK = Path(os.environ.get("LOGRES_SUPERVISOR_LOCK", "/tmp/logres-supervisor.lock"))
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser(prog="logres-supervisor")
+    sub = ap.add_subparsers(dest="command", required=True)
+    sub.add_parser("run")
+    sub.add_parser("tick")
+    sub.add_parser("ensure")
+    status = sub.add_parser("status")
+    status.add_argument("--json", action="store_true")
+    args = ap.parse_args()
+
+    if args.command == "run":
+        return run_forever(ROOT, HEARTBEAT, LOCK)
+    if args.command == "tick":
+        print(json.dumps(tick(ROOT, HEARTBEAT), indent=2, sort_keys=True))
+        return 0
+    if args.command == "ensure":
+        result = ensure_running(ROOT, Path(__file__).resolve(), HEARTBEAT)
+        if result.get("started"):
+            for _ in range(30):
+                time.sleep(0.1)
+                health = supervisor_health(HEARTBEAT)
+                if health.get("healthy"):
+                    result = {"started": True, **health}
+                    break
+            else:
+                result = {
+                    **result,
+                    "healthy": False,
+                    "reason": "supervisor did not publish a healthy heartbeat",
+                }
+        print(json.dumps(result, indent=2, sort_keys=True))
+        return 0 if result.get("healthy") else 1
+
+    result = supervisor_health(HEARTBEAT)
+    if args.json:
+        print(json.dumps(result, indent=2, sort_keys=True))
+    else:
+        print(
+            "SUPERVISOR "
+            + ("HEALTHY" if result["healthy"] else "UNHEALTHY")
+            + f" pid={result.get('pid') or '-'} age={result.get('age_seconds')}"
+        )
+    return 0 if result["healthy"] else 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

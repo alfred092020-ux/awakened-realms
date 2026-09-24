@@ -194,6 +194,19 @@ def deploy_runtime(
             )
         files[str(destination.relative_to(root))] = source_hash
 
+    # The unprivileged supervisor is the authoritative scheduler. Runtime
+    # deployment must prove it can start before legacy cron is treated as a
+    # compatibility/bootstrap path.
+    supervisor = run_command(
+        [root / "bin" / "logres-supervisor", "ensure"],
+        runner=runner,
+    )
+    if supervisor.returncode:
+        detail = (supervisor.stderr or supervisor.stdout or "").strip()
+        raise RuntimeDeployError(
+            f"user supervisor failed to start: {detail}"
+        )
+
     cron = run_command(
         [root / "bin" / "logres-autonomy-cron", "install"],
         runner=runner,
@@ -215,16 +228,11 @@ def deploy_runtime(
             max_age_seconds=scheduler_max_age_seconds,
             now_epoch=now_epoch,
         )
-        if not recent:
-            age_text = (
-                "missing"
-                if scheduler_age_seconds is None
-                else f"{scheduler_age_seconds:.1f}s"
-            )
-            raise RuntimeDeployError(
-                "managed cron reconciliation failed and autonomy "
-                f"scheduler is stale ({age_text}): {cron_diagnostic}"
-            )
+        # Before the supervisor existed, stale cron meant there was no
+        # scheduler and therefore had to fail closed. A healthy supervisor now
+        # carries that authority. Preserve the cron age as diagnostic evidence
+        # without making legacy cron a second scheduler requirement.
+        _ = recent
 
     payload = {
         "schema": 2,
@@ -241,6 +249,14 @@ def deploy_runtime(
             if scheduler_age_seconds is not None
             else None
         ),
+        "scheduler": {
+            "authoritative": "logres-supervisor",
+            "supervisor": "healthy",
+            "legacy_cron": (
+                "reconciled" if cron_reconciled else "deferred"
+            ),
+            "legacy_cron_detail": cron_diagnostic[-500:],
+        },
     }
     atomic_json(stamp_path, payload)
     return payload

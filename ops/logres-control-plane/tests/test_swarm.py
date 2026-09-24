@@ -6,7 +6,8 @@ import unittest
 from pathlib import Path
 
 TEST_DIR = Path(__file__).resolve().parent
-LIB_DIR = TEST_DIR.parent / "lib"
+CONTROL_ROOT = TEST_DIR.parent
+LIB_DIR = CONTROL_ROOT / "lib"
 sys.path.insert(0, str(TEST_DIR))
 sys.path.insert(0, str(LIB_DIR))
 
@@ -32,6 +33,11 @@ class SwarmTests(unittest.TestCase):
 
     def tearDown(self):
         self.conn.close()
+
+    def test_swarm_tick_keeps_user_supervisor_alive(self):
+        script = (CONTROL_ROOT / "bin" / "logres-swarm").read_text()
+        self.assertIn('SUPERVISOR = str(ROOT / "bin/logres-supervisor")', script)
+        self.assertIn('[SUPERVISOR, "ensure"]', script)
 
     def test_classifies_research_and_implementation_engines(self):
         self.assertEqual("research", classify_engine({"work_type": "research"}))

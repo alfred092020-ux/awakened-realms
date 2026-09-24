@@ -48,6 +48,7 @@ LOGS = ROOT / "logs/swarm"
 BRAIN = str(ROOT / "bin/logres-brain")
 COPILOT = str(ROOT / "bin/logres-copilot-router")
 RESEARCH = str(ROOT / "bin/logres-research-agent")
+SUPERVISOR = str(ROOT / "bin/logres-supervisor")
 
 
 def connect() -> sqlite3.Connection:
@@ -260,6 +261,26 @@ def dispatch_copilot(limit: int) -> dict:
 
 
 def tick(dry_run: bool = False) -> dict:
+    supervisor = {"ensured": False}
+    if not dry_run and Path(SUPERVISOR).is_file():
+        try:
+            ensured = subprocess.run(
+                [SUPERVISOR, "ensure"],
+                text=True,
+                capture_output=True,
+                check=False,
+                timeout=8,
+            )
+            supervisor = {
+                "ensured": ensured.returncode == 0,
+                "returncode": ensured.returncode,
+            }
+        except (OSError, subprocess.TimeoutExpired) as exc:
+            supervisor = {
+                "ensured": False,
+                "error": f"{type(exc).__name__}: {exc}",
+            }
+
     cfg = load_config(CONFIG)
     swarm_cfg = cfg.get("swarm", {})
     conn = connect()
@@ -272,6 +293,7 @@ def tick(dry_run: bool = False) -> dict:
 
     before = swarm_capacity(conn, cfg)
     payload = {
+        "supervisor": supervisor,
         "knowledge_refresh": knowledge_refresh,
         "knowledge_graph": knowledge,
         "optimizer_observations_added": observations,

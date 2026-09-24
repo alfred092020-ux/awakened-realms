@@ -21,6 +21,7 @@ PRODUCTION_FILES = (
     "bin/logres-preview-reaper",
     "bin/logres-research-agent",
     "bin/logres-swarm",
+    "bin/logres-supervisor",
     "bin/logres-coordinator",
     "bin/logres-copilot-router",
     "bin/logres-merge-preflight",
@@ -52,6 +53,7 @@ PRODUCTION_FILES = (
     "lib/logres_route_store.py",
     "lib/logres_research_agent.py",
     "lib/logres_swarm.py",
+    "lib/logres_supervisor.py",
     "config/autoflow.default.json",
 )
 
