@@ -195,3 +195,20 @@ logres-impact scan
 logres-impact scan --apply
 logres-impact status
 ```
+
+## Goal watchdog
+
+`logres-goal` adds a top-down milestone layer above the task optimizer. It computes weighted progress from task expected minutes, counts partial progress for active leases, distinguishes runnable work from dependency blocks, and gives evidence ceilings their own `WAITING_EXTERNAL` state instead of manufacturing recursive research.
+
+The watchdog is descriptive, not authoritative for historical truth. It never creates gameplay/research tasks merely because a milestone is incomplete. Runnable ordering remains with the optimizer. `WAITING_EXTERNAL` means the current internal graph has no justified executable step and the project should wait for genuinely new evidence, a physical device, account/manual access, or another explicit external capability.
+
+`logres-goal watch-active --apply` fingerprints milestone state and posts a deduplicated Brain update only when the state/progress fingerprint changes. Autopilot runs it after frontier and impact reconciliation.
+
+Useful commands:
+
+```bash
+logres-goal portfolio
+logres-goal milestone DEMO-0.2
+logres-goal watch-active --apply
+logres-lead goal portfolio
+```
