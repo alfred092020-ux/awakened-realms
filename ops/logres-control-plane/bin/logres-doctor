@@ -1,0 +1,448 @@
+#!/usr/bin/env python3
+from __future__ import annotations
+import json, os, shutil, sqlite3, subprocess, time
+from pathlib import Path
+
+BASE=Path("/home/ubuntu/logres/src/awakened-realms")
+checks=[]
+fails=0
+warns=0
+
+def run(cmd):
+    return subprocess.run(cmd,text=True,stdout=subprocess.PIPE,stderr=subprocess.DEVNULL,check=False)
+
+def add(name,status,detail):
+    global fails,warns
+    checks.append((name,status,detail))
+    if status=="FAIL": fails+=1
+    elif status=="WARN": warns+=1
+
+# Integration branch and cleanliness
+branch=run(["git","-C",str(BASE),"symbolic-ref","--short","HEAD"]).stdout.strip()
+add("integration_branch","PASS" if branch=="feat/logres-reconstruction" else "FAIL",branch or "detached")
+dirty=run(["git","-C",str(BASE),"status","--porcelain"]).stdout.strip()
+add("integration_clean","PASS" if not dirty else "FAIL","clean" if not dirty else dirty[:500])
+diffcheck=run(["git","-C",str(BASE),"diff","--check"])
+add("integration_diff_check","PASS" if diffcheck.returncode==0 else "FAIL","ok" if diffcheck.returncode==0 else diffcheck.stdout[:500])
+local_head=run(["git","-C",str(BASE),"rev-parse","HEAD"]).stdout.strip()
+origin_head=run(["git","-C",str(BASE),"rev-parse","origin/feat/logres-reconstruction"]).stdout.strip()
+if not origin_head:
+    add("integration_origin_sync","WARN","origin integration ref unavailable")
+elif local_head==origin_head:
+    add("integration_origin_sync","PASS",local_head[:12])
+elif run(["git","-C",str(BASE),"merge-base","--is-ancestor",local_head,origin_head]).returncode==0:
+    add("integration_origin_sync","WARN",f"local behind origin local={local_head[:12]} origin={origin_head[:12]}")
+elif run(["git","-C",str(BASE),"merge-base","--is-ancestor",origin_head,local_head]).returncode==0:
+    add("integration_origin_sync","FAIL",f"local ahead of origin local={local_head[:12]} origin={origin_head[:12]}")
+else:
+    add("integration_origin_sync","FAIL",f"local diverged from origin local={local_head[:12]} origin={origin_head[:12]}")
+# Core services
+dc=run(["pgrep","-f","desktop-commander.*remote"])
+add("desktop_commander","PASS" if dc.returncode==0 else "FAIL","running" if dc.returncode==0 else "missing")
+tm=run(["systemctl","is-active","logres-desktop-commander-watchdog.service"])
+tm_state=tm.stdout.strip()
+add("dc_watchdog","PASS" if tm_state=="active" else "FAIL",tm_state or "unknown")
+enabled=run(["systemctl","is-enabled","logres-desktop-commander-watchdog.service"]).stdout.strip()
+add("dc_watchdog_enabled","PASS" if enabled=="enabled" else "FAIL",enabled or "unknown")
+runner_unit="actions.runner.alfred092020-ux-awakened-realms.logres-oracle.service"
+runner=run(["systemctl","is-active",runner_unit]).stdout.strip()
+add("oracle_runner","PASS" if runner=="active" else "FAIL",runner or "unknown")
+runner_env=run(["systemctl","show",runner_unit,"-p","Environment","--value"]).stdout
+cache_ok=all(x in runner_env for x in ("NODE_COMPILE_CACHE=","CCACHE_DIR=","PIP_CACHE_DIR=","UV_CACHE_DIR="))
+add("oracle_runner_caches","PASS" if cache_ok else "WARN","shared caches" if cache_ok else "cache env incomplete")
+
+failed_lines=[x for x in run(["systemctl","--failed","--no-legend","--plain"]).stdout.splitlines() if x.strip()]
+failed_names=[x.split()[0] for x in failed_lines if x.split()]
+add("failed_system_units","PASS" if not failed_names else "FAIL",
+    "0" if not failed_names else ",".join(failed_names[:8]))
+
+# Snapshot/index freshness
+now=time.time()
+for name,path,max_age in [
+    ("lead_snapshot",Path("/home/ubuntu/logres/control/LEAD_SNAPSHOT.updated"),300),
+    ("context_index",Path("/home/ubuntu/logres/index/logres-context.sqlite"),600),
+    ("native_index",Path("/home/ubuntu/logres/index/current-jp-native.sqlite"),86400*30),
+]:
+    if not path.exists():
+        add(name,"FAIL","missing")
+    else:
+        age=now-path.stat().st_mtime
+        add(name,"PASS" if age<=max_age else "WARN",f"age={age:.0f}s")
+
+# Cross-chat / Nexus synchronization snapshot.
+sync_health=Path("/home/ubuntu/logres/control/SYNC_HEALTH.txt")
+if not sync_health.exists():
+    add("environment_sync","WARN","missing")
+else:
+    age=now-sync_health.stat().st_mtime
+    lines=sync_health.read_text(errors="replace").splitlines()
+    first=lines[0] if lines else ""
+    if "SYNC_STATUS=HEALTHY" in first and age <= 600:
+        add("environment_sync","PASS",f"{first} age={age:.0f}s")
+    elif "SYNC_STATUS=FAIL" in first:
+        add("environment_sync","FAIL",f"{first} age={age:.0f}s")
+    else:
+        add("environment_sync","WARN",f"{first or 'invalid'} age={age:.0f}s")
+
+# Code-symbol index must represent the exact integration HEAD.
+code_db=Path("/home/ubuntu/logres/index/code-symbols.sqlite")
+head=run(["git","-C",str(BASE),"rev-parse","HEAD"]).stdout.strip()
+if not code_db.exists():
+    add("code_index","FAIL","missing")
+else:
+    try:
+        cc=sqlite3.connect(code_db)
+        indexed=cc.execute("select value from meta where key='git_sha'").fetchone()
+        cc.close()
+        indexed_sha=indexed[0] if indexed else ""
+        add("code_index","PASS" if indexed_sha==head else "WARN",
+            indexed_sha[:12] if indexed_sha else "no sha")
+    except Exception as e:
+        add("code_index","FAIL",str(e))
+
+# SQLite integrity
+for name,path in [
+    ("control_db",Path("/home/ubuntu/logres/control/control.sqlite")),
+    ("context_db",Path("/home/ubuntu/logres/index/logres-context.sqlite")),
+    ("native_db",Path("/home/ubuntu/logres/index/current-jp-native.sqlite")),
+    ("code_db",Path("/home/ubuntu/logres/index/code-symbols.sqlite")),
+    ("re_evidence_db",Path("/home/ubuntu/logres/index/re-evidence.sqlite")),
+    ("ai_db",Path("/home/ubuntu/logres/control/ai.sqlite")),
+]:
+    if not path.exists():
+        add(name,"FAIL","missing")
+        continue
+    try:
+        c=sqlite3.connect(path)
+        result=c.execute("pragma integrity_check").fetchone()[0]
+        c.close()
+        add(name,"PASS" if result=="ok" else "FAIL",result)
+    except Exception as e:
+        add(name,"FAIL",str(e))
+
+# Platform toolchain / host tuning.
+required_tools=[
+    "rg","fd","fzf","bat","ctags","ast-grep","parallel","hyperfine","ccache","sccache","mold","bear","clangd",
+    "ghidra-headless","jadx","apktool","radare2","adb","aapt2","apksigner",
+    "dexdump","smali","baksmali","ffmpeg","pdftotext","qpdf","pandoc",
+    "7z","zstd","mlr","uv","podman",
+]
+missing=[x for x in required_tools if shutil.which(x) is None]
+add("toolchain","PASS" if not missing else "FAIL",
+    "ready" if not missing else "missing="+",".join(missing))
+
+accel_helpers=[
+    "logres-autopilot-watch","logres-nexus-submit","logres-nexus-job-status",
+    "logres-nexus-wait","logres-dispatch","logres-verify-farm",
+    "logres-re-pipeline","logres-re-ingest","logres-re-search","logres-tree-diff","logres-global-jp-diff",
+    "logres-visual-compare","logres-visual-regress","logres-branch-sweep","logres-branch-archaeology",
+    "logres-integration-review","logres-gate","logres-autoflow-plan","logres-worker-start","logres-share-deps",
+    "logres-worktree-gc","logres-re-limited","logres-coordinator","logres-finish-task",
+    "logres-claims-reconcile","logres-regression-capture","logres-merge-train",
+    "logres-throughput","logres-stale-work-recover","logres-visual-sanity","logres-device-proof",
+    "logres-blocker-router","logres-handoff-manifest","logres-work-wave","logres-studio",
+    "logres-merge-preflight","logres-scope-reconcile","logres-integration-pager",
+    "logres-regression-supersede",
+    "logres-rizin","logres-rz-bin","logres-cutter","logres-ida","logres-malcat","logres-remnux","logres-remnux-stage",
+]
+accel_missing=[x for x in accel_helpers if shutil.which(x) is None]
+add("acceleration_helpers","PASS" if not accel_missing else "FAIL",
+    "ready" if not accel_missing else "missing="+",".join(accel_missing))
+
+research_py=Path("/home/ubuntu/logres/envs/research/bin/python")
+rp=run([str(research_py),"-c","import duckdb,polars,pyarrow,cv2,lief,capstone,unicorn,androguard,openai"])
+add("research_python","PASS" if rp.returncode==0 else "FAIL",
+    "imports ok" if rp.returncode==0 else "import failure")
+
+ai_common=run([str(research_py),"/home/ubuntu/logres/control/tests/test_logres_ai_common.py"])
+ai_worker=run([str(research_py),"/home/ubuntu/logres/control/tests/test_logres_ai_worker.py"])
+ai_exe=Path("/home/ubuntu/logres/bin/logres-ai")
+ai_ok=ai_exe.exists() and os.access(ai_exe,os.X_OK) and ai_common.returncode==0 and ai_worker.returncode==0
+add("logres_ai","PASS" if ai_ok else "FAIL",
+    "offline unit gates pass" if ai_ok else "worker/tests unavailable or failing")
+
+api_secret=Path("/home/ubuntu/.config/logres/openai_api_key")
+secret_mode=(api_secret.stat().st_mode & 0o777) if api_secret.exists() else -1
+add("openai_api_secret","PASS" if secret_mode==0o600 else "FAIL",
+    "present mode=600" if secret_mode==0o600 else "missing or wrong permissions")
+
+def proc_int(path):
+    try: return int(Path(path).read_text().strip())
+    except Exception: return -1
+watches=proc_int("/proc/sys/fs/inotify/max_user_watches")
+instances=proc_int("/proc/sys/fs/inotify/max_user_instances")
+queued=proc_int("/proc/sys/fs/inotify/max_queued_events")
+add("inotify_capacity",
+    "PASS" if watches>=1048576 and instances>=1024 and queued>=65536 else "WARN",
+    f"watches={watches} instances={instances} queued={queued}")
+
+ramtmp=Path("/dev/shm/logres/tmp")
+add("ram_scratch","PASS" if ramtmp.is_dir() else "WARN",
+    str(ramtmp) if ramtmp.is_dir() else "missing")
+
+pw_root=Path("/home/ubuntu/logres/cache/playwright")
+pw_browser=next(pw_root.glob("chromium-*/chrome-linux64/chrome"),None) if pw_root.exists() else None
+pw_headless=next(pw_root.glob("chromium_headless_shell-*/chrome-headless-shell-linux64/chrome-headless-shell"),None) if pw_root.exists() else None
+add("playwright_browser","PASS" if pw_browser and pw_headless else "FAIL",
+    "shared chromium/headless ready" if pw_browser and pw_headless else "missing browser cache")
+
+dc_pkg=Path("/home/ubuntu/logres/tools/desktop-commander/node_modules/@wonderwhy-er/desktop-commander/package.json")
+dc_watch=Path("/home/ubuntu/bin/dc-watchdog.sh")
+try:
+    dc_version=json.loads(dc_pkg.read_text()).get("version","") if dc_pkg.exists() else ""
+    watch_text=dc_watch.read_text() if dc_watch.exists() else ""
+    pin_ok=(dc_version=="0.2.51" and "@latest" not in watch_text and 'DC_VERSION="0.2.51"' in watch_text)
+    add("desktop_commander_pin","PASS" if pin_ok else "WARN",
+        f"version={dc_version or 'missing'}")
+except Exception as e:
+    add("desktop_commander_pin","WARN",str(e))
+
+pod=run(["podman","info","--format","{{.Host.Security.Rootless}}"]).stdout.strip()
+pod_socket=run(["systemctl","is-active","podman.socket"]).stdout.strip()
+add("rootless_containers","PASS" if pod=="true" and pod_socket!="active" else "WARN",
+    f"rootless={pod or '?'} system_socket={pod_socket or 'inactive'}")
+
+platform_generated=Path("/home/ubuntu/logres/control/platform-state/generated.txt")
+if platform_generated.exists():
+    age=now-platform_generated.stat().st_mtime
+    add("platform_snapshot","PASS" if age<90000 else "WARN",f"age={age:.0f}s")
+else:
+    add("platform_snapshot","WARN","missing")
+
+try:
+    vc=sqlite3.connect("/home/ubuntu/logres/control/control.sqlite")
+    vg=vc.execute("""select sha,mode,status,ran_at from verification
+                     where sha=? and mode='full-e2e' and status='PASS'
+                     order by ran_at desc limit 1""",(head,)).fetchone()
+    vc.close()
+    strong=bool(vg)
+    detail=(f"{vg[2]}/{vg[1]} sha={vg[0][:12]} at={vg[3]}" if vg else f"no full-e2e PASS for {head[:12]}")
+    add("strong_exact_sha_gate","PASS" if strong else "WARN",detail)
+except Exception as e:
+    add("strong_exact_sha_gate","WARN",str(e))
+
+cron=run(["crontab","-l"]).stdout
+cron_need=("logres-lead-snapshot","logres-evidence-refresh","logres-health-snapshot","logres-maintain","logres-control-backup","logres-autopilot-watch")
+cron_missing=[x for x in cron_need if x not in cron]
+add("automation_cron","PASS" if not cron_missing else "WARN",
+    "all scheduled" if not cron_missing else "missing="+",".join(cron_missing))
+
+brain=run(["/home/ubuntu/logres/bin/logres-brain","health"])
+brain_ok=brain.returncode==0 and "fails=0" in brain.stdout
+add("brain_network","PASS" if brain_ok else "FAIL",
+    "healthy" if brain_ok else brain.stdout[-500:])
+
+try:
+    qc=sqlite3.connect("/home/ubuntu/logres/control/control.sqlite")
+    qc.row_factory=sqlite3.Row
+    required_coord_tables={
+        "milestones","task_metadata","task_dependencies","task_acceptance",
+        "task_scopes","integration_queue","task_state_history","lease_history",
+        "task_recovery","regressions","visual_checks","device_proofs",
+        "integration_preflights","integration_preflight_items",
+    }
+    present={r[0] for r in qc.execute(
+        "select name from sqlite_master where type='table'"
+    )}
+    missing_coord=sorted(required_coord_tables-present)
+    orphan_deps=qc.execute("""select count(*) from task_dependencies d
+        left join tasks a on a.id=d.task_id
+        left join tasks b on b.id=d.depends_on
+        where a.id is null or b.id is null""").fetchone()[0] if not missing_coord else -1
+
+    graph={}
+    if not missing_coord:
+        for a,b in qc.execute("select task_id,depends_on from task_dependencies"):
+            graph.setdefault(a,set()).add(b)
+    visiting=set(); visited=set(); cycle=[]
+    def walk(node,path):
+        if node in visiting:
+            cycle.extend(path[path.index(node):]+[node] if node in path else [node,node])
+            return True
+        if node in visited:
+            return False
+        visiting.add(node)
+        for dep in graph.get(node,()):
+            if walk(dep,path+[node]):
+                return True
+        visiting.remove(node); visited.add(node)
+        return False
+    has_cycle=any(walk(n,[]) for n in list(graph) if n not in visited)
+
+    coord_ok=(not missing_coord and orphan_deps==0 and not has_cycle)
+    detail=("graph ready" if coord_ok else
+            f"missing={','.join(missing_coord) or '-'} orphan_deps={orphan_deps} "
+            f"cycle={'->'.join(cycle) if cycle else '-'}")
+    add("coordination_graph","PASS" if coord_ok else "FAIL",detail)
+
+    active_without_lease=qc.execute("""select count(*) from tasks t
+        where t.status='ACTIVE' and not exists(
+          select 1 from brain_task_leases l
+          where l.task_id=t.id and l.lease_until_epoch>?
+        )""",(now,)).fetchone()[0]
+    claims_without_lease=qc.execute("""select count(*) from claims cl
+        where not exists(
+          select 1 from brain_task_leases l
+          where l.task_id=cl.task_id and l.lease_until_epoch>?
+        )""",(now,)).fetchone()[0]
+    non_done_queue=qc.execute("""select count(*) from integration_queue q
+        join tasks t on t.id=q.task_id
+        where t.status<>'DONE'""").fetchone()[0]
+    active_count=qc.execute("""select count(*) from brain_task_leases
+        where lease_until_epoch>? and chat_id<>'lead'""",(now,)).fetchone()[0]
+    lead_busy=qc.execute("""select count(*) from brain_task_leases
+        where lease_until_epoch>? and chat_id='lead'""",(now,)).fetchone()[0]
+    consistency_ok=(
+        active_without_lease==0 and claims_without_lease==0
+        and non_done_queue==0 and active_count<=6
+    )
+    add("coordination_consistency","PASS" if consistency_ok else "FAIL",
+        f"active_without_lease={active_without_lease} claims_without_lease={claims_without_lease} "
+        f"non_done_queue={non_done_queue} workers={active_count}/6 lead_legacy_busy={lead_busy}")
+
+    try:
+        head=subprocess.run(
+            ["git","-C","/home/ubuntu/logres/src/awakened-realms","rev-parse","feat/logres-reconstruction"],
+            text=True,capture_output=True,check=False,
+        ).stdout.strip()
+        pf=qc.execute("""select id,created_epoch,result_sha from integration_preflights
+            where status='VERIFIED' and base_sha=?
+            order by created_epoch desc limit 1""",(head,)).fetchone()
+        if pf:
+            wait=max(0,now-float(pf["created_epoch"]))
+            val=subprocess.run(
+                ["/home/ubuntu/logres/bin/logres-merge-preflight","validate",str(pf["id"])],
+                text=True,capture_output=True,check=False,
+            )
+            level="FAIL" if val.returncode!=0 else ("WARN" if wait>900 else "PASS")
+            add("integration_preflight",level,
+                f"id={pf['id']} wait={wait:.0f}s validate={'PASS' if val.returncode==0 else 'FAIL'} "
+                f"lead_legacy_busy={lead_busy}")
+        else:
+            add("integration_preflight","PASS","no verified current-base preflight waiting")
+    except Exception as e:
+        add("integration_preflight","FAIL",str(e))
+    qc.close()
+except Exception as e:
+    add("coordination_graph","FAIL",str(e))
+
+brain_backup=Path("/home/ubuntu/logres/control/backups/control-latest.sqlite")
+if brain_backup.exists():
+    age=now-brain_backup.stat().st_mtime
+    try:
+        bc=sqlite3.connect(f"file:{brain_backup}?mode=ro",uri=True)
+        bic=bc.execute("pragma integrity_check").fetchone()[0]
+        bc.close()
+    except Exception as e:
+        bic=str(e)
+    add("brain_backup","PASS" if age<900 and bic=="ok" else "WARN",
+        f"age={age:.0f}s integrity={bic}")
+else:
+    add("brain_backup","FAIL","missing")
+
+# Nexus core services.
+nexus_units=[
+    "nexus-agent.service",
+    "nexus-control-plane@ubuntu.service",
+    "nexus-privileged-executor.service",
+]
+nexus_states=[]
+for unit in nexus_units:
+    state=run(["systemctl","is-active",unit]).stdout.strip()
+    nexus_states.append(f"{unit}={state or 'unknown'}")
+nexus_ok=all(x.endswith("=active") for x in nexus_states)
+add("nexus_core_services","PASS" if nexus_ok else "WARN",", ".join(nexus_states))
+
+bridge=run(["timeout","5","/home/ubuntu/logres/bin/logres-nexus","tool","nexus_status","{}"])
+bridge_ok=bridge.returncode==0 and "\"version\"" in bridge.stdout
+add("nexus_mcp_bridge","PASS" if bridge_ok else "FAIL",
+    "responsive" if bridge_ok else bridge.stdout[-300:])
+
+# Emergency memory headroom for parallel heavy analysis/build jobs.
+swap=run(["swapon","--show=NAME,SIZE,USED","--noheadings"]).stdout.strip()
+swappiness=proc_int("/proc/sys/vm/swappiness")
+add("emergency_swap","PASS" if "/swapfile" in swap and 0 <= swappiness <= 20 else "WARN",
+    (swap.replace("\n","; ") if swap else "no swap")+f" swappiness={swappiness}")
+
+# Legacy dependency duplication should stay low; managed worktrees share canonical deps.
+local_dep_bytes=0
+local_dep_count=0
+for root in (Path("/home/ubuntu/logres/tmp"),Path("/home/ubuntu/logres/work")):
+    if not root.exists():
+        continue
+    for d in root.iterdir():
+        nm=d/"node_modules"
+        if nm.is_dir() and not nm.is_symlink():
+            out=run(["du","-sb",str(nm)]).stdout.split()
+            if out:
+                local_dep_bytes += int(out[0]); local_dep_count += 1
+add("shared_dependencies","PASS" if local_dep_bytes <= 1024**3 else "WARN",
+    f"local_copies={local_dep_count} local_bytes={local_dep_bytes}")
+
+branch_sweep=Path("/home/ubuntu/logres/control/BRANCH_SWEEP.json")
+if branch_sweep.exists():
+    age=now-branch_sweep.stat().st_mtime
+    add("branch_sweep","PASS" if age<600 else "WARN",f"age={age:.0f}s")
+else:
+    add("branch_sweep","WARN","missing")
+
+for check_name,check_path in [
+    ("branch_archaeology",Path("/home/ubuntu/logres/control/BRANCH_ARCHAEOLOGY.json")),
+    ("integration_review",Path("/home/ubuntu/logres/control/integration-review/INDEX.json")),
+]:
+    if check_path.exists():
+        age=now-check_path.stat().st_mtime
+        add(check_name,"PASS" if age<600 else "WARN",f"age={age:.0f}s")
+    else:
+        add(check_name,"WARN","missing")
+
+# Capacity
+st=os.statvfs("/")
+free=st.f_bavail*st.f_frsize
+add("disk_free","PASS" if free>20*1024**3 else "WARN",f"{free/1024**3:.1f} GiB")
+meminfo=Path("/proc/meminfo").read_text()
+avail_kb=int(next(x.split()[1] for x in meminfo.splitlines() if x.startswith("MemAvailable:")))
+add("memory_available","PASS" if avail_kb>4*1024*1024 else "WARN",f"{avail_kb/1024/1024:.1f} GiB")
+# Temporary verification worktrees: only abandoned/inactive paths are leaks.
+verify_candidates=(list(Path("/home/ubuntu/logres/tmp").glob("verify-once.*"))
+       +list(Path("/home/ubuntu/logres/tmp").glob("verify-all-once.*"))
+       +list(Path("/dev/shm/logres").glob("verify-farm-*")))
+def verify_path_in_use(p:Path)->bool:
+    needle=str(p)
+    for proc in Path("/proc").iterdir():
+        if not proc.name.isdigit():
+            continue
+        try:
+            cwd=os.readlink(proc/"cwd")
+        except Exception:
+            cwd=""
+        try:
+            cmd=(proc/"cmdline").read_bytes().replace(b"\0",b" ").decode(errors="replace")
+        except Exception:
+            cmd=""
+        if cwd==needle or cwd.startswith(needle+"/") or needle in cmd:
+            return True
+    return False
+leaks=[p for p in verify_candidates if not verify_path_in_use(p)]
+active_verify=len(verify_candidates)-len(leaks)
+add("verify_temp_leaks","PASS" if not leaks else "WARN",
+    f"abandoned={len(leaks)} active={active_verify}")
+gh=Path("/home/ubuntu/logres/ghidra_projects/logres-current-jp-light.rep")
+add("ghidra_light_project","PASS" if gh.exists() else "FAIL",f"{gh.stat().st_size if gh.exists() else 0} bytes")
+
+# Quarantine/malware-analysis lab.
+qstatus=Path("/home/ubuntu/quarantine/STATUS.txt")
+qtools=all(shutil.which(x) for x in ("yara","clamscan","podman"))
+qimage=run(["podman","image","exists","localhost/quarantine-analysis:24.04"]).returncode==0
+qok=qstatus.exists() and qtools and qimage
+add("quarantine_lab","PASS" if qok else "WARN",
+    "network-none/read-only analysis image ready" if qok else "incomplete")
+
+# Control-plane refresh without network
+ctl=run(["/home/ubuntu/logres/bin/logres-control","dashboard"])
+add("control_plane","PASS" if ctl.returncode==0 else "FAIL","ok" if ctl.returncode==0 else ctl.stdout[-500:])
+
+for name,status,detail in checks:
+    print(f"{status:4} {name:24} {detail}")
+print(f"SUMMARY fails={fails} warnings={warns} checks={len(checks)}")
+raise SystemExit(1 if fails else 0)
