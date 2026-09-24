@@ -58,5 +58,12 @@ describe('logres android client hardening smoke', () => {
     expect(workflow).toMatch(
       /- name: Upload Android APK artifacts[\s\S]*?path: \|[\s\S]*?app-debug\.apk[\s\S]*?app-debug\.apk\.sha256[\s\S]*?app-release-unsigned\.apk[\s\S]*?app-release-unsigned\.apk\.sha256/,
     )
+
+    const uploadStep = workflow.match(
+      /- name: Upload Android APK artifacts[\s\S]*?if-no-files-found: error/,
+    )?.[0]
+    expect(uploadStep).toBeDefined()
+    expect(uploadStep).toContain('android/app/build/outputs/apk/debug/app-debug.apk')
+    expect(uploadStep).toContain('android/app/build/outputs/apk/release/app-release-unsigned.apk')
   })
 })
