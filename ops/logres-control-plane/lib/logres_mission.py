@@ -41,6 +41,66 @@ def ensure_schema(conn: sqlite3.Connection) -> None:
         """
     )
     conn.commit()
+def _sync_milestones(
+    conn: sqlite3.Connection,
+    payload: dict,
+    stamp: str,
+) -> int:
+    if not _table_exists(conn, "milestones"):
+        return 0
+    columns = {
+        str(row[1])
+        for row in conn.execute("pragma table_info(milestones)")
+    }
+    if not {"id", "status"}.issubset(columns):
+        return 0
+
+    items = list(payload.get("milestones", []))
+    for index, item in enumerate(items, start=1):
+        milestone_id = str(item["id"])
+        existing = conn.execute(
+            "select status from milestones where id=?",
+            (milestone_id,),
+        ).fetchone()
+        values = {
+            "title": str(item.get("title", milestone_id)),
+            "sort_order": int(item.get("sort_order", index * 10)),
+            "definition_of_done": str(item.get("definition_of_done", "")),
+            "updated_at": stamp,
+        }
+        if existing:
+            updates = [
+                (name, value)
+                for name, value in values.items()
+                if name in columns
+            ]
+            if updates:
+                assignments = ",".join(f"{name}=?" for name, _ in updates)
+                conn.execute(
+                    f"update milestones set {assignments} where id=?",
+                    (*[value for _name, value in updates], milestone_id),
+                )
+            continue
+
+        insert_values = {
+            "id": milestone_id,
+            "status": str(item.get("status", "PLANNED")),
+            **values,
+        }
+        selected = [
+            (name, value)
+            for name, value in insert_values.items()
+            if name in columns
+        ]
+        names = ",".join(name for name, _ in selected)
+        marks = ",".join("?" for _ in selected)
+        conn.execute(
+            f"insert into milestones({names}) values({marks})",
+            tuple(value for _name, value in selected),
+        )
+    return len(items)
+
+
 def load_config(conn: sqlite3.Connection, config_path: Path) -> dict:
     ensure_schema(conn)
     payload = json.loads(Path(config_path).read_text())
@@ -90,6 +150,7 @@ def load_config(conn: sqlite3.Connection, config_path: Path) -> dict:
                 stamp,
             ),
         )
+    milestone_count = _sync_milestones(conn, payload, stamp)
     conn.execute(
         "delete from mission_links where objective_id in "
         "(select id from mission_objectives)"
@@ -110,6 +171,7 @@ def load_config(conn: sqlite3.Connection, config_path: Path) -> dict:
     return {
         "mission_id": mission_id,
         "objectives": len(payload.get("objectives", [])) + 1,
+        "milestones": milestone_count,
         "links": len(payload.get("links", [])),
     }
 
