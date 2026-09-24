@@ -266,3 +266,19 @@ logres-goal milestone DEMO-0.2
 logres-goal watch-active --apply
 logres-lead goal portfolio
 ```
+
+## Autonomous mission foundation toolchain
+
+The deployed control plane includes the persistent mission graph and the
+supporting analysis/verification surfaces used by fresh-chat takeover and
+closed-loop planning: project journal, immutable replay snapshots, mission gap
+coverage, visual truth and deterministic image metrics, behavioral trace truth,
+engine-state reconciliation, semantic dedupe, verification cache, workspace
+lifecycle planning, executive status, shadow scheduling, bottleneck attribution,
+decaying health confidence, sandbox fault injection, and zero-human stop-reason
+analysis.
+
+These helpers are deliberately separated from merge authority. Descriptive,
+shadow, replay, fault-injection and zero-human tools do not dispatch work,
+weaken verification, modify main, or grant themselves authority. Runtime
+deployment remains explicit and fail-closed through the versioned manifest.
