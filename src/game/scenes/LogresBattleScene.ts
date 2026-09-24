@@ -76,6 +76,13 @@ export class LogresBattleScene
     Phaser.GameObjects.Image | null =
       null
 
+  private weaponCoverPointerDown:
+    Readonly<{
+      x: number
+      y: number
+    }> | null =
+      null
+
   private epText:
     Phaser.GameObjects.Text | null =
       null
@@ -110,6 +117,7 @@ export class LogresBattleScene
     // Phaser reuses this scene after field return. Old display references
     // must not suppress the next harness result/return controls.
     this.weaponCover = null
+    this.weaponCoverPointerDown = null
     this.epText = null
     this.demoStatusText = null
     this.demoResolveButton = null
@@ -278,6 +286,34 @@ export class LogresBattleScene
       .setDraggable(
         this.weaponCover,
       )
+
+    this.weaponCover.on(
+      'pointerdown',
+      (
+        pointer:
+          Phaser.Input.Pointer,
+      ) => {
+        this.weaponCoverPointerDown =
+          Object.freeze({
+            x:
+              pointer.x,
+            y:
+              pointer.y,
+          })
+      },
+    )
+
+    this.weaponCover.on(
+      'pointerup',
+      (
+        pointer:
+          Phaser.Input.Pointer,
+      ) => {
+        this.handleWeaponCoverPointerUp(
+          pointer,
+        )
+      },
+    )
 
     this.weaponCover.on(
       'drag',
@@ -897,6 +933,49 @@ export class LogresBattleScene
       )
 
     this.syncEpText()
+  }
+
+  private handleWeaponCoverPointerUp(
+    pointer:
+      Phaser.Input.Pointer,
+  ) {
+    const pointerDown =
+      this.weaponCoverPointerDown
+
+    this.weaponCoverPointerDown =
+      null
+
+    if (
+      pointerDown ===
+        null ||
+      Phaser.Math.Distance.Between(
+        pointerDown.x,
+        pointerDown.y,
+        pointer.x,
+        pointer.y,
+      ) >
+        10 ||
+      this.battleKit ===
+        null
+    ) {
+      return
+    }
+
+    const selectedWeaponSlot =
+      this.battleKit
+        .snapshot()
+        .selectedWeaponSlot
+
+    if (
+      selectedWeaponSlot ===
+      null
+    ) {
+      return
+    }
+
+    this.activateWeaponPanel(
+      selectedWeaponSlot,
+    )
   }
 
   private activateWeaponPanel(
