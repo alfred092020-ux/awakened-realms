@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import sqlite3
+import time
 from dataclasses import dataclass
 from datetime import datetime, timezone
 
@@ -78,6 +79,39 @@ TERMINAL_STATES = {
 
 def _now() -> str:
     return datetime.now(timezone.utc).isoformat()
+
+
+def _begin_immediate(
+    conn: sqlite3.Connection,
+    *,
+    attempts: int = 6,
+    initial_delay_seconds: float = 0.02,
+) -> None:
+    """Acquire the SQLite writer lock with bounded retry.
+
+    Autonomous workers intentionally share one WAL database. A short-lived
+    SQLITE_BUSY/locked condition is infrastructure contention, not a routing
+    failure. Retry only those transient lock errors; preserve all other
+    OperationalError behavior unchanged.
+    """
+    delay = max(0.0, float(initial_delay_seconds))
+    for attempt in range(max(1, int(attempts))):
+        try:
+            conn.execute("begin immediate")
+            return
+        except sqlite3.OperationalError as exc:
+            detail = str(exc).lower()
+            transient = (
+                "database is locked" in detail
+                or "database is busy" in detail
+                or "database table is locked" in detail
+            )
+            if not transient or attempt + 1 >= attempts:
+                raise
+            if conn.in_transaction:
+                conn.rollback()
+            time.sleep(delay)
+            delay = min(0.32, max(0.02, delay * 2.0))
 
 
 def ensure_route_schema(conn: sqlite3.Connection) -> None:
@@ -187,7 +221,7 @@ def claim_route(conn: sqlite3.Connection, spec: RouteSpec) -> RouteJob:
     ensure_route_schema(conn)
     now = _now()
     meta_json = json.dumps(spec.meta or {}, sort_keys=True, separators=(",", ":"))
-    conn.execute("begin immediate")
+    _begin_immediate(conn)
     try:
         conn.execute(
             """insert or ignore into route_jobs(
@@ -254,7 +288,7 @@ def transition_route(
         assignments.append(f"{name}=?")
         values.append(value)
     values.extend([route_id, expected])
-    conn.execute("begin immediate")
+    _begin_immediate(conn)
     try:
         cursor = conn.execute(
             f"update route_jobs set {','.join(assignments)} where id=? and state=?",

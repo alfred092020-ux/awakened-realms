@@ -1,4 +1,8 @@
+import sqlite3
 import sys
+import tempfile
+import threading
+import time
 import unittest
 from pathlib import Path
 
@@ -61,6 +65,59 @@ class RouteStoreTests(unittest.TestCase):
         found = find_active_child(conn, parent.id, "UNRESOLVED")
         self.assertIsNotNone(found)
         self.assertEqual(child.id, found.id)
+
+    def test_claim_route_retries_transient_writer_lock(self):
+        with tempfile.TemporaryDirectory() as td:
+            path = Path(td) / "routes.sqlite"
+            holder = sqlite3.connect(
+                path,
+                timeout=0,
+                check_same_thread=False,
+            )
+            holder.row_factory = sqlite3.Row
+            contender = sqlite3.connect(path, timeout=0)
+            contender.row_factory = sqlite3.Row
+            ensure_route_schema(holder)
+            ensure_route_schema(contender)
+
+            holder.execute("begin immediate")
+
+            def release():
+                time.sleep(0.08)
+                holder.commit()
+
+            thread = threading.Thread(target=release)
+            thread.start()
+            try:
+                job = claim_route(
+                    contender,
+                    RouteSpec(
+                        dedupe_key="lock-retry",
+                        route_kind="COPILOT",
+                        task_id="T1",
+                    ),
+                )
+            finally:
+                thread.join(timeout=2)
+                holder.close()
+                contender.close()
+
+        self.assertEqual("NEW", job.state)
+        self.assertEqual("lock-retry", job.dedupe_key)
+
+    def test_non_lock_operational_error_is_not_retried(self):
+        conn = make_test_db()
+        ensure_route_schema(conn)
+        conn.close()
+
+        with self.assertRaises(sqlite3.ProgrammingError):
+            claim_route(
+                conn,
+                RouteSpec(
+                    dedupe_key="closed",
+                    route_kind="AI",
+                ),
+            )
 
     def test_append_decision_is_auditable(self):
         conn = make_test_db()
