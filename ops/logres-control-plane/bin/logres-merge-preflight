@@ -74,6 +74,15 @@ def sha(ref):
 def preflight_ref(pid):
     return f"refs/logres/preflight/{pid}"
 
+def mark_stale_if_verified(c,pid,now,note):
+    cur=c.execute(
+        """update integration_preflights
+              set status='STALE',updated_at=?,note=?
+            where id=? and status='VERIFIED'""",
+        (now,note,pid),
+    )
+    return cur.rowcount==1
+
 def pin_preflight(pid,result_sha):
     ref=preflight_ref(pid)
     p=run(["git","-C",str(BASE),"update-ref",ref,result_sha])
@@ -90,12 +99,14 @@ def invalidate_stale(c):
     rows=list(c.execute("""select id,result_sha from integration_preflights
                           where status='VERIFIED' and base_sha<>?""",(current,)))
     for r in rows:
-        c.execute("""update integration_preflights
-                     set status='STALE',updated_at=?,note=?
-                     where id=?""",
-                  (now,f"Integration advanced beyond preflight base; current={current}.",r["id"]))
-        run(["git","-C",str(BASE),"update-ref","-d",preflight_ref(r["id"])])
-        changed+=1
+        if mark_stale_if_verified(
+            c,
+            r["id"],
+            now,
+            f"Integration advanced beyond preflight base; current={current}.",
+        ):
+            run(["git","-C",str(BASE),"update-ref","-d",preflight_ref(r["id"])])
+            changed+=1
 
     current_rows=list(c.execute("""select id,result_sha from integration_preflights
       where status='VERIFIED' and base_sha=?
@@ -103,12 +114,14 @@ def invalidate_stale(c):
     if len(current_rows)>1:
         keep=current_rows[0]["id"]
         for r in current_rows[1:]:
-            c.execute("""update integration_preflights
-                         set status='STALE',updated_at=?,note=?
-                         where id=?""",
-                      (now,f"Superseded by newer verified preflight {keep} on the same integration base.",r["id"]))
-            run(["git","-C",str(BASE),"update-ref","-d",preflight_ref(r["id"])])
-            changed+=1
+            if mark_stale_if_verified(
+                c,
+                r["id"],
+                now,
+                f"Superseded by newer verified preflight {keep} on the same integration base.",
+            ):
+                run(["git","-C",str(BASE),"update-ref","-d",preflight_ref(r["id"])])
+                changed+=1
     if changed:
         c.commit()
     return changed
@@ -253,13 +266,23 @@ def preflight(c,limit,min_age=0,min_count=1):
             print(f"APPLY: logres-merge-train apply-preflight --actor lead {pending['id']}")
             return
         now=datetime.now(timezone.utc).isoformat(timespec="seconds")
-        c.execute("""update integration_preflights
-                     set status='STALE',updated_at=?,note=?
-                     where id=?""",
-                  (now,"Current-base verified preflight failed validation: "+" | ".join(errors)[:1200],
-                   pending["id"]))
+        staled=mark_stale_if_verified(
+            c,
+            pending["id"],
+            now,
+            "Current-base verified preflight failed validation: "
+            +" | ".join(errors)[:1200],
+        )
         c.commit()
-        run(["git","-C",str(BASE),"update-ref","-d",preflight_ref(pending["id"])])
+        if staled:
+            run(["git","-C",str(BASE),"update-ref","-d",preflight_ref(pending["id"])])
+        else:
+            fresh=c.execute(
+                "select status from integration_preflights where id=?",
+                (pending["id"],),
+            ).fetchone()
+            if fresh and fresh["status"]=="APPLIED":
+                print(f"PREFLIGHT_RACE_APPLIED id={pending['id']} preserved=APPLIED")
         base=sync_integration_from_origin()
         invalidate_stale(c)
         run([TRAIN,"status"])
