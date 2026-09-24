@@ -1,3 +1,4 @@
+import hashlib
 import json
 import sqlite3
 import sys
@@ -54,6 +55,81 @@ def contracts(title="M"):
     }
 
 
+def device_contracts():
+    return {
+        "schema": "logres-milestone-contract-v1",
+        "milestones": {
+            "M": {
+                "title": "release",
+                "definition_of_done": "exact release proof",
+                "criteria": [
+                    {
+                        "id": "device",
+                        "weight": 50,
+                        "description": "exact device proof",
+                        "check": {
+                            "type": "device_proof",
+                            "checkpoint": "demo-0.2",
+                            "status": "PASS",
+                        },
+                    },
+                    {
+                        "id": "verify",
+                        "weight": 50,
+                        "description": "exact sha verified",
+                        "check": {
+                            "type": "verification",
+                            "mode": "full-e2e",
+                            "status": "PASS",
+                        },
+                    },
+                ],
+            }
+        },
+    }
+
+
+def add_device_proof(
+    conn,
+    root: Path,
+    *,
+    sha: str,
+    embedded_sha: str | None = None,
+    status: str = "PASS",
+    checkpoint: str = "demo-0.2",
+):
+    artifact = root / f"device-proof-{sha[:12]}.json"
+    artifact.write_text(
+        json.dumps(
+            {
+                "canonical_sha": embedded_sha or sha,
+                "checkpoint": checkpoint,
+                "apk": {"sha256": "c" * 64},
+            },
+            sort_keys=True,
+        )
+        + "\n"
+    )
+    cur = conn.execute(
+        """insert into device_proofs(
+             sha,apk_sha256,checkpoint,status,artifact_path,note,
+             created_at,created_epoch
+           ) values(?,?,?,?,?,?,?,?)""",
+        (
+            sha,
+            "c" * 64,
+            checkpoint,
+            status,
+            str(artifact),
+            "test proof",
+            "2026-09-24T00:00:00+00:00",
+            1.0,
+        ),
+    )
+    conn.commit()
+    return int(cur.lastrowid), artifact
+
+
 def make_db():
     conn = sqlite3.connect(":memory:")
     conn.row_factory = sqlite3.Row
@@ -72,6 +148,17 @@ def make_db():
         );
         create table milestones(
           id text primary key,status text,updated_at text
+        );
+        create table device_proofs(
+          id integer primary key autoincrement,
+          sha text not null,
+          apk_sha256 text,
+          checkpoint text not null,
+          status text not null,
+          artifact_path text,
+          note text not null default '',
+          created_at text not null,
+          created_epoch real not null
         );
         """
     )
@@ -111,6 +198,66 @@ class GoalCertifyTests(unittest.TestCase):
                 "select status from milestones where id='M'"
             ).fetchone()[0]
             self.assertEqual("DONE", status)
+
+    def test_exact_device_proof_is_embedded_in_certificate_provenance(self):
+        conn = make_db()
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            proof_id, artifact = add_device_proof(
+                conn,
+                root,
+                sha=SHA,
+            )
+            artifact_digest = hashlib.sha256(
+                artifact.read_bytes()
+            ).hexdigest()
+            cert = build_certificate(
+                conn,
+                device_contracts(),
+                "M",
+                integration_sha=SHA,
+                root=root,
+                timestamp="2026-09-24T00:00:00+00:00",
+            )
+
+        self.assertTrue(cert["valid"])
+        self.assertEqual("PASS", cert["status"])
+        self.assertEqual(1, len(cert["device_proof_rows"]))
+        proof = cert["device_proof_rows"][0]
+        self.assertEqual("device", proof["criterion_id"])
+        self.assertEqual(proof_id, proof["id"])
+        self.assertEqual(SHA, proof["sha"])
+        self.assertEqual("demo-0.2", proof["checkpoint"])
+        self.assertEqual("PASS", proof["status"])
+        self.assertEqual(str(artifact), proof["artifact_path"])
+        self.assertEqual(
+            artifact_digest,
+            proof["artifact_sha256"],
+        )
+
+    def test_stale_device_proof_cannot_certify_current_release_sha(self):
+        conn = make_db()
+        old = "b" * 40
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            add_device_proof(
+                conn,
+                root,
+                sha=old,
+            )
+            cert = build_certificate(
+                conn,
+                device_contracts(),
+                "M",
+                integration_sha=SHA,
+                root=root,
+                timestamp="2026-09-24T00:00:00+00:00",
+            )
+
+        self.assertFalse(cert["valid"])
+        self.assertEqual("FAIL", cert["status"])
+        self.assertIn("device", cert["unmet_criterion_ids"])
+        self.assertEqual([], cert["device_proof_rows"])
 
     def test_open_regression_fails_closed(self):
         conn = make_db()

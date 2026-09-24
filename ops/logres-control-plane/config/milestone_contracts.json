@@ -981,12 +981,9 @@
           "weight": 25,
           "description": "Release candidate has repeatable real-device Android visual proof.",
           "check": {
-            "type": "external_manual",
-            "task_id": "ANDROID-VISUAL-QA-001",
-            "pass_statuses": [
-              "DONE",
-              "RESOLVED"
-            ]
+            "type": "device_proof",
+            "checkpoint": "demo-0.2",
+            "status": "PASS"
           }
         },
         {

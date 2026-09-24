@@ -62,6 +62,17 @@ def make_db():
           branch text,
           primary key(preflight_id,ordinal)
         );
+        create table device_proofs(
+          id integer primary key autoincrement,
+          sha text not null,
+          apk_sha256 text,
+          checkpoint text not null,
+          status text not null,
+          artifact_path text,
+          note text not null default '',
+          created_at text not null,
+          created_epoch real not null
+        );
         """
     )
     return conn
@@ -104,6 +115,189 @@ class GoalContractTests(unittest.TestCase):
         self.assertEqual(len(ids), len(set(ids)))
         self.assertIn("millennium-tree-map-identity", ids)
         self.assertIn("android-real-device-visual-proof", ids)
+
+    def test_release_contract_requires_exact_sha_device_proof_but_demo_remains_compatible(self):
+        path = CONTROL_ROOT / "config" / "milestone_contracts.json"
+        contracts = load_contracts(path)
+
+        demo = next(
+            item
+            for item in contracts["milestones"]["DEMO-0.2"]["criteria"]
+            if item["id"] == "android-real-device-visual-proof"
+        )
+        release = next(
+            item
+            for item in contracts["milestones"]["RELEASE-1.0"]["criteria"]
+            if item["id"] == "android-real-device-visual-proof"
+        )
+
+        self.assertEqual("external_manual", demo["check"]["type"])
+        self.assertEqual("ANDROID-VISUAL-QA-001", demo["check"]["task_id"])
+        self.assertEqual(
+            {
+                "type": "device_proof",
+                "checkpoint": "demo-0.2",
+                "status": "PASS",
+            },
+            release["check"],
+        )
+
+    def test_device_proof_schema_requires_checkpoint(self):
+        payload = {
+            "schema": "logres-milestone-contract-v1",
+            "milestones": {
+                "M": {
+                    "criteria": [
+                        criterion(
+                            "device",
+                            {
+                                "type": "device_proof",
+                                "status": "PASS",
+                            },
+                        )
+                    ]
+                }
+            },
+        }
+        with self.assertRaisesRegex(
+            ValueError,
+            "device_proof checkpoint is required",
+        ):
+            validate_contracts(payload)
+
+    def test_stale_pass_device_proof_cannot_satisfy_current_sha(self):
+        conn = make_db()
+        current = "a" * 40
+        old = "b" * 40
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            artifact = root / "old-proof.json"
+            artifact.write_text(
+                json.dumps(
+                    {
+                        "canonical_sha": old,
+                        "checkpoint": "demo-0.2",
+                        "apk": {"sha256": "c" * 64},
+                    }
+                )
+                + "\n"
+            )
+            conn.execute(
+                """insert into device_proofs(
+                     sha,apk_sha256,checkpoint,status,artifact_path,note,
+                     created_at,created_epoch
+                   ) values(?,?,?,?,?,?,?,?)""",
+                (
+                    old,
+                    "c" * 64,
+                    "demo-0.2",
+                    "PASS",
+                    str(artifact),
+                    "old proof",
+                    "2026-09-24T00:00:00+00:00",
+                    1.0,
+                ),
+            )
+            result = evaluate_criterion(
+                conn,
+                criterion(
+                    "device",
+                    {
+                        "type": "device_proof",
+                        "checkpoint": "demo-0.2",
+                        "status": "PASS",
+                    },
+                ),
+                integration_sha=current,
+                root=root,
+            )
+
+        self.assertFalse(result.passed)
+        self.assertEqual("BLOCKED_EXTERNAL", result.status)
+        self.assertIn("exact current integration SHA", result.reason)
+
+    def test_current_device_proof_requires_pass_and_matching_artifact_sha(self):
+        conn = make_db()
+        current = "a" * 40
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            artifact = root / "proof.json"
+            artifact.write_text(
+                json.dumps(
+                    {
+                        "canonical_sha": current,
+                        "checkpoint": "demo-0.2",
+                        "apk": {"sha256": "c" * 64},
+                    }
+                )
+                + "\n"
+            )
+            conn.execute(
+                """insert into device_proofs(
+                     sha,apk_sha256,checkpoint,status,artifact_path,note,
+                     created_at,created_epoch
+                   ) values(?,?,?,?,?,?,?,?)""",
+                (
+                    current,
+                    "c" * 64,
+                    "demo-0.2",
+                    "PARTIAL",
+                    str(artifact),
+                    "partial",
+                    "2026-09-24T00:00:00+00:00",
+                    1.0,
+                ),
+            )
+            item = criterion(
+                "device",
+                {
+                    "type": "device_proof",
+                    "checkpoint": "demo-0.2",
+                    "status": "PASS",
+                },
+            )
+            partial = evaluate_criterion(
+                conn,
+                item,
+                integration_sha=current,
+                root=root,
+            )
+            self.assertFalse(partial.passed)
+            self.assertIn("status=PARTIAL", partial.reason)
+
+            conn.execute(
+                "update device_proofs set status='PASS' where sha=?",
+                (current,),
+            )
+            accepted = evaluate_criterion(
+                conn,
+                item,
+                integration_sha=current,
+                root=root,
+            )
+            self.assertTrue(accepted.passed)
+            self.assertEqual("PASS", accepted.status)
+            self.assertIn("artifact_sha256=", accepted.reason)
+
+            artifact.write_text(
+                json.dumps(
+                    {
+                        "canonical_sha": "d" * 40,
+                        "checkpoint": "demo-0.2",
+                        "apk": {"sha256": "c" * 64},
+                    }
+                )
+                + "\n"
+            )
+            mismatch = evaluate_criterion(
+                conn,
+                item,
+                integration_sha=current,
+                root=root,
+            )
+            self.assertFalse(mismatch.passed)
+            self.assertEqual("BLOCKED_EXTERNAL", mismatch.status)
+            self.assertIn("artifact SHA mismatch", mismatch.reason)
 
     def test_modern_roadmap_task_templates_require_integration_ancestry(self):
         path = CONTROL_ROOT / "config" / "milestone_contracts.json"
