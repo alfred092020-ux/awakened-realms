@@ -14,9 +14,11 @@ sys.path.insert(0, str(LIB_DIR))
 
 from logres_supervisor import (
     ScheduledJob,
+    actionable_integration_backlog,
     default_jobs,
     due,
     ensure_running,
+    should_run_job,
     supervisor_health,
     tick,
 )
@@ -53,6 +55,77 @@ class SupervisorTests(unittest.TestCase):
         state = {"last_runs": {"x": {"finished_epoch": 70.0}}}
         self.assertFalse(due(job, state, 100.0))
         self.assertTrue(due(job, state, 131.0))
+
+    def test_ready_integration_backlog_wakes_autonomy_early_only(self):
+        state = {
+            "last_runs": {
+                "autonomy": {"finished_epoch": 90.0},
+                "swarm": {"finished_epoch": 90.0},
+            }
+        }
+        autonomy = ScheduledJob("autonomy", ("true",), 60, 10)
+        swarm = ScheduledJob("swarm", ("true",), 60, 10)
+        self.assertTrue(
+            should_run_job(
+                autonomy,
+                state,
+                101.0,
+                integration_backlog=1,
+            )
+        )
+        self.assertFalse(
+            should_run_job(
+                swarm,
+                state,
+                101.0,
+                integration_backlog=1,
+            )
+        )
+
+    def test_no_backlog_preserves_fixed_interval(self):
+        state = {"last_runs": {"autonomy": {"finished_epoch": 90.0}}}
+        autonomy = ScheduledJob("autonomy", ("true",), 60, 10)
+        self.assertFalse(
+            should_run_job(
+                autonomy,
+                state,
+                101.0,
+                integration_backlog=0,
+            )
+        )
+        self.assertTrue(
+            should_run_job(
+                autonomy,
+                state,
+                151.0,
+                integration_backlog=0,
+            )
+        )
+
+    def test_actionable_backlog_reads_ready_for_preflight_only(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            control = root / "control"
+            control.mkdir()
+            db = control / "control.sqlite"
+            import sqlite3
+
+            conn = sqlite3.connect(db)
+            conn.execute(
+                "create table integration_queue("
+                "task_id text, status text)"
+            )
+            conn.executemany(
+                "insert into integration_queue values(?,?)",
+                [
+                    ("A", "READY_FOR_PREFLIGHT"),
+                    ("B", "INTEGRATED"),
+                    ("C", "SUPERSEDED"),
+                ],
+            )
+            conn.commit()
+            conn.close()
+            self.assertEqual(1, actionable_integration_backlog(root))
 
     def test_tick_records_job_result_and_does_not_immediately_repeat(self):
         with tempfile.TemporaryDirectory() as td:
