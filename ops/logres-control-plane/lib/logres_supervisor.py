@@ -18,6 +18,7 @@ class ScheduledJob:
     argv: tuple[str, ...]
     interval_seconds: int
     timeout_seconds: int
+    background: bool = False
 
 
 def utc_now() -> str:
@@ -42,6 +43,7 @@ def default_jobs(root: Path) -> tuple[ScheduledJob, ...]:
             ),
             60,
             240,
+            True,
         ),
         ScheduledJob(
             "swarm",
@@ -136,7 +138,10 @@ def supervisor_health(
 
 
 def due(job: ScheduledJob, state: dict, now_epoch: float) -> bool:
-    last = ((state.get("last_runs") or {}).get(job.name) or {}).get("finished_epoch")
+    last_run = (state.get("last_runs") or {}).get(job.name) or {}
+    if last_run.get("running"):
+        return False
+    last = last_run.get("finished_epoch")
     if last is None:
         return True
     return now_epoch - float(last) >= job.interval_seconds
@@ -167,11 +172,14 @@ def should_run_job(
     *,
     integration_backlog: int,
 ) -> bool:
+    last_run = (state.get("last_runs") or {}).get(job.name) or {}
+    if last_run.get("running"):
+        return False
     if due(job, state, now_epoch):
         return True
     if job.name != "autonomy" or integration_backlog <= 0:
         return False
-    last = ((state.get("last_runs") or {}).get(job.name) or {}).get("finished_epoch")
+    last = last_run.get("finished_epoch")
     if last is None:
         return True
     # The supervisor itself ticks every 20s. Ten seconds prevents an external
@@ -188,6 +196,194 @@ def append_log(root: Path, job: str, text: str) -> None:
         handle.write(text)
         if text and not text.endswith("\n"):
             handle.write("\n")
+
+
+def launch_background_job(
+    root: Path,
+    job: ScheduledJob,
+    *,
+    popen=subprocess.Popen,
+    now_epoch: float | None = None,
+) -> dict:
+    started = time.time() if now_epoch is None else float(now_epoch)
+    logs = root / "logs" / "supervisor"
+    logs.mkdir(parents=True, exist_ok=True)
+    path = logs / f"{job.name}.log"
+    with path.open("ab", buffering=0) as handle:
+        handle.write(
+            (
+                f"=== {utc_now()} background launch "
+                f"timeout={job.timeout_seconds}s ===\n"
+            ).encode()
+        )
+        proc = popen(
+            list(job.argv),
+            stdout=handle,
+            stderr=subprocess.STDOUT,
+            start_new_session=True,
+            close_fds=True,
+            env=os.environ.copy(),
+        )
+    return {
+        "argv": list(job.argv),
+        "pid": int(proc.pid),
+        "running": True,
+        "rc": None,
+        "error": None,
+        "started_epoch": started,
+        "started_at": utc_now(),
+        "finished_epoch": None,
+        "finished_at": None,
+        "duration_seconds": 0.0,
+        "timeout_seconds": int(job.timeout_seconds),
+        "terminate_sent_epoch": None,
+        "kill_sent_epoch": None,
+    }
+
+
+def _finish_background_run(
+    root: Path,
+    job: ScheduledJob,
+    run_state: dict,
+    *,
+    now_epoch: float,
+    rc: int | None,
+    error: str | None = None,
+) -> dict:
+    updated = dict(run_state)
+    started = float(updated.get("started_epoch") or now_epoch)
+    updated.update(
+        {
+            "running": False,
+            "rc": rc,
+            "error": error,
+            "finished_epoch": now_epoch,
+            "finished_at": utc_now(),
+            "duration_seconds": round(max(0.0, now_epoch - started), 3),
+        }
+    )
+    append_log(
+        root,
+        job.name,
+        (
+            f"=== {utc_now()} background complete rc={rc} "
+            f"duration={updated['duration_seconds']:.1f}s"
+            + (f" error={error}" if error else "")
+        ),
+    )
+    return updated
+
+
+def refresh_background_run(
+    root: Path,
+    job: ScheduledJob,
+    run_state: dict,
+    *,
+    now_epoch: float | None = None,
+    waitpid_fn=os.waitpid,
+    killpg_fn=os.killpg,
+    pid_alive_fn=pid_alive,
+) -> dict:
+    if not run_state.get("running"):
+        return dict(run_state)
+
+    now_epoch = time.time() if now_epoch is None else float(now_epoch)
+    pid = int(run_state.get("pid") or 0)
+    if pid <= 0:
+        return _finish_background_run(
+            root,
+            job,
+            run_state,
+            now_epoch=now_epoch,
+            rc=127,
+            error="background job lost its pid",
+        )
+
+    try:
+        waited_pid, status = waitpid_fn(pid, os.WNOHANG)
+    except ChildProcessError:
+        if pid_alive_fn(pid):
+            waited_pid = 0
+            status = 0
+        else:
+            return _finish_background_run(
+                root,
+                job,
+                run_state,
+                now_epoch=now_epoch,
+                rc=None,
+                error="background completion status unavailable after supervisor restart",
+            )
+
+    if waited_pid == pid:
+        try:
+            rc = os.waitstatus_to_exitcode(status)
+        except ValueError:
+            rc = 127
+        return _finish_background_run(
+            root,
+            job,
+            run_state,
+            now_epoch=now_epoch,
+            rc=int(rc),
+        )
+
+    updated = dict(run_state)
+    started = float(updated.get("started_epoch") or now_epoch)
+    timeout_seconds = int(
+        updated.get("timeout_seconds") or job.timeout_seconds
+    )
+    elapsed = max(0.0, now_epoch - started)
+    if elapsed <= timeout_seconds:
+        return updated
+
+    terminate_sent = updated.get("terminate_sent_epoch")
+    if terminate_sent is None:
+        try:
+            killpg_fn(pid, signal.SIGTERM)
+        except ProcessLookupError:
+            return _finish_background_run(
+                root,
+                job,
+                updated,
+                now_epoch=now_epoch,
+                rc=None,
+                error="background job exited during timeout handling",
+            )
+        updated["terminate_sent_epoch"] = now_epoch
+        updated["error"] = f"timeout after {timeout_seconds}s; SIGTERM sent"
+        append_log(
+            root,
+            job.name,
+            f"=== {utc_now()} timeout SIGTERM pid={pid} ===",
+        )
+        return updated
+
+    if (
+        updated.get("kill_sent_epoch") is None
+        and now_epoch - float(terminate_sent) >= 10.0
+    ):
+        try:
+            killpg_fn(pid, signal.SIGKILL)
+        except ProcessLookupError:
+            return _finish_background_run(
+                root,
+                job,
+                updated,
+                now_epoch=now_epoch,
+                rc=None,
+                error="background job exited after timeout SIGTERM",
+            )
+        updated["kill_sent_epoch"] = now_epoch
+        updated["error"] = (
+            f"timeout after {timeout_seconds}s; SIGTERM then SIGKILL sent"
+        )
+        append_log(
+            root,
+            job.name,
+            f"=== {utc_now()} timeout SIGKILL pid={pid} ===",
+        )
+    return updated
 
 
 def run_job(
@@ -244,6 +440,10 @@ def tick(
     *,
     jobs: tuple[ScheduledJob, ...] | None = None,
     runner=subprocess.run,
+    popen=subprocess.Popen,
+    waitpid_fn=os.waitpid,
+    killpg_fn=os.killpg,
+    pid_alive_fn=pid_alive,
     now_epoch: float | None = None,
     integration_backlog: int | None = None,
 ) -> dict:
@@ -257,6 +457,22 @@ def tick(
     state.setdefault("last_runs", {})
     state["updated_epoch"] = now_epoch
     state["updated_at"] = utc_now()
+
+    for job in jobs:
+        if not job.background:
+            continue
+        previous = state["last_runs"].get(job.name) or {}
+        if not previous.get("running"):
+            continue
+        state["last_runs"][job.name] = refresh_background_run(
+            root,
+            job,
+            previous,
+            now_epoch=now_epoch,
+            waitpid_fn=waitpid_fn,
+            killpg_fn=killpg_fn,
+            pid_alive_fn=pid_alive_fn,
+        )
     atomic_json(heartbeat_path, state)
 
     ran = []
@@ -268,7 +484,15 @@ def tick(
             integration_backlog=integration_backlog,
         ):
             continue
-        result = run_job(root, job, runner=runner)
+        if job.background:
+            result = launch_background_job(
+                root,
+                job,
+                popen=popen,
+                now_epoch=now_epoch,
+            )
+        else:
+            result = run_job(root, job, runner=runner)
         state["last_runs"][job.name] = result
         state["updated_epoch"] = time.time()
         state["updated_at"] = utc_now()

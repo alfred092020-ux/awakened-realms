@@ -1,5 +1,6 @@
 import json
 import os
+import signal
 import subprocess
 import sys
 import tempfile
@@ -18,6 +19,8 @@ from logres_supervisor import (
     default_jobs,
     due,
     ensure_running,
+    launch_background_job,
+    refresh_background_run,
     should_run_job,
     supervisor_health,
     tick,
@@ -27,14 +30,17 @@ from logres_supervisor import (
 class FakePopen:
     def __init__(self, pid=4321):
         self.pid = pid
+        self.calls = []
 
     def __call__(self, *args, **kwargs):
+        self.calls.append((args, kwargs))
         return types.SimpleNamespace(pid=self.pid)
 
 
 class SupervisorTests(unittest.TestCase):
     def test_default_jobs_cover_authoritative_and_maintenance_loops(self):
-        names = {job.name for job in default_jobs(Path("/x"))}
+        jobs = {job.name: job for job in default_jobs(Path("/x"))}
+        names = set(jobs)
         self.assertTrue(
             {
                 "autonomy",
@@ -50,6 +56,9 @@ class SupervisorTests(unittest.TestCase):
                 "maintenance",
             }.issubset(names)
         )
+        self.assertTrue(jobs["autonomy"].background)
+        self.assertFalse(jobs["swarm"].background)
+        self.assertFalse(jobs["maintenance"].background)
 
     def test_due_respects_interval(self):
         job = ScheduledJob("x", ("true",), 60, 10)
@@ -129,6 +138,196 @@ class SupervisorTests(unittest.TestCase):
             conn.close()
             self.assertEqual(1, actionable_integration_backlog(root))
 
+    def test_background_launch_records_tracked_pid(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            job = ScheduledJob(
+                "autonomy",
+                ("autonomy", "cycle"),
+                60,
+                240,
+                True,
+            )
+            popen = FakePopen(pid=777)
+            state = launch_background_job(
+                root,
+                job,
+                popen=popen,
+                now_epoch=100.0,
+            )
+            self.assertTrue(state["running"])
+            self.assertEqual(777, state["pid"])
+            self.assertEqual(100.0, state["started_epoch"])
+            self.assertIsNone(state["finished_epoch"])
+            self.assertEqual(1, len(popen.calls))
+
+    def test_background_autonomy_does_not_block_foreground_swarm(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            heartbeat = root / "heartbeat.json"
+            autonomy = ScheduledJob(
+                "autonomy",
+                ("autonomy", "cycle"),
+                60,
+                240,
+                True,
+            )
+            swarm = ScheduledJob("swarm", ("swarm", "tick"), 60, 10)
+            popen = FakePopen(pid=778)
+            calls = []
+
+            def runner(argv, **kwargs):
+                calls.append(list(argv))
+                return subprocess.CompletedProcess(argv, 0, "ok", "")
+
+            result = tick(
+                root,
+                heartbeat,
+                jobs=(autonomy, swarm),
+                runner=runner,
+                popen=popen,
+                now_epoch=100.0,
+                integration_backlog=1,
+            )
+
+            self.assertEqual(["autonomy", "swarm"], result["ran"])
+            self.assertTrue(
+                result["state"]["last_runs"]["autonomy"]["running"]
+            )
+            self.assertEqual(
+                0,
+                result["state"]["last_runs"]["swarm"]["rc"],
+            )
+            self.assertEqual([["swarm", "tick"]], calls)
+            self.assertEqual(1, len(popen.calls))
+
+    def test_running_background_autonomy_is_not_relaunched_after_restart(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            heartbeat = root / "heartbeat.json"
+            heartbeat.write_text(
+                json.dumps(
+                    {
+                        "pid": os.getpid(),
+                        "updated_epoch": 100.0,
+                        "last_runs": {
+                            "autonomy": {
+                                "argv": ["autonomy", "cycle"],
+                                "pid": 779,
+                                "running": True,
+                                "started_epoch": 90.0,
+                                "timeout_seconds": 240,
+                            }
+                        },
+                    }
+                )
+            )
+            autonomy = ScheduledJob(
+                "autonomy",
+                ("autonomy", "cycle"),
+                60,
+                240,
+                True,
+            )
+            popen = FakePopen(pid=780)
+
+            def not_our_child(_pid, _flags):
+                raise ChildProcessError
+
+            result = tick(
+                root,
+                heartbeat,
+                jobs=(autonomy,),
+                popen=popen,
+                waitpid_fn=not_our_child,
+                pid_alive_fn=lambda _pid: True,
+                now_epoch=110.0,
+                integration_backlog=1,
+            )
+
+            self.assertEqual([], result["ran"])
+            self.assertTrue(
+                result["state"]["last_runs"]["autonomy"]["running"]
+            )
+            self.assertEqual([], popen.calls)
+
+    def test_background_completion_is_reaped(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            job = ScheduledJob(
+                "autonomy",
+                ("autonomy", "cycle"),
+                60,
+                240,
+                True,
+            )
+            state = {
+                "pid": 781,
+                "running": True,
+                "started_epoch": 100.0,
+                "timeout_seconds": 240,
+            }
+            result = refresh_background_run(
+                root,
+                job,
+                state,
+                now_epoch=120.0,
+                waitpid_fn=lambda pid, flags: (pid, 0),
+            )
+            self.assertFalse(result["running"])
+            self.assertEqual(0, result["rc"])
+            self.assertEqual(20.0, result["duration_seconds"])
+            self.assertEqual(120.0, result["finished_epoch"])
+
+    def test_background_timeout_escalates_term_then_kill(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            job = ScheduledJob(
+                "autonomy",
+                ("autonomy", "cycle"),
+                60,
+                10,
+                True,
+            )
+            state = {
+                "pid": 782,
+                "running": True,
+                "started_epoch": 100.0,
+                "timeout_seconds": 10,
+                "terminate_sent_epoch": None,
+                "kill_sent_epoch": None,
+            }
+            signals = []
+
+            first = refresh_background_run(
+                root,
+                job,
+                state,
+                now_epoch=111.0,
+                waitpid_fn=lambda _pid, _flags: (0, 0),
+                killpg_fn=lambda pid, sig: signals.append((pid, sig)),
+            )
+            self.assertEqual([(782, signal.SIGTERM)], signals)
+            self.assertEqual(111.0, first["terminate_sent_epoch"])
+            self.assertIsNone(first["kill_sent_epoch"])
+
+            second = refresh_background_run(
+                root,
+                job,
+                first,
+                now_epoch=122.0,
+                waitpid_fn=lambda _pid, _flags: (0, 0),
+                killpg_fn=lambda pid, sig: signals.append((pid, sig)),
+            )
+            self.assertEqual(
+                [
+                    (782, signal.SIGTERM),
+                    (782, signal.SIGKILL),
+                ],
+                signals,
+            )
+            self.assertEqual(122.0, second["kill_sent_epoch"])
+
     def test_tick_records_job_result_and_does_not_immediately_repeat(self):
         with tempfile.TemporaryDirectory() as td:
             root = Path(td)
@@ -160,6 +359,226 @@ class SupervisorTests(unittest.TestCase):
             self.assertEqual([["probe"]], calls)
             saved = json.loads(heartbeat.read_text())
             self.assertEqual(0, saved["last_runs"]["probe"]["rc"])
+
+    def test_background_autonomy_does_not_block_foreground_jobs(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            heartbeat = root / "heartbeat.json"
+            popen = FakePopen(pid=7001)
+            foreground_calls = []
+
+            def runner(argv, **kwargs):
+                foreground_calls.append(list(argv))
+                return subprocess.CompletedProcess(argv, 0, "ok", "")
+
+            autonomy = ScheduledJob(
+                "autonomy",
+                ("autonomy",),
+                60,
+                240,
+                True,
+            )
+            swarm = ScheduledJob("swarm", ("swarm",), 60, 10)
+
+            result = tick(
+                root,
+                heartbeat,
+                jobs=(autonomy, swarm),
+                runner=runner,
+                popen=popen,
+                now_epoch=100.0,
+                integration_backlog=1,
+            )
+
+            self.assertEqual(["autonomy", "swarm"], result["ran"])
+            self.assertEqual(1, len(popen.calls))
+            self.assertEqual([["swarm"]], foreground_calls)
+            self.assertTrue(
+                result["state"]["last_runs"]["autonomy"]["running"]
+            )
+            self.assertEqual(
+                0,
+                result["state"]["last_runs"]["swarm"]["rc"],
+            )
+
+    def test_running_background_autonomy_is_not_relaunched(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            heartbeat = root / "heartbeat.json"
+            heartbeat.write_text(
+                json.dumps(
+                    {
+                        "last_runs": {
+                            "autonomy": {
+                                "pid": 7001,
+                                "running": True,
+                                "started_epoch": 100.0,
+                                "timeout_seconds": 240,
+                            }
+                        }
+                    }
+                )
+            )
+            popen = FakePopen(pid=7002)
+            autonomy = ScheduledJob(
+                "autonomy",
+                ("autonomy",),
+                60,
+                240,
+                True,
+            )
+
+            result = tick(
+                root,
+                heartbeat,
+                jobs=(autonomy,),
+                popen=popen,
+                waitpid_fn=lambda pid, flags: (0, 0),
+                now_epoch=120.0,
+                integration_backlog=1,
+            )
+
+            self.assertEqual([], result["ran"])
+            self.assertEqual([], popen.calls)
+            self.assertTrue(
+                result["state"]["last_runs"]["autonomy"]["running"]
+            )
+
+    def test_background_completion_is_reaped_with_rc_and_duration(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            heartbeat = root / "heartbeat.json"
+            heartbeat.write_text(
+                json.dumps(
+                    {
+                        "last_runs": {
+                            "autonomy": {
+                                "pid": 7001,
+                                "running": True,
+                                "started_epoch": 100.0,
+                                "timeout_seconds": 240,
+                            }
+                        }
+                    }
+                )
+            )
+            autonomy = ScheduledJob(
+                "autonomy",
+                ("autonomy",),
+                60,
+                240,
+                True,
+            )
+
+            result = tick(
+                root,
+                heartbeat,
+                jobs=(autonomy,),
+                waitpid_fn=lambda pid, flags: (pid, 0),
+                now_epoch=130.0,
+                integration_backlog=0,
+            )
+
+            run = result["state"]["last_runs"]["autonomy"]
+            self.assertFalse(run["running"])
+            self.assertEqual(0, run["rc"])
+            self.assertEqual(30.0, run["duration_seconds"])
+            self.assertEqual([], result["ran"])
+
+    def test_background_timeout_escalates_term_then_kill(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            job = ScheduledJob(
+                "autonomy",
+                ("autonomy",),
+                60,
+                10,
+                True,
+            )
+            state = {
+                "pid": 7001,
+                "running": True,
+                "started_epoch": 100.0,
+                "timeout_seconds": 10,
+            }
+            signals = []
+
+            first = refresh_background_run(
+                root,
+                job,
+                state,
+                now_epoch=111.0,
+                waitpid_fn=lambda pid, flags: (0, 0),
+                killpg_fn=lambda pid, sig: signals.append((pid, sig)),
+            )
+            self.assertEqual([(7001, signal.SIGTERM)], signals)
+            self.assertEqual(111.0, first["terminate_sent_epoch"])
+            self.assertTrue(first["running"])
+
+            second = refresh_background_run(
+                root,
+                job,
+                first,
+                now_epoch=122.0,
+                waitpid_fn=lambda pid, flags: (0, 0),
+                killpg_fn=lambda pid, sig: signals.append((pid, sig)),
+            )
+            self.assertEqual(
+                [
+                    (7001, signal.SIGTERM),
+                    (7001, signal.SIGKILL),
+                ],
+                signals,
+            )
+            self.assertEqual(122.0, second["kill_sent_epoch"])
+            self.assertTrue(second["running"])
+
+    def test_restart_with_live_inherited_pid_does_not_duplicate(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            heartbeat = root / "heartbeat.json"
+            heartbeat.write_text(
+                json.dumps(
+                    {
+                        "last_runs": {
+                            "autonomy": {
+                                "pid": 7001,
+                                "running": True,
+                                "started_epoch": 100.0,
+                                "timeout_seconds": 240,
+                            }
+                        }
+                    }
+                )
+            )
+            popen = FakePopen(pid=7002)
+            autonomy = ScheduledJob(
+                "autonomy",
+                ("autonomy",),
+                60,
+                240,
+                True,
+            )
+
+            def inherited_waitpid(pid, flags):
+                raise ChildProcessError()
+
+            result = tick(
+                root,
+                heartbeat,
+                jobs=(autonomy,),
+                popen=popen,
+                waitpid_fn=inherited_waitpid,
+                pid_alive_fn=lambda pid: True,
+                now_epoch=120.0,
+                integration_backlog=1,
+            )
+
+            self.assertEqual([], result["ran"])
+            self.assertEqual([], popen.calls)
+            self.assertTrue(
+                result["state"]["last_runs"]["autonomy"]["running"]
+            )
 
     def test_healthy_existing_supervisor_is_not_duplicated(self):
         with tempfile.TemporaryDirectory() as td:
