@@ -22,6 +22,7 @@ from logres_autonomy import (
     doctor_stability,
     integration_backlog,
     latest_verified_preflight,
+    legacy_cron_should_defer,
     load_config,
     load_state,
     normalize_runtime_environment,
@@ -75,6 +76,7 @@ PREFLIGHT = str(ROOT / "bin" / "logres-merge-preflight")
 COORD = str(ROOT / "bin" / "logres-coordinator")
 RUNTIME_DEPLOY = str(ROOT / "bin" / "logres-runtime-deploy")
 INTEGRATION = "feat/logres-reconstruction"
+SUPERVISOR_HEARTBEAT = ROOT / "control" / "supervisor-heartbeat.json"
 
 
 def run(argv, *, env=None):
@@ -258,6 +260,17 @@ def run_preflight(cfg: dict, batch_limit: int):
 
 
 def cycle(*, dry_run: bool = False) -> int:
+    if legacy_cron_should_defer(SUPERVISOR_HEARTBEAT):
+        print(
+            json.dumps(
+                {
+                    "status": "LEGACY_CRON_DEFERRED",
+                    "reason": "healthy supervisor owns autonomy scheduling",
+                }
+            )
+        )
+        return 0
+
     lock = acquire_lock()
     if lock is None:
         print(
