@@ -4,12 +4,15 @@ import {
   LOGRES_PLAYABLE_BATTLE_GRANT_KEY,
   LOGRES_PLAYABLE_BATTLE_REWARD_ITEM_KEY,
   LOGRES_PLAYABLE_BATTLE_REWARD_KEY,
-  type ReconstructedLogresInventoryState,
 } from './ReconstructedLogresPlayableBattleCompletion'
 
 import {
   ReconstructedLogresBattleResolutionFlow,
 } from './ReconstructedLogresBattleResolutionFlow'
+
+import type {
+  ReconstructedLogresInventoryState,
+} from '../server/LogresInventoryAuthority'
 
 export const LOGRES_DEMO01_BATTLE_LOOP_PROVENANCE =
   LOGRES_PLAYABLE_BATTLE_COMPLETION_PROVENANCE
