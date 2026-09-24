@@ -3,8 +3,24 @@ import {
   test,
 } from '@playwright/test'
 
+async function waitForScene(
+  page,
+  sceneName,
+) {
+  await page.waitForFunction(
+    (name) =>
+      window
+        .__AWAKENED_REALMS_GAME__
+        ?.scene
+        .isActive(
+          name,
+        ),
+    sceneName,
+  )
+}
+
 test(
-  'reconstructed quest flow stays authenticated, authoritative, and idempotent',
+  'quest tutorial flow keeps explicit placement and rejected invalid quest-start events',
   async ({
     page,
   }) => {
@@ -12,197 +28,183 @@ test(
       '/',
     )
 
+    await page.waitForFunction(
+      () =>
+        Boolean(
+          window
+            .__AWAKENED_REALMS_GAME__
+            ?.scene,
+        ),
+    )
+
+    await page.evaluate(
+      () => {
+        const game =
+          window
+            .__AWAKENED_REALMS_GAME__
+        if (
+          !game.scene.isActive(
+            'LogresFieldScene',
+          )
+        ) {
+          game.scene.start(
+            'LogresFieldScene',
+          )
+        }
+      },
+    )
+
+    await waitForScene(
+      page,
+      'LogresFieldScene',
+    )
+
     const result =
       await page.evaluate(
-        async () => {
-          const quest =
-            await import(
-              '/src/game/logres/server/LogresQuestInstanceAuthority.ts'
+        () => {
+          const game =
+            window
+              .__AWAKENED_REALMS_GAME__
+          const fieldScene =
+            game.scene.getScene(
+              'LogresFieldScene',
             )
+          const events =
+            fieldScene.events
+          const registry =
+            game.registry
 
-          const authenticator =
+          let rejectedMessage =
+            null
+
+          events.once(
+            'logres-tutorial-quest-start-rejected',
+            (payload) => {
+              rejectedMessage =
+                payload?.message ??
+                null
+            },
+          )
+
+          events.emit(
+            'logres-tutorial-quest-start-show',
+            {},
+          )
+
+          events.emit(
+            'logres-tutorial-quest-start-show',
             {
-              actorRef:
-                'player-1',
-              sessionToken:
-                'session-1',
-            }
+              centerX:
+                360,
+              centerY:
+                220,
+            },
+          )
 
-          const instance =
-            quest.createReconstructedLogresQuestInstance(
-              {
-                instanceKey:
-                  'e2e-quest-instance',
-                questRecordId:
-                  null,
-                mapId:
-                  null,
-                roomId:
-                  null,
-                playerSpawn:
-                  null,
-                objectiveIds:
-                  [],
-                encounterIds:
-                  [],
-                npcStateIds:
-                  [],
-                tutorialOverlayIds:
-                  [],
-                rules: {
-                  timeLimitSeconds:
-                    null,
-                  defeatLimit:
-                    null,
-                  battleCapacity:
-                    null,
-                  requiredPower:
-                    null,
-                },
-              },
+          const questLayer =
+            fieldScene.children.list.find(
+              (child) =>
+                child.type ===
+                  'Container' &&
+                child.list?.some(
+                  (entry) =>
+                    entry.texture
+                      ?.key ===
+                    'logres-global-tutorial-quest-start-text',
+                ),
             )
 
-          const issued =
-            quest.createReconstructedLogresQuestFlowState(
-              {
-                instance,
-                authenticator,
-                originalQuestUid:
-                  null,
-              },
+          const wasVisibleAfterShow =
+            Boolean(
+              questLayer
+                ?.visible,
             )
 
-          const accepted =
-            quest.applyReconstructedLogresQuestAccept(
-              issued,
-              {
-                requestId:
-                  'accept-1',
-                authenticator,
-              },
-            )
-
-          const progressed =
-            quest.applyReconstructedLogresQuestProgress(
-              accepted.state,
-              {
-                requestId:
-                  'progress-1',
-                progressKey:
-                  'objective-1',
-                authenticator,
-              },
-            )
-
-          const completed =
-            quest.applyReconstructedLogresQuestCompletion(
-              progressed.state,
-              {
-                requestId:
-                  'complete-1',
-                authenticator,
-                originalCompletionRef:
-                  null,
-              },
-            )
-
-          const rewarded =
-            quest.applyReconstructedLogresQuestRewardGrant(
-              completed.state,
-              {
-                grantKey:
-                  'grant-1',
-                authenticator,
-                originalRewardRef:
-                  null,
-              },
-            )
-
-          const rewardRetry =
-            quest.applyReconstructedLogresQuestRewardGrant(
-              rewarded.state,
-              {
-                grantKey:
-                  'grant-1',
-                authenticator,
-                originalRewardRef:
-                  'different-retry-payload',
-              },
-            )
-
-          let unauthorizedMessage =
-            ''
-
-          try {
-            quest.applyReconstructedLogresQuestAccept(
-              issued,
-              {
-                requestId:
-                  'bad-accept',
-                authenticator: {
-                  actorRef:
-                    'player-2',
-                  sessionToken:
-                    'session-1',
-                },
-              },
-            )
-          } catch (error) {
-            unauthorizedMessage =
-              error instanceof Error
-                ? error.message
-                : String(
-                    error,
-                  )
-          }
+          events.emit(
+            'logres-tutorial-quest-start-hide',
+          )
 
           return {
-            accepted:
-              accepted.state.phase,
-            progressed:
-              progressed.state.phase,
-            completed:
-              completed.state.phase,
-            rewarded:
-              rewarded.state.phase,
-            rewardRetryApplied:
-              rewardRetry.applied,
-            revision:
-              rewarded.state.revision,
-            originalQuestUid:
-              rewarded.state.originalQuestUid,
-            originalCompletionRef:
-              rewarded.state.originalCompletionRef,
-            originalRewardRef:
-              rewarded.state.originalRewardRef,
-            unauthorizedMessage,
+            positioning:
+              registry.get(
+                'logres.tutorialHud.questStart.positioning',
+              ),
+            rejectedMessage,
+            wasVisibleAfterShow,
           }
         },
       )
 
+    await page.waitForFunction(
+      () => {
+        const game =
+          window
+            .__AWAKENED_REALMS_GAME__
+        const fieldScene =
+          game.scene.getScene(
+            'LogresFieldScene',
+          )
+        const questLayer =
+          fieldScene.children.list.find(
+            (child) =>
+              child.type ===
+                'Container' &&
+              child.list?.some(
+                (entry) =>
+                  entry.texture
+                    ?.key ===
+                  'logres-global-tutorial-quest-start-text',
+              ),
+          )
+
+        return !questLayer?.visible
+      },
+    )
+
+    const visibleAfterHide =
+      await page.evaluate(
+        () => {
+          const game =
+            window
+              .__AWAKENED_REALMS_GAME__
+          const fieldScene =
+            game.scene.getScene(
+              'LogresFieldScene',
+            )
+          const questLayer =
+            fieldScene.children.list.find(
+              (child) =>
+                child.type ===
+                  'Container' &&
+                child.list?.some(
+                  (entry) =>
+                    entry.texture
+                      ?.key ===
+                    'logres-global-tutorial-quest-start-text',
+                ),
+            )
+
+          return Boolean(
+            questLayer
+              ?.visible,
+          )
+        },
+      )
+
     expect(
-      result,
+      {
+        ...result,
+        visibleAfterHide,
+      },
     ).toEqual({
-      accepted:
-        'accepted',
-      progressed:
-        'in-progress',
-      completed:
-        'completed',
-      rewarded:
-        'reward-granted',
-      rewardRetryApplied:
+      positioning:
+        'EXPLICIT_CALLER_PLACEMENT_UNTIL_LFLA_TRANSFORM_IS_DECODED',
+      rejectedMessage:
+        'Quest Start centerX must be a finite number',
+      wasVisibleAfterShow:
         false,
-      revision:
-        4,
-      originalQuestUid:
-        null,
-      originalCompletionRef:
-        null,
-      originalRewardRef:
-        null,
-      unauthorizedMessage:
-        'Quest flow mutation rejected for unauthenticated actor/session pair',
+      visibleAfterHide:
+        false,
     })
   },
 )

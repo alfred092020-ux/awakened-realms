@@ -583,6 +583,63 @@ describe(
     )
 
     it(
+      'allows completion directly from accepted when historical progress payloads remain unresolved',
+      () => {
+        const authenticator = {
+          actorRef:
+            'player-1',
+          sessionToken:
+            'session-1',
+        }
+
+        const issued =
+          createReconstructedLogresQuestFlowState({
+            instance:
+              createQuestInstanceForFlow(),
+            authenticator,
+            originalQuestUid:
+              null,
+          })
+
+        const accepted =
+          applyReconstructedLogresQuestAccept(
+            issued,
+            {
+              requestId:
+                'accept-direct-complete',
+              authenticator,
+            },
+          )
+
+        const completed =
+          applyReconstructedLogresQuestCompletion(
+            accepted.state,
+            {
+              requestId:
+                'complete-direct',
+              authenticator,
+              originalCompletionRef:
+                null,
+            },
+          )
+
+        expect(
+          completed.applied,
+        ).toBe(
+          true,
+        )
+        expect(
+          completed.state.phase,
+        ).toBe(
+          'completed',
+        )
+        expect(
+          completed.state.progressKeys,
+        ).toEqual([])
+      },
+    )
+
+    it(
       'keeps unresolved historical quest identifiers nullable in persisted flow state',
       () => {
         const flow =

@@ -493,6 +493,202 @@ function validateQuestFlowState(
       'Quest flow revision must be a non-negative safe integer',
     )
   }
+
+  if (
+    state.instance
+      .provenance !==
+    LOGRES_RECONSTRUCTED_QUEST_INSTANCE_PROVENANCE
+  ) {
+    throw new Error(
+      'Quest flow instance provenance must be RECONSTRUCTED',
+    )
+  }
+
+  requireNonEmptyLocalKey(
+    state.authenticatedActorRef,
+  )
+  requireNonEmptyLocalKey(
+    state.authenticatedSessionToken,
+  )
+
+  const normalizedProgressKeys =
+    freezeStringList(
+      state.progressKeys,
+      'Quest progressKeys',
+    )
+  const normalizedProgressRequestIds =
+    freezeStringList(
+      state.appliedProgressRequestIds,
+      'Quest appliedProgressRequestIds',
+    )
+
+  normalizedProgressKeys.forEach(
+    (
+      value,
+      index,
+    ) => {
+      if (
+        value !==
+        state.progressKeys[
+          index
+        ]
+      ) {
+        throw new Error(
+          'Quest progressKeys must be canonical and trimmed',
+        )
+      }
+    },
+  )
+
+  normalizedProgressRequestIds
+    .forEach(
+      (
+        value,
+        index,
+      ) => {
+        if (
+          value !==
+          state
+            .appliedProgressRequestIds[
+            index
+          ]
+        ) {
+          throw new Error(
+            'Quest appliedProgressRequestIds must be canonical and trimmed',
+          )
+        }
+      },
+    )
+
+  if (
+    state.acceptRequestId !==
+    null
+  ) {
+    requireNonEmptyLocalKey(
+      state.acceptRequestId,
+    )
+  }
+
+  if (
+    state.completionRequestId !==
+    null
+  ) {
+    requireNonEmptyLocalKey(
+      state.completionRequestId,
+    )
+  }
+
+  if (
+    state.rewardGrantKey !==
+    null
+  ) {
+    requireNonEmptyLocalKey(
+      state.rewardGrantKey,
+    )
+  }
+
+  if (
+    state.phase ===
+    'issued'
+  ) {
+    if (
+      state.acceptRequestId !==
+        null ||
+      state.completionRequestId !==
+        null ||
+      state.rewardGrantKey !==
+        null ||
+      normalizedProgressKeys.length !==
+        0 ||
+      normalizedProgressRequestIds
+        .length !==
+        0
+    ) {
+      throw new Error(
+        'Issued quest flow state cannot include accepted progress, completion, or reward values',
+      )
+    }
+  } else if (
+    state.phase ===
+    'accepted'
+  ) {
+    if (
+      state.acceptRequestId ===
+        null ||
+      state.completionRequestId !==
+        null ||
+      state.rewardGrantKey !==
+        null ||
+      normalizedProgressKeys.length !==
+        0 ||
+      normalizedProgressRequestIds
+        .length !==
+        0
+    ) {
+      throw new Error(
+        'Accepted quest flow state must have only an accept request id and no progress, completion, or reward ids',
+      )
+    }
+  } else if (
+    state.phase ===
+    'in-progress'
+  ) {
+    if (
+      state.acceptRequestId ===
+        null ||
+      state.completionRequestId !==
+        null ||
+      state.rewardGrantKey !==
+        null
+    ) {
+      throw new Error(
+        'In-progress quest flow state must have accept request id and no completion/reward ids',
+      )
+    }
+  } else if (
+    state.phase ===
+    'completed'
+  ) {
+    if (
+      state.acceptRequestId ===
+        null ||
+      state.completionRequestId ===
+        null ||
+      state.rewardGrantKey !==
+        null
+    ) {
+      throw new Error(
+        'Completed quest flow state must have accept/completion ids and no reward key',
+      )
+    }
+  } else if (
+    state.phase ===
+    'reward-granted'
+  ) {
+    if (
+      state.acceptRequestId ===
+        null ||
+      state.completionRequestId ===
+        null ||
+      state.rewardGrantKey ===
+        null
+    ) {
+      throw new Error(
+        'Reward-granted quest flow state must retain accept, completion, and reward ids',
+      )
+    }
+  }
+
+  if (
+    normalizedProgressKeys
+      .length !==
+    normalizedProgressRequestIds
+      .length
+  ) {
+    throw new Error(
+      'Quest appliedProgressRequestIds must stay in sync with applied progress keys',
+    )
+  }
 }
 
 function nextQuestFlowState(
@@ -835,6 +1031,37 @@ export function applyReconstructedLogresQuestCompletion(
     )
 
   if (
+    state.phase ===
+    'issued'
+  ) {
+    throw new Error(
+      'Quest completion requires accepted or in-progress phase',
+    )
+  }
+
+  if (
+    state.phase ===
+      'completed' ||
+    state.phase ===
+      'reward-granted'
+  ) {
+    if (
+      state.completionRequestId ===
+      requestId
+    ) {
+      return {
+        applied:
+          false,
+        state,
+      }
+    }
+
+    throw new Error(
+      'Quest completion cannot be changed after completion',
+    )
+  }
+
+  if (
     state.completionRequestId ===
     requestId
   ) {
@@ -851,24 +1078,6 @@ export function applyReconstructedLogresQuestCompletion(
   ) {
     throw new Error(
       'Quest completion already recorded by a different request id',
-    )
-  }
-
-  if (
-    state.phase ===
-    'issued'
-  ) {
-    throw new Error(
-      'Quest completion requires accepted or in-progress phase',
-    )
-  }
-
-  if (
-    state.phase ===
-    'reward-granted'
-  ) {
-    throw new Error(
-      'Quest completion cannot be changed after reward grant',
     )
   }
 
@@ -919,6 +1128,35 @@ export function applyReconstructedLogresQuestRewardGrant(
     )
 
   if (
+    state.phase ===
+    'reward-granted'
+  ) {
+    if (
+      state.rewardGrantKey ===
+      grantKey
+    ) {
+      return {
+        applied:
+          false,
+        state,
+      }
+    }
+
+    throw new Error(
+      'Quest reward already granted by a different grant key',
+    )
+  }
+
+  if (
+    state.phase !==
+    'completed'
+  ) {
+    throw new Error(
+      'Quest reward grant requires completed phase',
+    )
+  }
+
+  if (
     state.rewardGrantKey ===
     grantKey
   ) {
@@ -935,17 +1173,6 @@ export function applyReconstructedLogresQuestRewardGrant(
   ) {
     throw new Error(
       'Quest reward already granted by a different grant key',
-    )
-  }
-
-  if (
-    state.phase !==
-      'completed' &&
-    state.phase !==
-      'reward-granted'
-  ) {
-    throw new Error(
-      'Quest reward grant requires completed phase',
     )
   }
 
