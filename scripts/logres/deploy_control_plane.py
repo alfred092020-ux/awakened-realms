@@ -34,6 +34,7 @@ MANIFEST: dict[str, tuple[str, int]] = {
     "bin/logres-knowledge": ("bin/logres-knowledge", 0o755),
     "bin/logres-lead": ("bin/logres-lead", 0o700),
     "bin/logres-optimizer": ("bin/logres-optimizer", 0o755),
+    "bin/logres-throughput": ("bin/logres-throughput", 0o755),
     "bin/logres-lead-snapshot": ("bin/logres-lead-snapshot", 0o755),
     "bin/logres-lead-takeover": ("bin/logres-lead-takeover", 0o755),
     "bin/logres-route-reconcile": ("bin/logres-route-reconcile", 0o755),
@@ -64,6 +65,7 @@ MANIFEST: dict[str, tuple[str, int]] = {
     "lib/logres_research_agent.py": ("lib/logres_research_agent.py", 0o600),
     "lib/logres_swarm.py": ("lib/logres_swarm.py", 0o600),
     "lib/logres_supervisor.py": ("lib/logres_supervisor.py", 0o600),
+    "lib/logres_throughput.py": ("lib/logres_throughput.py", 0o600),
     "config/autoflow.default.json": ("config/autoflow.default.json", 0o600),
     "config/mission.default.json": ("config/mission.default.json", 0o600),
 }

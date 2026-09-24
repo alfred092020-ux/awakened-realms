@@ -35,6 +35,7 @@ PRODUCTION_FILES = (
     "bin/logres-knowledge",
     "bin/logres-lead",
     "bin/logres-optimizer",
+    "bin/logres-throughput",
     "bin/logres-lead-snapshot",
     "bin/logres-lead-takeover",
     "bin/logres-route-reconcile",
@@ -65,6 +66,7 @@ PRODUCTION_FILES = (
     "lib/logres_research_agent.py",
     "lib/logres_swarm.py",
     "lib/logres_supervisor.py",
+    "lib/logres_throughput.py",
     "config/autoflow.default.json",
     "config/mission.default.json",
 )

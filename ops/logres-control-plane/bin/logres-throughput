@@ -1,0 +1,361 @@
+#!/usr/bin/env python3
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import sqlite3
+import sys
+import time
+from datetime import datetime, timezone
+from pathlib import Path
+
+ROOT = Path(os.environ.get("LOGRES_ROOT", "/home/ubuntu/logres"))
+DB = os.environ.get("LOGRES_CONTROL_DB", str(ROOT / "control" / "control.sqlite"))
+sys.path.insert(0, str(ROOT / "lib"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "lib"))
+
+from logres_throughput import summarize_recent, summarize_values
+
+
+METRICS = (
+    "ready_to_lease",
+    "lease_to_done",
+    "done_to_queue_ready",
+    "queue_ready_to_preflight_verified",
+    "preflight_verified_to_integrated",
+    "done_to_integrated",
+)
+
+
+def parse_iso(value):
+    if not value:
+        return None
+    try:
+        return datetime.fromisoformat(str(value).replace("Z", "+00:00")).timestamp()
+    except Exception:
+        return None
+
+
+def fmt(seconds):
+    if seconds is None:
+        return "-"
+    seconds = float(seconds)
+    if seconds < 60:
+        return f"{seconds:.0f}s"
+    if seconds < 3600:
+        return f"{seconds / 60:.1f}m"
+    return f"{seconds / 3600:.1f}h"
+
+
+def record(samples, metric, completed_epoch, duration):
+    if completed_epoch is None or duration is None:
+        return
+    duration = float(duration)
+    completed_epoch = float(completed_epoch)
+    if duration < 0:
+        return
+    samples[metric].append((completed_epoch, duration))
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--json", action="store_true")
+    args = parser.parse_args()
+
+    conn = sqlite3.connect(DB)
+    conn.row_factory = sqlite3.Row
+    now = time.time()
+    tasks = list(conn.execute("select * from tasks order by priority,id"))
+    rows = []
+    samples_by_metric = {name: [] for name in METRICS}
+
+    for task in tasks:
+        history = list(
+            conn.execute(
+                "select * from task_state_history where task_id=? order by ts_epoch,id",
+                (task["id"],),
+            )
+        )
+        leases = list(
+            conn.execute(
+                """select * from lease_history
+                    where task_id=? and action='ACQUIRE'
+                    order by ts_epoch,id""",
+                (task["id"],),
+            )
+        )
+        ready_ts = next(
+            (row["ts_epoch"] for row in history if row["status"] == "READY"),
+            None,
+        )
+        acquire_ts = leases[0]["ts_epoch"] if leases else None
+        done_ts = next(
+            (row["ts_epoch"] for row in history if row["status"] == "DONE"),
+            None,
+        )
+        queue_row = conn.execute(
+            """select * from integration_queue where task_id=?
+               order by updated_at desc limit 1""",
+            (task["id"],),
+        ).fetchone()
+        queue_ready_ts = (
+            parse_iso(queue_row["queued_at"])
+            if queue_row
+            and queue_row["verification_mode"] in ("fast", "full-e2e")
+            else None
+        )
+        integrated_ts = (
+            parse_iso(queue_row["integrated_at"])
+            if queue_row
+            and queue_row["status"] == "INTEGRATED"
+            and "integrated_at" in queue_row.keys()
+            else None
+        )
+
+        preflight_verified_ts = None
+        if queue_row:
+            try:
+                preflight = conn.execute(
+                    """select p.created_epoch
+                         from integration_preflight_items i
+                         join integration_preflights p on p.id=i.preflight_id
+                        where i.task_id=? and i.candidate_sha=?
+                          and p.status in ('VERIFIED','APPLIED')
+                        order by p.created_epoch limit 1""",
+                    (task["id"], queue_row["sha"]),
+                ).fetchone()
+                if preflight:
+                    preflight_verified_ts = float(preflight["created_epoch"])
+            except sqlite3.OperationalError:
+                pass
+
+        values = {name: None for name in METRICS}
+        if ready_ts and acquire_ts and acquire_ts >= ready_ts:
+            values["ready_to_lease"] = acquire_ts - ready_ts
+            record(
+                samples_by_metric,
+                "ready_to_lease",
+                acquire_ts,
+                values["ready_to_lease"],
+            )
+        if acquire_ts and done_ts and done_ts >= acquire_ts:
+            values["lease_to_done"] = done_ts - acquire_ts
+            record(
+                samples_by_metric,
+                "lease_to_done",
+                done_ts,
+                values["lease_to_done"],
+            )
+        if done_ts and queue_ready_ts and queue_ready_ts >= done_ts:
+            values["done_to_queue_ready"] = queue_ready_ts - done_ts
+            record(
+                samples_by_metric,
+                "done_to_queue_ready",
+                queue_ready_ts,
+                values["done_to_queue_ready"],
+            )
+        if (
+            queue_ready_ts
+            and preflight_verified_ts
+            and preflight_verified_ts >= queue_ready_ts
+        ):
+            values["queue_ready_to_preflight_verified"] = (
+                preflight_verified_ts - queue_ready_ts
+            )
+            record(
+                samples_by_metric,
+                "queue_ready_to_preflight_verified",
+                preflight_verified_ts,
+                values["queue_ready_to_preflight_verified"],
+            )
+        if (
+            preflight_verified_ts
+            and integrated_ts
+            and integrated_ts >= preflight_verified_ts
+        ):
+            values["preflight_verified_to_integrated"] = (
+                integrated_ts - preflight_verified_ts
+            )
+            record(
+                samples_by_metric,
+                "preflight_verified_to_integrated",
+                integrated_ts,
+                values["preflight_verified_to_integrated"],
+            )
+        if done_ts and integrated_ts and integrated_ts >= done_ts:
+            values["done_to_integrated"] = integrated_ts - done_ts
+            record(
+                samples_by_metric,
+                "done_to_integrated",
+                integrated_ts,
+                values["done_to_integrated"],
+            )
+
+        rows.append(
+            {
+                "task": task["id"],
+                "status": task["status"],
+                "owner": task["owner"],
+                **values,
+            }
+        )
+
+    active = conn.execute(
+        """select count(*) from brain_task_leases
+            where lease_until_epoch>? and chat_id<>'lead'""",
+        (now,),
+    ).fetchone()[0]
+    lead_busy = conn.execute(
+        """select count(*) from brain_task_leases
+            where lease_until_epoch>? and chat_id='lead'""",
+        (now,),
+    ).fetchone()[0]
+    ready = conn.execute(
+        "select count(*) from tasks where status='READY'"
+    ).fetchone()[0]
+    blocked = conn.execute(
+        "select count(*) from tasks where status like 'BLOCKED%'"
+    ).fetchone()[0]
+    open_regressions = conn.execute(
+        "select count(*) from regressions where status='OPEN'"
+    ).fetchone()[0]
+    available_recovery = conn.execute(
+        "select count(*) from task_recovery where status='AVAILABLE'"
+    ).fetchone()[0]
+
+    ready_waits = []
+    for queue_row in conn.execute(
+        """select queued_at from integration_queue
+            where status in ('READY_FOR_PREFLIGHT','READY_FOR_INTEGRATION')
+              and verification_mode is not null"""
+    ):
+        timestamp = parse_iso(queue_row["queued_at"])
+        if timestamp:
+            ready_waits.append(max(0, now - timestamp))
+
+    preflight_waits = []
+    try:
+        for preflight in conn.execute(
+            """select created_epoch from integration_preflights
+                where status='VERIFIED'"""
+        ):
+            preflight_waits.append(
+                max(0, now - float(preflight["created_epoch"]))
+            )
+    except sqlite3.OperationalError:
+        pass
+
+    all_time = {
+        metric: summarize_values(
+            duration for _completed, duration in samples_by_metric[metric]
+        )
+        for metric in METRICS
+    }
+    recent = summarize_recent(samples_by_metric, now_epoch=now)
+    summary = {
+        "generated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "active": active,
+        "capacity": 6,
+        "utilization": active / 6,
+        "lead_busy_legacy_dev": bool(lead_busy),
+        "ready": ready,
+        "blocked": blocked,
+        "open_regressions": open_regressions,
+        "available_recovery": available_recovery,
+        "oldest_queue_ready_seconds": max(ready_waits) if ready_waits else None,
+        "oldest_verified_preflight_seconds": (
+            max(preflight_waits) if preflight_waits else None
+        ),
+        "median_seconds": {
+            metric: all_time[metric]["median_seconds"] for metric in METRICS
+        },
+        "p95_seconds": {
+            metric: all_time[metric]["p95_seconds"] for metric in METRICS
+        },
+        "samples": {
+            metric: all_time[metric]["samples"] for metric in METRICS
+        },
+        "recent": recent,
+    }
+    conn.close()
+
+    if args.json:
+        print(
+            json.dumps(
+                {"summary": summary, "tasks": rows},
+                indent=2,
+                sort_keys=True,
+            )
+        )
+        return 0
+
+    print("LOGRES THROUGHPUT")
+    print(
+        f"workers={active}/6 utilization={summary['utilization'] * 100:.0f}% "
+        f"ready={ready} blocked={blocked} lead_legacy_busy={lead_busy}"
+    )
+    print(
+        f"regressions={open_regressions} recoveries={available_recovery}"
+    )
+    print(
+        "integration_wait "
+        f"oldest_queue_ready={fmt(summary['oldest_queue_ready_seconds'])} "
+        f"oldest_verified_preflight={fmt(summary['oldest_verified_preflight_seconds'])}"
+    )
+    print(
+        "all_time medians "
+        f"ready->lease={fmt(summary['median_seconds']['ready_to_lease'])} "
+        f"lease->done={fmt(summary['median_seconds']['lease_to_done'])} "
+        f"done->queue={fmt(summary['median_seconds']['done_to_queue_ready'])} "
+        f"queue->preflight={fmt(summary['median_seconds']['queue_ready_to_preflight_verified'])} "
+        f"preflight->integrated={fmt(summary['median_seconds']['preflight_verified_to_integrated'])} "
+        f"done->integrated={fmt(summary['median_seconds']['done_to_integrated'])}"
+    )
+    print(
+        "all_time p95 "
+        f"ready->lease={fmt(summary['p95_seconds']['ready_to_lease'])} "
+        f"lease->done={fmt(summary['p95_seconds']['lease_to_done'])} "
+        f"done->queue={fmt(summary['p95_seconds']['done_to_queue_ready'])} "
+        f"queue->preflight={fmt(summary['p95_seconds']['queue_ready_to_preflight_verified'])} "
+        f"preflight->integrated={fmt(summary['p95_seconds']['preflight_verified_to_integrated'])} "
+        f"done->integrated={fmt(summary['p95_seconds']['done_to_integrated'])}"
+    )
+    print(
+        "samples "
+        + ", ".join(
+            f"{metric}={count}"
+            for metric, count in summary["samples"].items()
+        )
+    )
+    for window_name in ("20m", "60m"):
+        window = recent[window_name]
+        print(
+            f"recent_{window_name} slo={window['status']} "
+            + " ".join(
+                (
+                    f"{metric}="
+                    f"{details['slo_status']}"
+                    f"(p95={fmt(details['p95_seconds'])},"
+                    f"n={details['samples']},"
+                    f"target={fmt(details['target_seconds'])})"
+                )
+                for metric, details in window["metrics"].items()
+            )
+        )
+
+    print("\nRECENT/ACTIVE TASKS")
+    for row in rows:
+        if row["status"] in {"ACTIVE", "READY", "DONE"}:
+            print(
+                f"- {row['task']:30} {row['status']:10} "
+                f"owner={row['owner'] or '-':8} "
+                f"wait={fmt(row['ready_to_lease'])} "
+                f"work={fmt(row['lease_to_done'])} "
+                f"integrate={fmt(row['done_to_integrated'])}"
+            )
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
