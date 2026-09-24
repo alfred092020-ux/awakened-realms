@@ -1,0 +1,125 @@
+#!/usr/bin/env python3
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import sqlite3
+import subprocess
+import sys
+from pathlib import Path
+
+CONTROL_ROOT = Path(__file__).resolve().parents[1]
+LIB_DIR = CONTROL_ROOT / "lib"
+sys.path.insert(0, str(LIB_DIR))
+
+from logres_copilot import SubprocessGitHubRunner
+from logres_copilot_router import copilot_eligibility, dispatch_task
+from logres_route_store import ensure_route_schema
+
+
+DEFAULT_DB = Path("/home/ubuntu/logres/control/control.sqlite")
+DEFAULT_CONFIG = Path("/home/ubuntu/logres/control/autoflow.json")
+DEFAULT_CONFIG_FALLBACK = CONTROL_ROOT / "config" / "autoflow.default.json"
+
+
+def load_config() -> dict:
+    configured = Path(os.environ.get("LOGRES_AUTOFLOW_CONFIG", str(DEFAULT_CONFIG)))
+    source = configured if configured.is_file() else DEFAULT_CONFIG_FALLBACK
+    if not source.is_file():
+        return {}
+    return json.loads(source.read_text())
+
+
+def integration_sha() -> str:
+    forced = os.environ.get("LOGRES_INTEGRATION_SHA", "").strip()
+    if forced:
+        return forced
+    result = subprocess.run(
+        ["git", "-C", "/home/ubuntu/logres/src/awakened-realms",
+         "rev-parse", "origin/feat/logres-reconstruction"],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    return result.stdout.strip()
+
+
+def candidate_ids(conn: sqlite3.Connection, task_id: str | None, limit: int) -> list[str]:
+    if task_id:
+        return [task_id]
+    return [
+        row[0]
+        for row in conn.execute(
+            "select id from tasks where status='READY' order by priority,id limit ?",
+            (limit,),
+        )
+    ]
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(prog="logres-copilot-router")
+    parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument("--task")
+    parser.add_argument("--limit", type=int, default=1)
+    args = parser.parse_args()
+
+    db_path = Path(os.environ.get("LOGRES_CONTROL_DB", str(DEFAULT_DB)))
+    config = load_config()
+    sha = integration_sha()
+    conn = sqlite3.connect(db_path)
+    conn.row_factory = sqlite3.Row
+    ensure_route_schema(conn)
+
+    ids = candidate_ids(conn, args.task, max(1, args.limit))
+    dispatch_enabled = bool(
+        config.get("routing", {}).get("copilot_dispatch_enabled", False)
+    )
+
+    if args.dry_run:
+        rows = []
+        for task_id in ids:
+            eligibility = copilot_eligibility(conn, task_id, sha, config)
+            rows.append(
+                {
+                    "dry_run": True,
+                    "task_id": task_id,
+                    "eligible": eligibility.allowed,
+                    "reason": eligibility.reason,
+                    "dispatch_enabled": dispatch_enabled,
+                    "integration_sha": sha,
+                }
+            )
+        conn.close()
+        if args.task or len(rows) == 1:
+            print(json.dumps(rows[0] if rows else {}, indent=2))
+        else:
+            print(json.dumps({"dry_run": True, "candidates": rows}, indent=2))
+        return 0
+
+    if not ids:
+        conn.close()
+        print(json.dumps({"dispatched": 0, "reason": "no READY tasks"}))
+        return 0
+
+    github = SubprocessGitHubRunner()
+    results = []
+    for task_id in ids:
+        result = dispatch_task(conn, task_id, sha, config, github)
+        results.append(
+            {
+                "task_id": task_id,
+                "route_job_id": result.route_job_id,
+                "copilot_job_id": result.job.id,
+                "issue_number": result.job.issue_number,
+                "branch": result.branch,
+                "state": result.job.state,
+            }
+        )
+    conn.close()
+    print(json.dumps({"dispatched": len(results), "jobs": results}, indent=2))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
