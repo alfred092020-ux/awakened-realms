@@ -1,0 +1,24 @@
+{
+  "routing": {
+    "ai_dispatch_enabled": false,
+    "copilot_dispatch_enabled": false,
+    "copilot_mode": "report_only"
+  },
+  "openai": {
+    "budget_usd": 10.0,
+    "warn_fraction": 0.5,
+    "throttle_fraction": 0.75,
+    "reserve_fraction": 0.2,
+    "max_active": 1,
+    "max_active_hard": 2,
+    "model_rates_per_million": {}
+  },
+  "copilot": {
+    "max_active": 2,
+    "max_queued": 1
+  },
+  "backpressure": {
+    "ready_for_integration": 4,
+    "verification_backlog": 3
+  }
+}

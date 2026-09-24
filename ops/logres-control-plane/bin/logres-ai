@@ -9,10 +9,11 @@ from pathlib import Path
 from openai import OpenAI
 
 sys.path.insert(0, "/home/ubuntu/logres/lib")
-from logres_ai_runner import analyze_artifact
+from logres_ai_runner import analyze_artifact, cli_summary
 
 DB = Path("/home/ubuntu/logres/control/control.sqlite")
 RESULTS = Path("/home/ubuntu/logres/control/ai-results")
+CONFIG = Path("/home/ubuntu/logres/control/autoflow.json")
 BRAIN = "/home/ubuntu/logres/bin/logres-brain"
 
 ap = argparse.ArgumentParser(prog="logres-ai")
@@ -21,14 +22,32 @@ ap.add_argument("--task")
 ap.add_argument("--question", default="Extract material Logres findings, contradictions, unresolved points, and the highest-value next search.")
 ap.add_argument("--post-brain", action="store_true")
 ap.add_argument("--force", action="store_true")
+ap.add_argument("--route-job-id", type=int)
 args = ap.parse_args()
 
 if not Path(args.artifact).is_file():
     raise SystemExit(f"artifact not found: {args.artifact}")
 
 client = OpenAI()
+config = {}
+if CONFIG.is_file():
+    try:
+        config = json.loads(CONFIG.read_text())
+    except (OSError, json.JSONDecodeError):
+        config = {}
+rate_config = config.get("openai", {}).get("model_rates_per_million", {})
+
 conn = sqlite3.connect(DB)
-out = analyze_artifact(client, conn, Path(args.artifact), args.question, task_id=args.task, force=args.force)
+out = analyze_artifact(
+    client,
+    conn,
+    Path(args.artifact),
+    args.question,
+    task_id=args.task,
+    force=args.force,
+    route_job_id=args.route_job_id,
+    rate_config=rate_config,
+)
 conn.close()
 
 RESULTS.mkdir(parents=True, exist_ok=True)
@@ -46,4 +65,4 @@ if args.post_brain:
         cmd += ["--task", args.task]
     subprocess.run(cmd, check=True)
 
-print(json.dumps({"cached": out["cached"], "model": out["model"], "result_path": str(result_path), "confidence": out["result"]["confidence"], "summary": out["result"]["summary"]}, indent=2, ensure_ascii=False))
+print(json.dumps(cli_summary(out, result_path), indent=2, ensure_ascii=False))
