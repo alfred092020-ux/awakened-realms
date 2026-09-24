@@ -51,6 +51,7 @@ PRODUCTION_FILES = (
     "lib/logres_claims_reconcile.py",
     "lib/logres_copilot.py",
     "lib/logres_copilot_router.py",
+    "lib/logres_dependency.py",
     "lib/logres_frontier.py",
     "lib/logres_impact.py",
     "lib/logres_knowledge.py",

@@ -7,6 +7,7 @@ from pathlib import Path
 ROOT=Path(os.environ.get("LOGRES_ROOT","/home/ubuntu/logres"))
 LIB=Path(os.environ.get("LOGRES_LIB",str(ROOT/"lib")))
 sys.path.insert(0,str(LIB))
+from logres_dependency import hard_dependencies_satisfied
 from logres_regression_reconcile import (
     reconcile_regression_states,
     repair_task_regression_terminal,
@@ -137,8 +138,13 @@ def deps(c,task):
       left join tasks t on t.id=d.depends_on where d.task_id=? order by depends_on""",(task,)))
 
 def hard_deps_ok(c,task):
-    rows=[r for r in deps(c,task) if r["kind"]=="hard"]
-    return all((r["dep_status"] or "MISSING") in SATISFIED for r in rows)
+    integration_head=git_sha("feat/logres-reconstruction")
+    return hard_dependencies_satisfied(
+        c,
+        task,
+        integration_head=integration_head,
+        ancestor_checker=ancestor,
+    )
 
 def active_leases(c):
     return list(c.execute("""select l.*,t.priority,t.title,t.lane,
@@ -176,7 +182,7 @@ def critical_path_minutes(c,task,memo=None,visiting=None):
         r[0] for r in c.execute(
             """select d.task_id from task_dependencies d
                left join tasks t on t.id=d.task_id
-               where d.depends_on=? and d.kind='hard'
+               where d.depends_on=? and d.kind in ('hard','integration')
                  and coalesce(t.status,'MISSING') not in ('DONE','RESOLVED','INTEGRATED')""",
             (task,),
         )
@@ -752,7 +758,7 @@ def cmd_add(c,args):
         raise SystemExit("priority must be 0..9")
     if not (5 <= args.minutes <= 240):
         raise SystemExit("expected minutes must be 5..240; split larger work into bounded packets")
-    for dep in args.depends:
+    for dep in [*args.depends,*args.depends_integrated]:
         if dep==args.id:
             raise SystemExit("task cannot depend on itself")
         if not c.execute("select 1 from tasks where id=?",(dep,)).fetchone():
@@ -765,6 +771,10 @@ def cmd_add(c,args):
     for dep in args.depends:
         c.execute("""insert into task_dependencies(task_id,depends_on,kind,rationale)
           values(?,?,'hard','')""",(args.id,dep))
+    for dep in args.depends_integrated:
+        c.execute("""insert into task_dependencies(task_id,depends_on,kind,rationale)
+          values(?,?,'integration','Requires prerequisite API/output in canonical integration')""",
+          (args.id,dep))
     for i,item in enumerate(args.accept,1):
         c.execute("insert into task_acceptance values(?,?,?)",(args.id,i,item))
     for scope in args.scope:
@@ -879,7 +889,9 @@ def build():
     x.add_argument("lane"); x.add_argument("title"); x.add_argument("--milestone",default="DEMO-0.2")
     x.add_argument("--work-type",default="implementation"); x.add_argument("--concurrency-key")
     x.add_argument("--minutes",type=int,default=60); x.add_argument("--evidence-policy",default="")
-    x.add_argument("--depends",action="append",default=[]); x.add_argument("--accept",action="append",default=[])
+    x.add_argument("--depends",action="append",default=[])
+    x.add_argument("--depends-integrated",action="append",default=[])
+    x.add_argument("--accept",action="append",default=[])
     x.add_argument("--scope",action="append",default=[]); x.set_defaults(fn=cmd_add)
     return p
 
