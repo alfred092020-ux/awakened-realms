@@ -178,6 +178,84 @@ class DependencyIntegrationTests(unittest.TestCase):
             )
         )
 
+    def test_post_apply_stale_preflight_result_satisfies_dependency(self):
+        conn = make_db()
+        add_preflight_tables(conn)
+        candidate = "c" * 40
+        result = "r" * 40
+        conn.execute("insert into tasks values('DEP','DONE')")
+        conn.execute(
+            "insert into integration_queue values(?,?,?)",
+            ("DEP", candidate, "INTEGRATED"),
+        )
+        add_preflight(
+            conn,
+            candidate=candidate,
+            result=result,
+            status="STALE",
+        )
+
+        self.assertTrue(
+            integration_prerequisite_satisfied(
+                conn,
+                "DEP",
+                integration_head="h" * 40,
+                ancestor_checker=is_ancestor({result}),
+            )
+        )
+
+    def test_stale_preflight_without_integrated_candidate_stays_blocked(self):
+        conn = make_db()
+        add_preflight_tables(conn)
+        candidate = "c" * 40
+        result = "r" * 40
+        conn.execute("insert into tasks values('DEP','DONE')")
+        conn.execute(
+            "insert into integration_queue values(?,?,?)",
+            ("DEP", candidate, "READY_FOR_PREFLIGHT"),
+        )
+        add_preflight(
+            conn,
+            candidate=candidate,
+            result=result,
+            status="STALE",
+        )
+
+        self.assertFalse(
+            integration_prerequisite_satisfied(
+                conn,
+                "DEP",
+                integration_head="h" * 40,
+                ancestor_checker=is_ancestor({result}),
+            )
+        )
+
+    def test_stale_preflight_result_off_current_ancestry_stays_blocked(self):
+        conn = make_db()
+        add_preflight_tables(conn)
+        candidate = "c" * 40
+        result = "r" * 40
+        conn.execute("insert into tasks values('DEP','DONE')")
+        conn.execute(
+            "insert into integration_queue values(?,?,?)",
+            ("DEP", candidate, "INTEGRATED"),
+        )
+        add_preflight(
+            conn,
+            candidate=candidate,
+            result=result,
+            status="STALE",
+        )
+
+        self.assertFalse(
+            integration_prerequisite_satisfied(
+                conn,
+                "DEP",
+                integration_head="h" * 40,
+                ancestor_checker=is_ancestor({"z" * 40}),
+            )
+        )
+
     def test_verified_but_unapplied_preflight_stays_blocked(self):
         conn = make_db()
         add_preflight_tables(conn)
