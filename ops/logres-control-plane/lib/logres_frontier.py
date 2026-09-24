@@ -279,23 +279,30 @@ def _sync_frontier_row(
     conn: sqlite3.Connection,
     row: sqlite3.Row,
 ) -> sqlite3.Row:
-    child = row["child_task_id"]
-    if not child:
-        return row
-    status_row = conn.execute(
+    root_status_row = conn.execute(
         "select status from tasks where id=?",
-        (child,),
+        (row["root_task_id"],),
     ).fetchone()
-    if not status_row:
-        return row
-    status = str(status_row[0] or "")
     state = str(row["state"])
-    if status in {"DONE", "RESOLVED"}:
+    if root_status_row and str(root_status_row[0] or "") in TERMINAL:
         state = "RESOLVED"
-    elif status in SATURATED_CHILD_STATES:
-        state = "SATURATED"
-    elif status in {"READY", "ACTIVE", "BLOCKED_DEP"}:
-        state = "OPEN"
+    else:
+        child = row["child_task_id"]
+        if not child:
+            return row
+        status_row = conn.execute(
+            "select status from tasks where id=?",
+            (child,),
+        ).fetchone()
+        if not status_row:
+            return row
+        status = str(status_row[0] or "")
+        if status in {"DONE", "RESOLVED"}:
+            state = "RESOLVED"
+        elif status in SATURATED_CHILD_STATES:
+            state = "SATURATED"
+        elif status in {"READY", "ACTIVE", "BLOCKED_DEP"}:
+            state = "OPEN"
 
     if state != row["state"]:
         conn.execute(
@@ -308,6 +315,25 @@ def _sync_frontier_row(
             (row["id"],),
         ).fetchone()
     return row
+
+
+def _sync_terminal_root_frontiers(conn: sqlite3.Connection) -> int:
+    now = _now()
+    changed = conn.execute(
+        """update research_frontier
+              set state='RESOLVED',updated_at=?
+            where state in ('OPEN','SATURATED')
+              and exists (
+                select 1
+                  from tasks root
+                 where root.id=research_frontier.root_task_id
+                   and root.status in ('DONE','RESOLVED','SUPERSEDED','CANCELLED')
+              )""",
+        (now,),
+    ).rowcount
+    if changed:
+        conn.commit()
+    return int(changed)
 
 
 def claim_frontier(
@@ -596,10 +622,22 @@ def reconcile(
         )
     conn.commit()
 
-    # Synchronize active frontier rows from child task state.
+    # Synchronize active frontier rows. Terminal root state takes
+    # precedence over child state so historical evidence ceilings cannot linger
+    # after the root work is complete through another path.
+    terminal_root_resolved = int(
+        conn.execute(
+            """select count(*)
+                 from research_frontier f
+                 join tasks root on root.id=f.root_task_id
+                where f.state in ('OPEN','SATURATED')
+                  and root.status in ('DONE','RESOLVED','SUPERSEDED','CANCELLED')"""
+        ).fetchone()[0]
+    )
     frontier_rows = list(conn.execute("select * from research_frontier"))
     for row in frontier_rows:
         _sync_frontier_row(conn, row)
+    _sync_terminal_root_frontiers(conn)
 
     recursive = recursive_generated_tasks(conn, backfill=True)
     superseded: list[str] = []
@@ -735,6 +773,7 @@ def reconcile(
         "recursive_candidates": len(recursive),
         "superseded": len(superseded),
         "skipped_leased": len(skipped_leased),
+        "terminal_root_resolved": terminal_root_resolved,
         "frontiers": int(
             conn.execute("select count(*) from research_frontier").fetchone()[0]
         ),
