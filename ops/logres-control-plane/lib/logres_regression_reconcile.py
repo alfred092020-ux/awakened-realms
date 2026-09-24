@@ -7,6 +7,23 @@ TERMINAL_REGRESSION_STATES = ("RESOLVED", "SUPERSEDED")
 TERMINAL_TASK_STATES = ("DONE", "RESOLVED", "SUPERSEDED", "CANCELLED")
 
 
+def repair_task_regression_terminal(
+    conn: sqlite3.Connection,
+    task_id: str,
+) -> bool:
+    row = conn.execute(
+        """
+        select 1
+          from regressions
+         where task_id=?
+           and status in ('RESOLVED','SUPERSEDED')
+         limit 1
+        """,
+        (task_id,),
+    ).fetchone()
+    return row is not None
+
+
 def _supersede_descendant_conflicts(conn: sqlite3.Connection) -> int:
     rows = conn.execute(
         """

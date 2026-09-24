@@ -8,7 +8,10 @@ TEST_DIR = Path(__file__).resolve().parent
 LIB_DIR = TEST_DIR.parent / "lib"
 sys.path.insert(0, str(LIB_DIR))
 
-from logres_regression_reconcile import reconcile_regression_states
+from logres_regression_reconcile import (
+    reconcile_regression_states,
+    repair_task_regression_terminal,
+)
 
 
 def make_db():
@@ -56,6 +59,31 @@ def add_regression(
 
 
 class RegressionReconcileTests(unittest.TestCase):
+    def test_terminal_repair_predicate(self):
+        conn = make_db()
+        conn.execute("insert into tasks values('R1','DONE')")
+        add_regression(conn, 1, "R1", status="OPEN")
+        self.assertFalse(repair_task_regression_terminal(conn, "R1"))
+        conn.execute(
+            "update regressions set status='RESOLVED' where task_id='R1'"
+        )
+        self.assertTrue(repair_task_regression_terminal(conn, "R1"))
+        conn.execute(
+            "update regressions set status='SUPERSEDED' where task_id='R1'"
+        )
+        self.assertTrue(repair_task_regression_terminal(conn, "R1"))
+        self.assertFalse(repair_task_regression_terminal(conn, "UNRELATED"))
+
+    def test_coordinator_skips_terminal_done_repair_before_queue_rebuild(self):
+        script = (TEST_DIR.parent / "bin" / "logres-coordinator").read_text()
+        guard = 'if repair_task_regression_terminal(c,t["id"]):'
+        enqueue = 'insert into integration_queue'
+        guard_at = script.index(guard)
+        enqueue_at = script.index(enqueue, guard_at)
+        block = script[guard_at:enqueue_at]
+        self.assertIn("status='SUPERSEDED'", block)
+        self.assertIn("continue", block)
+
     def test_integrated_repair_resolves(self):
         conn = make_db()
         conn.execute("insert into tasks values('R1','DONE')")

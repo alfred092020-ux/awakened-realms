@@ -7,7 +7,10 @@ from pathlib import Path
 ROOT=Path(os.environ.get("LOGRES_ROOT","/home/ubuntu/logres"))
 LIB=Path(os.environ.get("LOGRES_LIB",str(ROOT/"lib")))
 sys.path.insert(0,str(LIB))
-from logres_regression_reconcile import reconcile_regression_states
+from logres_regression_reconcile import (
+    reconcile_regression_states,
+    repair_task_regression_terminal,
+)
 DB=Path(os.environ.get("LOGRES_CONTROL_DB",str(ROOT/"control/control.sqlite")))
 REPO=Path(os.environ.get("LOGRES_REPO_ROOT",str(ROOT/"src/awakened-realms")))
 BRAIN=os.environ.get("LOGRES_BRAIN",str(ROOT/"bin/logres-brain"))
@@ -405,6 +408,19 @@ def reconcile(c,verbose=True):
         "from tasks where status='DONE' and branch is not null"
     ).fetchall():
         branch=t["branch"]
+        if repair_task_regression_terminal(c,t["id"]):
+            c.execute(
+                """update integration_queue
+                      set status='SUPERSEDED',updated_at=?,note=?
+                    where task_id=?
+                      and status not in ('INTEGRATED','SUPERSEDED')""",
+                (
+                    iso(),
+                    "Regression repair is terminal; candidate remains historical only.",
+                    t["id"],
+                ),
+            )
+            continue
         if t["owner"]=="copilot":
             # Copilot PR heads may move after a task first reaches DONE. Only
             # the candidate that passed Copilot reconciliation/scope/fast gate
