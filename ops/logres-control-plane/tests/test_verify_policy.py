@@ -193,6 +193,126 @@ class VerifyFarmE2EPolicyTests(unittest.TestCase):
             self.assertEqual("FAIL", result["verdict"])
             self.assertTrue(result["record"]["divergence"]["event_mismatches"])
 
+    def test_behavior_verifier_retries_transient_sqlite_lock_then_passes(self):
+        module = load_behavior_verifier()
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            observed = root / "observed.json"
+            observed.write_text(json.dumps(module.EXPECTED))
+            calls = []
+            sleeps = []
+
+            def runner(argv, **kwargs):
+                calls.append(list(argv))
+                if len(calls) == 1:
+                    return subprocess.CompletedProcess(
+                        argv,
+                        1,
+                        "",
+                        "sqlite3.OperationalError: database is locked",
+                    )
+                return subprocess.CompletedProcess(
+                    argv,
+                    0,
+                    json.dumps(
+                        {
+                            "id": 3,
+                            "verdict": "PASS",
+                            "divergence": {},
+                        }
+                    ),
+                    "",
+                )
+
+            result = module.record_behavior_truth(
+                observed,
+                sha="d" * 40,
+                recorder="/tmp/fake-recorder",
+                runner=runner,
+                sleeper=sleeps.append,
+            )
+
+            self.assertEqual("PASS", result["verdict"])
+            self.assertEqual(2, len(calls))
+            self.assertEqual(
+                [module.RECORDER_LOCK_BACKOFF_SECONDS],
+                sleeps,
+            )
+
+    def test_behavior_verifier_nonzero_recorder_exit_fails_closed(self):
+        module = load_behavior_verifier()
+        with tempfile.TemporaryDirectory() as td:
+            observed = Path(td) / "observed.json"
+            observed.write_text(json.dumps(module.EXPECTED))
+
+            def runner(argv, **kwargs):
+                return subprocess.CompletedProcess(
+                    argv,
+                    1,
+                    "",
+                    "permission denied",
+                )
+
+            with self.assertRaisesRegex(
+                RuntimeError,
+                "behavior truth recorder failed: permission denied",
+            ):
+                module.record_behavior_truth(
+                    observed,
+                    sha="e" * 40,
+                    recorder="/tmp/fake-recorder",
+                    runner=runner,
+                    sleeper=lambda _: None,
+                )
+
+    def test_behavior_trace_recorder_is_isolated_from_canonical_control_db(self):
+        text = SCRIPT.read_text()
+        self.assertIn(
+            'BEHAVIOR_TRACE_DB="$ROOT/verify-farm-$STAMP-behavior-trace.sqlite"',
+            text,
+        )
+        self.assertIn(
+            'BEHAVIOR_TRACE_WRAPPER="$ROOT/verify-farm-$STAMP-behavior-trace-recorder"',
+            text,
+        )
+        self.assertIn(
+            'export LOGRES_BEHAVIOR_TRACE_BIN="$BEHAVIOR_TRACE_WRAPPER"',
+            text,
+        )
+        self.assertIn(
+            "merge_behavior_trace_records.py",
+            text,
+        )
+        self.assertIn(
+            '--source "$BEHAVIOR_TRACE_DB"',
+            text,
+        )
+        self.assertIn(
+            '--target "$CANONICAL_CONTROL_DB"',
+            text,
+        )
+
+    def test_behavior_trace_merge_failure_fails_verification_closed(self):
+        text = SCRIPT.read_text()
+        merge_start = text.index(
+            "if ! merge_behavior_trace_isolation; then"
+        )
+        visual_start = text.index(
+            "if ! merge_visual_truth_isolation; then"
+        )
+        self.assertLess(merge_start, visual_start)
+        block = text[merge_start:visual_start]
+        self.assertIn(
+            "VERIFY_FARM FAIL behavior trace merge failed closed",
+            block,
+        )
+        self.assertIn("preserve_behavior_trace_failure", block)
+        self.assertIn("exit 1", block)
+        self.assertIn(
+            "behavior_trace_merge_log=$BEHAVIOR_TRACE_MERGE_LOG",
+            text,
+        )
+
     def test_behavior_verifier_missing_observed_trace_fails_closed(self):
         module = load_behavior_verifier()
         with tempfile.TemporaryDirectory() as td:
