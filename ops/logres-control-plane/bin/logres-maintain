@@ -9,6 +9,7 @@ mkdir -p /home/ubuntu/logres/logs
 
 {
   echo "=== $(date -Is) ==="
+  /home/ubuntu/logres/bin/logres-workspace-gc apply --limit 25 || true
   /home/ubuntu/logres/bin/logres-worktree-gc --apply --age-hours 24 || true
   git -C "$BASE" worktree prune
   git -C "$BASE" maintenance run --auto || git -C "$BASE" gc --auto

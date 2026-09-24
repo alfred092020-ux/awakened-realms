@@ -305,3 +305,18 @@ logres-governor list
 Route claiming and compare-and-swap transitions now treat short-lived SQLite writer contention as recoverable infrastructure pressure. `BEGIN IMMEDIATE` retries only `database is locked` / busy-style operational errors with bounded exponential backoff before failing normally.
 
 This prevents concurrent autonomy, swarm, AI, and Copilot routing from turning a momentary WAL writer collision into a false dispatch failure. Non-lock SQLite errors, invalid transitions, and stale-state conflicts are unchanged and still fail closed.
+
+## Bounded workspace garbage collection
+
+`logres-workspace-gc` reclaims disk and Git worktree registration pressure without deleting branches or commits. It only selects worktrees under the managed `/home/ubuntu/logres/work` root whose owning task is terminal, whose integration queue has durable integration proof, whose worktree is clean, and whose task has no active lease.
+
+The apply path revalidates both SQLite state and live Git registration immediately before removal. It then calls ordinary non-force `git worktree remove`, verifies that the local branch still resolves to the exact same SHA, records a JSON artifact, and prunes stale worktree metadata. Local branches, remote branches, refs, and commits are never deleted.
+
+Maintenance runs a bounded batch of at most 25 safe archive candidates per cycle before the legacy age-based worktree cleanup. A dirty tree, active task, active lease, missing integration proof, detached tree, protected branch, symlink, changed Git registration, or failed live status probe is skipped rather than forced.
+
+Useful commands:
+
+```bash
+logres-workspace-gc plan --limit 25
+logres-workspace-gc apply --limit 25
+```

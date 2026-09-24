@@ -1,0 +1,247 @@
+#!/usr/bin/env python3
+from __future__ import annotations
+
+import argparse
+import fcntl
+import json
+import os
+import sqlite3
+import subprocess
+import sys
+from datetime import datetime, timezone
+from pathlib import Path
+
+CONTROL_ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(CONTROL_ROOT / "lib"))
+
+from logres_workspace_gc import apply_plan, plan_records
+from logres_workspace_lifecycle import (
+    classify,
+    integrated_for_task,
+    lease_for_task,
+    task_for_branch,
+)
+
+ROOT = Path(os.environ.get("LOGRES_ROOT", "/home/ubuntu/logres"))
+REPO = Path(
+    os.environ.get(
+        "LOGRES_REPO_ROOT",
+        str(ROOT / "src/awakened-realms"),
+    )
+)
+WORK_ROOT = Path(
+    os.environ.get(
+        "LOGRES_WORK_ROOT",
+        str(ROOT / "work"),
+    )
+)
+DB = Path(
+    os.environ.get(
+        "LOGRES_CONTROL_DB",
+        str(ROOT / "control/control.sqlite"),
+    )
+)
+LOCK = Path(
+    os.environ.get(
+        "LOGRES_WORKSPACE_GC_LOCK",
+        "/tmp/logres-workspace-gc.lock",
+    )
+)
+ARTIFACT_ROOT = Path(
+    os.environ.get(
+        "LOGRES_WORKSPACE_GC_ARTIFACT_ROOT",
+        str(ROOT / "artifacts/workspace-gc"),
+    )
+)
+
+
+def run(argv: list[str]) -> subprocess.CompletedProcess:
+    return subprocess.run(
+        argv,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        check=False,
+    )
+
+
+def worktrees() -> list[dict]:
+    result = run(
+        ["git", "-C", str(REPO), "worktree", "list", "--porcelain"]
+    )
+    if result.returncode:
+        raise RuntimeError(
+            (result.stderr or result.stdout or "worktree list failed").strip()
+        )
+
+    records = []
+    current: dict = {}
+    for line in (result.stdout or "").splitlines() + [""]:
+        if not line:
+            if current:
+                records.append(current)
+            current = {}
+        elif line.startswith("worktree "):
+            current["path"] = line.split(" ", 1)[1]
+        elif line.startswith("branch refs/heads/"):
+            current["branch"] = line[len("branch refs/heads/") :]
+        elif line == "detached":
+            current["detached"] = True
+    return records
+
+
+def collect_records(conn: sqlite3.Connection) -> list[dict]:
+    rows = []
+    for wt in worktrees():
+        path = Path(wt["path"])
+        branch = wt.get("branch")
+        protected = (
+            path.resolve() == REPO.resolve()
+            or branch in {"feat/logres-reconstruction", "main"}
+        )
+
+        dirty = True
+        if path.is_dir():
+            status = run(
+                ["git", "-C", str(path), "status", "--porcelain"]
+            )
+            dirty = status.returncode != 0 or bool(
+                (status.stdout or "").strip()
+            )
+
+        task_id, task_status = (
+            task_for_branch(conn, branch)
+            if branch
+            else (None, None)
+        )
+        integrated = integrated_for_task(conn, task_id)
+        active = lease_for_task(conn, task_id)
+
+        unique = -1
+        if branch and not protected:
+            result = run(
+                [
+                    "git",
+                    "-C",
+                    str(REPO),
+                    "rev-list",
+                    "--count",
+                    f"feat/logres-reconstruction..{branch}",
+                ]
+            )
+            if result.returncode == 0:
+                try:
+                    unique = int((result.stdout or "").strip())
+                except ValueError:
+                    unique = -1
+
+        record = {
+            "path": str(path),
+            "branch": branch,
+            "task_id": task_id,
+            "task_status": task_status,
+            "active_lease": active,
+            "dirty": dirty,
+            "unique_commits": unique,
+            "integrated": integrated,
+            "protected": protected,
+        }
+        record["classification"] = classify(record)
+        rows.append(record)
+    return rows
+
+
+def stamp() -> str:
+    return datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+
+
+def write_artifact(payload: dict) -> Path:
+    ARTIFACT_ROOT.mkdir(parents=True, exist_ok=True)
+    path = ARTIFACT_ROOT / f"workspace-gc-{stamp()}.json"
+    temp = path.with_suffix(".json.tmp")
+    temp.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n")
+    os.replace(temp, path)
+    return path
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(
+        prog="logres-workspace-gc",
+        description=(
+            "Safely remove only clean integrated terminal worktrees. "
+            "Branches and commits are never deleted."
+        ),
+    )
+    sub = parser.add_subparsers(dest="command", required=True)
+
+    plan = sub.add_parser("plan")
+    plan.add_argument("--limit", type=int, default=25)
+
+    apply_cmd = sub.add_parser("apply")
+    apply_cmd.add_argument("--limit", type=int, default=25)
+
+    args = parser.parse_args()
+
+    conn = sqlite3.connect(DB, timeout=30)
+    conn.row_factory = sqlite3.Row
+    conn.execute("pragma busy_timeout=30000")
+    try:
+        records = collect_records(conn)
+        if args.command == "plan":
+            payload = plan_records(
+                records,
+                work_root=WORK_ROOT,
+                limit=args.limit,
+            )
+            payload["apply"] = False
+            payload["worktree_count"] = len(records)
+            print(json.dumps(payload, indent=2, sort_keys=True))
+            return 0
+
+        LOCK.parent.mkdir(parents=True, exist_ok=True)
+        with LOCK.open("a+") as handle:
+            try:
+                fcntl.flock(
+                    handle.fileno(),
+                    fcntl.LOCK_EX | fcntl.LOCK_NB,
+                )
+            except BlockingIOError:
+                print(
+                    json.dumps(
+                        {
+                            "apply": True,
+                            "status": "BUSY",
+                            "policy": (
+                                "REMOVE_WORKTREE_ONLY_"
+                                "BRANCH_AND_COMMIT_PRESERVED"
+                            ),
+                        },
+                        indent=2,
+                        sort_keys=True,
+                    )
+                )
+                return 0
+
+            payload = apply_plan(
+                conn,
+                REPO,
+                records,
+                work_root=WORK_ROOT,
+                limit=args.limit,
+            )
+            payload["apply"] = True
+            payload["before_worktree_count"] = len(records)
+            payload["after_worktree_count"] = len(worktrees())
+            artifact = write_artifact(payload)
+            payload["artifact"] = str(artifact)
+            print(json.dumps(payload, indent=2, sort_keys=True))
+
+            if payload["branch_preservation_failures"]:
+                return 3
+            return 0
+    finally:
+        conn.close()
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
