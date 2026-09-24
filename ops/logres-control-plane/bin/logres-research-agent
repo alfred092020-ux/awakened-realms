@@ -45,6 +45,24 @@ CONFIG = Path(
 )
 BRAIN = str(ROOT / "bin/logres-brain")
 CONTROL = str(ROOT / "bin/logres-control")
+OPENAI_KEY_FILE = Path(
+    os.environ.get(
+        "LOGRES_OPENAI_KEY_FILE",
+        "/home/ubuntu/.config/logres/openai_api_key",
+    )
+)
+
+
+def openai_client() -> OpenAI:
+    key = os.environ.get("OPENAI_API_KEY", "").strip()
+    if not key and OPENAI_KEY_FILE.is_file():
+        key = OPENAI_KEY_FILE.read_text().strip()
+    if not key:
+        raise RuntimeError(
+            "OpenAI credential unavailable: set OPENAI_API_KEY or provide the "
+            "configured Logres key file"
+        )
+    return OpenAI(api_key=key)
 
 
 def run(argv):
@@ -164,7 +182,7 @@ def main() -> int:
         local_sha = hashlib.sha256(local_bundle.encode()).hexdigest()
         prompt = build_prompt(context, local_bundle)
         use_web = bool(swarm_cfg.get("research_web_search_enabled", True))
-        client = OpenAI()
+        client = openai_client()
         result, response = run_research(
             client,
             model=model,
