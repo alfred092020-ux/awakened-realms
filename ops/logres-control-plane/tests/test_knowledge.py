@@ -2,6 +2,8 @@ import json
 import sqlite3
 import sys
 import tempfile
+import threading
+import time
 import unittest
 from pathlib import Path
 
@@ -99,6 +101,67 @@ class KnowledgeGraphTests(unittest.TestCase):
         self.assertEqual(1, knowledge.artifact_count)
         self.assertEqual(1, knowledge.source_count)
         self.assertTrue(query_nodes(conn, "Global proof"))
+
+    def test_refresh_reserves_writer_before_source_reads(self):
+        conn = make_test_db()
+        seed_task(conn, task_id="T1", work_type="research")
+        statements = []
+        conn.set_trace_callback(statements.append)
+        refresh_graph(conn)
+
+        normalized = [" ".join(item.lower().split()) for item in statements]
+        begin_at = next(
+            i for i, item in enumerate(normalized)
+            if item == "begin immediate"
+        )
+        select_at = next(
+            i for i, item in enumerate(normalized)
+            if "select id,title,status,priority,lane,note from tasks" in item
+        )
+        self.assertLess(begin_at, select_at)
+        self.assertFalse(conn.in_transaction)
+
+    def test_refresh_waits_for_competing_writer_then_succeeds(self):
+        source = make_test_db()
+        seed_task(source, task_id="T1", work_type="research")
+        with tempfile.TemporaryDirectory() as td:
+            db = Path(td) / "control.sqlite"
+            target = sqlite3.connect(db)
+            source.backup(target)
+            target.close()
+            source.close()
+
+            setup = sqlite3.connect(db)
+            setup.execute("pragma journal_mode=WAL")
+            setup.close()
+
+            locked = threading.Event()
+
+            def hold_writer():
+                blocker = sqlite3.connect(db, timeout=1)
+                blocker.execute("pragma busy_timeout=1000")
+                blocker.execute("begin immediate")
+                locked.set()
+                time.sleep(0.15)
+                blocker.rollback()
+                blocker.close()
+
+            thread = threading.Thread(target=hold_writer)
+            thread.start()
+            self.assertTrue(locked.wait(1))
+
+            conn = sqlite3.connect(db, timeout=1)
+            conn.execute("pragma busy_timeout=1000")
+            started = time.monotonic()
+            counts = refresh_graph(conn)
+            elapsed = time.monotonic() - started
+            thread.join(1)
+
+            self.assertFalse(thread.is_alive())
+            self.assertGreaterEqual(elapsed, 0.10)
+            self.assertEqual(1, counts["tasks"])
+            self.assertFalse(conn.in_transaction)
+            conn.close()
 
     def test_current_jp_confirmation_is_clamped_for_global_required_task(self):
         conn = make_test_db()

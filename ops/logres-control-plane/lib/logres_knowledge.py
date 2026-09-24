@@ -229,6 +229,11 @@ def _artifact_sources(payload: dict | None) -> list[str]:
 
 def refresh_graph(conn: sqlite3.Connection) -> dict:
     ensure_schema(conn)
+    # Reserve the single WAL writer before reading source rows that this
+    # refresh will project back into the knowledge tables. Without this,
+    # another writer can commit after our SELECT begins and SQLite correctly
+    # rejects the later read->write upgrade as SQLITE_BUSY_SNAPSHOT.
+    conn.execute("begin immediate")
     counts = {
         "tasks": 0,
         "dependencies": 0,
