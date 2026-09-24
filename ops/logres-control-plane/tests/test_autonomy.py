@@ -1,5 +1,8 @@
+import importlib.machinery
+import importlib.util
 import sys
 import tempfile
+import types
 import unittest
 from pathlib import Path
 
@@ -255,6 +258,80 @@ class AutonomyTests(unittest.TestCase):
             ),
         )
         self.assertEqual(0, parse_route_failures("healthy"))
+
+
+def load_autonomy_script():
+    script = CONTROL_ROOT / "bin" / "logres-autonomy"
+    name = "test_logres_autonomy_retry"
+    loader = importlib.machinery.SourceFileLoader(name, str(script))
+    spec = importlib.util.spec_from_loader(name, loader)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[name] = module
+    loader.exec_module(module)
+    return module
+
+
+class RuntimeDeployRetryTests(unittest.TestCase):
+    def setUp(self):
+        self.module = load_autonomy_script()
+
+    def test_runtime_deploy_success_uses_one_attempt(self):
+        calls = []
+
+        def runner(argv, **kwargs):
+            calls.append(list(argv))
+            return types.SimpleNamespace(
+                returncode=0,
+                stdout="ok",
+                stderr="",
+            )
+
+        attempts = self.module.run_runtime_deploy_with_retry(
+            "a" * 40,
+            runner=runner,
+        )
+        self.assertEqual(1, len(attempts))
+        self.assertEqual([0], [x.returncode for x in attempts])
+        self.assertEqual(1, len(calls))
+
+    def test_runtime_deploy_self_upgrade_recovers_on_second_attempt(self):
+        outcomes = [2, 0]
+        calls = []
+
+        def runner(argv, **kwargs):
+            calls.append(list(argv))
+            rc = outcomes.pop(0)
+            return types.SimpleNamespace(
+                returncode=rc,
+                stdout="ok" if rc == 0 else "",
+                stderr="" if rc == 0 else "old deployer failed",
+            )
+
+        attempts = self.module.run_runtime_deploy_with_retry(
+            "b" * 40,
+            runner=runner,
+        )
+        self.assertEqual([2, 0], [x.returncode for x in attempts])
+        self.assertEqual(2, len(calls))
+        self.assertEqual(calls[0], calls[1])
+
+    def test_runtime_deploy_persistent_failure_stops_after_two_attempts(self):
+        calls = []
+
+        def runner(argv, **kwargs):
+            calls.append(list(argv))
+            return types.SimpleNamespace(
+                returncode=2,
+                stdout="",
+                stderr="persistent failure",
+            )
+
+        attempts = self.module.run_runtime_deploy_with_retry(
+            "c" * 40,
+            runner=runner,
+        )
+        self.assertEqual([2, 2], [x.returncode for x in attempts])
+        self.assertEqual(2, len(calls))
 
 
 if __name__ == "__main__":

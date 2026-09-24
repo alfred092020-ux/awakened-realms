@@ -109,6 +109,13 @@ def run_runtime_deploy(sha: str, *, runner=run):
     return runner([RUNTIME_DEPLOY, "--sha", sha])
 
 
+def run_runtime_deploy_with_retry(sha: str, *, runner=run):
+    attempts = [run_runtime_deploy(sha, runner=runner)]
+    if attempts[0].returncode != 0:
+        attempts.append(run_runtime_deploy(sha, runner=runner))
+    return attempts
+
+
 def trip_on_runtime_deploy_failure(
     preflight_id: int,
     sha: str,
@@ -498,9 +505,16 @@ def cycle(*, dry_run: bool = False) -> int:
             return 2
 
         new_integration_sha = integration_sha()
-        deployed = run_runtime_deploy(new_integration_sha)
+        deploy_attempts = run_runtime_deploy_with_retry(
+            new_integration_sha
+        )
+        deployed = deploy_attempts[-1]
         result["runtime_deploy"] = {
             "requested": True,
+            "attempts": len(deploy_attempts),
+            "returncodes": [
+                attempt.returncode for attempt in deploy_attempts
+            ],
             "returncode": deployed.returncode,
             "stdout": (deployed.stdout or "")[-4000:],
         }
