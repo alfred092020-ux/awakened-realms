@@ -22,6 +22,14 @@ def make_test_db(path=":memory:") -> sqlite3.Connection:
         create table task_dependencies (
           task_id text not null, depends_on text not null, kind text not null, rationale text not null
         );
+        create table task_scopes (
+          task_id text not null, path_prefix text not null,
+          primary key(task_id,path_prefix)
+        );
+        create table claims (
+          path_prefix text primary key, task_id text, owner text, branch text,
+          created_at text, note text
+        );
         create table brain_events (
           id integer primary key, ts_epoch real not null, ts text not null,
           sender text not null, recipient text not null, event_type text not null,
