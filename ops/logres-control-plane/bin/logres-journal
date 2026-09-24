@@ -10,6 +10,7 @@ ROOT = Path(os.environ.get("LOGRES_ROOT", "/home/ubuntu/logres"))
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "lib"))
 from logres_journal import (
     add_decision,
+    append_chat_message,
     append_event,
     decisions,
     entity_history,
@@ -85,6 +86,17 @@ def main():
     co.add_argument("--metadata", type=_json_object, default={})
     co.add_argument("--archive-root")
 
+    ca = s.add_parser("chat-append")
+    ca.add_argument("session_id")
+    ca.add_argument("role")
+    source = ca.add_mutually_exclusive_group(required=True)
+    source.add_argument("--text")
+    source.add_argument("--file")
+    ca.add_argument("--external-id")
+    ca.add_argument("--ts")
+    ca.add_argument("--metadata", type=_json_object, default={})
+    ca.add_argument("--source-path", default="live")
+
     ci = s.add_parser("chat-ingest")
     ci.add_argument("session_id")
     ci.add_argument("path")
@@ -156,6 +168,20 @@ def main():
                 source=x.source,
                 metadata=x.metadata,
                 archive_root=x.archive_root,
+            )
+        elif x.cmd == "chat-append":
+            content = x.text
+            if x.file:
+                content = Path(x.file).read_text(encoding="utf-8")
+            out = append_chat_message(
+                c,
+                session_id=x.session_id,
+                role=x.role,
+                content=content,
+                ts=x.ts,
+                external_id=x.external_id,
+                metadata=x.metadata,
+                source_path=x.source_path,
             )
         elif x.cmd == "chat-ingest":
             out = ingest_jsonl(

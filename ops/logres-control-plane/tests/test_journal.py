@@ -10,6 +10,7 @@ LIB = Path(__file__).resolve().parents[1] / "lib"
 sys.path.insert(0, str(LIB))
 from logres_journal import (
     add_decision,
+    append_chat_message,
     append_event,
     decisions,
     entity_history,
@@ -167,6 +168,55 @@ class JournalTests(unittest.TestCase):
             sessions = list_chats(self.c, chat_id="memory")
             self.assertEqual(1, len(sessions))
             self.assertEqual(3, sessions[0]["message_count"])
+
+    def test_live_append_allocates_ordinals_and_is_external_id_idempotent(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            open_chat(
+                self.c,
+                chat_id="memory",
+                session_id="live",
+                archive_root=root / "archive",
+            )
+            first = append_chat_message(
+                self.c,
+                session_id="live",
+                role="user",
+                content="first turn",
+                external_id="turn-1-user",
+            )
+            duplicate = append_chat_message(
+                self.c,
+                session_id="live",
+                role="user",
+                content="first turn",
+                external_id="turn-1-user",
+            )
+            second = append_chat_message(
+                self.c,
+                session_id="live",
+                role="assistant",
+                content="second turn",
+                external_id="turn-1-assistant",
+            )
+
+            self.assertTrue(first["inserted"])
+            self.assertFalse(duplicate["inserted"])
+            self.assertTrue(second["inserted"])
+            self.assertEqual([1, 2], [r["ordinal"] for r in show_chat(self.c, "live")])
+            self.assertEqual(1, first["archive_appended"])
+            self.assertEqual(0, duplicate["archive_appended"])
+            self.assertEqual(1, second["archive_appended"])
+
+            with self.assertRaisesRegex(ValueError, "different content"):
+                append_chat_message(
+                    self.c,
+                    session_id="live",
+                    role="user",
+                    content="rewritten",
+                    external_id="turn-1-user",
+                )
+
 
     def test_chat_rejects_rewrite_of_existing_ordinal(self):
         with tempfile.TemporaryDirectory() as td:
