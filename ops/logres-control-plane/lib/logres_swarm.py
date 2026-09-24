@@ -9,6 +9,7 @@ import time
 from dataclasses import dataclass
 from pathlib import Path
 
+from logres_copilot_router import ACTIVE_COPILOT_STATES
 from logres_optimizer import rank_task_ids
 
 
@@ -85,6 +86,35 @@ def reconcile_jobs(conn: sqlite3.Connection) -> list[int]:
     return stale
 
 
+def active_copilot_task_ids(conn: sqlite3.Connection) -> set[str]:
+    states = tuple(sorted(ACTIVE_COPILOT_STATES))
+    placeholders = ",".join("?" for _ in states)
+    try:
+        rows = conn.execute(
+            f"select distinct task_id from copilot_jobs "
+            f"where state in ({placeholders})",
+            states,
+        ).fetchall()
+    except sqlite3.OperationalError:
+        return set()
+    return {str(row[0]) for row in rows if row[0]}
+
+
+def active_copilot_job_count(conn: sqlite3.Connection) -> int:
+    states = tuple(sorted(ACTIVE_COPILOT_STATES))
+    placeholders = ",".join("?" for _ in states)
+    try:
+        return int(
+            conn.execute(
+                f"select count(*) from copilot_jobs "
+                f"where state in ({placeholders})",
+                states,
+            ).fetchone()[0]
+        )
+    except sqlite3.OperationalError:
+        return 0
+
+
 def swarm_capacity(conn: sqlite3.Connection, config: dict) -> SwarmCapacity:
     ensure_schema(conn)
     now = time.time()
@@ -102,15 +132,7 @@ def swarm_capacity(conn: sqlite3.Connection, config: dict) -> SwarmCapacity:
             "where engine='research' and state in ('STARTING','RUNNING')"
         ).fetchone()[0]
     )
-    try:
-        active_copilot = int(
-            conn.execute(
-                "select count(*) from copilot_jobs "
-                "where state in ('ISSUE_CREATED','ASSIGNED','PR_READY','VERIFYING')"
-            ).fetchone()[0]
-        )
-    except sqlite3.OperationalError:
-        active_copilot = 0
+    active_copilot = active_copilot_job_count(conn)
     free_slots = max(0, max_workers - active_leases - active_copilot)
     return SwarmCapacity(
         max_workers=max_workers,
@@ -122,6 +144,7 @@ def swarm_capacity(conn: sqlite3.Connection, config: dict) -> SwarmCapacity:
 
 
 def ready_tasks(conn: sqlite3.Connection) -> list[dict]:
+    copilot_owned = active_copilot_task_ids(conn)
     rows = conn.execute(
         """select t.id,t.priority,t.title,t.lane,t.status,
                   coalesce(m.work_type,'implementation') work_type,
@@ -135,7 +158,11 @@ def ready_tasks(conn: sqlite3.Connection) -> list[dict]:
                      coalesce(m.expected_minutes,60) asc,
                      t.id asc"""
     ).fetchall()
-    return [dict(r) for r in rows]
+    return [
+        dict(row)
+        for row in rows
+        if str(row["id"]) not in copilot_owned
+    ]
 
 
 def classify_engine(task: dict) -> str:
