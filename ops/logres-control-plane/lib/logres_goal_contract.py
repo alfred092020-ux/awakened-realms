@@ -3,9 +3,13 @@ from __future__ import annotations
 import hashlib
 import json
 import sqlite3
+import subprocess
+from collections.abc import Callable
 from dataclasses import dataclass, asdict
 from pathlib import Path
 from typing import Any
+
+from logres_dependency import integration_prerequisite_satisfied
 
 
 SCHEMA = "logres-milestone-contract-v1"
@@ -112,6 +116,30 @@ def validate_contracts(payload: dict[str, Any]) -> None:
                 raise ValueError(
                     f"{milestone_id}/{criterion_id}: unsupported check {check_type!r}"
                 )
+            if (
+                check_type == "task_state"
+                and "integration_required" in check
+                and not isinstance(check["integration_required"], bool)
+            ):
+                raise ValueError(
+                    f"{milestone_id}/{criterion_id}: "
+                    "integration_required must be boolean"
+                )
+            if check_type == "task_state" and "integration_task_ids" in check:
+                proof_ids = check["integration_task_ids"]
+                if (
+                    not isinstance(proof_ids, list)
+                    or not proof_ids
+                    or any(
+                        not isinstance(value, str) or not value.strip()
+                        for value in proof_ids
+                    )
+                    or len(set(proof_ids)) != len(proof_ids)
+                ):
+                    raise ValueError(
+                        f"{milestone_id}/{criterion_id}: "
+                        "integration_task_ids must be a non-empty unique string list"
+                    )
             template = item.get("task_template")
             if template is not None:
                 _validate_task_template(milestone_id, criterion_id, template)
@@ -173,9 +201,60 @@ def _task_result(
     return "BLOCKED_DEP", False, f"task status={status} is not accepted"
 
 
+def _git_ancestor_checker(
+    root: Path,
+) -> Callable[[str, str], bool]:
+    repositories = (
+        root / "src" / "awakened-realms",
+        root,
+    )
+    repo = next(
+        (
+            candidate
+            for candidate in repositories
+            if (candidate / ".git").exists()
+        ),
+        None,
+    )
+
+    def check(
+        ancestor: str,
+        descendant: str,
+    ) -> bool:
+        if ancestor == descendant:
+            return True
+        if repo is None:
+            return False
+        try:
+            result = subprocess.run(
+                [
+                    "git",
+                    "-C",
+                    str(repo),
+                    "merge-base",
+                    "--is-ancestor",
+                    ancestor,
+                    descendant,
+                ],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                check=False,
+                timeout=5,
+            )
+        except (OSError, subprocess.TimeoutExpired):
+            return False
+        return result.returncode == 0
+
+    return check
+
+
 def _evaluate_task_state(
     conn: sqlite3.Connection,
     criterion: dict[str, Any],
+    *,
+    integration_sha: str,
+    root: Path,
+    ancestor_checker: Callable[[str, str], bool] | None = None,
 ) -> tuple[str, bool, str, str | None]:
     check = criterion["check"]
     task_id = str(check["task_id"])
@@ -186,7 +265,46 @@ def _evaluate_task_state(
         status=status,
         pass_statuses=pass_statuses,
     )
-    return (*result, task_id)
+    result_status, passed, reason = result
+    if passed and bool(check.get("integration_required", False)):
+        checker = ancestor_checker or _git_ancestor_checker(root)
+        proof_task_ids = [
+            task_id,
+            *[
+                str(value)
+                for value in check.get("integration_task_ids", [])
+            ],
+        ]
+        integrated_via = next(
+            (
+                proof_task_id
+                for proof_task_id in proof_task_ids
+                if integration_prerequisite_satisfied(
+                    conn,
+                    proof_task_id,
+                    integration_head=integration_sha,
+                    ancestor_checker=checker,
+                )
+            ),
+            None,
+        )
+        if integrated_via is None:
+            return (
+                "BLOCKED_DEP",
+                False,
+                f"task status={status} but canonical integration ancestry is not satisfied",
+                task_id,
+            )
+        return (
+            "PASS",
+            True,
+            (
+                f"task status={status} and canonical integration ancestry "
+                f"is satisfied via {integrated_via}"
+            ),
+            task_id,
+        )
+    return result_status, passed, reason, task_id
 
 
 def _evaluate_verification(
@@ -334,10 +452,17 @@ def evaluate_criterion(
     *,
     integration_sha: str,
     root: Path,
+    ancestor_checker: Callable[[str, str], bool] | None = None,
 ) -> CriterionResult:
     check_type = str(criterion["check"]["type"])
     if check_type == "task_state":
-        result = _evaluate_task_state(conn, criterion)
+        result = _evaluate_task_state(
+            conn,
+            criterion,
+            integration_sha=integration_sha,
+            root=root,
+            ancestor_checker=ancestor_checker,
+        )
     elif check_type == "verification":
         result = _evaluate_verification(conn, criterion, integration_sha)
     elif check_type == "artifact":
@@ -352,10 +477,18 @@ def evaluate_criterion(
         raise ValueError(f"unsupported criterion check: {check_type}")
 
     status, passed, reason, task_id = result
+    terminal_waiting_for_integration = (
+        check_type == "task_state"
+        and bool(criterion["check"].get("integration_required", False))
+        and _task_status(conn, str(criterion["check"]["task_id"]))
+        in set(criterion["check"].get("pass_statuses") or PASS_TASK_STATES)
+        and not passed
+    )
     if (
         not passed
         and status in {"BLOCKED_DEP", "BLOCKED_EVIDENCE"}
         and criterion.get("task_template")
+        and not terminal_waiting_for_integration
     ):
         status = "EXECUTABLE"
 
@@ -393,6 +526,7 @@ def evaluate_milestone(
     *,
     integration_sha: str,
     root: Path,
+    ancestor_checker: Callable[[str, str], bool] | None = None,
 ) -> ContractResult:
     validate_contracts(contracts)
     milestone = contracts["milestones"].get(milestone_id)
@@ -404,6 +538,7 @@ def evaluate_milestone(
             item,
             integration_sha=integration_sha,
             root=root,
+            ancestor_checker=ancestor_checker,
         )
         for item in milestone["criteria"]
     ]
