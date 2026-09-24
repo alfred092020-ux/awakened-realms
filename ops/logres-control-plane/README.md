@@ -229,3 +229,23 @@ A regression repair is not considered resolved merely because the worker finishe
 The coordinator is allowed to queue that immutable repair SHA normally. Only after the repair candidate reaches `INTEGRATED` does regression reconciliation move the regression to `RESOLVED`; at that point the original conflicting candidate can be superseded safely.
 
 This prevents a circular failure mode where finishing the repair made the regression terminal too early, which caused the coordinator to suppress the repair candidate before shared full-E2E preflight could ever run.
+
+## Integration-aware dependencies
+
+Tasks can now distinguish an ordinary completion dependency from a dependency on canonical integrated output.
+
+Use the normal `hard` dependency when a child only needs the prerequisite worker result to be complete. Use dependency kind `integration` when the child consumes a versioned API, control-plane helper, schema, generated artifact contract, or other output that must actually exist in `feat/logres-reconstruction` before work begins.
+
+The coordinator treats an `integration` prerequisite as satisfied only when:
+- the prerequisite task is in a satisfied terminal state,
+- an integration-queue row for that prerequisite is `INTEGRATED`, and
+- that exact integrated SHA is an ancestor of the current integration head.
+
+A prerequisite that is merely `DONE`, `READY_FOR_PREFLIGHT`, `CONFLICT`, or superseded remains blocking. Ordinary hard dependencies retain their previous semantics.
+
+New work packages can declare this explicitly with:
+
+```bash
+logres-coordinator add-task CHILD 0 control-plane "Consume canonical API" \
+  --depends-integrated PARENT
+```

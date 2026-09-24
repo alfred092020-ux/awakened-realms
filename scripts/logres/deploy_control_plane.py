@@ -51,6 +51,7 @@ MANIFEST: dict[str, tuple[str, int]] = {
     "lib/logres_claims_reconcile.py": ("lib/logres_claims_reconcile.py", 0o600),
     "lib/logres_copilot.py": ("lib/logres_copilot.py", 0o600),
     "lib/logres_copilot_router.py": ("lib/logres_copilot_router.py", 0o600),
+    "lib/logres_dependency.py": ("lib/logres_dependency.py", 0o600),
     "lib/logres_frontier.py": ("lib/logres_frontier.py", 0o600),
     "lib/logres_goal_contract.py": ("lib/logres_goal_contract.py", 0o600),
     "lib/logres_impact.py": ("lib/logres_impact.py", 0o600),
