@@ -11,6 +11,7 @@
     "reserve_fraction": 0.2,
     "max_active": 1,
     "max_active_hard": 2,
+    "auto_model": null,
     "model_rates_per_million": {}
   },
   "copilot": {
