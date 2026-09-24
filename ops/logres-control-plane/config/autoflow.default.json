@@ -44,5 +44,11 @@
     "research_web_search_enabled": true,
     "research_max_output_tokens": 6000,
     "research_max_attempts": 2
+  },
+  "remote_pool": {
+    "enabled": false,
+    "hybrid_verify_enabled": false,
+    "remote_unit_test_role": "heavy",
+    "local_e2e_authoritative": true
   }
 }

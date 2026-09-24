@@ -1,0 +1,219 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+BASE="${LOGRES_REPO_ROOT:-/home/ubuntu/logres/src/awakened-realms}"
+CONTROL="${LOGRES_CONTROL_BIN:-/home/ubuntu/logres/bin/logres-control}"
+POOL_BIN="${LOGRES_REMOTE_POOL_BIN:-/home/ubuntu/logres/bin/logres-remote-pool}"
+CONFIG="${LOGRES_AUTOFLOW_CONFIG:-/home/ubuntu/logres/control/autoflow.json}"
+REF="${1:-feat/logres-reconstruction}"
+ROOT="${LOGRES_VERIFY_ROOT:-/dev/shm/logres}"
+PRIVATE_ANCHOR="${LOGRES_PRIVATE_ANCHOR:-/home/ubuntu/logres/private/logres-private-cache.zip}"
+STAMP=$(date +%Y%m%dT%H%M%S)
+TEST_WT="$ROOT/verify-farm-$STAMP-test"
+E2E_WT="$ROOT/verify-farm-$STAMP-e2e"
+TEST_LOG="/home/ubuntu/logres/logs/verify-farm-$STAMP-test.log"
+E2E_LOG="/home/ubuntu/logres/logs/verify-farm-$STAMP-e2e.log"
+REMOTE_TEST_LOG="/home/ubuntu/logres/logs/verify-farm-$STAMP-remote-test.log"
+START=$(date +%s)
+SHA=unknown
+VERIFY_PATH="local-test+local-build-e2e"
+
+remote_enabled() {
+  case "${LOGRES_REMOTE_VERIFY_ENABLED:-}" in
+    1|true|TRUE|yes|YES) return 0 ;;
+    0|false|FALSE|no|NO) return 1 ;;
+  esac
+  python3 - "$CONFIG" <<'PY'
+import json,sys
+try:
+    data=json.load(open(sys.argv[1]))
+except Exception:
+    raise SystemExit(1)
+raise SystemExit(
+    0 if data.get("remote_pool",{}).get("hybrid_verify_enabled",False) else 1
+)
+PY
+}
+
+remote_available() {
+  [[ -x "$POOL_BIN" ]] || return 1
+  timeout "${LOGRES_REMOTE_HEALTH_TIMEOUT_SEC:-20}" "$POOL_BIN" status --json     >"/tmp/logres-remote-pool-health-$STAMP.json" 2>/dev/null || return 1
+  python3 - "/tmp/logres-remote-pool-health-$STAMP.json" <<'PY'
+import json,sys
+try:
+    rows=json.load(open(sys.argv[1]))
+except Exception:
+    raise SystemExit(1)
+heavy=next((r for r in rows if r.get("role")=="heavy"),None)
+raise SystemExit(
+    0 if heavy and heavy.get("reachable") and heavy.get("available_slots",0)>0 else 1
+)
+PY
+}
+
+# Full browser verification remains single-flight locally. Remote unit tests do
+# not get merge authority and cannot bypass the local private-hydrated E2E gate.
+exec 9>/tmp/logres-verify-farm.lock
+if ! flock -w "${LOGRES_VERIFY_FARM_WAIT_SEC:-900}" 9; then
+  echo "VERIFY_FARM BUSY: timed out waiting for global verification slot" >&2
+  exit 75
+fi
+
+mkdir -p "$ROOT" /home/ubuntu/logres/logs
+SHA=$(git -C "$BASE" rev-parse "$REF")
+[[ "$SHA" =~ ^[0-9a-f]{40}$ ]] || {
+  echo "VERIFY_FARM could not pin exact source SHA for $REF" >&2
+  exit 2
+}
+
+cleanup() {
+  rc=$?
+  trap - EXIT INT TERM
+  git -C "$BASE" worktree remove --force "$TEST_WT" >/dev/null 2>&1 || true
+  git -C "$BASE" worktree remove --force "$E2E_WT" >/dev/null 2>&1 || true
+  rm -f "/tmp/logres-remote-pool-health-$STAMP.json"
+  dur=$(( $(date +%s)-START ))
+  status=FAIL; [[ $rc -eq 0 ]] && status=PASS
+  "$CONTROL" record-verify "$REF" "$SHA" full-e2e "$status" "$dur"     "verify-farm:$VERIFY_PATH" >/dev/null 2>&1 || true
+  exit $rc
+}
+trap cleanup EXIT INT TERM
+
+prepare_deps() {
+  local wt="$1"
+  local base_lock ref_lock
+  base_lock=$(sha256sum "$BASE/package-lock.json" | awk '{print $1}')
+  ref_lock=$(sha256sum "$wt/package-lock.json" | awk '{print $1}')
+  if [[ "$base_lock" == "$ref_lock" && -d "$BASE/node_modules" ]]; then
+    ln -s "$BASE/node_modules" "$wt/node_modules"
+  else
+    (cd "$wt" && npm ci --prefer-offline --no-audit --no-fund)
+  fi
+}
+
+hydrate() {
+  local wt="$1"
+  if [[ -d "$BASE/public/__logres_ref" ]]; then
+    mkdir -p "$wt/public/__logres_ref"
+    rsync -a "$BASE/public/__logres_ref/" "$wt/public/__logres_ref/"
+  fi
+
+  python3 "$wt/scripts/logres/hydrate_live_renderer_proof.py"     --anchor "$PRIVATE_ANCHOR"     --map-id 001_000_00002     --output-root "$wt/public/__logres_ref/renderer-proof"     --summary "$wt/.renderer-proof-hydration.json"
+
+  for required in     "$wt/public/__logres_ref/renderer-proof/002_000_00001/002_000_00001.map.bin"     "$wt/public/__logres_ref/renderer-proof/002_000_00001/002_000_00001_CHIP.png"     "$wt/public/__logres_ref/renderer-proof/002_000_00001/002_000_00001_OBJ.png"     "$wt/public/__logres_ref/renderer-proof/002_000_00001/chip_d.bin"     "$wt/public/__logres_ref/renderer-proof/002_000_00001/object_d.bin"
+  do
+    [[ -s "$required" ]] || {
+      echo "VERIFY_FARM missing required playable runtime: $required" >&2
+      return 1
+    }
+  done
+
+  if [[ -f "$wt/scripts/logres/inspect_avatar_resource_paths.py" ]]; then
+    local jp_patch=/home/ubuntu/logres/private/jp-live-patch-cache
+    python3 -B "$wt/scripts/logres/inspect_avatar_resource_paths.py"       "$jp_patch"       --output-root "$wt/public/__logres_ref/current-jp/player-avatar-reference"       --summary "$wt/.player-avatar-hydration.json"
+
+    for required in       "$wt/public/__logres_ref/current-jp/player-avatar-reference/player_avatar_reference_m.png"       "$wt/public/__logres_ref/current-jp/player-avatar-reference/player_avatar_reference_f.png"
+    do
+      [[ -s "$required" ]] || {
+        echo "VERIFY_FARM missing required player reference: $required" >&2
+        return 1
+      }
+    done
+  fi
+}
+
+run_local_tests() {
+  git -C "$BASE" worktree add --detach "$TEST_WT" "$SHA" >/dev/null
+  prepare_deps "$TEST_WT"
+  (
+    set -e
+    hydrate "$TEST_WT"
+    cd "$TEST_WT"
+    npm run test -- --testTimeout 15000
+  ) >"$TEST_LOG" 2>&1
+}
+
+# E2E always stays local and authoritative because it exercises private runtime
+# hydration, browser behavior, and the actual playable vertical slice.
+git -C "$BASE" worktree add --detach "$E2E_WT" "$SHA" >/dev/null
+prepare_deps "$E2E_WT"
+
+E2E_PORT=$(python3 - <<'PY'
+import socket
+s=socket.socket()
+s.bind(("127.0.0.1",0))
+print(s.getsockname()[1])
+s.close()
+PY
+)
+python3 - "$E2E_WT/playwright.config.mjs" "$E2E_PORT" <<'PY'
+from pathlib import Path
+import sys
+p=Path(sys.argv[1]); port=sys.argv[2]
+s=p.read_text()
+s=s.replace("127.0.0.1:4174",f"127.0.0.1:{port}")
+s=s.replace("--port 4174",f"--port {port}")
+p.write_text(s)
+PY
+
+export PLAYWRIGHT_BROWSERS_PATH=/home/ubuntu/logres/cache/playwright
+(
+  set -e
+  hydrate "$E2E_WT"
+  cd "$E2E_WT"
+  npm run build
+  npm run test:e2e
+) >"$E2E_LOG" 2>&1 &
+e2e_pid=$!
+
+remote_pid=""
+remote_used=0
+if remote_enabled && remote_available; then
+  remote_used=1
+  job="verify-${STAMP}-${SHA:0:12}"
+  (
+    timeout "${LOGRES_REMOTE_VERIFY_TIMEOUT_SEC:-240}"       "$POOL_BIN" run heavy "$job" test "$SHA" --reassignable --retries 1
+  ) >"$REMOTE_TEST_LOG" 2>&1 &
+  remote_pid=$!
+  echo "VERIFY_FARM remote unit-test lane started sha=${SHA:0:12}"
+fi
+
+test_rc=0
+if (( remote_used == 1 )); then
+  if wait "$remote_pid"; then
+    VERIFY_PATH="remote-test+local-build-e2e"
+    cp "$REMOTE_TEST_LOG" "$TEST_LOG"
+    echo "VERIFY_FARM remote unit-test lane PASS"
+  else
+    echo "VERIFY_FARM remote unit-test lane unavailable/failed; falling back locally" >&2
+    if run_local_tests; then
+      VERIFY_PATH="remote-fallback-local-test+local-build-e2e"
+    else
+      test_rc=$?
+    fi
+  fi
+else
+  if run_local_tests; then
+    VERIFY_PATH="local-test+local-build-e2e"
+  else
+    test_rc=$?
+  fi
+fi
+
+e2e_rc=0
+wait "$e2e_pid" || e2e_rc=$?
+
+if (( test_rc != 0 || e2e_rc != 0 )); then
+  echo "VERIFY_FARM FAIL test_rc=$test_rc e2e_rc=$e2e_rc path=$VERIFY_PATH" >&2
+  echo "--- test tail ---" >&2
+  tail -80 "$TEST_LOG" >&2 || true
+  echo "--- e2e tail ---" >&2
+  tail -120 "$E2E_LOG" >&2 || true
+  /home/ubuntu/logres/bin/logres-regression-capture     --kind candidate-verify     --ref "$REF"     --sha "$SHA"     --summary "verify-farm test_rc=$test_rc e2e_rc=$e2e_rc path=$VERIFY_PATH"     --log "$TEST_LOG"     --log "$E2E_LOG" >/dev/null 2>&1 || true
+  exit 1
+fi
+
+dur=$(( $(date +%s)-START ))
+echo "VERIFY_FARM PASS ref=$REF sha=$SHA duration=${dur}s path=$VERIFY_PATH"
+echo "test_log=$TEST_LOG"
+echo "e2e_log=$E2E_LOG"
