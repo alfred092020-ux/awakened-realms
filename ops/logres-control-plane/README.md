@@ -113,3 +113,24 @@ Committed defaults keep hybrid verification disabled. Runtime `remote_pool.hybri
 When enabled, `logres-verify-farm` starts the exact-SHA unit suite on the heavy UpCloud worker while the local VM performs build + private-hydrated Playwright E2E. If the remote lane is unreachable, times out, or fails, the farm automatically runs the original local hydrated unit-test lane. A remote outage therefore cannot weaken the authoritative gate or strand integration.
 
 `logres-lead pool status` shows remote worker health and capacity. `logres-remote-pool run` remains restricted to safe verification/build scripts and can fail over only when the caller explicitly marks verification work reassignable.
+
+## Research frontier governor
+
+`logres-frontier` prevents autonomous evidence work from turning one unresolved historical predicate into an unbounded tree of `AUTO-RE-` and `UNBLOCK-` tasks.
+
+Every generated research escalation now receives explicit lineage: root task, parent task, normalized predicate hash, origin, and generated depth. Equivalent blocker or AI events share one semantic frontier even when event IDs, route IDs, or artifact hashes differ. A generated research child is the single bounded escalation for that predicate; generated descendants are forbidden.
+
+A frontier whose child finishes `BLOCKED_EVIDENCE` becomes `SATURATED`. Further identical evidence events remain advisory instead of manufacturing more work. A completed child resolves the frontier. Evidence artifacts are never deleted.
+
+`logres-frontier reconcile` backfills lineage for historical generated tasks and reports recursive descendants. `logres-frontier reconcile --apply` safely supersedes only non-active recursive generated descendants, preserves their evidence, and converts exhausted auto-routed hard dependencies into evidence ceilings so root tasks no longer remain permanently `BLOCKED_DEP`.
+
+The five-minute autopilot runs the bounded reconciliation automatically before AI/Copilot routing.
+
+Useful commands:
+
+```bash
+logres-frontier status
+logres-frontier reconcile
+logres-frontier reconcile --apply
+logres-lead frontier status
+```

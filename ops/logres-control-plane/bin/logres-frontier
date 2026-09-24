@@ -1,0 +1,98 @@
+#!/usr/bin/env python3
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import sqlite3
+import sys
+from pathlib import Path
+
+CONTROL_ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(CONTROL_ROOT / "lib"))
+
+from logres_frontier import ensure_schema, reconcile
+
+ROOT = Path(os.environ.get("LOGRES_ROOT", "/home/ubuntu/logres"))
+DB = Path(
+    os.environ.get(
+        "LOGRES_CONTROL_DB",
+        str(ROOT / "control/control.sqlite"),
+    )
+)
+
+
+def connect() -> sqlite3.Connection:
+    conn = sqlite3.connect(DB, timeout=30)
+    conn.row_factory = sqlite3.Row
+    conn.execute("pragma busy_timeout=30000")
+    ensure_schema(conn)
+    return conn
+
+
+def status(conn: sqlite3.Connection) -> dict:
+    ensure_schema(conn)
+    rows = [
+        dict(r)
+        for r in conn.execute(
+            """select id,root_task_id,predicate_sha,predicate,state,
+                      child_task_id,origin_kind,origin_id,attempts,max_attempts,
+                      note,created_at,updated_at
+                 from research_frontier
+                order by
+                  case state when 'OPEN' then 0 when 'SATURATED' then 1 else 2 end,
+                  updated_at desc,id desc
+                limit 100"""
+        )
+    ]
+    lineage_count = int(
+        conn.execute("select count(*) from research_lineage").fetchone()[0]
+    )
+    return {
+        "frontiers": rows,
+        "counts": {
+            "total": int(
+                conn.execute("select count(*) from research_frontier").fetchone()[0]
+            ),
+            "open": int(
+                conn.execute(
+                    "select count(*) from research_frontier where state='OPEN'"
+                ).fetchone()[0]
+            ),
+            "saturated": int(
+                conn.execute(
+                    "select count(*) from research_frontier where state='SATURATED'"
+                ).fetchone()[0]
+            ),
+            "resolved": int(
+                conn.execute(
+                    "select count(*) from research_frontier where state='RESOLVED'"
+                ).fetchone()[0]
+            ),
+            "lineage": lineage_count,
+        },
+    }
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser(prog="logres-frontier")
+    sub = ap.add_subparsers(dest="command", required=True)
+    sub.add_parser("status")
+    rec = sub.add_parser("reconcile")
+    rec.add_argument("--apply", action="store_true")
+    args = ap.parse_args()
+
+    conn = connect()
+    try:
+        if args.command == "status":
+            payload = status(conn)
+        else:
+            payload = reconcile(conn, apply=args.apply)
+        print(json.dumps(payload, indent=2, sort_keys=True))
+    finally:
+        conn.close()
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

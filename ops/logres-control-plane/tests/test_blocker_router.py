@@ -155,6 +155,86 @@ class BlockerRouterTests(unittest.TestCase):
         ).fetchone()
         self.assertEqual("hard", dep["kind"])
 
+    def test_equivalent_blocker_events_share_one_frontier_child(self):
+        seed_parent(self.conn, "PARENT")
+        seed_event(
+            self.conn,
+            1,
+            "PARENT",
+            subject="Missing historical packet",
+            body="Recover exact Global packet evidence.",
+        )
+        seed_event(
+            self.conn,
+            2,
+            "PARENT",
+            subject="Missing historical packet",
+            body="Recover exact Global packet evidence.",
+        )
+
+        result = self.run_router()
+
+        self.assertEqual(0, result.returncode, result.stderr)
+        children = list(
+            self.conn.execute(
+                "select id from tasks where id like 'UNBLOCK-PARENT-%'"
+            )
+        )
+        self.assertEqual(1, len(children))
+        frontier = self.conn.execute(
+            "select attempts,child_task_id,state from research_frontier"
+        ).fetchone()
+        self.assertEqual(1, frontier["attempts"])
+        self.assertEqual(children[0]["id"], frontier["child_task_id"])
+        self.assertEqual("OPEN", frontier["state"])
+
+    def test_blocked_frontier_child_saturates_parent_without_new_sibling(self):
+        seed_parent(self.conn, "PARENT")
+        seed_event(
+            self.conn,
+            1,
+            "PARENT",
+            subject="Missing historical packet",
+            body="Recover exact Global packet evidence.",
+        )
+        first = self.run_router()
+        self.assertEqual(0, first.returncode, first.stderr)
+        child = self.conn.execute(
+            "select id from tasks where id like 'UNBLOCK-PARENT-%'"
+        ).fetchone()["id"]
+        self.conn.execute(
+            "update tasks set status='BLOCKED_EVIDENCE' where id=?",
+            (child,),
+        )
+        self.conn.commit()
+
+        seed_event(
+            self.conn,
+            2,
+            "PARENT",
+            subject="Missing historical packet",
+            body="Recover exact Global packet evidence.",
+        )
+        second = self.run_router()
+
+        self.assertEqual(0, second.returncode, second.stderr)
+        self.assertEqual(
+            1,
+            self.conn.execute(
+                "select count(*) from tasks where id like 'UNBLOCK-PARENT-%'"
+            ).fetchone()[0],
+        )
+        parent = self.conn.execute(
+            "select status,note from tasks where id='PARENT'"
+        ).fetchone()
+        self.assertEqual("BLOCKED_EVIDENCE", parent["status"])
+        self.assertIn("Evidence ceiling reached", parent["note"])
+        dep = self.conn.execute(
+            "select kind from task_dependencies where task_id='PARENT' and depends_on=?",
+            (child,),
+        ).fetchone()
+        self.assertEqual("evidence", dep["kind"])
+
     def test_autoflow_generated_parent_does_not_spawn_descendant(self):
         seed_parent(
             self.conn,

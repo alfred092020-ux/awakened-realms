@@ -230,6 +230,139 @@ class AIRouterTests(unittest.TestCase):
             ).fetchone()[0],
         )
 
+    def test_equivalent_unresolved_routes_share_semantic_frontier_child(self):
+        conn = make_test_db()
+        ensure_route_schema(conn)
+        seed_task(
+            conn,
+            task_id="T1",
+            work_type="research",
+            evidence_policy="Global evidence required",
+        )
+        first_route = claim_route(
+            conn,
+            RouteSpec(dedupe_key="parent-semantic-1", route_kind="AI", task_id="T1"),
+        )
+        second_route = claim_route(
+            conn,
+            RouteSpec(dedupe_key="parent-semantic-2", route_kind="AI", task_id="T1"),
+        )
+        result = {
+            "confidence": "UNRESOLVED",
+            "summary": "same missing predicate",
+            "findings": [],
+            "contradictions": [],
+            "unresolved": ["exact historical opcode pairing"],
+            "recommended_next_search": "recover exact historical opcode pairing",
+        }
+
+        first = route_ai_result(
+            conn,
+            first_route.id,
+            result,
+            {"id": "T1", "priority": 0, "status": "READY", "note": ""},
+            {
+                "work_type": "research",
+                "milestone": "slice",
+                "evidence_policy": "Global evidence required",
+            },
+            provenance="CONFIRMED_GLOBAL_2017",
+        )
+        second = route_ai_result(
+            conn,
+            second_route.id,
+            result,
+            {"id": "T1", "priority": 0, "status": "READY", "note": ""},
+            {
+                "work_type": "research",
+                "milestone": "slice",
+                "evidence_policy": "Global evidence required",
+            },
+            provenance="CONFIRMED_GLOBAL_2017",
+        )
+
+        self.assertEqual(first.child_task_id, second.child_task_id)
+        self.assertIsNotNone(first.child_task_id)
+        self.assertEqual(
+            1,
+            conn.execute(
+                "select count(*) from research_frontier where root_task_id='T1'"
+            ).fetchone()[0],
+        )
+        frontier = conn.execute(
+            "select attempts,state,child_task_id from research_frontier where root_task_id='T1'"
+        ).fetchone()
+        self.assertEqual(1, frontier["attempts"])
+        self.assertEqual("OPEN", frontier["state"])
+        self.assertEqual(first.child_task_id, frontier["child_task_id"])
+
+    def test_blocked_frontier_child_turns_repeat_unresolved_into_review_only(self):
+        conn = make_test_db()
+        ensure_route_schema(conn)
+        seed_task(
+            conn,
+            task_id="T1",
+            work_type="research",
+            evidence_policy="Global evidence required",
+        )
+        route1 = claim_route(
+            conn,
+            RouteSpec(dedupe_key="frontier-blocked-1", route_kind="AI", task_id="T1"),
+        )
+        route2 = claim_route(
+            conn,
+            RouteSpec(dedupe_key="frontier-blocked-2", route_kind="AI", task_id="T1"),
+        )
+        result = {
+            "confidence": "UNRESOLVED",
+            "summary": "same unresolved predicate",
+            "findings": [],
+            "contradictions": [],
+            "unresolved": ["recover exact Global packet"],
+            "recommended_next_search": "recover exact Global packet",
+        }
+        first = route_ai_result(
+            conn,
+            route1.id,
+            result,
+            {"id": "T1", "priority": 0, "status": "READY", "note": ""},
+            {
+                "work_type": "research",
+                "milestone": "slice",
+                "evidence_policy": "Global evidence required",
+            },
+            provenance="CONFIRMED_GLOBAL_2017",
+        )
+        self.assertIsNotNone(first.child_task_id)
+        conn.execute(
+            "update tasks set status='BLOCKED_EVIDENCE' where id=?",
+            (first.child_task_id,),
+        )
+        conn.commit()
+
+        second = route_ai_result(
+            conn,
+            route2.id,
+            result,
+            {"id": "T1", "priority": 0, "status": "READY", "note": ""},
+            {
+                "work_type": "research",
+                "milestone": "slice",
+                "evidence_policy": "Global evidence required",
+            },
+            provenance="CONFIRMED_GLOBAL_2017",
+        )
+
+        self.assertEqual("REVIEW_REQUIRED", second.route)
+        self.assertIsNone(second.child_task_id)
+        self.assertIn("ceiling", second.reason)
+        decision = conn.execute(
+            """select decision from route_decisions
+                where route_job_id=? order by id desc limit 1""",
+            (route2.id,),
+        ).fetchone()[0]
+        self.assertEqual("RESEARCH_FRONTIER_SATURATED", decision)
+
     def test_generated_autoflow_child_unresolved_does_not_spawn_descendant(self):
         conn = make_test_db()
         ensure_route_schema(conn)

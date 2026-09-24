@@ -10,6 +10,11 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from logres_ai_runner import automatic_api_allowed, budget_state
+from logres_frontier import (
+    claim_frontier,
+    is_generated_research_task,
+    register_child,
+)
 from logres_route_policy import RouteDecision, classify_evidence_event
 from logres_route_store import (
     RouteJob,
@@ -121,11 +126,39 @@ def _insert_research_task(
     resolution_type: str,
     result: dict,
     priority: int,
-) -> tuple[str, bool]:
-    suffix = hashlib.sha256(
-        f"{parent_route_id}:{resolution_type}".encode("utf-8")
-    ).hexdigest()[:10]
+) -> tuple[str | None, bool, str]:
     parent_label = parent_task_id or "UNSCOPED"
+    predicate = (
+        result.get("recommended_next_search")
+        or "; ".join(result.get("unresolved") or [])
+        or "; ".join(result.get("contradictions") or [])
+        or f"Resolve {resolution_type} with deterministic evidence."
+    )
+
+    if parent_task_id:
+        frontier = claim_frontier(
+            conn,
+            parent_task_id=parent_task_id,
+            predicate_text=f"{resolution_type}: {predicate}",
+            origin_kind="AI_ROUTE",
+            origin_id=parent_route_id,
+            max_attempts=1,
+        )
+        if not frontier.create_allowed:
+            if frontier.state == "OPEN" and frontier.child_task_id:
+                return frontier.child_task_id, False, frontier.reason
+            return None, False, frontier.reason
+    else:
+        frontier = None
+
+    suffix_seed = (
+        frontier.predicate_sha
+        if frontier is not None
+        else hashlib.sha256(
+            f"{parent_route_id}:{resolution_type}:{predicate}".encode("utf-8")
+        ).hexdigest()
+    )
+    suffix = suffix_seed[:10]
     task_id = f"AUTO-RE-{parent_label}-{suffix}"
     existed = conn.execute(
         "select 1 from tasks where id=?",
@@ -168,14 +201,9 @@ def _insert_research_task(
                 now,
             ),
         )
-        acceptance = (
-            result.get("recommended_next_search")
-            or "; ".join(result.get("unresolved") or [])
-            or f"Resolve {resolution_type} with deterministic evidence."
-        )
         conn.execute(
             "insert into task_acceptance(task_id,ordinal,criterion) values(?,?,?)",
-            (task_id, 1, acceptance),
+            (task_id, 1, predicate),
         )
         if parent_task_id:
             conn.execute(
@@ -189,10 +217,19 @@ def _insert_research_task(
                 ),
             )
 
+    if frontier is not None:
+        register_child(
+            conn,
+            frontier,
+            child_task_id=task_id,
+            origin_kind="AI_ROUTE",
+            origin_id=parent_route_id,
+        )
+
     child_route = claim_route(
         conn,
         RouteSpec(
-            dedupe_key=f"research:{parent_route_id}:{resolution_type}",
+            dedupe_key=f"research:{parent_label}:{suffix}:{resolution_type}",
             route_kind="RESEARCH",
             task_id=task_id,
             parent_route_id=parent_route_id,
@@ -202,7 +239,7 @@ def _insert_research_task(
     if child_route.state == "NEW":
         transition_route(conn, child_route.id, "NEW", "ROUTED")
     conn.commit()
-    return task_id, not existed
+    return task_id, not existed, "created bounded research frontier"
 
 
 def route_ai_result(
@@ -240,9 +277,9 @@ def route_ai_result(
         marker in task_note
         for marker in (*external_action_markers, *evidence_ceiling_markers)
     )
-    generated_research_child = _is_generated_research_child(
-        task_row,
-        metadata_row,
+    generated_research_child = (
+        _is_generated_research_child(task_row, metadata_row)
+        or (is_generated_research_task(conn, task_id) if task_id else False)
     )
 
     if generated_research_child and (
@@ -283,7 +320,7 @@ def route_ai_result(
         )
 
     if contradictions:
-        child_task_id, _ = _insert_research_task(
+        child_task_id, _, frontier_reason = _insert_research_task(
             conn,
             parent_task_id=task_id,
             parent_route_id=route_job_id,
@@ -291,16 +328,31 @@ def route_ai_result(
             result=result,
             priority=priority,
         )
+        if child_task_id is None:
+            append_decision(
+                conn,
+                route_job_id,
+                "RESEARCH_FRONTIER_SATURATED",
+                frontier_reason,
+                task_id=task_id,
+            )
+            return RouteDecision(
+                "REVIEW_REQUIRED",
+                frontier_reason,
+            )
         append_decision(
             conn,
             route_job_id,
             "EVIDENCE_CONFLICT",
-            "AI analysis reported contradictions requiring deterministic review",
+            (
+                "AI analysis reported contradictions requiring deterministic "
+                f"review; frontier={frontier_reason}"
+            ),
             task_id=task_id,
         )
         return RouteDecision(
             "EVIDENCE_CONFLICT",
-            "contradictory evidence requires review",
+            "contradictory evidence requires bounded review",
             child_task_id,
         )
 
@@ -326,7 +378,7 @@ def route_ai_result(
             if confidence == "VERSION SENSITIVE"
             else "UNRESOLVED"
         )
-        child_task_id, _ = _insert_research_task(
+        child_task_id, _, frontier_reason = _insert_research_task(
             conn,
             parent_task_id=task_id,
             parent_route_id=route_job_id,
@@ -334,16 +386,28 @@ def route_ai_result(
             result=result,
             priority=priority,
         )
+        if child_task_id is None:
+            append_decision(
+                conn,
+                route_job_id,
+                "RESEARCH_FRONTIER_SATURATED",
+                frontier_reason,
+                task_id=task_id,
+            )
+            return RouteDecision(
+                "REVIEW_REQUIRED",
+                frontier_reason,
+            )
         append_decision(
             conn,
             route_job_id,
             "FOCUSED_RESEARCH",
-            f"{confidence} requires deterministic follow-up",
+            f"{confidence} requires deterministic follow-up; frontier={frontier_reason}",
             task_id=task_id,
         )
         return RouteDecision(
             "FOCUSED_RESEARCH",
-            f"{confidence} requires deterministic follow-up",
+            f"{confidence} requires bounded deterministic follow-up",
             child_task_id,
         )
     policy = str(metadata_row.get("evidence_policy") or "")

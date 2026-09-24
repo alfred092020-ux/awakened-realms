@@ -87,6 +87,10 @@ case "$cmd" in
     shift
     "$ROOT/bin/logres-knowledge" "${1:-stats}" "${@:2}"
     ;;
+  frontier)
+    shift
+    "$ROOT/bin/logres-frontier" "${1:-status}" "${@:2}"
+    ;;
   optimizer)
     shift
     "$ROOT/bin/logres-optimizer" "${1:-plan}" "${@:2}"
@@ -184,7 +188,7 @@ case "$cmd" in
     "$ROOT/bin/logres-protocol" "$@"
     ;;
   *)
-    echo "usage: logres-lead {brief|refresh|json|health|verify-all|brain|ai|routes|autonomy|swarm|knowledge|optimizer|pool|takeover|nexus|queue|next|preflight|packet|allocate|claim|release|task|branch|search|find|symbol|ast|inspect|unpack|jadx|apktool|doctext|frame|capabilities|snapshot|container|py|duck|ramrun|native|decompile|protocol}" >&2
+    echo "usage: logres-lead {brief|refresh|json|health|verify-all|brain|ai|routes|autonomy|swarm|knowledge|frontier|optimizer|pool|takeover|nexus|queue|next|preflight|packet|allocate|claim|release|task|branch|search|find|symbol|ast|inspect|unpack|jadx|apktool|doctext|frame|capabilities|snapshot|container|py|duck|ramrun|native|decompile|protocol}" >&2
     exit 2
     ;;
 esac
