@@ -1,4 +1,5 @@
 import type Phaser from 'phaser'
+import './LogresUiRuntime'
 
 export const LOGRES_RUNTIME_REVISION =
   'apk-v4-demo01-20260923'
