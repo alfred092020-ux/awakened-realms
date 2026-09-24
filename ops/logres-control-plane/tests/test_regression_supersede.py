@@ -45,6 +45,13 @@ def make_db():
           updated_at text,
           note text
         );
+        create table task_dependencies(
+          task_id text not null,
+          depends_on text not null,
+          kind text not null,
+          rationale text not null default '',
+          primary key(task_id,depends_on)
+        );
         """
     )
     return conn
@@ -98,6 +105,106 @@ class RegressionSupersedeTests(unittest.TestCase):
 
         targets = plan_supersede(conn, 20)
         self.assertEqual([1, 2], [item.regression_id for item in targets])
+
+    def test_explicit_integrated_carrier_supersedes_original_failed_task(self):
+        conn = make_db()
+        preflight(conn, 10, "FAILED", ["ORIGINAL"], "f" * 40, 10)
+        preflight(conn, 20, "APPLIED", ["CARRIER"], "s" * 40, 20)
+        regression(conn, 1, "REG-MERGE", "merge-preflight", "f" * 40, 11)
+        conn.execute(
+            "insert into task_dependencies values(?,?,?,?)",
+            (
+                "ORIGINAL",
+                "CARRIER",
+                "integration_carrier",
+                "explicit fresh-base carrier",
+            ),
+        )
+        conn.execute(
+            "insert into integration_queue values(?,?,?,?)",
+            ("CARRIER", "INTEGRATED", None, ""),
+        )
+
+        targets = plan_supersede(conn, 20)
+
+        self.assertEqual([1], [item.regression_id for item in targets])
+        self.assertEqual(
+            "failed-task-carrier-subset",
+            targets[0].proof,
+        )
+        self.assertEqual(("ORIGINAL",), targets[0].failed_tasks)
+
+    def test_carrier_must_be_integrated(self):
+        conn = make_db()
+        preflight(conn, 10, "FAILED", ["ORIGINAL"], "f" * 40, 10)
+        preflight(conn, 20, "APPLIED", ["CARRIER"], "s" * 40, 20)
+        regression(conn, 1, "REG-MERGE", "merge-preflight", "f" * 40, 11)
+        conn.execute(
+            "insert into task_dependencies values(?,?,?,?)",
+            ("ORIGINAL", "CARRIER", "integration_carrier", ""),
+        )
+        conn.execute(
+            "insert into integration_queue values(?,?,?,?)",
+            ("CARRIER", "READY_FOR_PREFLIGHT", None, ""),
+        )
+
+        self.assertEqual([], plan_supersede(conn, 20))
+
+    def test_unrelated_dependency_kind_does_not_expand_success(self):
+        conn = make_db()
+        preflight(conn, 10, "FAILED", ["ORIGINAL"], "f" * 40, 10)
+        preflight(conn, 20, "APPLIED", ["CARRIER"], "s" * 40, 20)
+        regression(conn, 1, "REG-MERGE", "merge-preflight", "f" * 40, 11)
+        conn.execute(
+            "insert into task_dependencies values(?,?,?,?)",
+            ("ORIGINAL", "CARRIER", "hard", ""),
+        )
+        conn.execute(
+            "insert into integration_queue values(?,?,?,?)",
+            ("CARRIER", "INTEGRATED", None, ""),
+        )
+
+        self.assertEqual([], plan_supersede(conn, 20))
+
+    def test_integrated_carrier_not_in_successful_batch_does_not_expand(self):
+        conn = make_db()
+        preflight(conn, 10, "FAILED", ["ORIGINAL"], "f" * 40, 10)
+        preflight(conn, 20, "APPLIED", ["OTHER"], "s" * 40, 20)
+        regression(conn, 1, "REG-MERGE", "merge-preflight", "f" * 40, 11)
+        conn.execute(
+            "insert into task_dependencies values(?,?,?,?)",
+            ("ORIGINAL", "CARRIER", "integration_carrier", ""),
+        )
+        conn.execute(
+            "insert into integration_queue values(?,?,?,?)",
+            ("CARRIER", "INTEGRATED", None, ""),
+        )
+
+        self.assertEqual([], plan_supersede(conn, 20))
+
+    def test_carrier_expansion_is_one_hop_only(self):
+        conn = make_db()
+        preflight(conn, 10, "FAILED", ["ROOT"], "f" * 40, 10)
+        preflight(conn, 20, "APPLIED", ["LEAF"], "s" * 40, 20)
+        regression(conn, 1, "REG-MERGE", "merge-preflight", "f" * 40, 11)
+        conn.execute(
+            "insert into task_dependencies values(?,?,?,?)",
+            ("MID", "LEAF", "integration_carrier", ""),
+        )
+        conn.execute(
+            "insert into task_dependencies values(?,?,?,?)",
+            ("ROOT", "MID", "integration_carrier", ""),
+        )
+        conn.execute(
+            "insert into integration_queue values(?,?,?,?)",
+            ("LEAF", "INTEGRATED", None, ""),
+        )
+        conn.execute(
+            "insert into integration_queue values(?,?,?,?)",
+            ("MID", "INTEGRATED", None, ""),
+        )
+
+        self.assertEqual([], plan_supersede(conn, 20))
 
     def test_mixed_failure_remains_open_when_success_does_not_cover_every_task(self):
         conn = make_db()
