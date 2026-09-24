@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import ast
 import os
 import tempfile
 from dataclasses import dataclass
@@ -47,6 +48,7 @@ MANIFEST: dict[str, tuple[str, int]] = {
     "lib/logres_optimizer.py": ("lib/logres_optimizer.py", 0o600),
     "lib/logres_preview_reaper.py": ("lib/logres_preview_reaper.py", 0o600),
     "lib/logres_reconcile.py": ("lib/logres_reconcile.py", 0o600),
+    "lib/logres_regression_reconcile.py": ("lib/logres_regression_reconcile.py", 0o600),
     "lib/logres_remote_pool.py": ("lib/logres_remote_pool.py", 0o600),
     "lib/logres_resource_broker.py": ("lib/logres_resource_broker.py", 0o600),
     "lib/logres_route_policy.py": ("lib/logres_route_policy.py", 0o600),
@@ -65,6 +67,56 @@ class Deployment:
     mode: int
 
 
+def _is_python_source(path: Path) -> bool:
+    if path.suffix == ".py":
+        return True
+    try:
+        first = path.read_text(errors="replace").splitlines()[0]
+    except (OSError, IndexError):
+        return False
+    return "python" in first.lower()
+
+
+def _local_logres_imports(path: Path) -> set[str]:
+    if not _is_python_source(path):
+        return set()
+    try:
+        tree = ast.parse(path.read_text())
+    except (OSError, SyntaxError) as exc:
+        raise ValueError(f"invalid Python source in deployment manifest: {path}: {exc}") from exc
+    modules: set[str] = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            names = [alias.name.split(".", 1)[0] for alias in node.names]
+        elif isinstance(node, ast.ImportFrom) and node.module:
+            names = [node.module.split(".", 1)[0]]
+        else:
+            continue
+        modules.update(name for name in names if name.startswith("logres_"))
+    return modules
+
+
+def _validate_import_closure(source_root: Path) -> None:
+    manifest_sources = set(MANIFEST)
+    missing: dict[str, list[str]] = {}
+    for source_rel in MANIFEST:
+        source = source_root / source_rel
+        if not source.is_file():
+            continue
+        for module in _local_logres_imports(source):
+            local_rel = f"lib/{module}.py"
+            if not (source_root / local_rel).is_file():
+                continue
+            if local_rel not in manifest_sources:
+                missing.setdefault(local_rel, []).append(source_rel)
+    if missing:
+        details = ", ".join(
+            f"{module} imported by {','.join(sorted(importers))}"
+            for module, importers in sorted(missing.items())
+        )
+        raise ValueError(f"deployment manifest missing local imports: {details}")
+
+
 def _validate_source(source_root: Path) -> list[Deployment]:
     deployments: list[Deployment] = []
     for source_rel, (destination_rel, mode) in MANIFEST.items():
@@ -78,6 +130,7 @@ def _validate_source(source_root: Path) -> list[Deployment]:
                 mode=mode,
             )
         )
+    _validate_import_closure(source_root)
     return deployments
 
 
