@@ -194,7 +194,7 @@ def _content_status(manifest,objective_id,refs,manifest_error=None):
       "manifest_version":manifest.get("version"),
       "required_count":len(required_ids),
       "represented_count":len(represented_ids),
-      "ceiling_or_excluded_count":len(bounded_ids),
+      "ceiling_or_excluded_count":len(set(ceiling_ids)|set(excluded_ids)),
       "missing_count":len(missing_ids),
       "undeclared_represented_count":len(undeclared_represented_ids)+len(undeclared_bounded_ids),
       "represented_ids":represented_ids,
@@ -220,7 +220,7 @@ def scan(conn,persist=False,manifest_path=None):
         if obj["id"] in _CONTENT_OBJECTIVES:
             completion=_content_status(manifest,obj["id"],refs,manifest_error)
             content_completion[completion.get("category_id") or obj["id"]]=completion
-            if not completion["complete"]: kind="DECLARED_CONTENT_GAP"
+            if not completion["complete"] and not completion.get("error"): kind="DECLARED_CONTENT_GAP"
         item={"objective_id":obj["id"],"title":obj["title"],"definition_of_done":obj["definition_of_done"],
               "state":state,"gap_kind":kind,"references":refs}
         if completion is not None: item["content_completion"]=completion

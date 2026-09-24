@@ -51,6 +51,13 @@ class CoverageTests(unittest.TestCase):
   r=scan(c)
   self.assertEqual("WAITING_EXTERNAL",r["gaps"][0]["state"])
   self.assertEqual("DECLARED_CONTENT_GAP",r["gaps"][0]["gap_kind"])
+ def test_manifest_load_error_preserves_underlying_gap_kind(self):
+  c=self.db(); self.add_leaf(c,"MAP_CONTENT","Maps")
+  self.add_task(c,"MAP_CONTENT",status="BLOCKED_EVIDENCE")
+  r=scan(c,manifest_path="/tmp/does-not-exist.json")
+  self.assertIn("content_manifest_error",r)
+  self.assertEqual("WAITING_EXTERNAL",r["gaps"][0]["state"])
+  self.assertEqual("EVIDENCE_CEILING",r["gaps"][0]["gap_kind"])
  def test_content_category_reports_required_represented_and_bounded_counts(self):
   c=self.db(); self.add_leaf(c,"MAP_CONTENT","Maps")
   self.add_task(c,"MAP_CONTENT",note=self.coverage_note("maps_regions",represented=["millennium-tree-field"],ceiling=["millennium-tree-internal-map-id"]))
@@ -61,4 +68,9 @@ class CoverageTests(unittest.TestCase):
   self.assertEqual(1,summary["ceiling_or_excluded_count"])
   self.assertEqual(0,summary["missing_count"])
   self.assertEqual(0,r["gap_count"])
+ def test_unmatched_bounded_targets_do_not_inflate_observed_counts(self):
+  c=self.db(); self.add_leaf(c,"MAP_CONTENT","Maps")
+  self.add_task(c,"MAP_CONTENT",note=self.coverage_note("maps_regions",represented=["millennium-tree-field"]))
+  r=scan(c)
+  self.assertEqual(0,r["content_completion"]["maps_regions"]["ceiling_or_excluded_count"])
 if __name__=="__main__":unittest.main()
