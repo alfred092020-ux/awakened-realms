@@ -1,0 +1,373 @@
+from __future__ import annotations
+
+import json
+import os
+import sqlite3
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Iterable
+
+
+SATISFIED_TASK_STATES = {"DONE", "RESOLVED", "INTEGRATED"}
+TERMINAL_TASK_STATES = SATISFIED_TASK_STATES | {"SUPERSEDED", "CANCELLED"}
+
+
+@dataclass(frozen=True)
+class ResourceState:
+    cpus: int
+    load1: float
+    memory_available_gib: float
+    disk_free_gib: float
+
+    @property
+    def load_per_cpu(self) -> float:
+        return self.load1 / max(1, self.cpus)
+
+
+@dataclass(frozen=True)
+class AutonomyDecision:
+    allowed: bool
+    reasons: tuple[str, ...]
+    batch_limit: int
+
+
+def load_config(path: Path) -> dict:
+    if not path.is_file():
+        return {}
+    return json.loads(path.read_text())
+
+
+def load_state(path: Path) -> dict:
+    if not path.is_file():
+        return {
+            "consecutive_failures": 0,
+            "tripped": False,
+            "last_failure": None,
+            "last_success": None,
+            "last_applied_preflight": None,
+        }
+    try:
+        state = json.loads(path.read_text())
+    except (OSError, json.JSONDecodeError):
+        state = {}
+    return {
+        "consecutive_failures": int(state.get("consecutive_failures", 0) or 0),
+        "tripped": bool(state.get("tripped", False)),
+        "last_failure": state.get("last_failure"),
+        "last_success": state.get("last_success"),
+        "last_applied_preflight": state.get("last_applied_preflight"),
+    }
+
+
+def save_state(path: Path, state: dict) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_suffix(path.suffix + ".tmp")
+    tmp.write_text(json.dumps(state, indent=2, sort_keys=True) + "\n")
+    os.replace(tmp, path)
+
+
+def record_failure(path: Path, message: str, threshold: int) -> dict:
+    state = load_state(path)
+    state["consecutive_failures"] += 1
+    state["last_failure"] = message
+    if state["consecutive_failures"] >= max(1, threshold):
+        state["tripped"] = True
+    save_state(path, state)
+    return state
+
+
+def record_success(path: Path, *, preflight_id: int | None = None) -> dict:
+    state = load_state(path)
+    state["consecutive_failures"] = 0
+    state["tripped"] = False
+    state["last_failure"] = None
+    state["last_success"] = "success"
+    if preflight_id is not None:
+        state["last_applied_preflight"] = int(preflight_id)
+    save_state(path, state)
+    return state
+
+
+def reset_circuit(path: Path) -> dict:
+    state = load_state(path)
+    state["consecutive_failures"] = 0
+    state["tripped"] = False
+    state["last_failure"] = None
+    save_state(path, state)
+    return state
+
+
+def resource_state() -> ResourceState:
+    cpus = os.cpu_count() or 1
+    load1 = os.getloadavg()[0]
+    mem_available = 0
+    for line in Path("/proc/meminfo").read_text().splitlines():
+        if line.startswith("MemAvailable:"):
+            mem_available = int(line.split()[1]) * 1024
+            break
+    stat = os.statvfs("/")
+    disk_free = stat.f_bavail * stat.f_frsize
+    return ResourceState(
+        cpus=cpus,
+        load1=load1,
+        memory_available_gib=mem_available / 1024**3,
+        disk_free_gib=disk_free / 1024**3,
+    )
+
+
+def dynamic_batch_limit(
+    config: dict,
+    resources: ResourceState,
+    ready_count: int,
+) -> int:
+    auto = config.get("autonomy", {})
+    maximum = max(1, int(auto.get("max_preflight_batch", 4) or 4))
+    if ready_count <= 0:
+        return 0
+
+    min_mem = float(auto.get("min_free_memory_gib", 12.0) or 12.0)
+    min_disk = float(auto.get("min_free_disk_gib", 30.0) or 30.0)
+    max_load = float(auto.get("max_load_per_cpu", 1.25) or 1.25)
+
+    if (
+        resources.memory_available_gib < min_mem
+        or resources.disk_free_gib < min_disk
+        or resources.load_per_cpu > max_load
+    ):
+        return 1
+
+    # Use more of the machine when it is obviously underloaded.
+    if (
+        resources.memory_available_gib >= max(32.0, min_mem * 2)
+        and resources.disk_free_gib >= max(60.0, min_disk * 2)
+        and resources.load_per_cpu <= min(0.5, max_load / 2)
+    ):
+        return min(maximum, ready_count)
+
+    return min(maximum, ready_count, 2)
+
+
+def _hard_dependencies_satisfied(conn: sqlite3.Connection, task_id: str) -> bool:
+    rows = conn.execute(
+        """select d.depends_on,t.status
+             from task_dependencies d
+             left join tasks t on t.id=d.depends_on
+            where d.task_id=? and d.kind='hard'""",
+        (task_id,),
+    ).fetchall()
+    return all((row[1] or "MISSING") in SATISFIED_TASK_STATES for row in rows)
+
+
+def _downstream_count(conn: sqlite3.Connection, task_id: str) -> int:
+    seen: set[str] = set()
+    frontier = [task_id]
+    while frontier:
+        current = frontier.pop()
+        for row in conn.execute(
+            "select task_id from task_dependencies where depends_on=?",
+            (current,),
+        ):
+            child = row[0]
+            if child not in seen:
+                seen.add(child)
+                frontier.append(child)
+    return len(seen)
+
+
+def _critical_path_minutes(
+    conn: sqlite3.Connection,
+    task_id: str,
+    memo: dict[str, int] | None = None,
+    visiting: set[str] | None = None,
+) -> int:
+    memo = {} if memo is None else memo
+    visiting = set() if visiting is None else visiting
+    if task_id in memo:
+        return memo[task_id]
+    if task_id in visiting:
+        return 0
+
+    visiting.add(task_id)
+    row = conn.execute(
+        """select t.status,coalesce(m.expected_minutes,60)
+             from tasks t
+             left join task_metadata m on m.task_id=t.id
+            where t.id=?""",
+        (task_id,),
+    ).fetchone()
+    if row is None:
+        visiting.discard(task_id)
+        return 0
+
+    own = 0 if row[0] in SATISFIED_TASK_STATES else int(row[1] or 60)
+    children = [
+        child[0]
+        for child in conn.execute(
+            """select d.task_id
+                 from task_dependencies d
+                 left join tasks t on t.id=d.task_id
+                where d.depends_on=? and d.kind='hard'
+                  and coalesce(t.status,'MISSING')
+                      not in ('DONE','RESOLVED','INTEGRATED')""",
+            (task_id,),
+        )
+    ]
+    downstream = max(
+        (
+            _critical_path_minutes(conn, child, memo=memo, visiting=visiting)
+            for child in children
+        ),
+        default=0,
+    )
+    visiting.discard(task_id)
+    memo[task_id] = own + downstream
+    return memo[task_id]
+
+
+def rank_ready_tasks(conn: sqlite3.Connection, limit: int = 8) -> list[str]:
+    rows = []
+    memo: dict[str, int] = {}
+    for row in conn.execute(
+        """select t.id,t.priority,t.lane,
+                  coalesce(m.expected_minutes,60) expected_minutes,
+                  coalesce(m.work_type,'implementation') work_type
+             from tasks t
+             left join task_metadata m on m.task_id=t.id
+            where t.status='READY'"""
+    ):
+        task_id = row[0]
+        if not _hard_dependencies_satisfied(conn, task_id):
+            continue
+        priority = int(row[1] if row[1] is not None else 99)
+        expected = int(row[3] or 60)
+        downstream = _downstream_count(conn, task_id)
+        critical = _critical_path_minutes(conn, task_id, memo=memo)
+        regression_bonus = -5000 if str(row[4]) == "regression" else 0
+        rank = (
+            priority * 10000
+            + regression_bonus
+            - critical * 8
+            - downstream * 100
+            + expected
+        )
+        rows.append((rank, task_id))
+    rows.sort(key=lambda item: (item[0], item[1]))
+    return [task for _, task in rows[: max(1, limit)]]
+
+
+def actionable_open_regressions(conn: sqlite3.Connection) -> int:
+    try:
+        return int(
+            conn.execute(
+                """select count(*) from regressions
+                    where status in ('OPEN','ACTIVE','VERIFYING')"""
+            ).fetchone()[0]
+        )
+    except sqlite3.OperationalError:
+        return 0
+
+
+def integration_backlog(conn: sqlite3.Connection) -> int:
+    try:
+        return int(
+            conn.execute(
+                """select count(*) from integration_queue
+                    where status in (
+                      'READY_FOR_PREFLIGHT',
+                      'READY_FOR_INTEGRATION'
+                    )"""
+            ).fetchone()[0]
+        )
+    except sqlite3.OperationalError:
+        return 0
+
+
+def autonomy_decision(
+    config: dict,
+    state: dict,
+    resources: ResourceState,
+    *,
+    doctor_ok: bool,
+    route_failures: int,
+    open_regressions: int,
+    ready_count: int,
+) -> AutonomyDecision:
+    auto = config.get("autonomy", {})
+    reasons: list[str] = []
+
+    if not bool(auto.get("enabled", False)):
+        reasons.append("autonomy disabled")
+    if state.get("tripped"):
+        reasons.append("circuit breaker tripped")
+    if not doctor_ok:
+        reasons.append("doctor is not clean")
+    if route_failures:
+        reasons.append(f"route failures={route_failures}")
+    # An open regression often owns the repair candidate currently waiting for
+    # integration. Exact-SHA full-E2E preflight is the hard safety gate, so
+    # regressions are telemetry by default rather than an integration deadlock.
+    if open_regressions and bool(auto.get("block_on_open_regressions", False)):
+        reasons.append(f"open regressions={open_regressions}")
+
+    min_mem = float(auto.get("min_free_memory_gib", 12.0) or 12.0)
+    min_disk = float(auto.get("min_free_disk_gib", 30.0) or 30.0)
+    max_load = float(auto.get("max_load_per_cpu", 1.25) or 1.25)
+    if resources.memory_available_gib < min_mem:
+        reasons.append(
+            f"memory {resources.memory_available_gib:.1f}GiB < {min_mem:.1f}GiB"
+        )
+    if resources.disk_free_gib < min_disk:
+        reasons.append(
+            f"disk {resources.disk_free_gib:.1f}GiB < {min_disk:.1f}GiB"
+        )
+    if resources.load_per_cpu > max_load:
+        reasons.append(
+            f"load/cpu {resources.load_per_cpu:.2f} > {max_load:.2f}"
+        )
+
+    return AutonomyDecision(
+        allowed=not reasons,
+        reasons=tuple(reasons),
+        batch_limit=dynamic_batch_limit(config, resources, ready_count),
+    )
+
+
+def autonomy_apply_authorized(
+    config: dict,
+    environment: dict[str, str],
+    preflight_id: int,
+) -> bool:
+    auto = config.get("autonomy", {})
+    return bool(
+        auto.get("enabled", False)
+        and auto.get("auto_apply_preflight_enabled", False)
+        and environment.get("LOGRES_AUTONOMY_APPLY") == "1"
+        and environment.get("LOGRES_AUTONOMY_PREFLIGHT_ID") == str(preflight_id)
+    )
+
+
+def parse_route_failures(text: str) -> int:
+    for token in text.replace("\n", " ").split():
+        if token.startswith("failed="):
+            try:
+                return int(token.split("=", 1)[1])
+            except ValueError:
+                return 1
+    return 0
+
+
+def latest_verified_preflight(
+    conn: sqlite3.Connection,
+    current_base_sha: str,
+):
+    try:
+        return conn.execute(
+            """select *
+                 from integration_preflights
+                where status='VERIFIED' and base_sha=?
+                order by created_epoch desc,id desc
+                limit 1""",
+            (current_base_sha,),
+        ).fetchone()
+    except sqlite3.OperationalError:
+        return None

@@ -132,7 +132,9 @@ def run_locked_helper(name,*args):
 
 run_locked_helper("logres-route-reconcile")
 run_locked_helper("logres-ai-router")
-run_locked_helper("logres-copilot-router")
+# Let the critical-path-ranked Copilot router fill safe implementation capacity.
+# Eligibility and runtime max_active remain the hard cap.
+run_locked_helper("logres-copilot-router","--limit","4")
 subprocess.run(["/home/ubuntu/logres/bin/logres-autoflow-plan"],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,check=False)
 
 # If the worker pool has spare capacity, surface only the scheduler's mutually
@@ -152,5 +154,10 @@ if wave_data.get("count",0)>0:
          f"Scheduler has {wave_data['count']} mutually-safe packet(s) ready: {names}. "
          "Use logres-worker-start <chat-id> AUTO; atomic acquire prevents duplication.",
          None,f"worker-capacity:{bucket}:{names}")
+
+# Autonomy remains fail-closed by committed default. When explicitly enabled
+# in runtime config it may preflight and apply only exact-SHA full-E2E verified
+# batches through its separate circuit breaker and resource governor.
+run_locked_helper("logres-autonomy","cycle")
 
 print(f"autopilot_ok leases={len(leases)} load1={load1:.2f} mem_avail_gib={avail/1024**3:.1f} disk_free_gib={disk.free/1024**3:.1f}")

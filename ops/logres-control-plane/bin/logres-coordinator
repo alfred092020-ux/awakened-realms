@@ -1,0 +1,882 @@
+#!/usr/bin/env python3
+from __future__ import annotations
+import argparse, json, os, re, sqlite3, subprocess, time
+from datetime import datetime, timezone
+from pathlib import Path
+
+ROOT=Path(os.environ.get("LOGRES_ROOT","/home/ubuntu/logres"))
+DB=Path(os.environ.get("LOGRES_CONTROL_DB",str(ROOT/"control/control.sqlite")))
+REPO=Path(os.environ.get("LOGRES_REPO_ROOT",str(ROOT/"src/awakened-realms")))
+BRAIN=os.environ.get("LOGRES_BRAIN",str(ROOT/"bin/logres-brain"))
+CONTROL=os.environ.get("LOGRES_CONTROL",str(ROOT/"bin/logres-control"))
+SATISFIED={"DONE","RESOLVED","INTEGRATED"}
+
+def iso():
+    return datetime.now(timezone.utc).isoformat(timespec="seconds")
+
+def run(cmd):
+    return subprocess.run(cmd,text=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE,check=False)
+
+def conn():
+    c=sqlite3.connect(DB,timeout=30)
+    c.row_factory=sqlite3.Row
+    c.execute("pragma journal_mode=WAL")
+    c.execute("pragma busy_timeout=30000")
+    ensure(c)
+    return c
+
+def ensure(c):
+    c.executescript("""
+    create table if not exists milestones(
+      id text primary key,title text not null,sort_order integer not null default 100,
+      status text not null default 'ACTIVE',definition_of_done text not null default '',
+      created_at text not null,updated_at text not null);
+    create table if not exists task_metadata(
+      task_id text primary key,milestone text,work_type text not null default 'implementation',
+      concurrency_key text,expected_minutes integer not null default 60,
+      evidence_policy text not null default '',created_at text not null,updated_at text not null);
+    create table if not exists task_dependencies(
+      task_id text not null,depends_on text not null,kind text not null default 'hard',
+      rationale text not null default '',primary key(task_id,depends_on));
+    create table if not exists task_acceptance(
+      task_id text not null,ordinal integer not null,criterion text not null,
+      primary key(task_id,ordinal));
+    create table if not exists task_scopes(
+      task_id text not null,path_prefix text not null,primary key(task_id,path_prefix));
+    create table if not exists integration_queue(
+      task_id text not null,sha text not null,branch text not null,status text not null,
+      verification_mode text,queued_at text not null,updated_at text not null,note text not null default '',
+      primary key(task_id,sha));
+    create table if not exists task_state_history(
+      id integer primary key autoincrement,task_id text not null,ts_epoch real not null,
+      ts text not null,status text,owner text,branch text,source text not null default 'sqlite-trigger',
+      note text not null default '');
+    create table if not exists lease_history(
+      id integer primary key autoincrement,task_id text not null,chat_id text,
+      branch text,action text not null,lease_until_epoch real,progress integer,
+      ts_epoch real not null,ts text not null);
+    create table if not exists task_recovery(
+      id integer primary key autoincrement,task_id text not null,branch text,
+      worktree text not null,created_at text not null,created_epoch real not null,
+      dirty_count integer not null,status text not null default 'AVAILABLE',
+      manifest_path text not null,note text not null default '');
+    create table if not exists regressions(
+      id integer primary key autoincrement,fingerprint text not null unique,task_id text,
+      kind text not null,ref text,sha text,summary text not null,logs_json text not null default '[]',
+      created_at text not null,created_epoch real not null,status text not null default 'OPEN');
+    create table if not exists device_proofs(
+      id integer primary key autoincrement,sha text not null,apk_sha256 text,
+      checkpoint text not null,status text not null,artifact_path text,note text not null default '',
+      created_at text not null,created_epoch real not null);
+    create table if not exists visual_checks(
+      id integer primary key autoincrement,sha text,checkpoint text not null,status text not null,
+      metrics_json text not null,artifact_path text,created_at text not null,created_epoch real not null);
+
+    create trigger if not exists tasks_history_insert
+    after insert on tasks
+    begin
+      insert into task_state_history(task_id,ts_epoch,ts,status,owner,branch,source,note)
+      values(new.id,cast(strftime('%s','now') as real),datetime('now'),new.status,new.owner,new.branch,'sqlite-trigger','insert');
+    end;
+    create trigger if not exists tasks_history_update
+    after update of status,owner,branch on tasks
+    when old.status is not new.status or old.owner is not new.owner or old.branch is not new.branch
+    begin
+      insert into task_state_history(task_id,ts_epoch,ts,status,owner,branch,source,note)
+      values(new.id,cast(strftime('%s','now') as real),datetime('now'),new.status,new.owner,new.branch,'sqlite-trigger','update');
+    end;
+    create trigger if not exists lease_history_insert
+    after insert on brain_task_leases
+    begin
+      insert into lease_history(task_id,chat_id,branch,action,lease_until_epoch,progress,ts_epoch,ts)
+      values(new.task_id,new.chat_id,new.branch,'ACQUIRE',new.lease_until_epoch,new.progress,
+             cast(strftime('%s','now') as real),datetime('now'));
+    end;
+    create trigger if not exists lease_history_update
+    after update on brain_task_leases
+    begin
+      insert into lease_history(task_id,chat_id,branch,action,lease_until_epoch,progress,ts_epoch,ts)
+      values(new.task_id,new.chat_id,new.branch,'RENEW',new.lease_until_epoch,new.progress,
+             cast(strftime('%s','now') as real),datetime('now'));
+    end;
+    create trigger if not exists lease_history_delete
+    after delete on brain_task_leases
+    begin
+      insert into lease_history(task_id,chat_id,branch,action,lease_until_epoch,progress,ts_epoch,ts)
+      values(old.task_id,old.chat_id,old.branch,'RELEASE',old.lease_until_epoch,old.progress,
+             cast(strftime('%s','now') as real),datetime('now'));
+    end;
+    """)
+    now=iso()
+    c.execute("""insert or ignore into milestones
+      (id,title,sort_order,status,definition_of_done,created_at,updated_at)
+      values(?,?,?,?,?,?,?)""",
+      ("DEMO-0.2","Authentic playable presentation",20,"ACTIVE",
+       "Evidence-backed onboarding, coherent Millennium Tree actors, battle presentation, "
+       "and repeatable Android visual proof without regressing the playable loop.",now,now))
+    # Lightweight schema migrations for live control-plane telemetry.
+    iq_cols={r[1] for r in c.execute("pragma table_info(integration_queue)")}
+    if "ready_at" not in iq_cols:
+        c.execute("alter table integration_queue add column ready_at text")
+    if "integrated_at" not in iq_cols:
+        c.execute("alter table integration_queue add column integrated_at text")
+
+    # SQLite is now the only live dependency/task source of truth.
+    # The former task-dependencies.json is retained only as an archived migration
+    # artifact and is never consulted during scheduling.
+    c.commit()
+
+def deps(c,task):
+    return list(c.execute("""select d.*,t.status dep_status from task_dependencies d
+      left join tasks t on t.id=d.depends_on where d.task_id=? order by depends_on""",(task,)))
+
+def hard_deps_ok(c,task):
+    rows=[r for r in deps(c,task) if r["kind"]=="hard"]
+    return all((r["dep_status"] or "MISSING") in SATISFIED for r in rows)
+
+def active_leases(c):
+    return list(c.execute("""select l.*,t.priority,t.title,t.lane,
+      coalesce(m.work_type,'implementation') work_type,
+      coalesce(m.concurrency_key,t.lane) concurrency_key
+      from brain_task_leases l join tasks t on t.id=l.task_id
+      left join task_metadata m on m.task_id=t.id
+      where l.lease_until_epoch>? order by t.priority,l.task_id""",(time.time(),)))
+
+def downstream_count(c,task):
+    seen=set(); frontier=[task]
+    while frontier:
+        cur=frontier.pop()
+        for r in c.execute("select task_id from task_dependencies where depends_on=?",(cur,)):
+            x=r[0]
+            if x not in seen:
+                seen.add(x); frontier.append(x)
+    return len(seen)
+
+def critical_path_minutes(c,task,memo=None,visiting=None):
+    memo={} if memo is None else memo
+    visiting=set() if visiting is None else visiting
+    if task in memo:
+        return memo[task]
+    if task in visiting:
+        return 0
+    visiting.add(task)
+    row=c.execute("""select t.status,coalesce(m.expected_minutes,60) expected_minutes
+      from tasks t left join task_metadata m on m.task_id=t.id where t.id=?""",(task,)).fetchone()
+    if row is None:
+        visiting.discard(task)
+        return 0
+    own=0 if row["status"] in SATISFIED else int(row["expected_minutes"] or 60)
+    children=[
+        r[0] for r in c.execute(
+            """select d.task_id from task_dependencies d
+               left join tasks t on t.id=d.task_id
+               where d.depends_on=? and d.kind='hard'
+                 and coalesce(t.status,'MISSING') not in ('DONE','RESOLVED','INTEGRATED')""",
+            (task,),
+        )
+    ]
+    downstream=max(
+        (critical_path_minutes(c,ch,memo,visiting) for ch in children),
+        default=0,
+    )
+    visiting.discard(task)
+    memo[task]=own+downstream
+    return memo[task]
+
+def ready_rows(c):
+    active=active_leases(c)
+    leased={r["task_id"] for r in active}
+    active_keys={r["concurrency_key"] for r in active if r["concurrency_key"]}
+    claims=list(c.execute("select task_id,path_prefix from claims"))
+    rows=[]
+    for r in c.execute("""select t.*,m.milestone,m.work_type,m.concurrency_key,m.expected_minutes,
+      m.evidence_policy from tasks t left join task_metadata m on m.task_id=t.id
+      where t.status='READY' order by t.priority,t.id"""):
+        if r["id"] in leased or not hard_deps_ok(c,r["id"]):
+            continue
+        key=r["concurrency_key"] or r["lane"]
+        if key and key in active_keys:
+            continue
+        scopes=[x[0] for x in c.execute(
+            "select path_prefix from task_scopes where task_id=?",(r["id"],)
+        )]
+        scope_conflict=False
+        for scope in scopes:
+            a=scope.rstrip("/")+"/"
+            for claim in claims:
+                if claim["task_id"]==r["id"]:
+                    continue
+                b=claim["path_prefix"].rstrip("/")+"/"
+                if a.startswith(b) or b.startswith(a):
+                    scope_conflict=True
+                    break
+            if scope_conflict:
+                break
+        if scope_conflict:
+            continue
+        d=dict(r)
+        d["downstream"]=downstream_count(c,r["id"])
+        d["critical_path_minutes"]=critical_path_minutes(c,r["id"])
+        d["expected_minutes"]=d.get("expected_minutes") or 60
+        d["work_type"]=d.get("work_type") or "implementation"
+        d["concurrency_key"]=key
+        has_recovery=bool(c.execute(
+            "select 1 from task_recovery where task_id=? and status='AVAILABLE' limit 1",
+            (d["id"],),
+        ).fetchone())
+        d["has_recovery"]=has_recovery
+        # Same-priority regressions preempt feature work. Preserved stale work is
+        # slightly favored so useful partial progress does not sit idle.
+        urgency=(-5000 if d["work_type"]=="regression" else 0) + (-250 if has_recovery else 0)
+        # Priority dominates. Within a priority, favor work that shortens the
+        # longest remaining dependency chain, then work that unlocks more tasks.
+        d["rank"]=(
+            d["priority"]*10000
+            + urgency
+            - d["critical_path_minutes"]*8
+            - d["downstream"]*100
+            + d["expected_minutes"]
+        )
+        rows.append(d)
+    return sorted(rows,key=lambda x:(x["rank"],x["id"]))
+
+def git_sha(ref):
+    if not ref: return None
+    candidates=(ref,) if ref.startswith("origin/") else ("origin/"+ref,ref)
+    for candidate in candidates:
+        p=run(["git","-C",str(REPO),"rev-parse",candidate])
+        if p.returncode==0 and len(p.stdout.strip())==40:
+            return p.stdout.strip()
+    return None
+
+def ancestor(sha,head):
+    return run(["git","-C",str(REPO),"merge-base","--is-ancestor",sha,head]).returncode==0
+
+def patch_equivalent(ref,head_ref="feat/logres-reconstruction"):
+    p=run(["git","-C",str(REPO),"cherry",head_ref,ref])
+    if p.returncode!=0:
+        return False
+    lines=[x.strip() for x in p.stdout.splitlines() if x.strip()]
+    return bool(lines) and all(x.startswith("-") for x in lines)
+
+def worktree_for_branch(branch):
+    if not branch:
+        return None
+    p=run(["git","-C",str(REPO),"worktree","list","--porcelain"])
+    current=None
+    for line in p.stdout.splitlines():
+        if line.startswith("worktree "):
+            current=line.split(" ",1)[1]
+        elif line==f"branch refs/heads/{branch}" and current:
+            return current
+    return None
+
+def branch_commit(branch):
+    if not branch:
+        return None
+    for ref in (branch,"origin/"+branch):
+        p=run(["git","-C",str(REPO),"rev-parse","--verify",ref+"^{commit}"])
+        if p.returncode==0:
+            return p.stdout.strip()
+    return None
+
+def reconcile(c,verbose=True):
+    run(["python3","/home/ubuntu/logres/bin/logres-claims-reconcile"])
+    changed=[]
+    reclaimed=[]
+    now=time.time()
+    live_rows=list(c.execute("""select l.*,m.last_seen_epoch,t.status task_status
+      from brain_task_leases l
+      left join brain_members m on m.chat_id=l.chat_id
+      join tasks t on t.id=l.task_id
+      where l.lease_until_epoch>?""",(now,)))
+    live_by_task={r["task_id"]:r for r in live_rows}
+    live_tasks=set(live_by_task)
+
+    # A live lease is authoritative over accidental READY state.
+    for task_id,lease in live_by_task.items():
+        if lease["task_status"]=="READY":
+            c.execute("""update tasks set status='ACTIVE',owner=?,branch=?,note=?,updated_at=?
+                         where id=?""",
+                      (lease["chat_id"],lease["branch"],
+                       "live lease restored ACTIVE state during reconciliation",iso(),task_id))
+            changed.append((task_id,"ACTIVE(live-lease)"))
+
+    # Conservatively reclaim leases which never established any workspace, or
+    # zero-progress clean leases already near expiry after a long idle period.
+    integration_head=git_sha("feat/logres-reconstruction")
+    for lease in live_rows:
+        if lease["chat_id"]=="lead" or int(lease["progress"] or 0)!=0:
+            continue
+        idle=now-float(lease["last_seen_epoch"] or 0)
+        remaining=float(lease["lease_until_epoch"])-now
+        branch=lease["branch"] or ""
+        wt=worktree_for_branch(branch)
+        branch_sha=branch_commit(branch)
+        dirty=bool(wt and run(["git","-C",wt,"status","--porcelain"]).stdout.strip())
+        no_unique=bool(
+            not branch_sha
+            or (integration_head and ancestor(branch_sha,integration_head))
+        )
+        never_started=(idle>=900 and not wt and not branch_sha)
+        near_expiry=(idle>=1800 and remaining<=1200 and not dirty and no_unique)
+        if not (never_started or near_expiry):
+            continue
+        reason="unstarted lease reclaimed" if never_started else "idle zero-progress lease reclaimed near expiry"
+        c.execute("delete from brain_task_leases where task_id=?",(lease["task_id"],))
+        c.execute("delete from claims where task_id=?",(lease["task_id"],))
+        c.execute("""update tasks set status='READY',owner=null,branch=null,note=?,updated_at=?
+                     where id=?""",(reason,iso(),lease["task_id"]))
+        if not c.execute("select 1 from brain_task_leases where chat_id=? limit 1",
+                         (lease["chat_id"],)).fetchone():
+            c.execute("update brain_members set status='IDLE' where chat_id=?",(lease["chat_id"],))
+        live_tasks.discard(lease["task_id"])
+        changed.append((lease["task_id"],"READY(reclaimed-zero-progress)"))
+        reclaimed.append((lease["task_id"],lease["chat_id"],reason))
+    # An ACTIVE task without a live lease is stale control state, not active work.
+    for t in c.execute("select id,status,owner,branch from tasks where status='ACTIVE'").fetchall():
+        if t["id"] not in live_tasks:
+            recovery=run([
+                "/home/ubuntu/logres/bin/logres-stale-work-recover",
+                "--task",t["id"],"--quiet",
+            ])
+            recovery_line=(recovery.stdout or "").strip().splitlines()
+            stale_sha=branch_commit(t["branch"])
+            committed_progress=bool(
+                stale_sha and integration_head and not ancestor(stale_sha,integration_head)
+            )
+            preserved_branch=t["branch"] if (recovery_line or committed_progress) else None
+            note=(
+                "stale worker recovery preserved at "+recovery_line[-1]
+                if recovery_line else
+                ("stale committed branch preserved for resume"
+                 if committed_progress else
+                 "stale ACTIVE state reclaimed; no dirty or committed recovery payload")
+            )
+            c.execute(
+                "update tasks set status='READY',owner=null,branch=?,note=?,updated_at=? where id=?",
+                (preserved_branch,note,iso(),t["id"]),
+            )
+            c.execute("delete from claims where task_id=?",(t["id"],))
+            changed.append((
+                t["id"],
+                "READY(stale-active,recovery)" if recovery_line else "READY(stale-active)",
+            ))
+    # Dependency state is authoritative only for BLOCKED_DEP, never BLOCKED_EVIDENCE.
+    for t in c.execute("select id,status from tasks").fetchall():
+        if t["status"]=="BLOCKED_DEP" and hard_deps_ok(c,t["id"]):
+            c.execute("update tasks set status='READY',updated_at=? where id=?",(iso(),t["id"]))
+            changed.append((t["id"],"READY"))
+        elif t["status"]=="READY" and not hard_deps_ok(c,t["id"]):
+            c.execute("update tasks set status='BLOCKED_DEP',updated_at=? where id=?",(iso(),t["id"]))
+            changed.append((t["id"],"BLOCKED_DEP"))
+
+    # Dependency changes must never leave a still-leased task in READY.
+    for task_id in live_tasks:
+        lease=live_by_task.get(task_id)
+        if not lease:
+            continue
+        t=c.execute("select status from tasks where id=?",(task_id,)).fetchone()
+        if t and t["status"]=="READY":
+            c.execute("""update tasks set status='ACTIVE',owner=?,branch=?,note=?,updated_at=?
+                         where id=?""",
+                      (lease["chat_id"],lease["branch"],
+                       "live lease restored ACTIVE state after dependency reconciliation",
+                       iso(),task_id))
+            changed.append((task_id,"ACTIVE(live-lease-post-deps)"))
+    head=git_sha("feat/logres-reconstruction")
+
+    # A regression repair is resolved once its dedicated repair task has been
+    # integrated. Keep the historical record, but do not leave it OPEN forever.
+    c.execute(
+        """update regressions
+              set status='RESOLVED'
+            where status='OPEN'
+              and task_id is not null
+              and exists (
+                select 1 from integration_queue iq
+                 where iq.task_id=regressions.task_id
+                   and iq.status='INTEGRATED'
+              )"""
+    )
+
+    # Only completed tasks belong in the integration queue. A newly-created
+    # worker branch initially points at integration HEAD; that must never be
+    # mistaken for an already-integrated ACTIVE task.
+    c.execute("""delete from integration_queue
+                 where task_id in (select id from tasks where status!='DONE')""")
+
+    for t in c.execute(
+        "select id,branch,status,coalesce(owner,'') owner "
+        "from tasks where status='DONE' and branch is not null"
+    ).fetchall():
+        branch=t["branch"]
+        if t["owner"]=="copilot":
+            # Copilot PR heads may move after a task first reaches DONE. Only
+            # the candidate that passed Copilot reconciliation/scope/fast gate
+            # is eligible for the integration queue. Never infer a replacement
+            # candidate directly from the current remote branch head.
+            cj=c.execute(
+                """select branch,candidate_sha from copilot_jobs
+                   where task_id=? and state='QUEUED'
+                     and candidate_sha is not null
+                   order by id desc limit 1""",
+                (t["id"],),
+            ).fetchone()
+            if not cj:
+                continue
+            branch=cj["branch"]
+            sha=cj["candidate_sha"]
+            if t["branch"]!=branch:
+                c.execute(
+                    "update tasks set branch=?,updated_at=? where id=?",
+                    (branch,iso(),t["id"]),
+                )
+            c.execute(
+                """update integration_queue
+                      set status='SUPERSEDED',updated_at=?,note=?
+                    where task_id=? and sha<>?
+                      and status not in ('INTEGRATED','SUPERSEDED')""",
+                (
+                    iso(),
+                    f"Superseded by verified Copilot candidate {sha}.",
+                    t["id"],
+                    sha,
+                ),
+            )
+        else:
+            sha=git_sha(branch)
+            if not sha:
+                continue
+        integrated=bool(head and (ancestor(sha,head) or patch_equivalent(sha)))
+        v_full=c.execute("""select mode,status,ran_at from verification
+          where sha=? and mode='full-e2e' and status='PASS'
+          order by ran_at desc limit 1""",(sha,)).fetchone()
+        v_fast=c.execute("""select mode,status,ran_at from verification
+          where sha=? and mode='fast' and status='PASS'
+          order by ran_at desc limit 1""",(sha,)).fetchone()
+        if integrated:
+            qstatus="INTEGRATED"; vmode=(v_full or v_fast)
+        elif v_full:
+            qstatus="READY_FOR_INTEGRATION"; vmode=v_full
+        elif v_fast:
+            qstatus="READY_FOR_PREFLIGHT"; vmode=v_fast
+        else:
+            qstatus="NEEDS_VERIFY"; vmode=None
+        moved_at=iso()
+        c.execute("""update integration_queue
+                     set status='CANDIDATE_MOVED',updated_at=?,note=?
+                     where task_id=? and branch=? and sha<>?
+                       and status not in ('INTEGRATED','SUPERSEDED','CANDIDATE_MOVED')""",
+                  (moved_at,
+                   f"branch advanced after immutable queue snapshot; replacement={sha}",
+                   t["id"],branch,sha))
+        stamp=iso()
+        c.execute("""insert into integration_queue
+          (task_id,sha,branch,status,verification_mode,queued_at,updated_at,note,ready_at,integrated_at)
+          values(?,?,?,?,?,?,?,'',
+                 case when ?='READY_FOR_INTEGRATION' then ? else null end,
+                 case when ?='INTEGRATED' then ? else null end)
+          on conflict(task_id,sha) do update set
+            branch=excluded.branch,
+            status=excluded.status,
+            verification_mode=excluded.verification_mode,
+            updated_at=case
+              when integration_queue.status<>excluded.status
+                or coalesce(integration_queue.verification_mode,'')<>coalesce(excluded.verification_mode,'')
+              then excluded.updated_at else integration_queue.updated_at end,
+            ready_at=case
+              when excluded.status='READY_FOR_INTEGRATION'
+              then coalesce(integration_queue.ready_at,excluded.updated_at)
+              else integration_queue.ready_at end,
+            integrated_at=case
+              when excluded.status='INTEGRATED'
+              then coalesce(integration_queue.integrated_at,excluded.updated_at)
+              else integration_queue.integrated_at end""",
+          (t["id"],sha,branch,qstatus,vmode["mode"] if vmode else None,
+           stamp,stamp,qstatus,stamp,qstatus,stamp))
+    c.commit()
+    for task_id,chat_id,reason in reclaimed:
+        subprocess.run([
+            BRAIN,"post","system","ALL","TASK_RECLAIMED","HIGH",
+            f"Idle lease reclaimed: {task_id}",
+            "--body",f"owner={chat_id}; {reason}; no dirty or unique committed work was discarded.",
+            "--task",task_id,
+            "--dedupe",f"early-reclaim:{task_id}:{chat_id}",
+        ],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,check=False)
+    if verbose:
+        print("RECONCILED changed="+str(len(changed)))
+        for x in changed: print(" ",x[0],"->",x[1])
+
+def cmd_plan(c,args):
+    reconcile(c,False)
+    head=git_sha("feat/logres-reconstruction") or "unknown"
+    print("LOGRES COORDINATION PLAN")
+    print("integration="+head[:12])
+    ms=list(c.execute("select * from milestones where status='ACTIVE' order by sort_order,id"))
+    print("OBJECTIVES")
+    for m in ms: print(f"- {m['id']}: {m['title']} :: {m['definition_of_done']}")
+
+    active=active_leases(c)
+    open_reg=c.execute("select count(*) from regressions where status='OPEN'").fetchone()[0]
+    recoveries=c.execute("select count(*) from task_recovery where status='AVAILABLE'").fetchone()[0]
+    ready_count=c.execute("select count(*) from tasks where status='READY'").fetchone()[0]
+    print("\nFLOW")
+    print(
+        f"- workers={len(active)}/6 ready={ready_count} "
+        f"open_regressions={open_reg} recoveries={recoveries}"
+    )
+
+    print("\nACTIVE")
+    if not active: print("- none")
+    for r in active:
+        left=max(0,int((r["lease_until_epoch"]-time.time())/60))
+        print(f"- P{r['priority']} {r['task_id']} owner={r['chat_id']} {r['progress']}% "
+              f"left={left}m branch={r['branch'] or '-'} :: {r['title']}")
+    print("\nREADY NEXT")
+    rr=ready_rows(c)[:args.limit]
+    if not rr: print("- none")
+    for i,r in enumerate(rr,1):
+        print(f"{i}. P{r['priority']} {r['id']} [{r['work_type']}] "
+              f"~{r['expected_minutes']}m critical={r['critical_path_minutes']}m "
+              f"unlocks={r['downstream']} :: {r['title']}")
+    print("\nBLOCKED")
+    blocked=list(c.execute("select id,status,title from tasks where status like 'BLOCKED%' order by priority,id"))
+    if not blocked: print("- none")
+    for t in blocked:
+        ds=deps(c,t["id"])
+        detail=", ".join(f"{x['depends_on']}={x['dep_status'] or 'MISSING'}" for x in ds) or "evidence/manual blocker"
+        print(f"- {t['id']} {t['status']} :: {detail} :: {t['title']}")
+    print("\nINTEGRATION QUEUE")
+    q=list(c.execute("""select * from integration_queue where status!='INTEGRATED'
+      order by case status when 'READY_FOR_INTEGRATION' then 0 else 1 end,updated_at"""))
+    if not q: print("- none")
+    for x in q:
+        print(f"- {x['status']} {x['task_id']} {x['sha'][:12]} {x['branch']} "
+              f"verify={x['verification_mode'] or '-'}")
+
+def cmd_brief(c,args):
+    reconcile(c,False)
+    mine=[r for r in active_leases(c) if r["chat_id"]==args.chat]
+    print("LOGRES CHAT BRIEF")
+    print("chat="+args.chat+" integration="+(git_sha("feat/logres-reconstruction") or "unknown")[:12])
+    if args.chat=="lead":
+        print("ROLE: integration/review reserve; do not pull new development packets.")
+        if mine:
+            for r in mine:
+                print(f"LEGACY CURRENT WORK: {r['task_id']} {r['progress']}% :: {r['title']}")
+                print("Finish or hand this work off, then remain available for the merge train.")
+        print("NEXT: inspect logres-merge-preflight status and verified merge train.")
+        return
+    if mine:
+        print("CURRENT WORK")
+        for r in mine:
+            print(f"- {r['task_id']} {r['progress']}% :: {r['title']}")
+            print(f"  branch={r['branch'] or '-'}")
+    else:
+        nxt=ready_rows(c)
+        if nxt:
+            r=nxt[0]
+            print(f"NEXT RECOMMENDED: {r['id']} P{r['priority']} ~{r['expected_minutes']}m :: {r['title']}")
+            print(f"START: logres-worker-start {args.chat} AUTO")
+        else:
+            print("NEXT RECOMMENDED: none; current wave is fully leased, blocked, or complete")
+    print("RULE: pull one bounded packet, satisfy acceptance criteria, verify, hand off, then pull again.")
+
+def safe_branch_component(value):
+    return re.sub(r"[^a-z0-9._-]+","-",value.lower()).strip("-") or "work"
+
+def cmd_acquire(c,args):
+    """Atomically select + lease + file-claim one safe work package."""
+    if args.chat=="lead":
+        raise SystemExit(
+            "LEAD_RESERVED: lead is integration/review only; use another registered chat for development work."
+        )
+    reconcile(c,False)
+    now=time.time()
+    until=now+args.minutes*60
+
+    # Serialize the scheduler decision. Once BEGIN IMMEDIATE succeeds, another
+    # chat cannot observe the same READY task and reserve it concurrently.
+    c.execute("begin immediate")
+    try:
+        member=c.execute("select * from brain_members where chat_id=?",(args.chat,)).fetchone()
+        if member is None:
+            raise SystemExit(f"unknown brain chat: {args.chat}; run logres-brain join first")
+
+        existing=c.execute(
+            "select * from brain_task_leases where chat_id=? and lease_until_epoch>? order by acquired_at limit 1",
+            (args.chat,now),
+        ).fetchone()
+        if existing is not None:
+            c.commit()
+            print(
+                f"ACQUIRED task={existing['task_id']} branch={existing['branch'] or '-'} "
+                f"until_epoch={existing['lease_until_epoch']:.0f} existing=1"
+            )
+            return
+
+        active_count=c.execute(
+            "select count(*) from brain_task_leases where lease_until_epoch>? and chat_id<>'lead'",
+            (now,),
+        ).fetchone()[0]
+        if active_count>=args.max_active:
+            c.rollback()
+            raise SystemExit(f"WORK_POOL_FULL active={active_count} max={args.max_active}")
+
+        candidates=ready_rows(c)
+        if args.task:
+            candidates=[r for r in candidates if r["id"]==args.task]
+        if not candidates:
+            c.rollback()
+            raise SystemExit("NO_READY_WORK")
+
+        task=candidates[0]
+        task_id=task["id"]
+
+        # Reuse a preserved stale-work branch if the task still points to one;
+        # otherwise create a fresh branch name. The worktree itself is created
+        # by logres-worker-start after this transaction commits.
+        branch=task.get("branch")
+        if not branch:
+            branch=(
+                "worker/"
+                + safe_branch_component(args.chat)
+                + "-"
+                + safe_branch_component(task_id)
+                + "-"
+                + datetime.now(timezone.utc).strftime("%H%M%S")
+            )
+
+        # Scopes are rechecked while holding the write lock.
+        scopes=[r[0] for r in c.execute(
+            "select path_prefix from task_scopes where task_id=? order by path_prefix",
+            (task_id,),
+        )]
+        claims=list(c.execute("select task_id,path_prefix from claims"))
+        for scope in scopes:
+            a=scope.rstrip("/")+"/"
+            for claim in claims:
+                if claim["task_id"]==task_id:
+                    continue
+                b=claim["path_prefix"].rstrip("/")+"/"
+                if a.startswith(b) or b.startswith(a):
+                    c.rollback()
+                    raise SystemExit(
+                        f"SCOPE_BUSY task={task_id} scope={scope} "
+                        f"held_by={claim['task_id']}:{claim['path_prefix']}"
+                    )
+
+        stamp=iso()
+        c.execute(
+            """insert into brain_task_leases
+               (task_id,chat_id,branch,lease_until_epoch,acquired_at,renewed_at,progress,note)
+               values(?,?,?,?,?,?,0,?)""",
+            (task_id,args.chat,branch,until,stamp,stamp,"atomic coordinator acquire"),
+        )
+        c.execute(
+            "update tasks set status='ACTIVE',owner=?,branch=?,updated_at=? where id=?",
+            (args.chat,branch,stamp,task_id),
+        )
+        c.execute(
+            """update task_recovery set status='CLAIMED'
+               where task_id=? and status='AVAILABLE'""",
+            (task_id,),
+        )
+        for scope in scopes:
+            c.execute(
+                """insert into claims(path_prefix,task_id,owner,branch,created_at,note)
+                   values(?,?,?,?,?,'atomic coordinator acquire')""",
+                (scope,task_id,args.chat,branch,stamp),
+            )
+        c.execute(
+            "update brain_members set status='ACTIVE',last_seen_epoch=? where chat_id=?",
+            (now,args.chat),
+        )
+        c.execute(
+            """insert into brain_events
+               (ts_epoch,ts,sender,recipient,event_type,priority,task_id,subject,body,dedupe_key,meta_json)
+               values(?,?,?,?,?,?,?,?,?,?,?)""",
+            (
+                now,stamp,"system","ALL","ASSIGNMENT",1,task_id,
+                f"{task_id} atomically assigned to {args.chat}",
+                f"branch={branch} scopes={','.join(scopes) if scopes else '-'}",
+                f"atomic-acquire:{task_id}:{branch}",
+                json.dumps({"chat":args.chat,"branch":branch,"scopes":scopes},sort_keys=True),
+            ),
+        )
+        c.commit()
+    except Exception:
+        if c.in_transaction:
+            c.rollback()
+        raise
+
+    print(f"ACQUIRED task={task_id} branch={branch} until_epoch={until:.0f}")
+
+def cmd_next(c,args):
+    reconcile(c,False)
+    mine=[r for r in active_leases(c) if r["chat_id"]==args.chat]
+    if mine:
+        task=mine[0]["task_id"]
+        if args.id_only: print(task)
+        else: print("CONTINUE "+task)
+        return
+    active=active_leases(c)
+    if len(active)>=args.max_active:
+        if args.id_only: return
+        print(f"WAIT active={len(active)} max={args.max_active}")
+        return
+    rows=ready_rows(c)
+    if not rows:
+        if not args.id_only: print("NONE")
+        return
+    if args.id_only: print(rows[0]["id"])
+    else:
+        r=rows[0]
+        print(f"NEXT {r['id']} P{r['priority']} ~{r['expected_minutes']}m :: {r['title']}")
+
+def cmd_add(c,args):
+    if c.execute("select 1 from tasks where id=?",(args.id,)).fetchone():
+        raise SystemExit("task already exists: "+args.id)
+    if not (0 <= args.priority <= 9):
+        raise SystemExit("priority must be 0..9")
+    if not (5 <= args.minutes <= 240):
+        raise SystemExit("expected minutes must be 5..240; split larger work into bounded packets")
+    for dep in args.depends:
+        if dep==args.id:
+            raise SystemExit("task cannot depend on itself")
+        if not c.execute("select 1 from tasks where id=?",(dep,)).fetchone():
+            raise SystemExit("unknown dependency: "+dep)
+    c.execute("""insert into tasks(id,priority,lane,title,status,updated_at)
+      values(?,?,?,?,?,?)""",(args.id,args.priority,args.lane,args.title,"READY",iso()))
+    c.execute("""insert into task_metadata(task_id,milestone,work_type,concurrency_key,
+      expected_minutes,evidence_policy,created_at,updated_at) values(?,?,?,?,?,?,?,?)""",
+      (args.id,args.milestone,args.work_type,args.concurrency_key,args.minutes,args.evidence_policy,iso(),iso()))
+    for dep in args.depends:
+        c.execute("""insert into task_dependencies(task_id,depends_on,kind,rationale)
+          values(?,?,'hard','')""",(args.id,dep))
+    for i,item in enumerate(args.accept,1):
+        c.execute("insert into task_acceptance values(?,?,?)",(args.id,i,item))
+    for scope in args.scope:
+        c.execute("insert into task_scopes values(?,?)",(args.id,scope))
+    if not hard_deps_ok(c,args.id):
+        c.execute("update tasks set status='BLOCKED_DEP' where id=?",(args.id,))
+    c.commit()
+    run([BRAIN,"post","brain","ALL","INFO","NORMAL","Work package created: "+args.id,
+         "--body",args.title,"--task",args.id,"--dedupe","work-package:"+args.id])
+    print("CREATED "+args.id)
+
+def cmd_reconcile(c,args):
+    reconcile(c,True)
+
+def cmd_wave(c,args):
+    reconcile(c,False)
+    worker_active=sum(1 for r in active_leases(c) if r["chat_id"]!="lead")
+    capacity=max(0,6-worker_active)
+    target=min(args.count,capacity)
+    selected=[]
+    keys=set()
+    selected_scopes=[]
+    for r in ready_rows(c):
+        key=r.get("concurrency_key") or r.get("lane")
+        if key and key in keys:
+            continue
+        scopes=[x[0] for x in c.execute(
+            "select path_prefix from task_scopes where task_id=? order by path_prefix",
+            (r["id"],),
+        )]
+        conflict=False
+        for scope in scopes:
+            a=scope.rstrip("/")+"/"
+            for prior_task,prior_scope in selected_scopes:
+                b=prior_scope.rstrip("/")+"/"
+                if a.startswith(b) or b.startswith(a):
+                    conflict=True
+                    break
+            if conflict:
+                break
+        if conflict:
+            continue
+        selected.append(r)
+        if key:
+            keys.add(key)
+        selected_scopes.extend((r["id"],s) for s in scopes)
+        if len(selected)>=target:
+            break
+
+    chats=[
+        dict(x) for x in c.execute(
+            """select chat_id,status,last_seen_epoch from brain_members
+               where chat_id<>'lead'
+               order by case status when 'ACTIVE' then 2 when 'STALE' then 1 else 0 end,
+                        last_seen_epoch desc,chat_id"""
+        )
+    ]
+    if args.json:
+        print(json.dumps({
+            "count":len(selected),
+            "capacity":capacity,
+            "tasks":[{
+                "task":r["id"],"priority":r["priority"],"title":r["title"],
+                "type":r["work_type"],"minutes":r["expected_minutes"],
+                "critical_path_minutes":r["critical_path_minutes"],
+                "concurrency_key":r.get("concurrency_key"),
+                "start":f"logres-worker-start <chat-id> AUTO",
+            } for r in selected],
+            "available_chats":chats[:max(args.count,1)],
+        },indent=2,sort_keys=True))
+        return
+
+    print(f"LOGRES WORK WAVE count={len(selected)} requested={args.count} capacity={capacity}")
+    if capacity<=0:
+        print("Worker pool is full (6/6); do not start another development lane.")
+        return
+    if not selected:
+        print("No mutually-safe READY packets.")
+        return
+    for i,r in enumerate(selected,1):
+        print(
+            f"{i}. P{r['priority']} {r['id']} [{r['work_type']}] "
+            f"~{r['expected_minutes']}m critical={r['critical_path_minutes']}m "
+            f"key={r.get('concurrency_key') or '-'} :: {r['title']}"
+        )
+    print("\nSTART RULE")
+    print("Open up to this many Logres chats; in each run: logres-worker-start <chat-id> AUTO")
+    print("Atomic acquire guarantees simultaneous chats receive different safe packets.")
+
+def cmd_queue(c,args):
+    reconcile(c,False)
+    for r in c.execute("""select * from integration_queue order by
+      case status when 'READY_FOR_INTEGRATION' then 0 when 'NEEDS_VERIFY' then 1 else 2 end,
+      updated_at desc"""):
+        print(f"{r['status']:22} {r['task_id']:28} {r['sha'][:12]} {r['branch']}")
+
+def build():
+    p=argparse.ArgumentParser(prog="logres-coordinator")
+    s=p.add_subparsers(dest="cmd",required=True)
+    x=s.add_parser("plan"); x.add_argument("--limit",type=int,default=8); x.set_defaults(fn=cmd_plan)
+    x=s.add_parser("brief"); x.add_argument("chat"); x.set_defaults(fn=cmd_brief)
+    x=s.add_parser("next"); x.add_argument("chat"); x.add_argument("--id-only",action="store_true")
+    x.add_argument("--max-active",type=int,default=6); x.set_defaults(fn=cmd_next)
+    x=s.add_parser("acquire"); x.add_argument("chat"); x.add_argument("--task")
+    x.add_argument("--minutes",type=int,default=120); x.add_argument("--max-active",type=int,default=6)
+    x.set_defaults(fn=cmd_acquire)
+    x=s.add_parser("reconcile"); x.set_defaults(fn=cmd_reconcile)
+    x=s.add_parser("wave"); x.add_argument("--count",type=int,default=5); x.add_argument("--json",action="store_true")
+    x.set_defaults(fn=cmd_wave)
+    x=s.add_parser("queue"); x.set_defaults(fn=cmd_queue)
+    x=s.add_parser("add-task"); x.add_argument("id"); x.add_argument("priority",type=int)
+    x.add_argument("lane"); x.add_argument("title"); x.add_argument("--milestone",default="DEMO-0.2")
+    x.add_argument("--work-type",default="implementation"); x.add_argument("--concurrency-key")
+    x.add_argument("--minutes",type=int,default=60); x.add_argument("--evidence-policy",default="")
+    x.add_argument("--depends",action="append",default=[]); x.add_argument("--accept",action="append",default=[])
+    x.add_argument("--scope",action="append",default=[]); x.set_defaults(fn=cmd_add)
+    return p
+
+def main():
+    p=build(); args=p.parse_args(); c=conn()
+    try: args.fn(c,args)
+    finally: c.close()
+
+if __name__=="__main__":
+    main()

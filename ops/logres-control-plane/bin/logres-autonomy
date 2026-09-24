@@ -1,0 +1,453 @@
+#!/usr/bin/env python3
+from __future__ import annotations
+
+import argparse
+import fcntl
+import json
+import os
+import sqlite3
+import subprocess
+import sys
+from pathlib import Path
+
+
+CONTROL_ROOT = Path(__file__).resolve().parents[1]
+LIB_DIR = CONTROL_ROOT / "lib"
+sys.path.insert(0, str(LIB_DIR))
+
+from logres_autonomy import (
+    actionable_open_regressions,
+    autonomy_decision,
+    integration_backlog,
+    latest_verified_preflight,
+    load_config,
+    load_state,
+    parse_route_failures,
+    record_failure,
+    record_success,
+    reset_circuit,
+    resource_state,
+)
+
+
+ROOT = Path(os.environ.get("LOGRES_ROOT", "/home/ubuntu/logres"))
+DB = Path(
+    os.environ.get(
+        "LOGRES_CONTROL_DB",
+        str(ROOT / "control" / "control.sqlite"),
+    )
+)
+CONFIG = Path(
+    os.environ.get(
+        "LOGRES_AUTOFLOW_CONFIG",
+        str(ROOT / "control" / "autoflow.json"),
+    )
+)
+CONFIG_FALLBACK = CONTROL_ROOT / "config" / "autoflow.default.json"
+STATE = Path(
+    os.environ.get(
+        "LOGRES_AUTONOMY_STATE",
+        str(ROOT / "control" / "autonomy-state.json"),
+    )
+)
+REPO = Path(
+    os.environ.get(
+        "LOGRES_REPO_ROOT",
+        str(ROOT / "src" / "awakened-realms"),
+    )
+)
+LOCK = Path(
+    os.environ.get(
+        "LOGRES_AUTONOMY_LOCK",
+        str(ROOT / "control" / "locks" / "autonomy.lock"),
+    )
+)
+BRAIN = str(ROOT / "bin" / "logres-brain")
+DOCTOR = str(ROOT / "bin" / "logres-doctor")
+ROUTES = str(ROOT / "bin" / "logres-route-reconcile")
+TRAIN = str(ROOT / "bin" / "logres-merge-train")
+PREFLIGHT = str(ROOT / "bin" / "logres-merge-preflight")
+COORD = str(ROOT / "bin" / "logres-coordinator")
+INTEGRATION = "feat/logres-reconstruction"
+
+
+def run(argv, *, env=None):
+    return subprocess.run(
+        [str(x) for x in argv],
+        text=True,
+        capture_output=True,
+        check=False,
+        env=env,
+    )
+
+
+def post(event_type: str, priority: str, subject: str, body: str, dedupe: str):
+    run(
+        [
+            BRAIN,
+            "post",
+            "autonomy",
+            "ALL",
+            event_type,
+            priority,
+            subject,
+            "--body",
+            body,
+            "--dedupe",
+            dedupe,
+        ]
+    )
+
+
+def config() -> dict:
+    source = CONFIG if CONFIG.is_file() else CONFIG_FALLBACK
+    return load_config(source)
+
+
+def integration_sha() -> str:
+    forced = os.environ.get("LOGRES_INTEGRATION_SHA", "").strip()
+    if forced:
+        return forced
+    result = run(
+        [
+            "git",
+            "-C",
+            REPO,
+            "rev-parse",
+            f"origin/{INTEGRATION}",
+        ]
+    )
+    if result.returncode:
+        result = run(["git", "-C", REPO, "rev-parse", INTEGRATION])
+    if result.returncode:
+        raise RuntimeError(
+            "cannot resolve integration SHA: "
+            + (result.stderr or result.stdout).strip()
+        )
+    return result.stdout.strip()
+
+
+def connect() -> sqlite3.Connection:
+    conn = sqlite3.connect(DB, timeout=30)
+    conn.row_factory = sqlite3.Row
+    conn.execute("pragma busy_timeout=30000")
+    return conn
+
+
+def acquire_lock():
+    LOCK.parent.mkdir(parents=True, exist_ok=True)
+    handle = open(LOCK, "a+")
+    try:
+        fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except BlockingIOError:
+        handle.close()
+        return None
+    return handle
+
+
+def status_payload() -> dict:
+    cfg = config()
+    state = load_state(STATE)
+    resources = resource_state()
+    conn = connect()
+    try:
+        backlog = integration_backlog(conn)
+        regressions = actionable_open_regressions(conn)
+    finally:
+        conn.close()
+
+    doctor = run([DOCTOR])
+    routes = run([ROUTES, "--status"])
+    route_failures = parse_route_failures(
+        (routes.stdout or "") + "\n" + (routes.stderr or "")
+    )
+    decision = autonomy_decision(
+        cfg,
+        state,
+        resources,
+        doctor_ok=doctor.returncode == 0,
+        route_failures=route_failures,
+        open_regressions=regressions,
+        ready_count=backlog,
+    )
+    return {
+        "enabled": bool(cfg.get("autonomy", {}).get("enabled", False)),
+        "auto_preflight_enabled": bool(
+            cfg.get("autonomy", {}).get("auto_preflight_enabled", False)
+        ),
+        "auto_apply_preflight_enabled": bool(
+            cfg.get("autonomy", {}).get(
+                "auto_apply_preflight_enabled",
+                False,
+            )
+        ),
+        "decision": {
+            "allowed": decision.allowed,
+            "reasons": list(decision.reasons),
+            "batch_limit": decision.batch_limit,
+        },
+        "resources": {
+            "cpus": resources.cpus,
+            "load1": resources.load1,
+            "load_per_cpu": resources.load_per_cpu,
+            "memory_available_gib": resources.memory_available_gib,
+            "disk_free_gib": resources.disk_free_gib,
+        },
+        "integration_backlog": backlog,
+        "open_regressions": regressions,
+        "route_failures": route_failures,
+        "doctor_ok": doctor.returncode == 0,
+        "circuit": state,
+    }
+
+
+def run_preflight(cfg: dict, batch_limit: int):
+    auto = cfg.get("autonomy", {})
+    return run(
+        [
+            PREFLIGHT,
+            "run",
+            "--max",
+            str(max(1, batch_limit)),
+            "--min-age",
+            str(int(auto.get("min_preflight_age_seconds", 0) or 0)),
+            "--min-count",
+            str(int(auto.get("min_preflight_count", 1) or 1)),
+        ]
+    )
+
+
+def cycle(*, dry_run: bool = False) -> int:
+    lock = acquire_lock()
+    if lock is None:
+        print(
+            json.dumps(
+                {
+                    "status": "BUSY",
+                    "reason": "another autonomy cycle holds the lock",
+                }
+            )
+        )
+        return 0
+
+    try:
+        cfg = config()
+        state = load_state(STATE)
+        resources = resource_state()
+
+        # Heal cheap deterministic control-plane state first.
+        run([COORD, "reconcile"])
+        run([TRAIN, "status"])
+        routes = run([ROUTES, "--status"])
+        doctor = run([DOCTOR])
+
+        conn = connect()
+        try:
+            backlog = integration_backlog(conn)
+            regressions = actionable_open_regressions(conn)
+        finally:
+            conn.close()
+
+        route_failures = parse_route_failures(
+            (routes.stdout or "") + "\n" + (routes.stderr or "")
+        )
+        decision = autonomy_decision(
+            cfg,
+            state,
+            resources,
+            doctor_ok=doctor.returncode == 0,
+            route_failures=route_failures,
+            open_regressions=regressions,
+            ready_count=backlog,
+        )
+
+        result = {
+            "status": "DEFERRED",
+            "dry_run": dry_run,
+            "base_sha": integration_sha(),
+            "decision": {
+                "allowed": decision.allowed,
+                "reasons": list(decision.reasons),
+                "batch_limit": decision.batch_limit,
+            },
+            "preflight": None,
+            "apply": None,
+        }
+
+        if not decision.allowed:
+            print(json.dumps(result, indent=2, sort_keys=True))
+            return 0
+
+        auto = cfg.get("autonomy", {})
+        if (
+            backlog > 0
+            and bool(auto.get("auto_preflight_enabled", False))
+        ):
+            result["preflight"] = {
+                "requested": True,
+                "batch_limit": decision.batch_limit,
+            }
+            if not dry_run:
+                pf_run = run_preflight(cfg, decision.batch_limit)
+                result["preflight"]["returncode"] = pf_run.returncode
+                result["preflight"]["stdout"] = (pf_run.stdout or "")[-4000:]
+                if pf_run.returncode != 0:
+                    text = (pf_run.stdout or "") + (pf_run.stderr or "")
+                    if "INTEGRATION_BUSY" in text:
+                        result["status"] = "BUSY"
+                    else:
+                        result["status"] = "PREFLIGHT_FAILED"
+                    print(json.dumps(result, indent=2, sort_keys=True))
+                    return 0
+
+        current = integration_sha()
+        conn = connect()
+        try:
+            verified = latest_verified_preflight(conn, current)
+        finally:
+            conn.close()
+
+        if verified is None:
+            result["status"] = (
+                "READY_NO_VERIFIED_PREFLIGHT"
+                if backlog
+                else "IDLE"
+            )
+            print(json.dumps(result, indent=2, sort_keys=True))
+            return 0
+
+        pid = int(verified["id"])
+        result["preflight"] = {
+            **(result["preflight"] or {}),
+            "id": pid,
+            "result_sha": verified["result_sha"],
+            "base_sha": verified["base_sha"],
+            "verified": True,
+        }
+
+        validate = run([PREFLIGHT, "validate", str(pid)])
+        if validate.returncode != 0:
+            result["status"] = "VALIDATION_FAILED"
+            result["apply"] = {
+                "requested": False,
+                "validation_returncode": validate.returncode,
+                "validation_output": (
+                    (validate.stdout or "") + (validate.stderr or "")
+                )[-3000:],
+            }
+            print(json.dumps(result, indent=2, sort_keys=True))
+            return 0
+
+        if not bool(auto.get("auto_apply_preflight_enabled", False)):
+            result["status"] = "VERIFIED_WAITING_POLICY"
+            result["apply"] = {
+                "requested": False,
+                "reason": "auto apply disabled",
+            }
+            print(json.dumps(result, indent=2, sort_keys=True))
+            return 0
+
+        if dry_run:
+            result["status"] = "WOULD_APPLY"
+            result["apply"] = {
+                "requested": True,
+                "preflight_id": pid,
+            }
+            print(json.dumps(result, indent=2, sort_keys=True))
+            return 0
+
+        apply_env = os.environ.copy()
+        apply_env["LOGRES_AUTONOMY_APPLY"] = "1"
+        apply_env["LOGRES_AUTONOMY_PREFLIGHT_ID"] = str(pid)
+        applied = run(
+            [
+                TRAIN,
+                "apply-preflight",
+                "--actor",
+                "autonomy",
+                str(pid),
+            ],
+            env=apply_env,
+        )
+        result["apply"] = {
+            "requested": True,
+            "preflight_id": pid,
+            "returncode": applied.returncode,
+            "stdout": (applied.stdout or "")[-4000:],
+        }
+
+        if applied.returncode != 0:
+            threshold = int(
+                auto.get("circuit_breaker_failures", 2) or 2
+            )
+            new_state = record_failure(
+                STATE,
+                ((applied.stderr or "") + "\n" + (applied.stdout or ""))[-2000:],
+                threshold,
+            )
+            result["status"] = (
+                "CIRCUIT_TRIPPED"
+                if new_state["tripped"]
+                else "APPLY_FAILED"
+            )
+            result["circuit"] = new_state
+            post(
+                "AUTONOMY_FAILURE",
+                "CRITICAL" if new_state["tripped"] else "HIGH",
+                f"Autonomy apply failed: preflight {pid}",
+                (
+                    f"returncode={applied.returncode} "
+                    f"circuit_tripped={new_state['tripped']}; "
+                    "integration apply remains fail-closed."
+                ),
+                f"autonomy-apply-fail:{pid}:{new_state['consecutive_failures']}",
+            )
+            print(json.dumps(result, indent=2, sort_keys=True))
+            return 2
+
+        new_state = record_success(STATE, preflight_id=pid)
+        result["status"] = "APPLIED"
+        result["circuit"] = new_state
+        result["new_integration_sha"] = integration_sha()
+        run([ROUTES])
+        run([TRAIN, "status"])
+        post(
+            "DONE",
+            "CRITICAL",
+            f"Autonomy integrated verified preflight {pid}",
+            (
+                f"integration={result['new_integration_sha']} "
+                "after exact-SHA full-E2E validation and fail-closed "
+                "policy checks."
+            ),
+            f"autonomy-applied:{pid}:{result['new_integration_sha']}",
+        )
+        print(json.dumps(result, indent=2, sort_keys=True))
+        return 0
+    finally:
+        fcntl.flock(lock.fileno(), fcntl.LOCK_UN)
+        lock.close()
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(prog="logres-autonomy")
+    sub = parser.add_subparsers(dest="command", required=True)
+
+    x = sub.add_parser("cycle")
+    x.add_argument("--dry-run", action="store_true")
+    sub.add_parser("status")
+    sub.add_parser("reset-circuit")
+
+    args = parser.parse_args()
+    if args.command == "status":
+        print(json.dumps(status_payload(), indent=2, sort_keys=True))
+        return 0
+    if args.command == "reset-circuit":
+        state = reset_circuit(STATE)
+        print(json.dumps(state, indent=2, sort_keys=True))
+        return 0
+    return cycle(dry_run=args.dry_run)
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

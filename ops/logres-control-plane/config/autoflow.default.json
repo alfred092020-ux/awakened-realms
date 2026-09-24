@@ -21,5 +21,18 @@
   "backpressure": {
     "ready_for_integration": 4,
     "verification_backlog": 3
+  },
+  "autonomy": {
+    "enabled": false,
+    "auto_preflight_enabled": false,
+    "auto_apply_preflight_enabled": false,
+    "max_preflight_batch": 4,
+    "min_preflight_age_seconds": 0,
+    "min_preflight_count": 1,
+    "circuit_breaker_failures": 2,
+    "block_on_open_regressions": false,
+    "min_free_memory_gib": 12.0,
+    "min_free_disk_gib": 30.0,
+    "max_load_per_cpu": 1.25
   }
 }

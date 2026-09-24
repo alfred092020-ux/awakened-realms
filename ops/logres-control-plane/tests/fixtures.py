@@ -147,6 +147,17 @@ def test_config():
             "ready_for_integration": 4,
             "verification_backlog": 3,
         },
+        "autonomy": {
+            "enabled": False,
+            "auto_preflight_enabled": False,
+            "auto_apply_preflight_enabled": False,
+            "max_preflight_batch": 4,
+            "circuit_breaker_failures": 2,
+            "block_on_open_regressions": False,
+            "min_free_memory_gib": 12.0,
+            "min_free_disk_gib": 30.0,
+            "max_load_per_cpu": 1.25,
+        },
     }
 
 def seed_route(

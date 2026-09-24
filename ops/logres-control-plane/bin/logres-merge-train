@@ -1,0 +1,632 @@
+#!/usr/bin/env python3
+from __future__ import annotations
+import argparse, fcntl, json, os, sqlite3, subprocess, sys, time
+from datetime import datetime, timezone
+from pathlib import Path
+
+CONTROL_ROOT=Path(__file__).resolve().parents[1]
+sys.path.insert(0,str(CONTROL_ROOT/"lib"))
+from logres_autonomy import autonomy_apply_authorized
+
+ROOT=Path(os.environ.get("LOGRES_ROOT","/home/ubuntu/logres"))
+BASE=Path(os.environ.get("LOGRES_REPO_ROOT",str(ROOT/"src/awakened-realms")))
+DB=Path(os.environ.get("LOGRES_CONTROL_DB",str(ROOT/"control/control.sqlite")))
+COORD=os.environ.get("LOGRES_COORDINATOR",str(ROOT/"bin/logres-coordinator"))
+GATE=os.environ.get("LOGRES_GATE",str(ROOT/"bin/logres-gate"))
+BRAIN=os.environ.get("LOGRES_BRAIN",str(ROOT/"bin/logres-brain"))
+REG_CAPTURE=os.environ.get("LOGRES_REG_CAPTURE",str(ROOT/"bin/logres-regression-capture"))
+LOG_ROOT=Path(os.environ.get("LOGRES_LOG_ROOT",str(ROOT/"logs")))
+INTEGRATION=os.environ.get("LOGRES_INTEGRATION_BRANCH","feat/logres-reconstruction")
+LOCK_PATH=os.environ.get("LOGRES_INTEGRATION_LOCK","/tmp/logres-integration.lock")
+FETCH_LOCK_PATH=os.environ.get("LOGRES_FETCH_LOCK","/tmp/logres-git-fetch.lock")
+
+def integration_lock():
+    f=open(LOCK_PATH,"a+")
+    try:
+        fcntl.flock(f.fileno(),fcntl.LOCK_EX|fcntl.LOCK_NB)
+    except BlockingIOError:
+        f.close()
+        raise SystemExit("INTEGRATION_BUSY: another integration operation holds the global lock")
+    return f
+
+def fetch_origin():
+    lock=open(FETCH_LOCK_PATH,"a+")
+    try:
+        fcntl.flock(lock.fileno(),fcntl.LOCK_EX)
+        p=run(["git","-C",str(BASE),"fetch","--prune","origin"])
+    finally:
+        fcntl.flock(lock.fileno(),fcntl.LOCK_UN)
+        lock.close()
+    if p.returncode:
+        raise SystemExit("git fetch origin failed: "+(p.stderr or p.stdout)[-1200:])
+
+def sync_integration_from_origin():
+    fetch_origin()
+    local=sha(INTEGRATION); remote=sha("origin/"+INTEGRATION)
+    if local==remote:
+        return local
+    if not local or not remote:
+        raise SystemExit(
+            f"integration ref unavailable: local={(local or '-')[:12]} remote={(remote or '-')[:12]}"
+        )
+    current=run(["git","-C",str(BASE),"branch","--show-current"],check=True).stdout.strip()
+    if current!=INTEGRATION:
+        raise SystemExit(f"integration worktree is on {current}, expected {INTEGRATION}")
+    if run(["git","-C",str(BASE),"status","--porcelain"],check=True).stdout.strip():
+        raise SystemExit("integration worktree is dirty; refusing origin synchronization")
+    if run(["git","-C",str(BASE),"merge-base","--is-ancestor",local,remote]).returncode!=0:
+        raise SystemExit(
+            f"integration diverged from origin: local={local[:12]} remote={remote[:12]}"
+        )
+    p=run(["git","-C",str(BASE),"merge","--ff-only","origin/"+INTEGRATION])
+    if p.returncode:
+        raise SystemExit("integration fast-forward from origin failed: "+(p.stderr or p.stdout)[-1200:])
+    synced=sha(INTEGRATION)
+    if synced!=remote:
+        raise SystemExit(
+            f"integration synchronization mismatch: local={(synced or '-')[:12]} remote={remote[:12]}"
+        )
+    return synced
+
+def autonomy_apply_allowed(preflight_id):
+    config_path=Path(os.environ.get(
+        "LOGRES_AUTOFLOW_CONFIG",
+        "/home/ubuntu/logres/control/autoflow.json",
+    ))
+    try:
+        cfg=json.loads(config_path.read_text())
+    except Exception:
+        return False
+    return autonomy_apply_authorized(cfg,dict(os.environ),preflight_id)
+
+def require_preflight_actor(actor,preflight_id):
+    if actor=="lead":
+        return
+    if actor=="autonomy" and autonomy_apply_allowed(preflight_id):
+        return
+    raise SystemExit(
+        "Only actor 'lead' or policy-authorized 'autonomy' may apply a verified preflight."
+    )
+
+def legacy_apply_guard():
+    if os.environ.get("LOGRES_ALLOW_LEGACY_INTEGRATION")!="1":
+        raise SystemExit(
+            "LEGACY_INTEGRATION_DISABLED: use the exact-SHA path: "
+            "logres-merge-preflight run, then "
+            "logres-merge-train apply-preflight --actor lead <id>. "
+            "Set LOGRES_ALLOW_LEGACY_INTEGRATION=1 only for manual recovery."
+        )
+
+def run(cmd,check=False,env=None):
+    p=subprocess.run(
+        cmd,text=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE,check=False,env=env
+    )
+    if check and p.returncode:
+        raise RuntimeError((p.stderr or p.stdout).strip())
+    return p
+
+def sha(ref):
+    p=run(["git","-C",str(BASE),"rev-parse",ref])
+    return p.stdout.strip() if p.returncode==0 else None
+
+def ancestor(a,b):
+    return run(["git","-C",str(BASE),"merge-base","--is-ancestor",a,b]).returncode==0
+
+def patch_equivalent(ref):
+    p=run(["git","-C",str(BASE),"cherry","origin/"+INTEGRATION,ref])
+    lines=[x.strip() for x in p.stdout.splitlines() if x.strip()]
+    return p.returncode==0 and bool(lines) and all(x.startswith("-") for x in lines)
+
+def clean_merge_possible(candidate):
+    # Queue classification is against the authoritative pushed integration head.
+    # merge-tree does not touch the index or worktree.
+    p=run(["git","-C",str(BASE),"merge-tree","--write-tree","origin/"+INTEGRATION,candidate])
+    return p.returncode==0, (p.stdout+p.stderr).strip()[-2000:]
+
+def supersede_repaired_conflicts(c):
+    rows=list(c.execute("""select r.id,r.task_id repair_task,r.ref original_branch,r.sha original_sha
+      from regressions r
+      where r.kind='integration-conflict'
+        and r.status in ('RESOLVED','SUPERSEDED')
+        and exists(
+          select 1 from integration_queue iq
+          where iq.task_id=r.task_id and iq.status='INTEGRATED'
+        )"""))
+    changed=0
+    stamp=datetime.now(timezone.utc).isoformat(timespec="seconds")
+    for r in rows:
+        cur=c.execute("""update integration_queue
+          set status='SUPERSEDED',updated_at=?,note=?
+          where sha=? and branch=? and status='CONFLICT'""",
+          (stamp,
+           f"Superseded by integrated conflict repair {r['repair_task']} from regression {r['id']}.",
+           r["original_sha"],r["original_branch"]))
+        changed+=cur.rowcount
+    return changed
+
+def capture_integration_conflict(task_id,branch,candidate,detail,base_sha):
+    LOG_ROOT.mkdir(parents=True,exist_ok=True)
+    safe="".join(ch if ch.isalnum() or ch in "._-" else "-" for ch in task_id)
+    log=LOG_ROOT/f"integration-conflict-{safe}-{candidate[:12]}-{base_sha[:12]}.log"
+    body=(
+        "INTEGRATION_CONFLICT\n"
+        f"task={task_id}\nbranch={branch}\n"
+        f"candidate={candidate}\nintegration_base={base_sha}\n"
+        f"{detail.strip()}\n"
+    )
+    if not log.exists() or log.read_text(errors="replace")!=body:
+        log.write_text(body)
+    subprocess.run([
+        REG_CAPTURE,
+        "--kind","integration-conflict",
+        "--ref",branch,
+        "--sha",candidate,
+        "--summary",f"Resolve integration conflict for {task_id} at {candidate[:12]} against {base_sha[:12]}",
+        "--log",str(log),
+    ],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,check=False)
+
+def refresh(c):
+    # Refresh remote refs before classifying queue state so local branch pointers
+    # cannot hide a moved or missing pushed candidate.
+    fetch_origin()
+    # Durable scopes are reconciled from explicit historical claim events before
+    # evaluating scope safety, preventing stale metadata from creating false
+    # integration blockers.
+    run(["/home/ubuntu/logres/bin/logres-scope-reconcile","--apply"])
+    run([COORD,"reconcile"])
+    integ=sha("origin/"+INTEGRATION) or sha(INTEGRATION)
+    changed=supersede_repaired_conflicts(c)
+    conflict_routes=[]
+    rows=list(c.execute("""select q.*,t.priority,t.title from integration_queue q
+      left join tasks t on t.id=q.task_id
+      where q.status not in ('INTEGRATED','SUPERSEDED')
+      order by coalesce(t.priority,99),q.queued_at"""))
+    for q in rows:
+        branch=q["branch"]; candidate=q["sha"]
+        live=sha(branch)
+        remote_candidate=sha("origin/"+branch)
+        status=q["status"]; note=q["note"] or ""
+        if live!=candidate or remote_candidate!=candidate:
+            new="CANDIDATE_MOVED"
+            new_note=(
+                f"branch moved/missing after queueing: queued={candidate[:12]} "
+                f"local={(live or '-')[:12]} remote={(remote_candidate or '-')[:12]}; "
+                "queued SHA remains immutable; coordinator must enqueue a distinct new candidate."
+            )
+        elif integ and (ancestor(candidate,integ) or patch_equivalent(candidate)):
+            new="INTEGRATED"; new_note="Already present in integration (ancestor or patch-equivalent)."
+        else:
+            scope=run([
+                "/home/ubuntu/logres/bin/logres-scope-check",
+                q["task_id"],branch,
+            ])
+            if scope.returncode!=0:
+                new="SCOPE_VIOLATION"
+                new_note=(scope.stdout or scope.stderr).replace("\n"," ")[:1000]
+                subprocess.run(
+                    [BRAIN,"post","brain","lead","CONFLICT","HIGH",
+                     f"Merge train scope violation: {q['task_id']}",
+                     "--body",new_note,
+                     "--task",q["task_id"],
+                     "--dedupe",f"scope-violation:{q['task_id']}:{candidate}"],
+                    stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,check=False,
+                )
+            else:
+                v_full=c.execute("""select mode,status,ran_at from verification
+                  where sha=? and mode='full-e2e' and status='PASS'
+                  order by ran_at desc limit 1""",(candidate,)).fetchone()
+                v_fast=c.execute("""select mode,status,ran_at from verification
+                  where sha=? and mode='fast' and status='PASS'
+                  order by ran_at desc limit 1""",(candidate,)).fetchone()
+                ok,detail=clean_merge_possible(candidate)
+                if not ok:
+                    new="CONFLICT"; new_note="merge-tree conflict: "+detail.replace("\n"," ")[:1000]
+                    base_key=(integ or "unknown")[:12]
+                    routed=c.execute("""select 1 from regressions
+                      where kind='integration-conflict' and sha=? and summary like ?
+                      limit 1""",(candidate,f"%{base_key}%")).fetchone()
+                    if not routed:
+                        conflict_routes.append(
+                            (q["task_id"],branch,candidate,detail,integ or "unknown")
+                        )
+                elif v_full:
+                    new="READY_FOR_INTEGRATION"; new_note=f"Exact {v_full['mode']} PASS; merge-tree clean; scope PASS."
+                elif v_fast:
+                    new="READY_FOR_PREFLIGHT"; new_note="Fast worker gate PASS; merge-tree clean; scope PASS; awaiting shared full-e2e preflight."
+                else:
+                    new="NEEDS_VERIFY"; new_note="Candidate SHA has no PASS worker verification."
+        if new!=status or new_note!=note or candidate!=q["sha"]:
+            stamp=datetime.now(timezone.utc).isoformat(timespec="seconds")
+            c.execute("""update integration_queue
+                         set sha=?,status=?,note=?,updated_at=?,
+                             ready_at=case
+                               when ?='READY_FOR_INTEGRATION' then coalesce(ready_at,?)
+                               else ready_at end,
+                             integrated_at=case
+                               when ?='INTEGRATED' then coalesce(integrated_at,?)
+                               else integrated_at end
+                         where task_id=? and sha=?""",
+                      (candidate,new,new_note,stamp,new,stamp,new,stamp,
+                       q["task_id"],q["sha"]))
+            changed+=1
+    c.commit()
+    for route in conflict_routes:
+        capture_integration_conflict(*route)
+    return changed
+
+def rows_ready(c):
+    return list(c.execute("""select q.*,t.priority,t.title from integration_queue q
+      left join tasks t on t.id=q.task_id
+      where q.status='READY_FOR_INTEGRATION'
+      order by coalesce(t.priority,99),q.queued_at,q.task_id"""))
+
+def cmd_status(c,args):
+    n=refresh(c)
+    print(f"LOGRES MERGE TRAIN refreshed={n}")
+    history="" if getattr(args,"history",False) else "where q.status not in ('INTEGRATED','SUPERSEDED')"
+    rows=list(c.execute(f"""select q.*,t.priority,t.title from integration_queue q
+      left join tasks t on t.id=q.task_id
+      {history}
+      order by case q.status
+        when 'READY_FOR_INTEGRATION' then 0
+        when 'READY_FOR_PREFLIGHT' then 1
+        when 'CANDIDATE_MOVED' then 2
+        when 'SCOPE_VIOLATION' then 3
+        when 'CONFLICT' then 4
+        when 'NEEDS_VERIFY' then 5
+        else 6 end,
+        coalesce(t.priority,99),q.updated_at"""))
+    if not rows: print("empty")
+    for r in rows:
+        print(f"{r['status']:22} P{r['priority'] if r['priority'] is not None else '?'} "
+              f"{r['task_id']:30} {r['sha'][:12]} {r['branch']}")
+        if r["note"]: print("  "+r["note"][:500])
+
+def cmd_next(c,args):
+    refresh(c)
+    rows=rows_ready(c)
+    if not rows:
+        print("NONE")
+        return
+    r=rows[0]
+    print(json.dumps(dict(r),indent=2,sort_keys=True))
+
+def cmd_batch_plan(c,args):
+    refresh(c)
+    rows=rows_ready(c)[:args.max]
+    print(f"MERGE_TRAIN_BATCH candidates={len(rows)} max={args.max}")
+    for i,r in enumerate(rows,1):
+        candidate=r["sha"]
+        commits=[
+            x for x in run([
+                "git","-C",str(BASE),"rev-list","--reverse",
+                "--cherry-pick","--right-only",f"origin/{INTEGRATION}...{candidate}",
+            ]).stdout.splitlines() if x.strip()
+        ]
+        print(
+            f"{i}. P{r['priority'] if r['priority'] is not None else '?'} "
+            f"{r['task_id']} {candidate[:12]} commits={len(commits)} {r['branch']}"
+        )
+
+def cmd_apply_batch(c,args):
+    if args.actor!="lead":
+        raise SystemExit("Only actor 'lead' may integrate the merge train.")
+    legacy_apply_guard()
+    lock=integration_lock()
+    local=sync_integration_from_origin()
+    refresh(c)
+    rows=rows_ready(c)[:args.max]
+    if not rows:
+        raise SystemExit("No READY_FOR_INTEGRATION candidates.")
+
+    current=run(["git","-C",str(BASE),"branch","--show-current"],check=True).stdout.strip()
+    if current!=INTEGRATION:
+        raise SystemExit(f"integration worktree is on {current}, expected {INTEGRATION}")
+    if run(["git","-C",str(BASE),"status","--porcelain"],check=True).stdout.strip():
+        raise SystemExit("integration worktree is dirty")
+
+    before=sha(INTEGRATION)
+    stamp=datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S")
+    wt=Path(f"/dev/shm/logres/merge-train-batch-{stamp}")
+    run(["git","-C",str(BASE),"worktree","add","--detach",str(wt),INTEGRATION],check=True)
+
+    selected=[]
+    original_commits=[]
+    try:
+        for r in rows:
+            candidate=r["sha"]
+            live=sha(r["branch"])
+            remote_candidate=sha("origin/"+r["branch"])
+            if live!=candidate or remote_candidate!=candidate:
+                raise SystemExit(
+                    f"Candidate moved/missing before batch: {r['task_id']} "
+                    f"queued={candidate[:12]} local={(live or '-')[:12]} "
+                    f"remote={(remote_candidate or '-')[:12]}"
+                )
+            temp_head=run(["git","-C",str(wt),"rev-parse","HEAD"],check=True).stdout.strip()
+            commits=[
+                x for x in run([
+                    "git","-C",str(wt),"rev-list","--reverse",
+                    "--cherry-pick","--right-only",f"{temp_head}...{candidate}",
+                ],check=True).stdout.splitlines() if x.strip()
+            ]
+            if not commits:
+                continue
+            checkpoint=temp_head
+            p=run(["git","-C",str(wt),"cherry-pick",*commits])
+            if p.returncode!=0:
+                run(["git","-C",str(wt),"cherry-pick","--abort"])
+                run(["git","-C",str(wt),"reset","--hard",checkpoint])
+                c.execute("""update integration_queue set status='CONFLICT',note=?,updated_at=?
+                             where task_id=? and sha=?""",
+                          ("Batch merge conflict against earlier train candidates: "
+                           +(p.stderr or p.stdout)[-800:].replace("\n"," "),
+                           datetime.now(timezone.utc).isoformat(timespec="seconds"),
+                           r["task_id"],r["sha"]))
+                c.commit()
+                continue
+            selected.append(r)
+            original_commits.extend(commits)
+
+        if not selected:
+            raise SystemExit("No mutually mergeable candidates in the batch.")
+
+        temp_sha=run(["git","-C",str(wt),"rev-parse","HEAD"],check=True).stdout.strip()
+        temp_tree=run(["git","-C",str(wt),"rev-parse","HEAD^{tree}"],check=True).stdout.strip()
+        print(
+            "BATCH_VERIFY tasks="
+            + ",".join(r["task_id"] for r in selected)
+            + f" temp={temp_sha[:12]}"
+        )
+        gp=subprocess.run(
+            [GATE,"candidate",temp_sha],
+            text=True,
+            env={**dict(__import__("os").environ),"LOGRES_GATE_FORCE":"1"},
+        )
+        if gp.returncode!=0:
+            raise SystemExit("Batch candidate gate failed; integration was not touched.")
+
+        # Reproduce the verified commit sequence on the real integration branch.
+        p=run(["git","-C",str(BASE),"cherry-pick",*original_commits])
+        if p.returncode!=0:
+            run(["git","-C",str(BASE),"cherry-pick","--abort"])
+            run(["git","-C",str(BASE),"reset","--hard",before])
+            raise SystemExit("Verified batch could not be replayed on integration; aborted and reset.")
+
+        after=sha(INTEGRATION)
+        after_tree=run(["git","-C",str(BASE),"rev-parse","HEAD^{tree}"],check=True).stdout.strip()
+        if after_tree!=temp_tree:
+            run(["git","-C",str(BASE),"reset","--hard",before])
+            raise SystemExit("Batch replay tree mismatch; integration reset before push.")
+
+        try:
+            run(
+                ["git","-C",str(BASE),"push","origin",INTEGRATION],check=True,
+                env={**os.environ,"LOGRES_VERIFIED_INTEGRATION_PUSH":"1"},
+            )
+        except Exception:
+            run(["git","-C",str(BASE),"reset","--hard",before])
+            raise
+
+        stamp_iso=datetime.now(timezone.utc).isoformat(timespec="seconds")
+        for r in selected:
+            c.execute("""update integration_queue set status='INTEGRATED',updated_at=?,integrated_at=coalesce(integrated_at,?),note=?
+                         where task_id=? and sha=?""",
+                      (stamp_iso,stamp_iso,f"Batch merge train integrated at {after}; shared full-e2e gate PASS.",
+                       r["task_id"],r["sha"]))
+            subprocess.run(
+                [BRAIN,"post","lead","ALL","DONE","HIGH",
+                 f"Batch merge train integrated: {r['task_id']}",
+                 "--body",f"candidate={r['sha']} integration={after}; shared batch full-e2e PASS and verified tree replay.",
+                 "--task",r["task_id"],"--dedupe",f"merge-train-batch:{r['task_id']}:{after}"],
+                stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,check=False,
+            )
+        c.commit()
+        print(
+            f"BATCH_INTEGRATED count={len(selected)} head={after} "
+            f"tasks={','.join(r['task_id'] for r in selected)}"
+        )
+    finally:
+        run(["git","-C",str(BASE),"worktree","remove","--force",str(wt)])
+
+def cmd_apply_preflight(c,args):
+    require_preflight_actor(args.actor,args.id)
+    lock=integration_lock()
+    current=sync_integration_from_origin()
+    try:
+        pf=c.execute("select * from integration_preflights where id=?",(args.id,)).fetchone()
+    except sqlite3.OperationalError:
+        raise SystemExit("No integration preflight table; run logres-merge-preflight first.")
+    if not pf:
+        raise SystemExit(f"Unknown preflight id={args.id}")
+    if pf["status"]!="VERIFIED":
+        raise SystemExit(f"Preflight {args.id} is {pf['status']}, not VERIFIED.")
+
+    if current!=pf["base_sha"]:
+        raise SystemExit(
+            f"Preflight is stale: base={pf['base_sha'][:12]} current={current[:12]}"
+        )
+    if run(["git","-C",str(BASE),"branch","--show-current"],check=True).stdout.strip()!=INTEGRATION:
+        raise SystemExit("Integration worktree is not on feat/logres-reconstruction.")
+    if run(["git","-C",str(BASE),"status","--porcelain"],check=True).stdout.strip():
+        raise SystemExit("Integration worktree is dirty.")
+
+    result=pf["result_sha"]
+    preflight_ref=f"refs/logres/preflight/{args.id}"
+    pinned=sha(preflight_ref)
+    if not result or pinned!=result:
+        raise SystemExit(
+            f"Verified preflight ref mismatch: ref={preflight_ref} "
+            f"pinned={(pinned or '-')[:12]} expected={(result or '-')[:12]}"
+        )
+    if not ancestor(current,result):
+        raise SystemExit("Verified preflight result is not a fast-forward descendant of current integration.")
+    exact=c.execute("""select 1 from verification
+      where sha=? and mode='full-e2e' and status='PASS' limit 1""",(result,)).fetchone()
+    if not exact:
+        raise SystemExit("Verified preflight result lacks exact-SHA full-e2e PASS.")
+
+    items=list(c.execute(
+        "select * from integration_preflight_items where preflight_id=? order by ordinal",
+        (args.id,),
+    ))
+    if not items:
+        raise SystemExit("Preflight has no integration items.")
+    for item in items:
+        live=sha(item["branch"])
+        remote_candidate=sha("origin/"+item["branch"])
+        if live!=item["candidate_sha"] or remote_candidate!=item["candidate_sha"]:
+            raise SystemExit(
+                f"Candidate moved/missing: {item['task_id']} expected={item['candidate_sha'][:12]} "
+                f"local={(live or '-')[:12]} remote={(remote_candidate or '-')[:12]}"
+            )
+        q=c.execute("""select status from integration_queue
+          where task_id=? and sha=?""",(item["task_id"],item["candidate_sha"])).fetchone()
+        if not q or q["status"] not in ("READY_FOR_INTEGRATION","READY_FOR_PREFLIGHT"):
+            raise SystemExit(
+                f"Queue state changed for {item['task_id']}: "
+                f"{q['status'] if q else 'MISSING'}"
+            )
+
+    # The preflight commit is created directly on the current integration base,
+    # so applying it is a true fast-forward to the *exact SHA that passed E2E*.
+    p=run(["git","-C",str(BASE),"merge","--ff-only",result])
+    if p.returncode!=0:
+        raise SystemExit("Fast-forward to verified preflight failed: "+(p.stderr or p.stdout)[-1200:])
+
+    after=sha(INTEGRATION)
+    if after!=result:
+        run(["git","-C",str(BASE),"reset","--hard",current])
+        raise SystemExit("Unexpected integration head after fast-forward; reset to previous head.")
+    tree=run(["git","-C",str(BASE),"rev-parse","HEAD^{tree}"],check=True).stdout.strip()
+    if tree!=pf["result_tree"]:
+        run(["git","-C",str(BASE),"reset","--hard",current])
+        raise SystemExit("Verified preflight tree mismatch; reset before push.")
+
+    push=run(
+        ["git","-C",str(BASE),"push","origin",INTEGRATION],
+        env={**os.environ,"LOGRES_VERIFIED_INTEGRATION_PUSH":"1"},
+    )
+    if push.returncode!=0:
+        run(["git","-C",str(BASE),"reset","--hard",current])
+        raise SystemExit("Push failed; integration reset: "+(push.stderr or push.stdout)[-1200:])
+
+    now=datetime.now(timezone.utc).isoformat(timespec="seconds")
+    tasks=[]
+    for item in items:
+        tasks.append(item["task_id"])
+        c.execute("""update integration_queue set status='INTEGRATED',updated_at=?,integrated_at=coalesce(integrated_at,?),note=?
+          where task_id=? and sha=?""",
+          (now,now,f"Applied verified preflight {args.id} at exact tested SHA {result}.",
+           item["task_id"],item["candidate_sha"]))
+    c.execute("""update integration_preflights set status='APPLIED',updated_at=?,note=?
+      where id=?""",(now,f"Fast-forward applied to integration at {result}.",args.id))
+    c.commit()
+    run(["git","-C",str(BASE),"update-ref","-d",preflight_ref])
+
+    subprocess.run([
+        BRAIN,"post",args.actor,"ALL","DONE","CRITICAL",
+        f"Verified merge preflight {args.id} integrated",
+        "--body",f"tasks={','.join(tasks)} integration={result}; exact preflight full-e2e SHA "
+                 f"fast-forwarded and pushed with no duplicate gate.",
+        "--dedupe",f"preflight-applied:{args.id}:{result}",
+    ],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,check=False)
+    print(f"PREFLIGHT_INTEGRATED id={args.id} count={len(tasks)} head={result}")
+    print("tasks="+",".join(tasks))
+
+def cmd_apply(c,args):
+    if args.actor!="lead":
+        raise SystemExit("Only actor 'lead' may integrate the merge train.")
+    legacy_apply_guard()
+    lock=integration_lock()
+    local=sync_integration_from_origin()
+    refresh(c)
+    rows=rows_ready(c)
+    if args.task:
+        rows=[r for r in rows if r["task_id"]==args.task]
+    if not rows:
+        raise SystemExit("No READY_FOR_INTEGRATION candidate matches.")
+    r=rows[0]
+    branch=r["branch"]; candidate=r["sha"]
+    live=sha(branch); remote_candidate=sha("origin/"+branch)
+    if live!=candidate or remote_candidate!=candidate:
+        raise SystemExit(
+            f"Candidate moved/missing: {r['task_id']} queued={candidate[:12]} "
+            f"local={(live or '-')[:12]} remote={(remote_candidate or '-')[:12]}"
+        )
+
+    current=run(["git","-C",str(BASE),"branch","--show-current"],check=True).stdout.strip()
+    if current!=INTEGRATION:
+        raise SystemExit(f"integration worktree is on {current}, expected {INTEGRATION}")
+    if run(["git","-C",str(BASE),"status","--porcelain"],check=True).stdout.strip():
+        raise SystemExit("integration worktree is dirty")
+
+    ok,detail=clean_merge_possible(candidate)
+    if not ok:
+        raise SystemExit("merge-tree conflict: "+detail)
+
+    commits=[
+        x.strip() for x in run(
+            ["git","-C",str(BASE),"rev-list","--reverse",f"{INTEGRATION}..{candidate}"],
+            check=True,
+        ).stdout.splitlines() if x.strip()
+    ]
+    if not commits:
+        c.execute("""update integration_queue set status='INTEGRATED',updated_at=?,integrated_at=coalesce(integrated_at,?),note=?
+                     where task_id=? and sha=?""",
+                  (datetime.now(timezone.utc).isoformat(timespec="seconds"),
+                   datetime.now(timezone.utc).isoformat(timespec="seconds"),
+                   "No unique commits; already integrated.",r["task_id"],r["sha"]))
+        c.commit()
+        print("ALREADY_INTEGRATED")
+        return
+
+    before=sha(INTEGRATION)
+    p=run(["git","-C",str(BASE),"cherry-pick",*commits])
+    if p.returncode!=0:
+        run(["git","-C",str(BASE),"cherry-pick","--abort"])
+        raise SystemExit("cherry-pick failed and was aborted:\n"+(p.stderr or p.stdout)[-2000:])
+
+    after=sha(INTEGRATION)
+    try:
+        gp=run([GATE,"candidate",after])
+        if gp.returncode!=0:
+            run(["git","-C",str(BASE),"reset","--hard",before])
+            raise SystemExit("post-integration gate failed; integration reset to previous head")
+        run(
+            ["git","-C",str(BASE),"push","origin",INTEGRATION],check=True,
+            env={**os.environ,"LOGRES_VERIFIED_INTEGRATION_PUSH":"1"},
+        )
+    except Exception:
+        # If push/gate throws after cherry-pick, keep local safety conservative.
+        if sha(INTEGRATION)!=before:
+            run(["git","-C",str(BASE),"reset","--hard",before])
+        raise
+
+    c.execute("""update integration_queue set status='INTEGRATED',updated_at=?,integrated_at=coalesce(integrated_at,?),note=?
+                 where task_id=? and sha=?""",
+              (datetime.now(timezone.utc).isoformat(timespec="seconds"),
+               datetime.now(timezone.utc).isoformat(timespec="seconds"),
+               f"Integrated by merge train actor=lead new_head={after}",r["task_id"],r["sha"]))
+    c.commit()
+    subprocess.run(
+        [BRAIN,"post","lead","ALL","DONE","HIGH",
+         f"Merge train integrated: {r['task_id']}",
+         "--body",f"branch={branch} candidate={candidate} integration={after}; post-integration candidate gate PASS.",
+         "--task",r["task_id"],"--dedupe",f"merge-train:{r['task_id']}:{after}"],
+        stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,check=False,
+    )
+    print(f"INTEGRATED task={r['task_id']} head={after}")
+
+ap=argparse.ArgumentParser(prog="logres-merge-train")
+sub=ap.add_subparsers(dest="cmd",required=True)
+x=sub.add_parser("status"); x.add_argument("--history",action="store_true"); x.set_defaults(fn=cmd_status)
+x=sub.add_parser("next"); x.set_defaults(fn=cmd_next)
+x=sub.add_parser("batch-plan"); x.add_argument("--max",type=int,default=3); x.set_defaults(fn=cmd_batch_plan)
+x=sub.add_parser("apply-batch"); x.add_argument("--actor",required=True); x.add_argument("--max",type=int,default=3); x.set_defaults(fn=cmd_apply_batch)
+x=sub.add_parser("apply-preflight"); x.add_argument("--actor",required=True); x.add_argument("id",type=int); x.set_defaults(fn=cmd_apply_preflight)
+x=sub.add_parser("apply"); x.add_argument("--actor",required=True); x.add_argument("--task"); x.set_defaults(fn=cmd_apply)
+args=ap.parse_args()
+c=sqlite3.connect(DB,timeout=30); c.row_factory=sqlite3.Row
+try: args.fn(c,args)
+finally: c.close()
