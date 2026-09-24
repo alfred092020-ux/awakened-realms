@@ -1,6 +1,7 @@
 #!/home/ubuntu/logres/envs/research/bin/python
 import argparse
 import json
+import os
 import sqlite3
 import subprocess
 import sys
@@ -16,6 +17,25 @@ DB = Path("/home/ubuntu/logres/control/control.sqlite")
 RESULTS = Path("/home/ubuntu/logres/control/ai-results")
 CONFIG = Path("/home/ubuntu/logres/control/autoflow.json")
 BRAIN = "/home/ubuntu/logres/bin/logres-brain"
+OPENAI_KEY_FILE = Path(
+    os.environ.get(
+        "LOGRES_OPENAI_KEY_FILE",
+        "/home/ubuntu/.config/logres/openai_api_key",
+    )
+)
+
+
+def openai_client() -> OpenAI:
+    key = os.environ.get("OPENAI_API_KEY", "").strip()
+    if not key and OPENAI_KEY_FILE.is_file():
+        key = OPENAI_KEY_FILE.read_text().strip()
+    if not key:
+        raise SystemExit(
+            "OpenAI credential unavailable: set OPENAI_API_KEY or provide the "
+            "configured Logres key file"
+        )
+    return OpenAI(api_key=key)
+
 
 ap = argparse.ArgumentParser(prog="logres-ai")
 ap.add_argument("artifact")
@@ -29,7 +49,7 @@ args = ap.parse_args()
 if not Path(args.artifact).is_file():
     raise SystemExit(f"artifact not found: {args.artifact}")
 
-client = OpenAI()
+client = openai_client()
 config = {}
 if CONFIG.is_file():
     try:
