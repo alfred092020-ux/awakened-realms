@@ -176,3 +176,22 @@ A failed shared preflight no longer has to stall every good candidate behind it.
 If that single immutable candidate fails full E2E by itself, its exact integration-queue row becomes `QUARANTINED`. The branch, SHA, failed preflight packet, logs, and generated regression remain preserved. The queue does not mutate or silently retry the failed SHA, and unrelated READY candidates can continue through verification.
 
 Failures on an old integration base do not reduce later batch sizes, and a single-candidate failure does not poison future unrelated batches. This keeps isolation local to the evidence that actually failed.
+
+## Evidence impact and invalidation reviews
+
+`logres-impact` turns explicit Brain `EVIDENCE_CONFLICT` events into bounded downstream impact reviews. It never rewrites historical truth, confidence, code, merge state, or `main`.
+
+The impact planner walks the task dependency graph in reverse from the conflicted source task, collects all transitive dependent tasks, and attaches any integrated exact-SHA commits produced by those tasks. Each explicit conflict is fingerprinted and stored once in `impact_incidents`.
+
+When `logres-impact scan --apply` finds a new conflict, it creates one evidence-first `IMPACT-REVIEW-...` task with the source task, downstream tasks, and integrated commits captured in its acceptance criteria. Repeated scans are idempotent.
+
+Autopilot runs the impact scan after frontier reconciliation and before AI/Copilot routing. This gives new contradictory evidence a deterministic path into repair work without allowing weak or later-version evidence to silently invalidate Global reconstruction claims.
+
+Useful commands:
+
+```bash
+logres-impact task G17-TUT-001
+logres-impact scan
+logres-impact scan --apply
+logres-impact status
+```
