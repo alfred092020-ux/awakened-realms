@@ -52,6 +52,33 @@ def integration_prerequisite_satisfied(
             continue
         if ancestor_checker(candidate, integration_head):
             return True
+
+        # Preflight integration may cherry-pick/recreate the candidate, so the
+        # worker SHA itself is not necessarily an ancestor of the canonical
+        # integration branch. In that case require an APPLIED preflight that
+        # contains this exact task/candidate pair and whose immutable result
+        # SHA is on the current integration ancestry.
+        try:
+            proof_rows = conn.execute(
+                """select p.result_sha
+                     from integration_preflight_items i
+                     join integration_preflights p on p.id=i.preflight_id
+                    where i.task_id=?
+                      and i.candidate_sha=?
+                      and p.status='APPLIED'
+                      and p.result_sha is not null
+                    order by p.id desc""",
+                (depends_on, candidate),
+            ).fetchall()
+        except sqlite3.OperationalError:
+            proof_rows = []
+
+        for proof_row in proof_rows:
+            result_sha = str(proof_row[0] or "")
+            if len(result_sha) == 40 and ancestor_checker(
+                result_sha, integration_head
+            ):
+                return True
     return False
 
 

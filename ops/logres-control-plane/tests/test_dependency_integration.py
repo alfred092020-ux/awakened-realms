@@ -38,6 +38,20 @@ def make_db():
              status text not null
            )"""
     )
+    conn.execute(
+        """create table integration_preflights(
+             id integer primary key,
+             status text not null,
+             result_sha text
+           )"""
+    )
+    conn.execute(
+        """create table integration_preflight_items(
+             preflight_id integer not null,
+             task_id text not null,
+             candidate_sha text not null
+           )"""
+    )
     return conn
 
 
@@ -129,6 +143,56 @@ class DependencyIntegrationTests(unittest.TestCase):
                 "DEP",
                 integration_head="h" * 40,
                 ancestor_checker=is_ancestor({"a" * 40}),
+            )
+        )
+
+    def test_applied_preflight_result_satisfies_cherry_picked_candidate(self):
+        conn = make_db()
+        conn.execute("insert into tasks values('DEP','DONE')")
+        conn.execute(
+            "insert into integration_queue values(?,?,?)",
+            ("DEP", "b" * 40, "INTEGRATED"),
+        )
+        conn.execute(
+            "insert into integration_preflights values(?,?,?)",
+            (7, "APPLIED", "c" * 40),
+        )
+        conn.execute(
+            "insert into integration_preflight_items values(?,?,?)",
+            (7, "DEP", "b" * 40),
+        )
+
+        self.assertTrue(
+            integration_prerequisite_satisfied(
+                conn,
+                "DEP",
+                integration_head="h" * 40,
+                ancestor_checker=is_ancestor({"c" * 40}),
+            )
+        )
+
+    def test_unapplied_preflight_never_satisfies_dependency(self):
+        conn = make_db()
+        conn.execute("insert into tasks values('DEP','DONE')")
+        conn.execute(
+            "insert into integration_queue values(?,?,?)",
+            ("DEP", "b" * 40, "INTEGRATED"),
+        )
+        conn.execute(
+            "insert into integration_preflights values(?,?,?)",
+            (8, "VERIFIED", "c" * 40),
+        )
+        conn.execute(
+            "insert into integration_preflight_items values(?,?,?)",
+            (8, "DEP", "b" * 40),
+        )
+
+        self.assertFalse(
+            integration_prerequisite_satisfied(
+                conn,
+                "DEP",
+                integration_head="h" * 40,
+                ancestor_checker=is_ancestor({"c" * 40}),
             )
         )
 
