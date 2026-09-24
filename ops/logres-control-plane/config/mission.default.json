@@ -250,9 +250,19 @@
       "gate_type": "required"
     },
     {
+      "objective_id": "UI_RUNTIME",
+      "task_id": "MISSION-UI-RUNTIME-001",
+      "gate_type": "supporting"
+    },
+    {
       "objective_id": "AUDIO_RUNTIME",
       "milestone_id": "DEMO-0.3",
       "gate_type": "required"
+    },
+    {
+      "objective_id": "AUDIO_RUNTIME",
+      "task_id": "MISSION-AUDIO-RUNTIME-001",
+      "gate_type": "supporting"
     },
     {
       "objective_id": "ANDROID_CLIENT",
@@ -260,14 +270,29 @@
       "gate_type": "required"
     },
     {
+      "objective_id": "ANDROID_CLIENT",
+      "task_id": "MISSION-ANDROID-CLIENT-INTEGRATE-002",
+      "gate_type": "supporting"
+    },
+    {
       "objective_id": "NPC_DIALOGUE",
       "milestone_id": "DEMO-0.3",
       "gate_type": "required"
     },
     {
+      "objective_id": "NPC_DIALOGUE",
+      "task_id": "MISSION-NPC-DIALOGUE-001",
+      "gate_type": "supporting"
+    },
+    {
       "objective_id": "QUESTS",
       "milestone_id": "DEMO-0.3",
       "gate_type": "required"
+    },
+    {
+      "objective_id": "QUESTS",
+      "task_id": "MISSION-QUESTS-001",
+      "gate_type": "supporting"
     },
     {
       "objective_id": "PROGRESSION",
