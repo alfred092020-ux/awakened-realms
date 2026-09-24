@@ -22,6 +22,7 @@ from logres_swarm import (
     ensure_schema,
     load_config,
     mark_job_running,
+    prior_failures,
     reconcile_jobs,
     register_worker,
     select_research_tasks,
@@ -101,15 +102,6 @@ def release_stale(conn: sqlite3.Connection, stale_ids: list[int]) -> list[dict]:
                 }
             )
     return released
-
-
-def prior_failures(conn: sqlite3.Connection, task_id: str) -> int:
-    return int(
-        conn.execute(
-            "select count(*) from swarm_jobs where task_id=? and state='FAILED'",
-            (task_id,),
-        ).fetchone()[0]
-    )
 
 
 def post_once(subject: str, body: str, dedupe: str, task: str | None = None):
