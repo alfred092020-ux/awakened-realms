@@ -15,4 +15,11 @@ class ShadowTests(unittest.TestCase):
   c=self.db();self.add(c,'A',1,20);before=c.execute("select * from tasks").fetchall();compare(c,['A'],True);after=c.execute("select * from tasks").fetchall();self.assertEqual(before,after)
  def test_conflict_penalty(self):
   c=self.db();self.add(c,'A',1,20);c.execute("update task_metadata set concurrency_key='x' where task_id='A'");c.execute("insert into tasks values('LIVE',1,'ACTIVE')");c.execute("insert into task_metadata values('LIVE','implementation',20,'x','')");self.assertEqual(1.0,score_candidates(c)[0]['conflict_risk'])
+ def test_weight_variants_are_shadow_only_and_deterministic(self):
+  c=self.db();self.add(c,'A',1,20);self.add(c,'B',1,80)
+  default=score_candidates(c)
+  variant=score_candidates(c,weights={"duration":0.5})
+  self.assertEqual({"A","B"},{x["task_id"] for x in variant})
+  self.assertEqual(default,score_candidates(c))
+  self.assertEqual(variant,score_candidates(c,weights={"duration":0.5}))
 if __name__=="__main__":unittest.main()
