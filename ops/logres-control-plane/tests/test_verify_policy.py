@@ -110,7 +110,7 @@ class VerifyFarmE2EPolicyTests(unittest.TestCase):
             text,
         )
         self.assertIn(
-            'npm run test:e2e -- --workers="$E2E_WORKERS"',
+            'npm run test:e2e -- --workers="$E2E_WORKERS" --grep-invert "$PERFORMANCE_TEST_TITLE"',
             text,
         )
         self.assertIn(
@@ -120,6 +120,22 @@ class VerifyFarmE2EPolicyTests(unittest.TestCase):
         self.assertIn(
             'E2E_VERIFY_TAG="e2e-w${E2E_WORKERS}"',
             text,
+        )
+
+    def test_performance_budget_isolated_lane_is_mandatory_and_fail_closed(self):
+        text = SCRIPT.read_text()
+        generic = 'npm run test:e2e -- --workers="$E2E_WORKERS" --grep-invert "$PERFORMANCE_TEST_TITLE"'
+        isolated = 'npm run test:e2e -- "$PERFORMANCE_SPEC" --workers=1'
+        self.assertIn(generic, text)
+        self.assertIn(isolated, text)
+        self.assertIn('PERFORMANCE_VERIFY_TAG="performance-w1"', text)
+        self.assertIn('[[ -f "$E2E_WT/$PERFORMANCE_SPEC" ]]', text)
+        self.assertIn('performance_rc != 0', text)
+        self.assertIn('--log "$PERFORMANCE_LOG"', text)
+        self.assertLess(text.index(generic), text.index('wait "$e2e_pid" || e2e_rc=$?'))
+        self.assertLess(
+            text.index('wait "$e2e_pid" || e2e_rc=$?'),
+            text.index(isolated),
         )
 
 
@@ -357,7 +373,7 @@ class VerifyFarmE2EPolicyTests(unittest.TestCase):
         wait_index = text.index('wait "$e2e_pid" || e2e_rc=$?')
         behavior_index = text.index('behavior_rc=0')
         failure_index = text.index(
-            'if (( test_rc != 0 || e2e_rc != 0 || behavior_rc != 0 )); then'
+            'if (( test_rc != 0 || e2e_rc != 0 || performance_rc != 0 || behavior_rc != 0 )); then'
         )
         merge_index = text.index('if ! merge_visual_truth_isolation; then')
         pass_index = text.index('VERIFY_FARM PASS ref=')

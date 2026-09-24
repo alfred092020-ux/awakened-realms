@@ -1,0 +1,79 @@
+{
+  "evidence_policy": "Performance budgets are exact-SHA regression gates for reconstructed runtime classes. They do not weaken or replace visual, behavioral, collision, battle, content, or device-proof gates. Historical Global performance characteristics are unresolved.",
+  "historical_global_performance": {
+    "reason": "No recovered Global-era performance telemetry establishes original startup, frame-time, CPU, memory, or jank targets.",
+    "status": "UNRESOLVED"
+  },
+  "runtime_classes": {
+    "chromium_ci_720x1280": {
+      "budgets": {
+        "bootstrap_ms_max": 1000,
+        "field_ready_ms_max": 3000,
+        "frame_p95_ms_max": 75,
+        "frame_p99_ms_max": 100,
+        "used_js_heap_mb_max": 96
+      },
+      "calibration": {
+        "bootstrap_ms": [
+          253.65,
+          245.23,
+          246.64
+        ],
+        "field_ready_ms": [
+          983.53,
+          972.19,
+          974.48
+        ],
+        "frame_p95_ms": [
+          66.7,
+          66.7,
+          66.7
+        ],
+        "frame_p99_ms": [
+          83.4,
+          66.8,
+          66.8
+        ],
+        "samples": 3,
+        "sha": "f79c0606f86e17c5e2c4cb390851769c07b32af9",
+        "used_js_heap_mb": [
+          37.77,
+          48.07,
+          48.07
+        ]
+      },
+      "exact_sha_required": true,
+      "measurement_source": "Playwright Chromium headless against hydrated recovered field runtime; this cadence-throttled CI class is a regression detector, not a proxy for physical-device FPS.",
+      "notes": [
+        "Headless CI requestAnimationFrame cadence is consistently ~66.7 ms p95 on the canonical VM and is intentionally budgeted as its own runtime class.",
+        "Physical-device frame performance is governed separately by the Samsung hardware class and remains much stricter."
+      ],
+      "required_gate": true
+    },
+    "samsung_s25_ultra_android16": {
+      "baseline": {
+        "artifact": "/home/ubuntu/logres/artifacts/android-game-category-ab/comparison.json",
+        "cold_start_ms": 546,
+        "frame_p95_ms": 15,
+        "frame_p99_ms": 16,
+        "jank_percent": 0.86,
+        "rss_mb": 260,
+        "sha": "b17d56552fa12664312df62c0f6f00e516f992cb"
+      },
+      "budgets": {
+        "cold_start_ms_max": 1500,
+        "frame_p95_ms_max": 24,
+        "frame_p99_ms_max": 34,
+        "jank_percent_max": 3.0,
+        "rss_mb_max": 350
+      },
+      "exact_sha_required": true,
+      "notes": [
+        "CPU percentage is intentionally not a release budget from the single 10-second sample because scheduler load makes it too noisy.",
+        "Game-category A/B data is used only as a measured hardware baseline, not as historical Global evidence."
+      ],
+      "required_on_hardware_gate": true
+    }
+  },
+  "schema": "logres-performance-budgets-v1"
+}

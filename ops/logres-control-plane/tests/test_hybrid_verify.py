@@ -61,9 +61,12 @@ class HybridVerifyTests(unittest.TestCase):
         self.assertIn('if cache_hit; then', text)
         self.assertIn('VERIFY_PATH="cache-test+local-build-e2e"', text)
         self.assertIn('cache_store_pass', text)
-        self.assertIn('npm run test:e2e -- --workers="$E2E_WORKERS"', text)
+        self.assertIn(
+            'npm run test:e2e -- --workers="$E2E_WORKERS" --grep-invert "$PERFORMANCE_TEST_TITLE"',
+            text,
+        )
         self.assertLess(
-            text.index('npm run test:e2e -- --workers="$E2E_WORKERS"'),
+            text.index('npm run test:e2e -- --workers="$E2E_WORKERS" --grep-invert "$PERFORMANCE_TEST_TITLE"'),
             text.index('if cache_hit; then'),
         )
         cache_block = text[
@@ -72,6 +75,24 @@ class HybridVerifyTests(unittest.TestCase):
         ]
         self.assertNotIn('exit 0', cache_block)
         self.assertIn('wait "$e2e_pid"', text)
+
+    def test_performance_benchmark_is_local_strict_and_isolated(self):
+        text = SCRIPT.read_text()
+        self.assertIn('PERFORMANCE_SPEC="e2e/logres-performance.spec.mjs"', text)
+        self.assertIn('--grep-invert "$PERFORMANCE_TEST_TITLE"', text)
+        self.assertIn(
+            'npm run test:e2e -- "$PERFORMANCE_SPEC" --workers=1',
+            text,
+        )
+        self.assertIn('export LOGRES_VERIFY_SHA="$SHA"', text)
+        self.assertIn('hydrate "$E2E_WT"', text)
+        self.assertIn('[[ -f "$E2E_WT/$PERFORMANCE_SPEC" ]]', text)
+        self.assertIn('performance_rc != 0', text)
+        self.assertIn('--log "$PERFORMANCE_LOG"', text)
+        self.assertLess(
+            text.index('wait "$e2e_pid" || e2e_rc=$?'),
+            text.index('npm run test:e2e -- "$PERFORMANCE_SPEC" --workers=1'),
+        )
 
     def test_cache_dimensions_fail_closed_and_are_exact_sha_keyed(self):
         text = SCRIPT.read_text()

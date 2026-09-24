@@ -14,6 +14,7 @@ TEST_WT="$ROOT/verify-farm-$STAMP-test"
 E2E_WT="$ROOT/verify-farm-$STAMP-e2e"
 TEST_LOG="/home/ubuntu/logres/logs/verify-farm-$STAMP-test.log"
 E2E_LOG="/home/ubuntu/logres/logs/verify-farm-$STAMP-e2e.log"
+PERFORMANCE_LOG="/home/ubuntu/logres/logs/verify-farm-$STAMP-performance.log"
 BEHAVIOR_LOG="/home/ubuntu/logres/logs/verify-farm-$STAMP-behavior.log"
 BEHAVIOR_TRACE_MERGE_LOG="/home/ubuntu/logres/logs/verify-farm-$STAMP-behavior-trace-merge.log"
 BEHAVIOR_TRACE_FAILURE_DIR="${LOGRES_BEHAVIOR_TRACE_FAILURE_DIR:-/home/ubuntu/logres/artifacts/behavior-trace-merge-failures}"
@@ -37,6 +38,9 @@ VERIFY_PATH="local-test+local-build-e2e"
 CACHE_MODE="unit"
 CACHE_READY=0
 CACHE_ARGS=()
+PERFORMANCE_SPEC="e2e/logres-performance.spec.mjs"
+PERFORMANCE_TEST_TITLE="hydrated reconstructed field stays within exact-SHA Chromium performance budgets"
+PERFORMANCE_VERIFY_TAG="performance-absent"
 
 select_e2e_workers() {
   local override="${LOGRES_E2E_WORKERS:-}"
@@ -430,7 +434,7 @@ export LOGRES_BEHAVIOR_TRACE_BIN="$BEHAVIOR_TRACE_WRAPPER"
   hydrate "$E2E_WT"
   cd "$E2E_WT"
   npm run build
-  npm run test:e2e -- --workers="$E2E_WORKERS"
+  npm run test:e2e -- --workers="$E2E_WORKERS" --grep-invert "$PERFORMANCE_TEST_TITLE"
 ) >"$E2E_LOG" 2>&1 &
 e2e_pid=$!
 
@@ -484,8 +488,21 @@ fi
 e2e_rc=0
 wait "$e2e_pid" || e2e_rc=$?
 
+performance_rc=0
+if (( e2e_rc == 0 )) && [[ -f "$E2E_WT/$PERFORMANCE_SPEC" ]]; then
+  PERFORMANCE_VERIFY_TAG="performance-w1"
+  (
+    set -e
+    cd "$E2E_WT"
+    npm run test:e2e -- "$PERFORMANCE_SPEC" --workers=1
+  ) >"$PERFORMANCE_LOG" 2>&1 || performance_rc=$?
+else
+  printf 'VERIFY_FARM performance benchmark absent-or-generic-e2e-failed sha=%s e2e_rc=%s\n' \
+    "${SHA:0:12}" "$e2e_rc" >"$PERFORMANCE_LOG"
+fi
+
 behavior_rc=0
-if (( e2e_rc == 0 )); then
+if (( e2e_rc == 0 && performance_rc == 0 )); then
   python3 "$E2E_WT/scripts/logres/verify_behavior_checkpoint.py" \
     --observed "$LOGRES_BEHAVIOR_TRACE_OUT" \
     --sha "$SHA" \
@@ -493,15 +510,25 @@ if (( e2e_rc == 0 )); then
     >"$BEHAVIOR_LOG" 2>&1 || behavior_rc=$?
 fi
 
-if (( test_rc != 0 || e2e_rc != 0 || behavior_rc != 0 )); then
-  echo "VERIFY_FARM FAIL test_rc=$test_rc e2e_rc=$e2e_rc behavior_rc=$behavior_rc path=$VERIFY_PATH" >&2
+if (( test_rc != 0 || e2e_rc != 0 || performance_rc != 0 || behavior_rc != 0 )); then
+  echo "VERIFY_FARM FAIL test_rc=$test_rc e2e_rc=$e2e_rc performance_rc=$performance_rc behavior_rc=$behavior_rc path=$VERIFY_PATH" >&2
   echo "--- test tail ---" >&2
   tail -80 "$TEST_LOG" >&2 || true
   echo "--- e2e tail ---" >&2
   tail -120 "$E2E_LOG" >&2 || true
+  echo "--- performance tail ---" >&2
+  tail -120 "$PERFORMANCE_LOG" >&2 || true
   echo "--- behavior tail ---" >&2
   tail -120 "$BEHAVIOR_LOG" >&2 || true
-  /home/ubuntu/logres/bin/logres-regression-capture     --kind candidate-verify     --ref "$REF"     --sha "$SHA"     --summary "verify-farm test_rc=$test_rc e2e_rc=$e2e_rc behavior_rc=$behavior_rc path=$VERIFY_PATH+$E2E_VERIFY_TAG"     --log "$TEST_LOG"     --log "$E2E_LOG" --log "$BEHAVIOR_LOG" >/dev/null 2>&1 || true
+  /home/ubuntu/logres/bin/logres-regression-capture \
+    --kind candidate-verify \
+    --ref "$REF" \
+    --sha "$SHA" \
+    --summary "verify-farm test_rc=$test_rc e2e_rc=$e2e_rc performance_rc=$performance_rc behavior_rc=$behavior_rc path=$VERIFY_PATH+$E2E_VERIFY_TAG+$PERFORMANCE_VERIFY_TAG" \
+    --log "$TEST_LOG" \
+    --log "$E2E_LOG" \
+    --log "$PERFORMANCE_LOG" \
+    --log "$BEHAVIOR_LOG" >/dev/null 2>&1 || true
   exit 1
 fi
 
@@ -540,9 +567,10 @@ if ! merge_visual_truth_isolation; then
 fi
 
 dur=$(( $(date +%s)-START ))
-echo "VERIFY_FARM PASS ref=$REF sha=$SHA duration=${dur}s path=$VERIFY_PATH+$E2E_VERIFY_TAG+behavior-truth"
+echo "VERIFY_FARM PASS ref=$REF sha=$SHA duration=${dur}s path=$VERIFY_PATH+$E2E_VERIFY_TAG+$PERFORMANCE_VERIFY_TAG+behavior-truth"
 echo "test_log=$TEST_LOG"
 echo "e2e_log=$E2E_LOG"
+echo "performance_log=$PERFORMANCE_LOG"
 echo "behavior_log=$BEHAVIOR_LOG"
 echo "behavior_trace_merge_log=$BEHAVIOR_TRACE_MERGE_LOG"
 echo "visual_truth_merge_log=$VISUAL_TRUTH_MERGE_LOG"
