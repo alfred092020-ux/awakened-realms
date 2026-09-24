@@ -17,10 +17,12 @@ from logres_supervisor import (
     ScheduledJob,
     actionable_integration_backlog,
     default_jobs,
+    direct_child_pids,
     due,
     ensure_running,
     launch_background_job,
     refresh_background_run,
+    reload_if_idle,
     should_run_job,
     supervisor_health,
     tick,
@@ -579,6 +581,105 @@ class SupervisorTests(unittest.TestCase):
             self.assertTrue(
                 result["state"]["last_runs"]["autonomy"]["running"]
             )
+
+    def test_direct_child_pids_reads_proc_status(self):
+        with tempfile.TemporaryDirectory() as td:
+            proc = Path(td)
+            for pid, parent in ((101, 42), (102, 42), (103, 7)):
+                entry = proc / str(pid)
+                entry.mkdir()
+                (entry / "status").write_text(
+                    f"Name:\ttest\nPid:\t{pid}\nPPid:\t{parent}\n"
+                )
+            self.assertEqual(
+                (101, 102),
+                direct_child_pids(42, proc_root=proc),
+            )
+
+    def test_reload_if_idle_defers_when_supervisor_has_child(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            heartbeat = root / "heartbeat.json"
+            heartbeat.write_text(
+                json.dumps(
+                    {
+                        "pid": os.getpid(),
+                        "updated_epoch": time.time(),
+                        "updated_at": "now",
+                    }
+                )
+            )
+            result = reload_if_idle(
+                root,
+                root / "logres-supervisor",
+                heartbeat,
+                child_pids_fn=lambda pid: (7001,),
+                kill_fn=lambda pid, sig: self.fail("must not signal busy supervisor"),
+            )
+            self.assertEqual("deferred", result["reload"])
+            self.assertEqual([7001], result["children"])
+            self.assertTrue(result["healthy"])
+
+    def test_reload_if_idle_replaces_idle_supervisor(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            heartbeat = root / "heartbeat.json"
+            old_pid = os.getpid()
+            heartbeat.write_text(
+                json.dumps(
+                    {
+                        "pid": old_pid,
+                        "updated_epoch": time.time(),
+                        "updated_at": "now",
+                    }
+                )
+            )
+            signals = []
+
+            def fake_ensure(root, executable, heartbeat_path, **kwargs):
+                return {
+                    "started": True,
+                    "healthy": True,
+                    "pid": 9001,
+                    "alive": True,
+                }
+
+            result = reload_if_idle(
+                root,
+                root / "logres-supervisor",
+                heartbeat,
+                child_pids_fn=lambda pid: (),
+                kill_fn=lambda pid, sig: signals.append((pid, sig)),
+                alive_fn=lambda pid: False,
+                ensure_fn=fake_ensure,
+            )
+            self.assertEqual([(old_pid, signal.SIGTERM)], signals)
+            self.assertEqual("reloaded", result["reload"])
+            self.assertEqual(9001, result["new_pid"])
+            self.assertTrue(result["healthy"])
+
+    def test_reload_if_idle_is_idempotent_after_replacement(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            heartbeat = root / "heartbeat.json"
+            heartbeat.write_text(
+                json.dumps(
+                    {
+                        "pid": os.getpid(),
+                        "updated_epoch": time.time(),
+                        "updated_at": "now",
+                    }
+                )
+            )
+            result = reload_if_idle(
+                root,
+                root / "logres-supervisor",
+                heartbeat,
+                expected_pid=12345,
+            )
+            self.assertEqual("already-replaced", result["reload"])
+            self.assertEqual(os.getpid(), result["new_pid"])
+            self.assertTrue(result["healthy"])
 
     def test_healthy_existing_supervisor_is_not_duplicated(self):
         with tempfile.TemporaryDirectory() as td:

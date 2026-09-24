@@ -46,9 +46,42 @@ def init_repo(root: Path) -> tuple[Path, str]:
     source = repo / "ops" / "logres-control-plane" / "bin"
     source.mkdir(parents=True)
     (source / "fake-helper").write_text("helper-v1\n")
+    (source / "logres-supervisor").write_text("supervisor-new\n")
+    source_lib = repo / "ops" / "logres-control-plane" / "lib"
+    source_lib.mkdir(parents=True)
+    (source_lib / "logres_supervisor.py").write_text("library-new\n")
     git(repo, "add", ".")
     git(repo, "commit", "-q", "-m", "fixture")
     return repo, git(repo, "rev-parse", "HEAD")
+
+
+def deploy_supervisor_runtime(source_root, target_root, dry_run=False):
+    items = []
+    for relative, mode in (
+        ("bin/logres-supervisor", 0o755),
+        ("lib/logres_supervisor.py", 0o644),
+    ):
+        source = source_root / relative
+        destination = target_root / relative
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(source, destination)
+        items.append(
+            types.SimpleNamespace(
+                source=source,
+                destination=destination,
+                mode=mode,
+            )
+        )
+    return items
+
+
+def seed_old_supervisor(target: Path):
+    (target / "bin").mkdir(parents=True, exist_ok=True)
+    (target / "lib").mkdir(parents=True, exist_ok=True)
+    (target / "bin" / "logres-supervisor").write_text("supervisor-old\n")
+    (target / "lib" / "logres_supervisor.py").write_text("library-old\n")
+
+
 class RuntimeDeployTests(unittest.TestCase):
     def test_rejects_non_full_sha(self):
         with self.assertRaises(runtime.RuntimeDeployError):
@@ -144,6 +177,128 @@ class RuntimeDeployTests(unittest.TestCase):
                 ),
                 saved["files"]["bin/fake-helper"],
             )
+
+    def test_changed_supervisor_runtime_requests_reload(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            repo, sha = init_repo(root)
+            target = root / "runtime"
+            stamp = root / "stamp.json"
+            seed_old_supervisor(target)
+            calls = []
+
+            def runner(argv, **kwargs):
+                argv = [str(x) for x in argv]
+                if argv and argv[0] == "git":
+                    return subprocess.run(argv, **kwargs)
+                calls.append(argv)
+                if argv[-1] == "reload":
+                    return subprocess.CompletedProcess(
+                        argv,
+                        0,
+                        json.dumps(
+                            {"reload": "reloaded", "healthy": True}
+                        ),
+                        "",
+                    )
+                return subprocess.CompletedProcess(argv, 0, "ok\n", "")
+
+            payload = runtime.deploy_runtime(
+                repo,
+                target,
+                sha,
+                stamp_path=stamp,
+                deploy_fn=deploy_supervisor_runtime,
+                runner=runner,
+            )
+
+            self.assertTrue(payload["scheduler"]["supervisor_runtime_changed"])
+            self.assertEqual(
+                "reloaded",
+                payload["scheduler"]["supervisor_reload"],
+            )
+            self.assertEqual(
+                [str(target / "bin" / "logres-supervisor"), "reload"],
+                calls[0],
+            )
+
+    def test_changed_busy_supervisor_records_deferred_reload(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            repo, sha = init_repo(root)
+            target = root / "runtime"
+            stamp = root / "stamp.json"
+            seed_old_supervisor(target)
+
+            def runner(argv, **kwargs):
+                argv = [str(x) for x in argv]
+                if argv and argv[0] == "git":
+                    return subprocess.run(argv, **kwargs)
+                if argv[-1] == "reload":
+                    return subprocess.CompletedProcess(
+                        argv,
+                        0,
+                        json.dumps(
+                            {
+                                "reload": "deferred",
+                                "healthy": True,
+                                "watcher_pid": 999,
+                            }
+                        ),
+                        "",
+                    )
+                return subprocess.CompletedProcess(argv, 0, "ok\n", "")
+
+            payload = runtime.deploy_runtime(
+                repo,
+                target,
+                sha,
+                stamp_path=stamp,
+                deploy_fn=deploy_supervisor_runtime,
+                runner=runner,
+            )
+
+            self.assertTrue(payload["scheduler"]["supervisor_runtime_changed"])
+            self.assertEqual(
+                "deferred",
+                payload["scheduler"]["supervisor_reload"],
+            )
+            self.assertTrue(stamp.exists())
+
+    def test_changed_supervisor_reload_failure_aborts_before_stamp(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            repo, sha = init_repo(root)
+            target = root / "runtime"
+            stamp = root / "stamp.json"
+            seed_old_supervisor(target)
+
+            def runner(argv, **kwargs):
+                argv = [str(x) for x in argv]
+                if argv and argv[0] == "git":
+                    return subprocess.run(argv, **kwargs)
+                if argv[-1] == "reload":
+                    return subprocess.CompletedProcess(
+                        argv,
+                        1,
+                        "",
+                        "replacement unhealthy",
+                    )
+                return subprocess.CompletedProcess(argv, 0, "ok\n", "")
+
+            with self.assertRaisesRegex(
+                runtime.RuntimeDeployError,
+                "supervisor failed to reload",
+            ):
+                runtime.deploy_runtime(
+                    repo,
+                    target,
+                    sha,
+                    stamp_path=stamp,
+                    deploy_fn=deploy_supervisor_runtime,
+                    runner=runner,
+                )
+            self.assertFalse(stamp.exists())
 
     def test_cron_failure_is_deferred_when_supervisor_is_healthy(self):
         with tempfile.TemporaryDirectory() as td:

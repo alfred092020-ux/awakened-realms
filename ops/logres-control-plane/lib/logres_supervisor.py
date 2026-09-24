@@ -113,6 +113,34 @@ def pid_alive(pid: int | None) -> bool:
         return True
 
 
+def direct_child_pids(
+    pid: int,
+    *,
+    proc_root: Path = Path("/proc"),
+) -> tuple[int, ...]:
+    if pid <= 0:
+        return ()
+    children = []
+    for entry in proc_root.iterdir():
+        if not entry.name.isdigit():
+            continue
+        try:
+            lines = (entry / "status").read_text().splitlines()
+        except (FileNotFoundError, PermissionError, ProcessLookupError):
+            continue
+        parent = None
+        for line in lines:
+            if line.startswith("PPid:"):
+                try:
+                    parent = int(line.split()[1])
+                except (IndexError, ValueError):
+                    parent = None
+                break
+        if parent == pid:
+            children.append(int(entry.name))
+    return tuple(sorted(children))
+
+
 def supervisor_health(
     heartbeat_path: Path,
     *,
@@ -531,6 +559,90 @@ def run_forever(
                 break
             time.sleep(1)
     return 0
+
+
+def reload_if_idle(
+    root: Path,
+    executable: Path,
+    heartbeat_path: Path,
+    *,
+    expected_pid: int | None = None,
+    max_age_seconds: int = 900,
+    wait_seconds: float = 15.0,
+    child_pids_fn=direct_child_pids,
+    kill_fn=os.kill,
+    alive_fn=pid_alive,
+    sleep_fn=time.sleep,
+    ensure_fn=None,
+) -> dict:
+    health = supervisor_health(
+        heartbeat_path,
+        max_age_seconds=max_age_seconds,
+    )
+    current_pid = int(health.get("pid") or 0)
+    if expected_pid and current_pid and current_pid != int(expected_pid):
+        return {
+            "reload": "already-replaced",
+            **health,
+            "old_pid": int(expected_pid),
+            "new_pid": current_pid,
+        }
+
+    if not health.get("alive"):
+        ensure = ensure_fn or ensure_running
+        replacement = ensure(
+            root,
+            executable,
+            heartbeat_path,
+            max_age_seconds=max_age_seconds,
+        )
+        return {
+            "reload": "started",
+            **replacement,
+            "old_pid": current_pid or None,
+            "new_pid": replacement.get("pid"),
+        }
+
+    children = child_pids_fn(current_pid)
+    if children:
+        return {
+            "reload": "deferred",
+            **health,
+            "old_pid": current_pid,
+            "children": list(children),
+        }
+
+    try:
+        kill_fn(current_pid, signal.SIGTERM)
+    except ProcessLookupError:
+        pass
+
+    deadline = time.monotonic() + max(0.0, float(wait_seconds))
+    while alive_fn(current_pid) and time.monotonic() < deadline:
+        sleep_fn(0.1)
+
+    if alive_fn(current_pid):
+        return {
+            "reload": "failed",
+            **health,
+            "healthy": False,
+            "old_pid": current_pid,
+            "reason": "supervisor did not exit after SIGTERM",
+        }
+
+    ensure = ensure_fn or ensure_running
+    replacement = ensure(
+        root,
+        executable,
+        heartbeat_path,
+        max_age_seconds=max_age_seconds,
+    )
+    return {
+        "reload": "reloaded",
+        **replacement,
+        "old_pid": current_pid,
+        "new_pid": replacement.get("pid"),
+    }
 
 
 def ensure_running(
