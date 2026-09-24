@@ -19,6 +19,7 @@ MANIFEST: dict[str, tuple[str, int]] = {
     "bin/logres-preview-reaper": ("bin/logres-preview-reaper", 0o755),
     "bin/logres-research-agent": ("bin/logres-research-agent", 0o755),
     "bin/logres-swarm": ("bin/logres-swarm", 0o755),
+    "bin/logres-supervisor": ("bin/logres-supervisor", 0o755),
     "bin/logres-coordinator": ("bin/logres-coordinator", 0o755),
     "bin/logres-copilot-router": ("bin/logres-copilot-router", 0o755),
     "bin/logres-merge-preflight": ("bin/logres-merge-preflight", 0o755),
@@ -50,6 +51,7 @@ MANIFEST: dict[str, tuple[str, int]] = {
     "lib/logres_route_store.py": ("lib/logres_route_store.py", 0o600),
     "lib/logres_research_agent.py": ("lib/logres_research_agent.py", 0o600),
     "lib/logres_swarm.py": ("lib/logres_swarm.py", 0o600),
+    "lib/logres_supervisor.py": ("lib/logres_supervisor.py", 0o600),
     "config/autoflow.default.json": ("config/autoflow.default.json", 0o600),
 }
 

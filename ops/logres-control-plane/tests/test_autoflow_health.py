@@ -128,6 +128,7 @@ class AutoflowHealthTests(unittest.TestCase):
             "copilot_base_policy",
             "autoflow_source_deployed",
             "runtime_deployment",
+            "automation_supervisor",
         ):
             self.assertIn(check, doctor)
 

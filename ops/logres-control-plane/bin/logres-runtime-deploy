@@ -194,6 +194,21 @@ def deploy_runtime(
             )
         files[str(destination.relative_to(root))] = source_hash
 
+    # The unprivileged user-space supervisor is the authoritative recurring
+    # scheduler. It does not depend on setgid crontab behavior, which may be
+    # blocked by no_new_privs in hardened automation contexts.
+    supervisor = run_command(
+        [root / "bin" / "logres-supervisor", "ensure"],
+        runner=runner,
+    )
+    if supervisor.returncode:
+        detail = (supervisor.stderr or supervisor.stdout or "").strip()
+        raise RuntimeDeployError(
+            f"user supervisor failed to start: {detail}"
+        )
+
+    # Keep the historical cron as a best-effort bootstrap/fallback. Failure to
+    # rewrite it is non-fatal once the authoritative supervisor is healthy.
     cron = run_command(
         [root / "bin" / "logres-autonomy-cron", "install"],
         runner=runner,
@@ -210,24 +225,14 @@ def deploy_runtime(
             if scheduler_log_path is not None
             else root / "logs" / "autonomy-cron.log"
         )
-        recent, scheduler_age_seconds = scheduler_recent(
+        _, scheduler_age_seconds = scheduler_recent(
             scheduler_log,
             max_age_seconds=scheduler_max_age_seconds,
             now_epoch=now_epoch,
         )
-        if not recent:
-            age_text = (
-                "missing"
-                if scheduler_age_seconds is None
-                else f"{scheduler_age_seconds:.1f}s"
-            )
-            raise RuntimeDeployError(
-                "managed cron reconciliation failed and autonomy "
-                f"scheduler is stale ({age_text}): {cron_diagnostic}"
-            )
 
     payload = {
-        "schema": 2,
+        "schema": 3,
         "integration_sha": sha,
         "deployed_at": datetime.now(timezone.utc).isoformat(
             timespec="seconds"
@@ -241,6 +246,14 @@ def deploy_runtime(
             if scheduler_age_seconds is not None
             else None
         ),
+        "scheduler": {
+            "authoritative": "logres-supervisor",
+            "supervisor": "healthy",
+            "legacy_cron": (
+                "reconciled" if cron_reconciled else "deferred"
+            ),
+            "legacy_cron_detail": cron_diagnostic[-500:],
+        },
     }
     atomic_json(stamp_path, payload)
     return payload

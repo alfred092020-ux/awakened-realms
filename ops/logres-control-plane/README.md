@@ -134,3 +134,19 @@ logres-frontier reconcile
 logres-frontier reconcile --apply
 logres-lead frontier status
 ```
+
+## User-space autonomy supervisor
+
+`logres-supervisor` is the authoritative recurring-work scheduler for the control plane. It removes correctness dependence on mutating the host crontab, which can fail inside hardened `no_new_privs` execution contexts even when the existing cron bootstrap continues to run.
+
+The supervisor is single-flight via `/tmp/logres-supervisor.lock`, publishes `control/supervisor-heartbeat.json`, and owns bounded cadences for autonomy, swarm refill, autopilot/frontier routing, Lead snapshots, health snapshots, control backups, evidence refresh, preview cleanup, and maintenance. Existing cron entries remain a harmless bootstrap/fallback and share the same autonomy/swarm/preview locks, so duplicate work is suppressed.
+
+`logres-swarm tick` ensures the supervisor is alive. This means the already-installed swarm cron can resurrect the supervisor after a VM restart without requiring a privileged scheduler write. Runtime deployment now requires a healthy supervisor but treats crontab reconciliation as best-effort legacy compatibility.
+
+Useful commands:
+
+```bash
+logres-supervisor status --json
+logres-supervisor ensure
+logres-supervisor tick
+```

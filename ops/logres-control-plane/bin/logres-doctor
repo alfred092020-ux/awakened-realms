@@ -302,7 +302,27 @@ cron=run(["crontab","-l"]).stdout
 cron_need=("logres-lead-snapshot","logres-evidence-refresh","logres-health-snapshot","logres-maintain","logres-control-backup","logres-autopilot-watch")
 cron_missing=[x for x in cron_need if x not in cron]
 add("automation_cron","PASS" if not cron_missing else "WARN",
-    "all scheduled" if not cron_missing else "missing="+",".join(cron_missing))
+    "legacy bootstrap complete" if not cron_missing else "legacy missing="+",".join(cron_missing))
+
+supervisor=run(["/home/ubuntu/logres/bin/logres-supervisor","status","--json"])
+try:
+    supervisor_state=json.loads(supervisor.stdout or "{}")
+except Exception:
+    supervisor_state={}
+supervisor_ok=(
+    supervisor.returncode==0
+    and bool(supervisor_state.get("healthy"))
+)
+add(
+    "automation_supervisor",
+    "PASS" if supervisor_ok else "FAIL",
+    (
+        f"pid={supervisor_state.get('pid')} "
+        f"age={supervisor_state.get('age_seconds')}s"
+        if supervisor_ok
+        else "unhealthy or unavailable"
+    ),
+)
 
 brain=run(["/home/ubuntu/logres/bin/logres-brain","health"])
 brain_ok=brain.returncode==0 and "fails=0" in brain.stdout

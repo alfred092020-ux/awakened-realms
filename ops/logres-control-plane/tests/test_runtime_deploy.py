@@ -94,17 +94,13 @@ class RuntimeDeployTests(unittest.TestCase):
                     )
                 ]
 
+            scheduler_calls = []
+
             def runner(argv, **kwargs):
                 argv = [str(x) for x in argv]
                 if argv and argv[0] == "git":
                     return subprocess.run(argv, **kwargs)
-                self.assertEqual(
-                    [
-                        str(target / "bin" / "logres-autonomy-cron"),
-                        "install",
-                    ],
-                    argv,
-                )
+                scheduler_calls.append(argv)
                 return subprocess.CompletedProcess(argv, 0, "ok\n", "")
 
             payload = runtime.deploy_runtime(
@@ -120,6 +116,21 @@ class RuntimeDeployTests(unittest.TestCase):
             self.assertEqual(1, payload["file_count"])
             self.assertTrue(payload["cron_reconciled"])
             self.assertEqual("", payload["cron_diagnostic"])
+            self.assertEqual(
+                [
+                    [str(target / "bin" / "logres-supervisor"), "ensure"],
+                    [str(target / "bin" / "logres-autonomy-cron"), "install"],
+                ],
+                scheduler_calls,
+            )
+            self.assertEqual(
+                "logres-supervisor",
+                payload["scheduler"]["authoritative"],
+            )
+            self.assertEqual(
+                "reconciled",
+                payload["scheduler"]["legacy_cron"],
+            )
             self.assertTrue(stamp.is_file())
             saved = json.loads(stamp.read_text())
             self.assertEqual(sha, saved["integration_sha"])
@@ -134,14 +145,14 @@ class RuntimeDeployTests(unittest.TestCase):
                 saved["files"]["bin/fake-helper"],
             )
 
-    def test_cron_failure_degrades_when_scheduler_is_recent(self):
+    def test_cron_failure_is_deferred_when_supervisor_is_healthy(self):
         with tempfile.TemporaryDirectory() as td:
             root = Path(td)
             repo, sha = init_repo(root)
             target = root / "runtime"
             stamp = root / "stamp.json"
             scheduler_log = root / "autonomy-cron.log"
-            scheduler_log.write_text("recent cycle\n")
+            scheduler_log.write_text("old bootstrap cycle\n")
 
             def fake_deploy(source_root, target_root, dry_run=False):
                 source = source_root / "bin" / "fake-helper"
@@ -156,18 +167,22 @@ class RuntimeDeployTests(unittest.TestCase):
                     )
                 ]
 
+            scheduler_calls = []
+
             def runner(argv, **kwargs):
                 argv = [str(x) for x in argv]
                 if argv and argv[0] == "git":
                     return subprocess.run(argv, **kwargs)
+                scheduler_calls.append(argv)
+                if argv[-1] == "ensure":
+                    return subprocess.CompletedProcess(
+                        argv, 0, "healthy\n", ""
+                    )
                 return subprocess.CompletedProcess(
-                    argv,
-                    1,
-                    "",
-                    "cron permission denied",
+                    argv, 1, "", "crontab permission denied"
                 )
 
-            now = scheduler_log.stat().st_mtime + 30
+            now = scheduler_log.stat().st_mtime + 600
             payload = runtime.deploy_runtime(
                 repo,
                 target,
@@ -178,19 +193,23 @@ class RuntimeDeployTests(unittest.TestCase):
                 scheduler_log_path=scheduler_log,
                 now_epoch=now,
             )
-            self.assertFalse(payload["cron_reconciled"])
-            self.assertIn("permission denied", payload["cron_diagnostic"])
-            self.assertEqual(30.0, payload["scheduler_age_seconds"])
-            self.assertTrue(stamp.exists())
 
-    def test_cron_failure_stays_hard_when_scheduler_is_stale(self):
+            self.assertTrue(stamp.exists())
+            self.assertFalse(payload["cron_reconciled"])
+            self.assertEqual("deferred", payload["scheduler"]["legacy_cron"])
+            self.assertIn(
+                "permission denied",
+                payload["scheduler"]["legacy_cron_detail"],
+            )
+            self.assertEqual(600.0, payload["scheduler_age_seconds"])
+            self.assertEqual(2, len(scheduler_calls))
+
+    def test_supervisor_failure_aborts_before_stamp(self):
         with tempfile.TemporaryDirectory() as td:
             root = Path(td)
             repo, sha = init_repo(root)
             target = root / "runtime"
             stamp = root / "stamp.json"
-            scheduler_log = root / "autonomy-cron.log"
-            scheduler_log.write_text("old cycle\n")
 
             def fake_deploy(source_root, target_root, dry_run=False):
                 source = source_root / "bin" / "fake-helper"
@@ -210,16 +229,12 @@ class RuntimeDeployTests(unittest.TestCase):
                 if argv and argv[0] == "git":
                     return subprocess.run(argv, **kwargs)
                 return subprocess.CompletedProcess(
-                    argv,
-                    1,
-                    "",
-                    "cron permission denied",
+                    argv, 1, "", "supervisor failed"
                 )
 
-            now = scheduler_log.stat().st_mtime + 600
             with self.assertRaisesRegex(
                 runtime.RuntimeDeployError,
-                "scheduler is stale",
+                "supervisor failed to start",
             ):
                 runtime.deploy_runtime(
                     repo,
@@ -228,8 +243,6 @@ class RuntimeDeployTests(unittest.TestCase):
                     stamp_path=stamp,
                     deploy_fn=fake_deploy,
                     runner=runner,
-                    scheduler_log_path=scheduler_log,
-                    now_epoch=now,
                 )
             self.assertFalse(stamp.exists())
 
