@@ -19,6 +19,7 @@ MANIFEST: dict[str, tuple[str, int]] = {
     "bin/logres-maintain": ("bin/logres-maintain", 0o755),
     "bin/logres-blocker-router": ("bin/logres-blocker-router", 0o755),
     "bin/logres-frontier": ("bin/logres-frontier", 0o755),
+    "bin/logres-goal-contract": ("bin/logres-goal-contract", 0o755),
     "bin/logres-impact": ("bin/logres-impact", 0o755),
     "bin/logres-preview-reaper": ("bin/logres-preview-reaper", 0o755),
     "bin/logres-research-agent": ("bin/logres-research-agent", 0o755),
@@ -51,6 +52,7 @@ MANIFEST: dict[str, tuple[str, int]] = {
     "lib/logres_copilot.py": ("lib/logres_copilot.py", 0o600),
     "lib/logres_copilot_router.py": ("lib/logres_copilot_router.py", 0o600),
     "lib/logres_frontier.py": ("lib/logres_frontier.py", 0o600),
+    "lib/logres_goal_contract.py": ("lib/logres_goal_contract.py", 0o600),
     "lib/logres_impact.py": ("lib/logres_impact.py", 0o600),
     "lib/logres_knowledge.py": ("lib/logres_knowledge.py", 0o600),
     "lib/logres_mission.py": ("lib/logres_mission.py", 0o600),
@@ -67,6 +69,7 @@ MANIFEST: dict[str, tuple[str, int]] = {
     "lib/logres_supervisor.py": ("lib/logres_supervisor.py", 0o600),
     "lib/logres_throughput.py": ("lib/logres_throughput.py", 0o600),
     "config/autoflow.default.json": ("config/autoflow.default.json", 0o600),
+    "config/milestone_contracts.json": ("config/milestone_contracts.json", 0o600),
     "config/mission.default.json": ("config/mission.default.json", 0o600),
 }
 

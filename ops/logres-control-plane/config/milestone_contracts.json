@@ -1,0 +1,164 @@
+{
+  "schema": "logres-milestone-contract-v1",
+  "milestones": {
+    "DEMO-0.2": {
+      "title": "Authentic playable presentation",
+      "definition_of_done": "Evidence-backed onboarding, coherent Millennium Tree actors, battle presentation, repeatable exact-SHA verification, and real-device Android visual proof without regressing the playable loop.",
+      "criteria": [
+        {
+          "id": "launch-onboarding",
+          "weight": 12,
+          "description": "Title, world select, character creation, and onboarding implementation is complete.",
+          "check": {
+            "type": "task_state",
+            "task_id": "ONBOARDING-FLOW-001",
+            "pass_statuses": [
+              "DONE",
+              "RESOLVED"
+            ]
+          }
+        },
+        {
+          "id": "field-static",
+          "weight": 6,
+          "description": "Authentic static field terrain proof is complete.",
+          "check": {
+            "type": "task_state",
+            "task_id": "FIELD-STATIC",
+            "pass_statuses": [
+              "DONE",
+              "RESOLVED"
+            ]
+          }
+        },
+        {
+          "id": "field-navigation",
+          "weight": 6,
+          "description": "Authentic field navigation is bound to the identified map.",
+          "check": {
+            "type": "task_state",
+            "task_id": "FIELD-NAV",
+            "pass_statuses": [
+              "DONE",
+              "RESOLVED"
+            ]
+          }
+        },
+        {
+          "id": "field-player-actor",
+          "weight": 5,
+          "description": "Field player presentation uses the evidence-backed Logres actor.",
+          "check": {
+            "type": "task_state",
+            "task_id": "FIELD-PLAYER-ACTOR-001",
+            "pass_statuses": [
+              "DONE",
+              "RESOLVED"
+            ]
+          }
+        },
+        {
+          "id": "npc-encounter",
+          "weight": 8,
+          "description": "NPC interaction and encounter path is implemented after the authentic field.",
+          "check": {
+            "type": "task_state",
+            "task_id": "NPC-ENCOUNTER",
+            "pass_statuses": [
+              "DONE",
+              "RESOLVED"
+            ]
+          }
+        },
+        {
+          "id": "battle-victory-reward",
+          "weight": 12,
+          "description": "Encounter flows through battle, victory, reward, and field return.",
+          "check": {
+            "type": "task_state",
+            "task_id": "BATTLE-SLICE",
+            "pass_statuses": [
+              "DONE",
+              "RESOLVED"
+            ]
+          }
+        },
+        {
+          "id": "battle-presentation",
+          "weight": 8,
+          "description": "Battle presentation is evidence-backed rather than placeholder-only.",
+          "check": {
+            "type": "task_state",
+            "task_id": "BATTLE-PRESENTATION-001",
+            "pass_statuses": [
+              "DONE",
+              "RESOLVED"
+            ]
+          }
+        },
+        {
+          "id": "reward-inventory-authority",
+          "weight": 8,
+          "description": "Reward and inventory authority is implemented without inventing original item semantics.",
+          "check": {
+            "type": "task_state",
+            "task_id": "INVENTORY-AUTH",
+            "pass_statuses": [
+              "DONE",
+              "RESOLVED"
+            ]
+          }
+        },
+        {
+          "id": "visual-regression-gate",
+          "weight": 5,
+          "description": "Title, field, and battle visual regression gate is complete.",
+          "check": {
+            "type": "task_state",
+            "task_id": "VISUAL-GATE-001",
+            "pass_statuses": [
+              "DONE",
+              "RESOLVED"
+            ]
+          }
+        },
+        {
+          "id": "exact-current-sha-full-e2e",
+          "weight": 10,
+          "description": "Current integration SHA has an authoritative full-E2E PASS.",
+          "check": {
+            "type": "verification",
+            "mode": "full-e2e",
+            "status": "PASS"
+          }
+        },
+        {
+          "id": "millennium-tree-map-identity",
+          "weight": 8,
+          "description": "Millennium Tree static map identity is resolved from sufficient Global-era evidence.",
+          "check": {
+            "type": "evidence_state",
+            "task_id": "G17-TUT-001",
+            "pass_statuses": [
+              "DONE",
+              "RESOLVED"
+            ]
+          }
+        },
+        {
+          "id": "android-real-device-visual-proof",
+          "weight": 12,
+          "description": "Demo 0.2 has repeatable real-device Android visual proof.",
+          "check": {
+            "type": "external_manual",
+            "task_id": "ANDROID-VISUAL-QA-001",
+            "pass_statuses": [
+              "DONE",
+              "RESOLVED"
+            ]
+          }
+        }
+      ]
+    }
+  }
+}
