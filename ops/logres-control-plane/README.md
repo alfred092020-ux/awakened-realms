@@ -195,3 +195,29 @@ logres-impact scan
 logres-impact scan --apply
 logres-impact status
 ```
+
+## Mission graph foundation
+
+`logres-mission` stores the full-game objective hierarchy outside any ChatGPT
+conversation. The default graph begins at `LOGRES_COMPLETE` and expands into
+client, gameplay, content, fidelity, quality, Android and release objectives.
+
+The mission graph is deliberately fail-closed. A leaf objective with no mapped
+task or milestone is `UNCOVERED`, never implicitly complete. Existing tasks and
+milestones provide completion evidence, while missing coverage remains visible
+for later bounded planning and task synthesis.
+
+Initialize or refresh the canonical graph with:
+
+```bash
+logres-mission init
+logres-mission status
+logres-mission tree
+logres-mission gaps
+logres-mission objective BATTLE
+```
+
+Configuration refreshes are idempotent and preserve the runtime database as the
+operational source of truth. The current goal watchdog remains the descriptive
+milestone-progress layer. Mission planning sits above it and does not replace
+task optimizer or merge authority.

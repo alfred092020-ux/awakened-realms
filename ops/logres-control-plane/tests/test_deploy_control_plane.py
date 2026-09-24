@@ -30,6 +30,7 @@ PRODUCTION_FILES = (
     "bin/logres-copilot-router",
     "bin/logres-merge-preflight",
     "bin/logres-merge-train",
+    "bin/logres-mission",
     "bin/logres-doctor",
     "bin/logres-knowledge",
     "bin/logres-lead",
@@ -52,6 +53,7 @@ PRODUCTION_FILES = (
     "lib/logres_frontier.py",
     "lib/logres_impact.py",
     "lib/logres_knowledge.py",
+    "lib/logres_mission.py",
     "lib/logres_optimizer.py",
     "lib/logres_preview_reaper.py",
     "lib/logres_reconcile.py",
@@ -64,6 +66,7 @@ PRODUCTION_FILES = (
     "lib/logres_swarm.py",
     "lib/logres_supervisor.py",
     "config/autoflow.default.json",
+    "config/mission.default.json",
 )
 
 
@@ -117,6 +120,8 @@ class DeployControlPlaneTests(unittest.TestCase):
                 (target / "bin" / "logres-maintain").is_file()
             )
             self.assertTrue((target / "config" / "autoflow.default.json").is_file())
+            self.assertTrue((target / "config" / "mission.default.json").is_file())
+            self.assertTrue((target / "bin" / "logres-mission").is_file())
             self.assertEqual(
                 0o700,
                 stat.S_IMODE((target / "bin" / "logres-ai").stat().st_mode),

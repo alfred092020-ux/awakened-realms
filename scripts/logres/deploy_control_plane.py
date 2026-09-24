@@ -29,6 +29,7 @@ MANIFEST: dict[str, tuple[str, int]] = {
     "bin/logres-copilot-router": ("bin/logres-copilot-router", 0o755),
     "bin/logres-merge-preflight": ("bin/logres-merge-preflight", 0o755),
     "bin/logres-merge-train": ("bin/logres-merge-train", 0o755),
+    "bin/logres-mission": ("bin/logres-mission", 0o755),
     "bin/logres-doctor": ("bin/logres-doctor", 0o700),
     "bin/logres-knowledge": ("bin/logres-knowledge", 0o755),
     "bin/logres-lead": ("bin/logres-lead", 0o700),
@@ -51,6 +52,7 @@ MANIFEST: dict[str, tuple[str, int]] = {
     "lib/logres_frontier.py": ("lib/logres_frontier.py", 0o600),
     "lib/logres_impact.py": ("lib/logres_impact.py", 0o600),
     "lib/logres_knowledge.py": ("lib/logres_knowledge.py", 0o600),
+    "lib/logres_mission.py": ("lib/logres_mission.py", 0o600),
     "lib/logres_optimizer.py": ("lib/logres_optimizer.py", 0o600),
     "lib/logres_preview_reaper.py": ("lib/logres_preview_reaper.py", 0o600),
     "lib/logres_reconcile.py": ("lib/logres_reconcile.py", 0o600),
@@ -63,6 +65,7 @@ MANIFEST: dict[str, tuple[str, int]] = {
     "lib/logres_swarm.py": ("lib/logres_swarm.py", 0o600),
     "lib/logres_supervisor.py": ("lib/logres_supervisor.py", 0o600),
     "config/autoflow.default.json": ("config/autoflow.default.json", 0o600),
+    "config/mission.default.json": ("config/mission.default.json", 0o600),
 }
 
 
