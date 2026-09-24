@@ -11,7 +11,8 @@ class SupersedeTarget:
     task_id: str
     kind: str
     ref: str
-    failed_preflight_id: int
+    proof: str
+    failed_preflight_id: int | None
     failed_tasks: tuple[str, ...]
 
 
@@ -50,6 +51,41 @@ def plan_supersede(
     created_epoch = float(success["created_epoch"])
     targets: list[SupersedeTarget] = []
     seen: set[int] = set()
+
+    success_result = str(success["result_sha"] or "")
+    verification_mode = (
+        str(success["verification_mode"] or "")
+        if "verification_mode" in success.keys()
+        else ""
+    )
+    if (
+        len(success_result) == 40
+        and verification_mode == "full-e2e"
+    ):
+        exact_rows = conn.execute(
+            """select *
+                 from regressions
+                where status='OPEN'
+                  and kind in ('candidate-verify','merge-preflight')
+                  and ref=?
+                  and created_epoch < ?
+                order by id""",
+            (success_result, created_epoch),
+        ).fetchall()
+        for row in exact_rows:
+            row_id = int(row["id"])
+            seen.add(row_id)
+            targets.append(
+                SupersedeTarget(
+                    regression_id=row_id,
+                    task_id=str(row["task_id"] or ""),
+                    kind=str(row["kind"] or ""),
+                    ref=success_result,
+                    proof="exact-result-sha",
+                    failed_preflight_id=None,
+                    failed_tasks=(),
+                )
+            )
 
     regressions = conn.execute(
         """select *
@@ -102,6 +138,7 @@ def plan_supersede(
                     task_id=str(row["task_id"] or ""),
                     kind=str(row["kind"] or ""),
                     ref=ref,
+                    proof="failed-task-subset",
                     failed_preflight_id=int(failed["id"]),
                     failed_tasks=tuple(sorted(failed_tasks)),
                 )
@@ -133,6 +170,17 @@ def apply_supersede(
             if task_id in active:
                 preserved_active.append(task_id)
             else:
+                if target.proof == "exact-result-sha":
+                    note = (
+                        f"Superseded by successful full-e2e preflight "
+                        f"{preflight_id} at exact result SHA {target.ref}."
+                    )
+                else:
+                    note = (
+                        f"Superseded by successful preflight {preflight_id}; "
+                        f"failed preflight {target.failed_preflight_id} task set "
+                        f"is a subset of the successful batch."
+                    )
                 conn.execute(
                     """update tasks
                           set status='SUPERSEDED',
@@ -142,12 +190,7 @@ def apply_supersede(
                               updated_at=datetime('now')
                         where id=?
                           and status not in ('DONE','RESOLVED','SUPERSEDED','CANCELLED')""",
-                    (
-                        f"Superseded by successful preflight {preflight_id}; "
-                        f"failed preflight {target.failed_preflight_id} task set "
-                        f"is a subset of the successful batch.",
-                        task_id,
-                    ),
+                    (note, task_id),
                 )
                 conn.execute(
                     """update integration_queue
@@ -168,6 +211,7 @@ def apply_supersede(
                 "task_id": task_id,
                 "kind": target.kind,
                 "ref": target.ref,
+                "proof": target.proof,
                 "failed_preflight_id": target.failed_preflight_id,
                 "failed_tasks": list(target.failed_tasks),
             }
