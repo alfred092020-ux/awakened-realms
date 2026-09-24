@@ -20,6 +20,7 @@ PRODUCTION_FILES = (
     "bin/logres-maintain",
     "bin/logres-blocker-router",
     "bin/logres-frontier",
+    "bin/logres-finish-task",
     "bin/logres-goal-contract",
     "bin/logres-impact",
     "bin/logres-preview-reaper",
