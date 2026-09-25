@@ -1,0 +1,380 @@
+#!/usr/bin/env python3
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import sqlite3
+import sys
+import time
+from pathlib import Path
+
+LIB = Path(__file__).resolve().parents[1] / "lib"
+sys.path.insert(0, str(LIB))
+
+from logres_integration import (
+    append_receipt,
+    claim_intent,
+    create_intent,
+    disposition_proposal,
+    ensure_schema,
+    get_cursor,
+    list_bindings,
+    list_capabilities,
+    list_intents,
+    list_proposals,
+    list_targets,
+    release_claim,
+    renew_claim,
+    set_capabilities,
+    set_cursor,
+    transition_intent,
+)
+
+DEFAULT_DB = Path(
+    os.environ.get(
+        "LOGRES_CONTROL_DB",
+        "/home/ubuntu/logres/control/control.sqlite",
+    )
+)
+
+
+def _json_object(value: str) -> dict:
+    try:
+        parsed = json.loads(value)
+    except json.JSONDecodeError as exc:
+        raise argparse.ArgumentTypeError(f"invalid JSON: {exc}") from exc
+    if not isinstance(parsed, dict):
+        raise argparse.ArgumentTypeError("value must decode to a JSON object")
+    return parsed
+
+
+def _conn() -> sqlite3.Connection:
+    DEFAULT_DB.parent.mkdir(parents=True, exist_ok=True)
+    conn = sqlite3.connect(DEFAULT_DB, timeout=30)
+    conn.row_factory = sqlite3.Row
+    conn.execute("pragma busy_timeout=30000")
+    ensure_schema(conn)
+    return conn
+
+
+def _emit(value, *, as_json: bool) -> None:
+    if as_json:
+        print(json.dumps(value, indent=2, sort_keys=True, ensure_ascii=False))
+        return
+    if isinstance(value, list):
+        if not value:
+            print("(none)")
+            return
+        for item in value:
+            if isinstance(item, dict):
+                print(" ".join(f"{key}={item[key]}" for key in item))
+            else:
+                print(item)
+        return
+    if isinstance(value, dict):
+        for key, item in value.items():
+            print(f"{key}={item}")
+        return
+    print(value)
+
+
+def _status(conn: sqlite3.Connection) -> dict:
+    tables = {
+        "targets": "integration_targets",
+        "intents": "integration_intents",
+        "claims": "integration_claims",
+        "receipts": "integration_receipts",
+        "bindings": "integration_bindings",
+        "proposals": "integration_proposals",
+        "capabilities": "integration_capabilities",
+        "cursors": "integration_cursors",
+    }
+    out = {
+        label: int(conn.execute(f"select count(*) from {table}").fetchone()[0])
+        for label, table in tables.items()
+    }
+    out["queue_depth"] = int(
+        conn.execute(
+            "select count(*) from integration_intents where state in ('NEW','RETRYABLE')"
+        ).fetchone()[0]
+    )
+    out["open_proposals"] = int(
+        conn.execute(
+            "select count(*) from integration_proposals where disposition='OPEN'"
+        ).fetchone()[0]
+    )
+    return out
+
+
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(prog="logres-integration")
+    parser.add_argument("--json", action="store_true", dest="as_json")
+    sub = parser.add_subparsers(dest="command", required=True)
+
+    sub.add_parser("status")
+
+    targets = sub.add_parser("targets")
+    targets.add_argument("--provider")
+    targets.add_argument("--target-key")
+
+    caps = sub.add_parser("capabilities")
+    caps.add_argument("--chat-id")
+    caps.add_argument("--target-key", default="")
+    caps.add_argument("--set", nargs="*", dest="set_values")
+    caps.add_argument("--expires-at", type=float)
+    caps.add_argument("--ttl", type=float)
+    caps.add_argument("--metadata", type=_json_object, default={})
+
+    create = sub.add_parser("intent-create")
+    create.add_argument("--provider", required=True)
+    create.add_argument("--target-key", "--target", dest="target_key", required=True)
+    create.add_argument("--operation", required=True)
+    create.add_argument(
+        "--action-class",
+        required=True,
+        choices=("READ_ONLY", "REVERSIBLE_WRITE", "IRREVERSIBLE_SIDE_EFFECT"),
+    )
+    create.add_argument("--entity-type", required=True)
+    create.add_argument("--entity-id", required=True)
+    create.add_argument("--logical-slot", default="default")
+    create.add_argument("--payload", "--payload-json", dest="payload", type=_json_object, required=True)
+    create.add_argument("--projection-hash")
+    create.add_argument("--priority", type=int, default=100)
+    create.add_argument("--required-capability")
+    create.add_argument("--created-by", required=True)
+    create.add_argument("--dedupe-key", required=True)
+    create.add_argument("--source-event-id", type=int)
+    create.add_argument("--task-id")
+
+    queue = sub.add_parser("queue")
+    queue.add_argument("--provider")
+    queue.add_argument("--state")
+    queue.add_argument("--capability")
+    queue.add_argument("--limit", type=int, default=100)
+
+    claim = sub.add_parser("claim")
+    claim.add_argument("intent_id", type=int)
+    claim.add_argument("--chat-id", "--chat", dest="chat_id", required=True)
+    claim.add_argument("--lease-seconds", type=float, default=900.0)
+    claim.add_argument("--lease-token")
+    claim.add_argument("--now", "--now-epoch", dest="now", type=float)
+
+    renew = sub.add_parser("renew")
+    renew.add_argument("intent_id", type=int)
+    renew.add_argument("--lease-token", required=True)
+    renew.add_argument("--lease-seconds", type=float, default=900.0)
+    renew.add_argument("--now", type=float)
+
+    release = sub.add_parser("release")
+    release.add_argument("intent_id", type=int)
+    release.add_argument("--lease-token", required=True)
+
+    transition = sub.add_parser("transition")
+    transition.add_argument("intent_id", type=int)
+    transition.add_argument("--expected", required=True)
+    transition.add_argument("--new", required=True)
+    transition.add_argument("--last-error")
+
+    receipt = sub.add_parser("receipt")
+    receipt.add_argument("intent_id", type=int)
+    receipt.add_argument("--receipt-key", required=True)
+    receipt.add_argument("--outcome", required=True)
+    receipt.add_argument("--chat-id", "--chat", dest="chat_id", required=True)
+    receipt.add_argument("--attempt", type=int, required=True)
+    receipt.add_argument("--provider-entity-type")
+    receipt.add_argument("--provider-entity-id")
+    receipt.add_argument("--provider-url")
+    receipt.add_argument("--provider-version")
+    receipt.add_argument("--observed-hash")
+    receipt.add_argument("--metadata", "--metadata-json", dest="metadata", type=_json_object, default={})
+    receipt.add_argument("--error-class")
+    receipt.add_argument("--error-detail")
+    receipt.add_argument("--bind-on-success", action="store_true")
+
+    bindings = sub.add_parser("bindings")
+    bindings.add_argument("--provider")
+
+    proposals = sub.add_parser("proposals")
+    proposals.add_argument("--provider")
+    proposals.add_argument("--disposition")
+
+    proposal_disposition = sub.add_parser("proposal-disposition")
+    proposal_disposition.add_argument("proposal_id", type=int)
+    proposal_disposition.add_argument("--expected", required=True)
+    proposal_disposition.add_argument("--disposition", required=True)
+    proposal_disposition.add_argument("--reviewer", required=True)
+    proposal_disposition.add_argument("--note", default="")
+
+    cursor_get = sub.add_parser("cursor-get")
+    cursor_get.add_argument("--provider", required=True)
+    cursor_get.add_argument("--target-key", required=True)
+    cursor_get.add_argument("--name", required=True)
+
+    cursor_set = sub.add_parser("cursor-set")
+    cursor_set.add_argument("--provider", required=True)
+    cursor_set.add_argument("--target-key", required=True)
+    cursor_set.add_argument("--name", required=True)
+    cursor_set.add_argument("--value", required=True)
+    cursor_set.add_argument("--metadata", type=_json_object, default={})
+    cursor_set.add_argument("--monotonic", action="store_true")
+
+    return parser
+
+
+def execute(args, conn: sqlite3.Connection):
+    if args.command == "status":
+        return _status(conn)
+    if args.command == "targets":
+        return list_targets(
+            conn,
+            provider=args.provider,
+            target_key=args.target_key,
+        )
+    if args.command == "capabilities":
+        if args.set_values is not None:
+            if not args.chat_id:
+                raise ValueError("--chat-id is required when setting capabilities")
+            expires = args.expires_at
+            if expires is None:
+                expires = time.time() + (args.ttl if args.ttl is not None else 3600.0)
+            return set_capabilities(
+                conn,
+                chat_id=args.chat_id,
+                capabilities=args.set_values,
+                expires_at_epoch=expires,
+                target_key=args.target_key,
+                metadata=args.metadata,
+            )
+        return list_capabilities(
+            conn,
+            chat_id=args.chat_id,
+            now_epoch=time.time(),
+        )
+    if args.command == "intent-create":
+        return create_intent(
+            conn,
+            provider=args.provider,
+            target_key=args.target_key,
+            operation=args.operation,
+            action_class=args.action_class,
+            canonical_entity_type=args.entity_type,
+            canonical_entity_id=args.entity_id,
+            logical_slot=args.logical_slot,
+            payload=args.payload,
+            projection_hash=args.projection_hash,
+            priority=args.priority,
+            required_capability=args.required_capability,
+            created_by=args.created_by,
+            dedupe_key=args.dedupe_key,
+            source_event_id=args.source_event_id,
+            task_id=args.task_id,
+        )
+    if args.command == "queue":
+        return list_intents(
+            conn,
+            provider=args.provider,
+            state=args.state,
+            required_capability=args.capability,
+            limit=args.limit,
+        )
+    if args.command == "claim":
+        return claim_intent(
+            conn,
+            args.intent_id,
+            chat_id=args.chat_id,
+            now_epoch=time.time() if args.now is None else args.now,
+            lease_seconds=args.lease_seconds,
+            lease_token=args.lease_token,
+        )
+    if args.command == "renew":
+        return renew_claim(
+            conn,
+            args.intent_id,
+            lease_token=args.lease_token,
+            now_epoch=time.time() if args.now is None else args.now,
+            lease_seconds=args.lease_seconds,
+        )
+    if args.command == "release":
+        release_claim(conn, args.intent_id, lease_token=args.lease_token)
+        return {"intent_id": args.intent_id, "released": True}
+    if args.command == "transition":
+        return transition_intent(
+            conn,
+            args.intent_id,
+            expected=args.expected,
+            new=args.new,
+            last_error=args.last_error,
+        )
+    if args.command == "receipt":
+        return append_receipt(
+            conn,
+            intent_id=args.intent_id,
+            receipt_key=args.receipt_key,
+            outcome=args.outcome,
+            chat_id=args.chat_id,
+            attempt_number=args.attempt,
+            provider_entity_type=args.provider_entity_type,
+            provider_entity_id=args.provider_entity_id,
+            provider_url=args.provider_url,
+            provider_version=args.provider_version,
+            observed_hash=args.observed_hash,
+            response_metadata=args.metadata,
+            error_class=args.error_class,
+            error_detail=args.error_detail,
+            bind_on_success=args.bind_on_success,
+        )
+    if args.command == "bindings":
+        return list_bindings(conn, provider=args.provider)
+    if args.command == "proposals":
+        return list_proposals(
+            conn,
+            provider=args.provider,
+            disposition=args.disposition,
+        )
+    if args.command == "proposal-disposition":
+        return disposition_proposal(
+            conn,
+            args.proposal_id,
+            expected=args.expected,
+            disposition=args.disposition,
+            reviewer=args.reviewer,
+            note=args.note,
+        )
+    if args.command == "cursor-get":
+        return get_cursor(
+            conn,
+            provider=args.provider,
+            target_key=args.target_key,
+            cursor_name=args.name,
+        )
+    if args.command == "cursor-set":
+        return set_cursor(
+            conn,
+            provider=args.provider,
+            target_key=args.target_key,
+            cursor_name=args.name,
+            cursor_value=args.value,
+            metadata=args.metadata,
+            monotonic=args.monotonic,
+        )
+    raise ValueError(f"unsupported command: {args.command}")
+
+
+def main() -> int:
+    parser = build_parser()
+    args = parser.parse_args()
+    conn = _conn()
+    try:
+        result = execute(args, conn)
+        _emit(result, as_json=args.as_json)
+        return 0
+    except Exception as exc:
+        print(f"{type(exc).__name__}: {exc}", file=sys.stderr)
+        return 2
+    finally:
+        conn.close()
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
