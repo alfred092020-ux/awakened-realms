@@ -14,6 +14,7 @@ sys.path.insert(0, str(LIB))
 
 from logres_integration import (
     append_receipt,
+    bootstrap_summary,
     claim_intent,
     create_intent,
     disposition_proposal,
@@ -113,6 +114,10 @@ def build_parser() -> argparse.ArgumentParser:
     sub = parser.add_subparsers(dest="command", required=True)
 
     sub.add_parser("status")
+
+    bootstrap = sub.add_parser("bootstrap")
+    bootstrap.add_argument("--chat-id", required=True)
+    bootstrap.add_argument("--limit", type=int, default=5)
 
     targets = sub.add_parser("targets")
     targets.add_argument("--provider")
@@ -225,6 +230,13 @@ def build_parser() -> argparse.ArgumentParser:
 def execute(args, conn: sqlite3.Connection):
     if args.command == "status":
         return _status(conn)
+    if args.command == "bootstrap":
+        return bootstrap_summary(
+            conn,
+            chat_id=args.chat_id,
+            now_epoch=time.time(),
+            limit=args.limit,
+        )
     if args.command == "targets":
         return list_targets(
             conn,

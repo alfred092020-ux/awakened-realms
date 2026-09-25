@@ -8,6 +8,8 @@ import time
 import uuid
 from typing import Any
 
+from logres_journal import ensure_schema as ensure_journal_schema, now as journal_now
+
 _SECRET_KEY_RE = re.compile(
     r"(?:^|[_-])(api[_-]?key|access[_-]?token|refresh[_-]?token|"
     r"bearer[_-]?token|private[_-]?key|signing[_-]?key|authorization|cookie|"
@@ -185,6 +187,126 @@ def ensure_schema(conn: sqlite3.Connection) -> None:
         """
     )
     conn.commit()
+    ensure_journal_schema(conn)
+
+def _journal_event_tx(
+    conn: sqlite3.Connection,
+    *,
+    actor: str,
+    entity_type: str,
+    entity_id: str,
+    action: str,
+    payload: dict,
+    dedupe_key: str,
+) -> None:
+    """Append one sanitized project-lineage event inside the caller transaction."""
+    validate_sanitized_payload(payload)
+    payload_json = canonical_json(payload)
+    try:
+        conn.execute(
+            """insert into project_journal(
+                 ts,actor,entity_type,entity_id,action,cause,sha,artifact_path,
+                 payload_json,dedupe_key
+               ) values(?,?,?,?,?,'',null,null,?,?)""",
+            (
+                journal_now(),
+                str(actor or "integration"),
+                entity_type,
+                str(entity_id),
+                action,
+                payload_json,
+                dedupe_key,
+            ),
+        )
+    except sqlite3.IntegrityError:
+        prior = conn.execute(
+            "select id from project_journal where dedupe_key=?",
+            (dedupe_key,),
+        ).fetchone()
+        if prior is None:
+            raise
+
+
+def bootstrap_summary(
+    conn: sqlite3.Connection,
+    *,
+    chat_id: str,
+    now_epoch: float | None = None,
+    limit: int = 5,
+) -> dict:
+    """Return bounded local integration state; never talks to a provider."""
+    ensure_schema(conn)
+    chat_id = str(chat_id).strip()
+    if not chat_id:
+        raise ValueError("chat_id must not be empty")
+    now_value = time.time() if now_epoch is None else float(now_epoch)
+    backlog_limit = max(1, min(20, int(limit)))
+    capability_limit = max(1, min(20, backlog_limit * 2))
+
+    capability_rows = list(
+        conn.execute(
+            """select capability,target_key,expires_at_epoch
+                 from integration_capabilities
+                where chat_id=? and expires_at_epoch>?
+                order by capability,target_key
+                limit ?""",
+            (chat_id, now_value, capability_limit + 1),
+        )
+    )
+    capabilities = [
+        {
+            "capability": row[0],
+            "target_key": row[1],
+            "expires_at_epoch": float(row[2]),
+        }
+        for row in capability_rows[:capability_limit]
+    ]
+
+    backlog_rows = list(
+        conn.execute(
+            """select i.id,i.provider,i.target_key,i.operation,i.action_class,
+                      i.canonical_entity_type,i.canonical_entity_id,
+                      i.required_capability,i.priority,i.state,i.task_id
+                 from integration_intents i
+                where i.state in ('NEW','RETRYABLE')
+                  and (
+                    i.required_capability is null
+                    or exists (
+                      select 1
+                        from integration_capabilities c
+                       where c.chat_id=?
+                         and c.expires_at_epoch>?
+                         and c.capability=i.required_capability
+                         and (c.target_key='' or c.target_key=i.target_key)
+                    )
+                  )
+                order by i.priority asc,i.id asc
+                limit ?""",
+            (chat_id, now_value, backlog_limit + 1),
+        )
+    )
+    keys = (
+        "id", "provider", "target_key", "operation", "action_class",
+        "canonical_entity_type", "canonical_entity_id",
+        "required_capability", "priority", "state", "task_id",
+    )
+    backlog = [
+        dict(zip(keys, row))
+        for row in backlog_rows[:backlog_limit]
+    ]
+    return {
+        "chat_id": chat_id,
+        "capabilities": capabilities,
+        "capabilities_truncated": len(capability_rows) > capability_limit,
+        "compatible_backlog": backlog,
+        "backlog_truncated": len(backlog_rows) > backlog_limit,
+        "limits": {
+            "capabilities": capability_limit,
+            "backlog": backlog_limit,
+        },
+        "source": "local-control-db-only",
+    }
+
 
 def register_target(
     conn: sqlite3.Connection,
@@ -489,12 +611,49 @@ def create_intent(
             )
         )
         for row in older:
+            older_id = int(row[0])
             conn.execute(
                 """update integration_intents
                       set state='SUPERSEDED',superseded_by=?,updated_at=datetime('now')
                     where id=? and state in ('NEW','RETRYABLE')""",
-                (new_id, int(row[0])),
+                (new_id, older_id),
             )
+            _journal_event_tx(
+                conn,
+                actor=created_by,
+                entity_type="integration_intent",
+                entity_id=str(older_id),
+                action="SUPERSEDED",
+                payload={
+                    "state": "SUPERSEDED",
+                    "superseded_by": new_id,
+                    "provider": provider,
+                    "target_key": target_key,
+                    "operation": operation,
+                },
+                dedupe_key=f"integration:intent:{older_id}:state:SUPERSEDED:{new_id}",
+            )
+        _journal_event_tx(
+            conn,
+            actor=created_by,
+            entity_type="integration_intent",
+            entity_id=str(new_id),
+            action="CREATED",
+            payload={
+                "state": "NEW",
+                "provider": provider,
+                "target_key": target_key,
+                "operation": operation,
+                "action_class": action_class,
+                "canonical_entity_type": canonical_entity_type,
+                "canonical_entity_id": canonical_entity_id,
+                "task_id": task_id,
+                "required_capability": required_capability,
+                "payload_hash": payload_hash,
+                "projection_hash": projection_hash,
+            },
+            dedupe_key=f"integration:intent:{new_id}:state:NEW",
+        )
         conn.commit()
     except Exception:
         if conn.in_transaction:
@@ -533,6 +692,32 @@ def transition_intent(
         raise IntegrationStateConflict(
             f"intent {intent_id} was not in expected state {expected}"
         )
+    intent = conn.execute(
+        """select provider,target_key,operation,action_class,
+                  canonical_entity_type,canonical_entity_id,task_id
+             from integration_intents where id=?""",
+        (int(intent_id),),
+    ).fetchone()
+    _journal_event_tx(
+        conn,
+        actor="integration",
+        entity_type="integration_intent",
+        entity_id=str(intent_id),
+        action=f"STATE_{new}",
+        payload={
+            "prior_state": expected,
+            "state": new,
+            "provider": intent[0],
+            "target_key": intent[1],
+            "operation": intent[2],
+            "action_class": intent[3],
+            "canonical_entity_type": intent[4],
+            "canonical_entity_id": intent[5],
+            "task_id": intent[6],
+            "has_error": bool(last_error),
+        },
+        dedupe_key=f"integration:intent:{intent_id}:transition:{expected}:{new}",
+    )
     conn.commit()
     return get_intent(conn, intent_id)
 
@@ -627,11 +812,37 @@ def claim_intent(
             (int(intent_id), chat_id, token, lease_until),
         )
         if intent["state"] in {"NEW", "RETRYABLE"}:
+            prior_state = str(intent["state"])
             conn.execute(
                 """update integration_intents
                       set state='CLAIMED',updated_at=datetime('now')
                     where id=?""",
                 (int(intent_id),),
+            )
+            detail = conn.execute(
+                """select provider,target_key,operation,action_class,
+                          canonical_entity_type,canonical_entity_id,task_id
+                     from integration_intents where id=?""",
+                (int(intent_id),),
+            ).fetchone()
+            _journal_event_tx(
+                conn,
+                actor=chat_id,
+                entity_type="integration_intent",
+                entity_id=str(intent_id),
+                action="STATE_CLAIMED",
+                payload={
+                    "prior_state": prior_state,
+                    "state": "CLAIMED",
+                    "provider": detail[0],
+                    "target_key": detail[1],
+                    "operation": detail[2],
+                    "action_class": detail[3],
+                    "canonical_entity_type": detail[4],
+                    "canonical_entity_id": detail[5],
+                    "task_id": detail[6],
+                },
+                dedupe_key=f"integration:intent:{intent_id}:transition:{prior_state}:CLAIMED",
             )
         conn.commit()
     except Exception:
@@ -686,20 +897,52 @@ def release_claim(
     ensure_schema(conn)
     _begin_immediate(conn)
     try:
+        claim = conn.execute(
+            """select chat_id from integration_claims
+                where intent_id=? and lease_token=?""",
+            (int(intent_id), lease_token),
+        ).fetchone()
         cursor = conn.execute(
             "delete from integration_claims where intent_id=? and lease_token=?",
             (int(intent_id), lease_token),
         )
-        if cursor.rowcount != 1:
+        if cursor.rowcount != 1 or claim is None:
             raise IntegrationClaimConflict(
                 f"claim for intent {intent_id} is missing or token-mismatched"
             )
-        conn.execute(
+        state_cursor = conn.execute(
             """update integration_intents
                   set state='NEW',updated_at=datetime('now')
                 where id=? and state='CLAIMED'""",
             (int(intent_id),),
         )
+        if state_cursor.rowcount == 1:
+            detail = conn.execute(
+                """select provider,target_key,operation,action_class,
+                          canonical_entity_type,canonical_entity_id,task_id
+                     from integration_intents where id=?""",
+                (int(intent_id),),
+            ).fetchone()
+            _journal_event_tx(
+                conn,
+                actor=str(claim[0]),
+                entity_type="integration_intent",
+                entity_id=str(intent_id),
+                action="STATE_NEW",
+                payload={
+                    "prior_state": "CLAIMED",
+                    "state": "NEW",
+                    "provider": detail[0],
+                    "target_key": detail[1],
+                    "operation": detail[2],
+                    "action_class": detail[3],
+                    "canonical_entity_type": detail[4],
+                    "canonical_entity_id": detail[5],
+                    "task_id": detail[6],
+                    "reason": "claim_released",
+                },
+                dedupe_key=f"integration:intent:{intent_id}:transition:CLAIMED:NEW",
+            )
         conn.commit()
     except Exception:
         if conn.in_transaction:
@@ -922,6 +1165,27 @@ def append_receipt(
             "select * from integration_receipts where id=?",
             (int(cur.lastrowid),),
         ).fetchone()
+        _journal_event_tx(
+            conn,
+            actor=chat_id,
+            entity_type="integration_receipt",
+            entity_id=str(int(cur.lastrowid)),
+            action=f"OUTCOME_{outcome}",
+            payload={
+                "intent_id": int(intent_id),
+                "receipt_key": receipt_key,
+                "provider": intent["provider"],
+                "operation": intent["operation"],
+                "outcome": outcome,
+                "provider_entity_type": provider_entity_type,
+                "provider_entity_id": provider_entity_id,
+                "provider_version": provider_version,
+                "observed_hash": observed_hash,
+                "attempt_number": int(attempt_number),
+                "has_error": bool(error_class or error_detail),
+            },
+            dedupe_key=f"integration:receipt:{receipt_key}",
+        )
         conn.commit()
     except Exception:
         if conn.in_transaction:
@@ -1105,6 +1369,25 @@ def create_proposal(
             "select * from integration_proposals where id=?",
             (int(cur.lastrowid),),
         ).fetchone()
+        proposal_id = int(cur.lastrowid)
+        _journal_event_tx(
+            conn,
+            actor="integration",
+            entity_type="integration_proposal",
+            entity_id=str(proposal_id),
+            action="CREATED",
+            payload={
+                "provider": provider,
+                "target_key": target_key,
+                "provider_entity_id": provider_entity_id,
+                "canonical_entity_type": canonical_entity_type,
+                "canonical_entity_id": canonical_entity_id,
+                "change_type": change_type,
+                "risk_class": risk_class,
+                "disposition": "OPEN",
+            },
+            dedupe_key=f"integration:proposal:{proposal_id}:disposition:OPEN",
+        )
         conn.commit()
     except Exception:
         if conn.in_transaction:
@@ -1157,6 +1440,31 @@ def disposition_proposal(
         raise IntegrationStateConflict(
             f"proposal {proposal_id} was not in expected disposition {expected}"
         )
+    proposal = conn.execute(
+        """select provider,target_key,canonical_entity_type,
+                  canonical_entity_id,change_type,risk_class
+             from integration_proposals where id=?""",
+        (int(proposal_id),),
+    ).fetchone()
+    _journal_event_tx(
+        conn,
+        actor=reviewer,
+        entity_type="integration_proposal",
+        entity_id=str(proposal_id),
+        action=f"DISPOSITION_{disposition}",
+        payload={
+            "prior_disposition": expected,
+            "disposition": disposition,
+            "provider": proposal[0],
+            "target_key": proposal[1],
+            "canonical_entity_type": proposal[2],
+            "canonical_entity_id": proposal[3],
+            "change_type": proposal[4],
+            "risk_class": proposal[5],
+            "has_review_note": bool(note),
+        },
+        dedupe_key=f"integration:proposal:{proposal_id}:disposition:{disposition}",
+    )
     conn.commit()
     row = conn.execute(
         "select * from integration_proposals where id=?",

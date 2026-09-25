@@ -60,6 +60,14 @@ echo
 echo "=== COORDINATION BRIEF ==="
 "$ROOT/bin/logres-coordinator" brief "$CHAT" || true
 
+echo
+echo "=== CONNECTOR INTEGRATION SUMMARY ==="
+if [[ -x "$ROOT/bin/logres-integration" ]]; then
+  "$ROOT/bin/logres-integration" --json bootstrap --chat-id "$CHAT" --limit 5 ||     echo '{"source":"local-control-db-only","status":"unavailable"}'
+else
+  echo '{"source":"local-control-db-only","status":"not-deployed"}'
+fi
+
 if [[ "$CHAT" == "lead" ]]; then
   "$ROOT/bin/logres-integration-pager" >/dev/null 2>&1 || true
   echo
