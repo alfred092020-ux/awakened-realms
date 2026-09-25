@@ -11,6 +11,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from urllib.parse import urlparse
 
+from logres_chat_contract import CHAT_CONTRACT_STATES, ChatContractStore
 from logres_chat_wake import CHATGPT_PACKAGE, ChatWakeBridge, bounds_center, inspect_chat_ui
 
 DEFAULT_ROOT = Path("/home/ubuntu/logres")
@@ -68,12 +69,7 @@ def visible_activity_digest(xml_text: str) -> str:
 
 
 
-VALID_CONTRACT_STATES = {
-    "RUNNING",
-    "PAUSED",
-    "WAITING_USER",
-    "DONE",
-}
+VALID_CONTRACT_STATES = set(CHAT_CONTRACT_STATES)
 
 
 def worked_timer_seconds(xml_text: str) -> int | None:
@@ -145,6 +141,28 @@ def composer_text(ui: dict) -> str:
     return values[0]
 
 
+def contract_gate_action(
+    *,
+    contract_state: str,
+    heartbeat_age: float,
+    heartbeat_timeout_seconds: float,
+    continuation_age: float,
+    continuation_grace_seconds: float,
+) -> str:
+    contract = str(contract_state or "").upper()
+    if contract not in VALID_CONTRACT_STATES:
+        raise ValueError(f"invalid chat contract state: {contract_state!r}")
+    if contract in {"PAUSED", "WAITING_USER", "DONE"}:
+        return "HOLD"
+    if contract == "CONTINUE_REQUESTED":
+        if continuation_age < continuation_grace_seconds:
+            return "CONTINUATION_GRACE"
+        return "PHONE_CHECK"
+    if heartbeat_age < heartbeat_timeout_seconds:
+        return "RUNNING_HEARTBEAT"
+    return "PHONE_CHECK"
+
+
 def contract_probe_action(
     *,
     contract_state: str,
@@ -158,7 +176,7 @@ def contract_probe_action(
     contract = str(contract_state or "").upper()
     if contract not in VALID_CONTRACT_STATES:
         raise ValueError(f"invalid chat contract state: {contract_state!r}")
-    if contract != "RUNNING":
+    if contract in {"PAUSED", "WAITING_USER", "DONE"}:
         return "HOLD"
     if not initial_stop_present or not later_stop_present:
         return "RESUME"
@@ -231,6 +249,7 @@ class ChatPeerWatchdog:
         self.audit_path = device_dir / "chat-watchdog-audit.jsonl"
         self.targets_dir = device_dir / "chat-watchdog-targets"
         self.db_path = self.root / "control/control.sqlite"
+        self.contracts = ChatContractStore(self.root, clock=self.clock)
 
     def load_config(self) -> dict:
         source = self.runtime_config if self.runtime_config.is_file() else self.default_config
@@ -349,9 +368,40 @@ class ChatPeerWatchdog:
     def tick_target(self, target: dict, common: dict, state: dict) -> dict:
         chat_id = str(target["chat_id"])
         brain = self._brain_state(chat_id)
-        contract_state = str(
-            target.get("contract_state", "RUNNING")
-        ).upper()
+        use_runtime_contract = bool(
+            target.get("use_runtime_contract", False)
+        )
+
+        if use_runtime_contract:
+            contract = self.contracts.get(chat_id)
+            if contract is None:
+                contract = self.contracts.ensure(
+                    chat_id,
+                    default_state="PAUSED",
+                    reason="watchdog fail-safe contract bootstrap",
+                )
+            contract_state = str(contract["state"]).upper()
+            heartbeat_epoch = float(contract.get("heartbeat_epoch") or 0.0)
+            heartbeat_age = (
+                max(0.0, self.clock() - heartbeat_epoch)
+                if heartbeat_epoch > 0
+                else float("inf")
+            )
+            updated_epoch = float(contract.get("state_epoch") or 0.0)
+        else:
+            contract_state = str(
+                target.get("contract_state", "PAUSED")
+            ).upper()
+            contract = {
+                "state": contract_state,
+                "exists": False,
+                "updated_epoch": 0.0,
+                "heartbeat_epoch": 0.0,
+                "turn_id": None,
+            }
+            heartbeat_age = float("inf")
+            updated_epoch = 0.0
+
         if contract_state not in VALID_CONTRACT_STATES:
             return {
                 "chat_id": chat_id,
@@ -360,28 +410,75 @@ class ChatPeerWatchdog:
                 "brain": brain,
             }
 
-        # Brain activity is advisory only. RUNNING means the exact ChatGPT
-        # conversation is expected to continue until its contract is changed.
-        if contract_state != "RUNNING":
+        now = self.clock()
+        heartbeat_timeout = float(
+            target.get(
+                "running_heartbeat_timeout_seconds",
+                common.get("running_heartbeat_timeout_seconds", 300),
+            )
+        )
+        continuation_grace = float(
+            target.get(
+                "continuation_grace_seconds",
+                common.get("continuation_grace_seconds", 30),
+            )
+        )
+        continuation_age = (
+            max(0.0, now - updated_epoch)
+            if updated_epoch > 0
+            else float("inf")
+        )
+        gate = contract_gate_action(
+            contract_state=contract_state,
+            heartbeat_age=heartbeat_age,
+            heartbeat_timeout_seconds=heartbeat_timeout,
+            continuation_age=continuation_age,
+            continuation_grace_seconds=continuation_grace,
+        )
+
+        if gate in {"HOLD", "RUNNING_HEARTBEAT", "CONTINUATION_GRACE"}:
             return {
                 "chat_id": chat_id,
-                "result": "HOLD",
+                "result": gate,
                 "contract_state": contract_state,
+                "heartbeat_age": heartbeat_age,
+                "continuation_age": continuation_age,
+                "turn_id": contract.get("turn_id"),
                 "brain": brain,
             }
 
-        now = self.clock()
+        target_state = state.setdefault("targets", {}).setdefault(chat_id, {})
         cooldown_seconds = float(
-            target.get("cooldown_seconds", common.get("cooldown_seconds", 20))
+            target.get(
+                "min_resume_interval_seconds",
+                common.get(
+                    "min_resume_interval_seconds",
+                    common.get("cooldown_seconds", 300),
+                ),
+            )
         )
         probe_seconds = float(
-            target.get("stuck_probe_seconds", common.get("stuck_probe_seconds", 7))
+            target.get(
+                "stuck_probe_seconds",
+                common.get("stuck_probe_seconds", 15),
+            )
         )
-        target_state = state.setdefault("targets", {}).setdefault(chat_id, {})
         last_recovery = float(
             target_state.get("last_recovery_epoch", 0.0) or 0.0
         )
         cooldown_age = max(0.0, now - last_recovery)
+
+        rate_limited_until = float(
+            target_state.get("rate_limited_until_epoch", 0.0) or 0.0
+        )
+        if now < rate_limited_until:
+            return {
+                "chat_id": chat_id,
+                "result": "RATE_LIMIT_BACKOFF",
+                "contract_state": contract_state,
+                "retry_after_seconds": max(0.0, rate_limited_until - now),
+                "brain": brain,
+            }
 
         if cooldown_age < cooldown_seconds:
             return {
@@ -430,18 +527,6 @@ class ChatPeerWatchdog:
                 "brain": brain,
             }
 
-        rate_limited_until = float(
-            target_state.get("rate_limited_until_epoch", 0.0) or 0.0
-        )
-        if now < rate_limited_until:
-            return {
-                "chat_id": chat_id,
-                "result": "RATE_LIMIT_BACKOFF",
-                "contract_state": contract_state,
-                "retry_after_seconds": max(0.0, rate_limited_until - now),
-                "brain": brain,
-            }
-
         if initial_draft and initial_draft != resume_message:
             return {
                 "chat_id": chat_id,
@@ -480,6 +565,11 @@ class ChatPeerWatchdog:
         target_state["contract_state"] = contract_state
 
         if action == "WORKING":
+            if use_runtime_contract and contract_state == "RUNNING":
+                self.contracts.heartbeat(
+                    chat_id,
+                    reason="native UI liveness proof",
+                )
             return {
                 "chat_id": chat_id,
                 "result": "WORKING",
@@ -492,10 +582,6 @@ class ChatPeerWatchdog:
 
         stopped = False
 
-        # A previous watchdog attempt may have typed the allowlisted resume
-        # text before the native app rejected the send. If the exact system
-        # draft remains, reuse it rather than typing a duplicate. Any other
-        # draft is treated as user-owned and was already held above.
         if action == "RESUME" and initial_draft == resume_message:
             if len(initial_ui.get("send_bounds", [])) != 1:
                 return {
@@ -514,6 +600,15 @@ class ChatPeerWatchdog:
             )
             target_state["last_recovery_epoch"] = now
             target_state["last_recovery_result"] = response
+            if (
+                use_runtime_contract
+                and response in {"RESPONDING", "RESPONDED"}
+            ):
+                self.contracts.set_state(
+                    chat_id,
+                    "RUNNING",
+                    reason="watchdog resumed existing system draft",
+                )
             self.audit(
                 {
                     "chat_id": chat_id,
@@ -554,6 +649,17 @@ class ChatPeerWatchdog:
         )
         target_state["last_recovery_epoch"] = now
         target_state["last_recovery_result"] = outcome["result"]
+
+        if (
+            use_runtime_contract
+            and outcome["result"] in {"RESPONDING", "RESPONDED"}
+        ):
+            self.contracts.set_state(
+                chat_id,
+                "RUNNING",
+                reason="watchdog resumed chat",
+            )
+
         self.audit(
             {
                 "chat_id": chat_id,

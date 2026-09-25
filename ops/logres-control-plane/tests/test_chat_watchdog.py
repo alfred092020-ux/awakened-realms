@@ -8,6 +8,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "lib"))
 
 from logres_chat_watchdog import (
+    contract_gate_action,
     composer_text,
     contract_probe_action,
     recovery_action,
@@ -341,6 +342,79 @@ class ChatWatchdogTests(unittest.TestCase):
         self.assertEqual(300, config["policy"]["cooldown_seconds"])
         self.assertEqual(600, config["policy"]["rate_limit_backoff_seconds"])
         self.assertEqual(15, config["policy"]["stuck_probe_seconds"])
+
+    def test_fresh_running_heartbeat_skips_phone_check(self):
+        self.assertEqual(
+            "RUNNING_HEARTBEAT",
+            contract_gate_action(
+                contract_state="RUNNING",
+                heartbeat_age=30,
+                heartbeat_timeout_seconds=300,
+                continuation_age=0,
+                continuation_grace_seconds=30,
+            ),
+        )
+
+    def test_stale_running_heartbeat_falls_back_to_phone_check(self):
+        self.assertEqual(
+            "PHONE_CHECK",
+            contract_gate_action(
+                contract_state="RUNNING",
+                heartbeat_age=301,
+                heartbeat_timeout_seconds=300,
+                continuation_age=0,
+                continuation_grace_seconds=30,
+            ),
+        )
+
+    def test_continue_requested_uses_grace_then_phone_check(self):
+        self.assertEqual(
+            "CONTINUATION_GRACE",
+            contract_gate_action(
+                contract_state="CONTINUE_REQUESTED",
+                heartbeat_age=0,
+                heartbeat_timeout_seconds=300,
+                continuation_age=10,
+                continuation_grace_seconds=30,
+            ),
+        )
+        self.assertEqual(
+            "PHONE_CHECK",
+            contract_gate_action(
+                contract_state="CONTINUE_REQUESTED",
+                heartbeat_age=0,
+                heartbeat_timeout_seconds=300,
+                continuation_age=31,
+                continuation_grace_seconds=30,
+            ),
+        )
+
+    def test_waiting_paused_done_are_holds(self):
+        for state in ("WAITING_USER", "PAUSED", "DONE"):
+            self.assertEqual(
+                "HOLD",
+                contract_gate_action(
+                    contract_state=state,
+                    heartbeat_age=999,
+                    heartbeat_timeout_seconds=300,
+                    continuation_age=999,
+                    continuation_grace_seconds=30,
+                ),
+            )
+
+    def test_continue_requested_is_resume_capable_in_native_probe(self):
+        self.assertEqual(
+            "RESUME",
+            contract_probe_action(
+                contract_state="CONTINUE_REQUESTED",
+                initial_stop_present=False,
+                initial_worked_seconds=None,
+                initial_tail_digest="same",
+                later_stop_present=False,
+                later_worked_seconds=None,
+                later_tail_digest="same",
+            ),
+        )
 
     def test_source_has_no_paid_openai_api_path(self):
         source = (ROOT / "lib/logres_chat_watchdog.py").read_text()

@@ -462,3 +462,38 @@ Brain presence, leases, and progress remain useful coordination context, but the
 Native-app rate limits are also fail-safe. A visible **Too many requests** / retry-later banner enters a bounded backoff instead of sending more prompts. The watchdog never overwrites a user draft. If a failed watchdog send leaves the exact allowlisted resume text in the composer, it may reuse that exact system-owned draft after backoff rather than typing a duplicate.
 
 The Oracle supervisor remains the continuous project executor; chat recovery is a coordination/recovery layer, not the sole autonomy mechanism.
+
+### Explicit turn handoff protocol
+
+Continuous Logres chats use a durable contract stored in
+`/home/ubuntu/logres/control/android-device/chat-contracts.json`.
+
+Use `logres-chat-contract` to transition a chat explicitly:
+
+```bash
+logres-chat-contract running logres-master --reason "turn started"
+logres-chat-contract heartbeat logres-master --reason "tool progress"
+logres-chat-contract continue logres-master --reason "normal turn handoff"
+logres-chat-contract wait logres-master --reason "needs user input"
+logres-chat-contract pause logres-master --reason "user requested pause"
+logres-chat-contract done logres-master --reason "work complete"
+```
+
+The normal continuous loop is:
+
+`RUNNING → CONTINUE_REQUESTED → RUNNING`
+
+A fresh `RUNNING` contract heartbeat suppresses phone probing entirely.
+Before a normal turn ends, the chat moves itself to `CONTINUE_REQUESTED`.
+After a short grace period and the configured resume interval, the peer
+watchdog sends the allowlisted resume prompt and returns the contract to
+`RUNNING` when the native app proves that the new response started.
+
+`WAITING_USER`, `PAUSED`, and `DONE` are hard holds and are never
+auto-resumed. If a `RUNNING` heartbeat expires unexpectedly, the native
+Stop/Worked-for/response-tail probe remains available only as a crash/stall
+fallback. Brain timestamps are coordination context, not the turn-completion
+signal.
+
+This protocol avoids relying on cross-device live Stop-button visibility,
+which is not guaranteed for a response initiated on another device.

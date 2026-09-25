@@ -1,0 +1,90 @@
+#!/home/ubuntu/logres/envs/research/bin/python
+from __future__ import annotations
+
+import argparse
+import json
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "lib"))
+
+from logres_chat_contract import (
+    VALID_CHAT_CONTRACT_STATES,
+    ChatContractStore,
+)
+
+
+def emit(value) -> None:
+    print(json.dumps(value, indent=2, sort_keys=True))
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser(prog="logres-chat-contract")
+    sub = ap.add_subparsers(dest="cmd", required=True)
+
+    status = sub.add_parser("status")
+    status.add_argument("chat_id", nargs="?")
+
+    set_cmd = sub.add_parser("set")
+    set_cmd.add_argument("chat_id")
+    set_cmd.add_argument(
+        "state",
+        choices=sorted(VALID_CHAT_CONTRACT_STATES),
+    )
+    set_cmd.add_argument("--note", "--reason", dest="note", default="")
+
+    for name, state in (
+        ("running", "RUNNING"),
+        ("continue", "CONTINUE_REQUESTED"),
+        ("wait", "WAITING_USER"),
+        ("pause", "PAUSED"),
+        ("done", "DONE"),
+    ):
+        parser = sub.add_parser(name)
+        parser.add_argument("chat_id")
+        parser.add_argument("--note", "--reason", dest="note", default="")
+        parser.set_defaults(contract_state=state)
+
+    heartbeat = sub.add_parser("heartbeat")
+    heartbeat.add_argument("chat_id")
+    heartbeat.add_argument("--note", "--reason", dest="note", default="")
+
+    args = ap.parse_args()
+    store = ChatContractStore()
+
+    if args.cmd == "status":
+        emit(
+            store.read(args.chat_id)
+            if args.chat_id
+            else store.list()
+        )
+        return 0
+
+    if args.cmd == "heartbeat":
+        emit(
+            store.heartbeat(
+                args.chat_id,
+                note=args.note,
+            )
+        )
+        return 0
+
+    state = (
+        args.state
+        if args.cmd == "set"
+        else args.contract_state
+    )
+    emit(
+        store.set_state(
+            args.chat_id,
+            state,
+            note=args.note,
+        )
+    )
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
+

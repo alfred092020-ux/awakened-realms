@@ -2,8 +2,11 @@
   "enabled": false,
   "policy": {
     "allow_low_battery_wake": false,
+    "continuation_grace_seconds": 30,
     "cooldown_seconds": 300,
+    "min_resume_interval_seconds": 300,
     "rate_limit_backoff_seconds": 600,
+    "running_heartbeat_timeout_seconds": 300,
     "settle_seconds": 1.2,
     "stop_wait_seconds": 7,
     "stuck_probe_seconds": 15,
