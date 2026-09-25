@@ -1,13 +1,13 @@
 {
   "enabled": false,
   "policy": {
-    "stale_seconds": 300,
-    "stuck_seconds": 300,
-    "cooldown_seconds": 600,
-    "stop_wait_seconds": 7,
-    "verify_after_seconds": 8,
+    "allow_low_battery_wake": false,
+    "cooldown_seconds": 300,
     "settle_seconds": 1.2,
-    "allow_low_battery_wake": false
+    "stale_seconds": 300,
+    "stop_wait_seconds": 7,
+    "stuck_probe_seconds": 7,
+    "verify_after_seconds": 8
   },
   "targets": []
 }

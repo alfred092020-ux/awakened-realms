@@ -78,6 +78,9 @@ def recovery_action(
     cooldown_age: float,
     cooldown_seconds: float,
 ) -> str:
+    # Compatibility helper retained for callers/tests from the first watchdog
+    # implementation. Runtime recovery now uses a same-run semantic probe so a
+    # five-minute stale threshold cannot silently become a ten-minute restart.
     if stale_age < stale_seconds:
         return "FRESH"
     if cooldown_age < cooldown_seconds:
@@ -86,6 +89,22 @@ def recovery_action(
         return "RESUME"
     if digest_changed or stuck_age < stuck_seconds:
         return "OBSERVE"
+    return "STOP_AND_RESUME"
+
+
+def same_run_probe_action(
+    *,
+    initial_stop_present: bool,
+    initial_digest: str,
+    later_stop_present: bool,
+    later_digest: str,
+) -> str:
+    if not initial_stop_present:
+        return "RESUME"
+    if not later_stop_present:
+        return "RESUME"
+    if later_digest != initial_digest:
+        return "WORKING"
     return "STOP_AND_RESUME"
 
 
@@ -229,71 +248,115 @@ class ChatPeerWatchdog:
             return {"chat_id": chat_id, "result": "NO_ACTIVE_WORK", "brain": brain}
 
         now = self.clock()
-        stale_seconds = float(target.get("stale_seconds", common.get("stale_seconds", 300)))
-        stuck_seconds = float(target.get("stuck_seconds", common.get("stuck_seconds", 300)))
-        cooldown_seconds = float(target.get("cooldown_seconds", common.get("cooldown_seconds", 600)))
-        stale_age = max(0.0, now - float(brain["last_activity_epoch"] or 0.0))
+        stale_seconds = float(
+            target.get("stale_seconds", common.get("stale_seconds", 300))
+        )
+        cooldown_seconds = float(
+            target.get("cooldown_seconds", common.get("cooldown_seconds", 300))
+        )
+        probe_seconds = float(
+            target.get("stuck_probe_seconds", common.get("stuck_probe_seconds", 7))
+        )
+        stale_age = max(
+            0.0,
+            now - float(brain["last_activity_epoch"] or 0.0),
+        )
         target_state = state.setdefault("targets", {}).setdefault(chat_id, {})
-        last_recovery = float(target_state.get("last_recovery_epoch", 0.0) or 0.0)
+        last_recovery = float(
+            target_state.get("last_recovery_epoch", 0.0) or 0.0
+        )
         cooldown_age = max(0.0, now - last_recovery)
 
+        # The systemd timer runs once per minute. Staying local here is cheap
+        # and guarantees a 300-second stale threshold is acted on at the next
+        # minute tick rather than slipping to a second five-minute interval.
         if stale_age < stale_seconds:
-            target_state.pop("stuck_since_epoch", None)
-            target_state.pop("last_digest", None)
-            return {"chat_id": chat_id, "result": "FRESH", "stale_age": stale_age, "brain": brain}
+            return {
+                "chat_id": chat_id,
+                "result": "FRESH",
+                "stale_age": stale_age,
+                "brain": brain,
+            }
+
+        if cooldown_age < cooldown_seconds:
+            return {
+                "chat_id": chat_id,
+                "result": "COOLDOWN",
+                "stale_age": stale_age,
+                "cooldown_age": cooldown_age,
+                "brain": brain,
+            }
 
         bridge = self._bridge(target, common)
         opened = bridge.wake()
         if opened.get("result") != "NATIVE_EXACT_CHAT":
-            return {"chat_id": chat_id, "result": str(opened.get("result")), "open": opened, "brain": brain}
-
-        xml_text = bridge._ui_xml()
-        ui = inspect_chat_ui(xml_text, [])
-        digest = visible_activity_digest(xml_text)
-        stop_present = bool(ui["stop_bounds"])
-        previous_digest = str(target_state.get("last_digest") or "")
-        digest_changed = bool(previous_digest and previous_digest != digest)
-        if not previous_digest or digest_changed:
-            target_state["stuck_since_epoch"] = now
-        stuck_since = float(target_state.get("stuck_since_epoch", now) or now)
-        stuck_age = max(0.0, now - stuck_since)
-
-        action = recovery_action(
-            stale_age=stale_age,
-            stale_seconds=stale_seconds,
-            stop_present=stop_present,
-            digest_changed=digest_changed,
-            stuck_age=stuck_age,
-            stuck_seconds=stuck_seconds,
-            cooldown_age=cooldown_age,
-            cooldown_seconds=cooldown_seconds,
-        )
-        target_state["last_digest"] = digest
-        target_state["last_seen_stop"] = stop_present
-        target_state["last_checked_epoch"] = now
-
-        if action in {"FRESH", "COOLDOWN", "OBSERVE"}:
             return {
                 "chat_id": chat_id,
-                "result": action,
+                "result": str(opened.get("result")),
+                "open": opened,
+                "brain": brain,
+            }
+
+        initial_xml = bridge._ui_xml()
+        initial_ui = inspect_chat_ui(initial_xml, [])
+        initial_digest = visible_activity_digest(initial_xml)
+        initial_stop = bool(initial_ui["stop_bounds"])
+
+        later_ui = initial_ui
+        later_digest = initial_digest
+        later_stop = initial_stop
+
+        if initial_stop:
+            # A visible Stop control only proves ChatGPT still considers the
+            # response active. Probe semantic output in this same watchdog run
+            # instead of waiting for another five-minute timer cycle.
+            self.sleeper(probe_seconds)
+            later_xml = bridge._ui_xml()
+            later_ui = inspect_chat_ui(later_xml, [])
+            later_digest = visible_activity_digest(later_xml)
+            later_stop = bool(later_ui["stop_bounds"])
+
+        action = same_run_probe_action(
+            initial_stop_present=initial_stop,
+            initial_digest=initial_digest,
+            later_stop_present=later_stop,
+            later_digest=later_digest,
+        )
+
+        target_state["last_checked_epoch"] = now
+        target_state["last_seen_stop"] = later_stop
+        target_state["last_digest"] = later_digest
+
+        if action == "WORKING":
+            return {
+                "chat_id": chat_id,
+                "result": "WORKING",
                 "stale_age": stale_age,
-                "stuck_age": stuck_age,
-                "stop_present": stop_present,
+                "probe_seconds": probe_seconds,
                 "brain": brain,
             }
 
         stopped = False
         if action == "STOP_AND_RESUME":
-            if len(ui["stop_bounds"]) != 1:
-                return {"chat_id": chat_id, "result": "STOP_AMBIGUOUS", "ui": ui}
-            x, y = bounds_center(ui["stop_bounds"][0])
+            if len(later_ui["stop_bounds"]) != 1:
+                return {
+                    "chat_id": chat_id,
+                    "result": "STOP_AMBIGUOUS",
+                    "ui": later_ui,
+                    "brain": brain,
+                }
+            x, y = bounds_center(later_ui["stop_bounds"][0])
             bridge.transport.shell(f"input tap {x} {y}")
             stopped = True
 
-        outcome = self._send_resume(bridge, target, common, stopped=stopped)
+        outcome = self._send_resume(
+            bridge,
+            target,
+            common,
+            stopped=stopped,
+        )
         target_state["last_recovery_epoch"] = now
         target_state["last_recovery_result"] = outcome["result"]
-        target_state["stuck_since_epoch"] = now
         self.audit(
             {
                 "chat_id": chat_id,
@@ -301,6 +364,8 @@ class ChatPeerWatchdog:
                 "stopped": stopped,
                 "result": outcome["result"],
                 "active_tasks": brain["active_tasks"],
+                "stale_age": stale_age,
+                "probe_seconds": probe_seconds if initial_stop else 0,
             }
         )
         return {

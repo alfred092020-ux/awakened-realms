@@ -7,7 +7,11 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "lib"))
 
-from logres_chat_watchdog import recovery_action, visible_activity_digest
+from logres_chat_watchdog import (
+    recovery_action,
+    same_run_probe_action,
+    visible_activity_digest,
+)
 
 
 class ChatWatchdogTests(unittest.TestCase):
@@ -139,6 +143,50 @@ class ChatWatchdogTests(unittest.TestCase):
         self.assertGreaterEqual(timeout_seconds, 180)
         self.assertLess(timeout_seconds, 300)
         self.assertEqual(timeout_seconds, 240)
+
+    def test_same_run_probe_leaves_semantically_progressing_chat_alone(self):
+        self.assertEqual(
+            "WORKING",
+            same_run_probe_action(
+                initial_stop_present=True,
+                initial_digest="before",
+                later_stop_present=True,
+                later_digest="after",
+            ),
+        )
+
+    def test_same_run_probe_stops_stalled_active_chat(self):
+        self.assertEqual(
+            "STOP_AND_RESUME",
+            same_run_probe_action(
+                initial_stop_present=True,
+                initial_digest="same",
+                later_stop_present=True,
+                later_digest="same",
+            ),
+        )
+
+    def test_same_run_probe_resumes_completed_chat(self):
+        self.assertEqual(
+            "RESUME",
+            same_run_probe_action(
+                initial_stop_present=True,
+                initial_digest="same",
+                later_stop_present=False,
+                later_digest="same",
+            ),
+        )
+
+    def test_watchdog_timer_checks_every_minute_for_five_minute_stale_sla(self):
+        timer = (ROOT / "systemd/logres-chat-watchdog.timer").read_text()
+        self.assertIn("OnBootSec=1min", timer)
+        self.assertIn("OnUnitActiveSec=1min", timer)
+        self.assertIn("AccuracySec=5s", timer)
+
+        config = (ROOT / "config/chat_watchdog.default.json").read_text()
+        self.assertIn('"stale_seconds": 300', config)
+        self.assertIn('"stuck_probe_seconds": 7', config)
+        self.assertIn('"cooldown_seconds": 300', config)
 
     def test_real_content_change_counts_as_progress(self):
         a = '<hierarchy><node text="Alpha" content-desc="" /></hierarchy>'
