@@ -14,17 +14,26 @@ from logres_integration import (
     classify_uncertain_failure,
     compatible_capabilities,
     create_intent,
+    create_proposal,
+    disposition_proposal,
     ensure_schema,
+    get_binding,
+    get_cursor,
     get_intent,
+    list_bindings,
     list_capabilities,
     list_intents,
+    list_proposals,
+    list_receipts,
     list_targets,
     register_target,
     release_claim,
     renew_claim,
     retry_allowed,
     set_capabilities,
+    set_cursor,
     transition_intent,
+    upsert_binding,
     validate_sanitized_payload,
 )
 
@@ -383,6 +392,183 @@ class IntegrationUncertainWriteTests(unittest.TestCase):
                 expected="RECONCILING",
                 new="CLAIMED",
             )
+
+
+class IntegrationReceiptBindingTests(unittest.TestCase):
+    def setUp(self):
+        self.conn = sqlite3.connect(":memory:")
+        self.conn.row_factory = sqlite3.Row
+        ensure_schema(self.conn)
+        self.intent = create_intent(
+            self.conn,
+            provider="linear",
+            target_key="logres",
+            operation="issue.upsert",
+            action_class="REVERSIBLE_WRITE",
+            canonical_entity_type="task",
+            canonical_entity_id="T1",
+            logical_slot="work-mirror",
+            payload={"title": "One"},
+            projection_hash="projection-1",
+            created_by="plugins",
+            dedupe_key="receipt-intent",
+        )
+
+    def tearDown(self):
+        self.conn.close()
+
+    def test_receipt_is_append_only_and_deduped_by_receipt_key(self):
+        first = append_receipt(
+            self.conn,
+            intent_id=self.intent["id"],
+            receipt_key="r1",
+            outcome="SUCCEEDED",
+            chat_id="plugins",
+            attempt_number=1,
+            response_metadata={"status": "ok"},
+        )
+        second = append_receipt(
+            self.conn,
+            intent_id=self.intent["id"],
+            receipt_key="r1",
+            outcome="SUCCEEDED",
+            chat_id="plugins",
+            attempt_number=1,
+            response_metadata={"status": "ok"},
+        )
+        self.assertEqual(first["id"], second["id"])
+        self.assertEqual(1, len(list_receipts(self.conn, self.intent["id"])))
+
+    def test_successful_receipt_can_create_binding(self):
+        append_receipt(
+            self.conn,
+            intent_id=self.intent["id"],
+            receipt_key="r-bind",
+            outcome="SUCCEEDED",
+            chat_id="plugins",
+            attempt_number=1,
+            provider_entity_type="issue",
+            provider_entity_id="LIN-123",
+            provider_url="https://linear.example/LIN-123",
+            observed_hash="observed-1",
+            bind_on_success=True,
+        )
+        binding = get_binding(
+            self.conn,
+            provider="linear",
+            canonical_entity_type="task",
+            canonical_entity_id="T1",
+            logical_slot="work-mirror",
+        )
+        self.assertEqual("LIN-123", binding["provider_entity_id"])
+        self.assertEqual("projection-1", binding["projected_hash"])
+        self.assertEqual("observed-1", binding["observed_hash"])
+
+    def test_provider_object_cannot_bind_to_two_canonical_entities(self):
+        upsert_binding(
+            self.conn,
+            provider="linear",
+            logical_slot="work-mirror",
+            canonical_entity_type="task",
+            canonical_entity_id="T1",
+            provider_entity_type="issue",
+            provider_entity_id="LIN-123",
+        )
+        with self.assertRaises(sqlite3.IntegrityError):
+            upsert_binding(
+                self.conn,
+                provider="linear",
+                logical_slot="work-mirror",
+                canonical_entity_type="task",
+                canonical_entity_id="T2",
+                provider_entity_type="issue",
+                provider_entity_id="LIN-123",
+            )
+        self.assertEqual(1, len(list_bindings(self.conn, provider="linear")))
+
+
+class IntegrationCursorProposalTests(unittest.TestCase):
+    def setUp(self):
+        self.conn = sqlite3.connect(":memory:")
+        self.conn.row_factory = sqlite3.Row
+        ensure_schema(self.conn)
+
+    def tearDown(self):
+        self.conn.close()
+
+    def test_monotonic_cursor_does_not_move_backward(self):
+        set_cursor(
+            self.conn,
+            provider="linear",
+            target_key="logres",
+            cursor_name="updated",
+            cursor_value="200",
+            monotonic=True,
+        )
+        set_cursor(
+            self.conn,
+            provider="linear",
+            target_key="logres",
+            cursor_name="updated",
+            cursor_value="150",
+            monotonic=True,
+        )
+        self.assertEqual(
+            "200",
+            get_cursor(
+                self.conn,
+                provider="linear",
+                target_key="logres",
+                cursor_name="updated",
+            )["cursor_value"],
+        )
+
+    def test_proposal_creation_is_idempotent_and_review_is_cas(self):
+        first = create_proposal(
+            self.conn,
+            dedupe_key="proposal-1",
+            provider="linear",
+            target_key="logres",
+            provider_entity_id="LIN-1",
+            canonical_entity_type="task",
+            canonical_entity_id="T1",
+            change_type="description.changed",
+            observed={"description": "human edit"},
+            canonical={"description": "managed"},
+            risk_class="REVIEW",
+        )
+        second = create_proposal(
+            self.conn,
+            dedupe_key="proposal-1",
+            provider="linear",
+            target_key="logres",
+            provider_entity_id="LIN-1",
+            canonical_entity_type="task",
+            canonical_entity_id="T1",
+            change_type="description.changed",
+            observed={"description": "human edit"},
+            canonical={"description": "managed"},
+            risk_class="REVIEW",
+        )
+        self.assertEqual(first["id"], second["id"])
+        reviewed = disposition_proposal(
+            self.conn,
+            first["id"],
+            expected="OPEN",
+            disposition="ACCEPTED",
+            reviewer="plugins",
+            note="incorporate through normal Brain workflow",
+        )
+        self.assertEqual("ACCEPTED", reviewed["disposition"])
+        with self.assertRaises(Exception):
+            disposition_proposal(
+                self.conn,
+                first["id"],
+                expected="OPEN",
+                disposition="REJECTED",
+                reviewer="other",
+            )
+        self.assertEqual(1, len(list_proposals(self.conn)))
 
 
 if __name__ == "__main__":
