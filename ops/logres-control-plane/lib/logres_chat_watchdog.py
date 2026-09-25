@@ -11,7 +11,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from urllib.parse import urlparse
 
-from logres_chat_wake import ChatWakeBridge, bounds_center, inspect_chat_ui
+from logres_chat_wake import CHATGPT_PACKAGE, ChatWakeBridge, bounds_center, inspect_chat_ui
 
 DEFAULT_ROOT = Path("/home/ubuntu/logres")
 WORKED_TIMER = re.compile(r"^Worked for\s+\d+(?:m\s*)?(?:\d+s)?$", re.I)
@@ -56,6 +56,8 @@ def visible_activity_digest(xml_text: str) -> str:
     root = ElementTree.fromstring(xml_text)
     values: list[str] = []
     for node in root.iter("node"):
+        if node.attrib.get("package", "") not in {"", CHATGPT_PACKAGE}:
+            continue
         for key in ("text", "content-desc"):
             value = str(node.attrib.get(key) or "").strip()
             if not value or value in TRANSIENT_UI or WORKED_TIMER.match(value):

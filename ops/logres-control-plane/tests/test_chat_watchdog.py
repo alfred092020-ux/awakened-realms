@@ -112,6 +112,25 @@ class ChatWatchdogTests(unittest.TestCase):
         )
         self.assertEqual(visible_activity_digest(a), visible_activity_digest(b))
 
+    def test_system_ui_clock_change_does_not_count_as_chat_progress(self):
+        a = (
+            '<hierarchy>'
+            '<node package="com.android.systemui" text="9:39" content-desc="" />'
+            '<node package="com.openai.chatgpt" text="Stable answer text" content-desc="" />'
+            '</hierarchy>'
+        )
+        b = (
+            '<hierarchy>'
+            '<node package="com.android.systemui" text="9:44" content-desc="" />'
+            '<node package="com.openai.chatgpt" text="Stable answer text" content-desc="" />'
+            '</hierarchy>'
+        )
+        self.assertEqual(visible_activity_digest(a), visible_activity_digest(b))
+
+    def test_systemd_watchdog_has_hard_runtime_timeout(self):
+        service = (ROOT / 'systemd/logres-chat-watchdog.service').read_text()
+        self.assertIn('TimeoutStartSec=90s', service)
+
     def test_real_content_change_counts_as_progress(self):
         a = '<hierarchy><node text="Alpha" content-desc="" /></hierarchy>'
         b = '<hierarchy><node text="Beta" content-desc="" /></hierarchy>'
