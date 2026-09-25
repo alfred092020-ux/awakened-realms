@@ -650,3 +650,38 @@ def release_claim(
         if conn.in_transaction:
             conn.rollback()
         raise
+
+def retry_allowed(intent: dict) -> bool:
+    action_class = str(intent.get("action_class", "")).upper()
+    state = str(intent.get("state", "")).upper()
+    if action_class == "IRREVERSIBLE_SIDE_EFFECT":
+        return False
+    return state in {"RETRYABLE", "NEW"}
+
+def classify_uncertain_failure(
+    conn: sqlite3.Connection,
+    intent_id: int,
+    *,
+    error_detail: str,
+) -> dict:
+    intent = get_intent(conn, intent_id)
+    if intent["state"] != "DISPATCHED":
+        raise IntegrationStateConflict(
+            f"uncertain failure requires DISPATCHED state, got {intent['state']}"
+        )
+    action_class = str(intent["action_class"]).upper()
+    if action_class == "READ_ONLY":
+        return transition_intent(
+            conn,
+            intent_id,
+            expected="DISPATCHED",
+            new="RETRYABLE",
+            last_error=error_detail,
+        )
+    return transition_intent(
+        conn,
+        intent_id,
+        expected="DISPATCHED",
+        new="RECONCILING",
+        last_error=error_detail,
+    )

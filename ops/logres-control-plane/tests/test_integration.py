@@ -8,8 +8,10 @@ LIB_DIR = TEST_DIR.parent / "lib"
 sys.path.insert(0, str(LIB_DIR))
 
 from logres_integration import (
+    append_receipt,
     canonical_hash,
     claim_intent,
+    classify_uncertain_failure,
     compatible_capabilities,
     create_intent,
     ensure_schema,
@@ -20,6 +22,7 @@ from logres_integration import (
     register_target,
     release_claim,
     renew_claim,
+    retry_allowed,
     set_capabilities,
     transition_intent,
     validate_sanitized_payload,
@@ -316,6 +319,70 @@ class IntegrationClaimTests(unittest.TestCase):
                 "select count(*) from integration_claims"
             ).fetchone()[0],
         )
+
+
+class IntegrationUncertainWriteTests(unittest.TestCase):
+    def setUp(self):
+        self.conn = sqlite3.connect(":memory:")
+        self.conn.row_factory = sqlite3.Row
+        ensure_schema(self.conn)
+
+    def tearDown(self):
+        self.conn.close()
+
+    def _dispatched(self, action_class):
+        intent = create_intent(
+            self.conn,
+            provider="agentmail",
+            target_key="agents",
+            operation="send",
+            action_class=action_class,
+            canonical_entity_type="task",
+            canonical_entity_id=action_class,
+            payload={"message": "status"},
+            created_by="plugins",
+            dedupe_key=f"uncertain:{action_class}",
+        )
+        transition_intent(self.conn, intent["id"], expected="NEW", new="CLAIMED")
+        return transition_intent(
+            self.conn, intent["id"], expected="CLAIMED", new="DISPATCHED"
+        )
+
+    def test_uncertain_mutating_write_enters_reconciling(self):
+        intent = self._dispatched("REVERSIBLE_WRITE")
+        moved = classify_uncertain_failure(
+            self.conn,
+            intent["id"],
+            error_detail="timeout after dispatch",
+        )
+        self.assertEqual("RECONCILING", moved["state"])
+
+    def test_uncertain_read_can_be_retryable(self):
+        intent = self._dispatched("READ_ONLY")
+        moved = classify_uncertain_failure(
+            self.conn,
+            intent["id"],
+            error_detail="network timeout",
+        )
+        self.assertEqual("RETRYABLE", moved["state"])
+        self.assertTrue(retry_allowed(moved))
+
+    def test_irreversible_reconciling_is_not_retryable(self):
+        intent = self._dispatched("IRREVERSIBLE_SIDE_EFFECT")
+        moved = classify_uncertain_failure(
+            self.conn,
+            intent["id"],
+            error_detail="timeout after send",
+        )
+        self.assertEqual("RECONCILING", moved["state"])
+        self.assertFalse(retry_allowed(moved))
+        with self.assertRaises(Exception):
+            transition_intent(
+                self.conn,
+                moved["id"],
+                expected="RECONCILING",
+                new="CLAIMED",
+            )
 
 
 if __name__ == "__main__":
