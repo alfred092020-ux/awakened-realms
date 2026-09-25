@@ -10,7 +10,8 @@ from typing import Any
 
 _SECRET_KEY_RE = re.compile(
     r"(?:^|[_-])(api[_-]?key|access[_-]?token|refresh[_-]?token|"
-    r"authorization|cookie|client[_-]?secret|password|passwd|secret)(?:$|[_-])",
+    r"bearer[_-]?token|private[_-]?key|signing[_-]?key|authorization|cookie|"
+    r"client[_-]?secret|password|passwd|secret)(?:$|[_-])",
     re.IGNORECASE,
 )
 
@@ -37,6 +38,7 @@ def validate_sanitized_payload(value: Any, *, path: str = "$") -> None:
             validate_sanitized_payload(item, path=f"{path}[{index}]")
 
 def ensure_schema(conn: sqlite3.Connection) -> None:
+    conn.execute("pragma busy_timeout=1000")
     conn.executescript(
         """
         create table if not exists integration_targets(
@@ -403,55 +405,101 @@ def create_intent(
     task_id: str | None = None,
 ) -> dict:
     ensure_schema(conn)
+    action_class = str(action_class).upper()
+    if action_class not in {
+        "READ_ONLY",
+        "REVERSIBLE_WRITE",
+        "IRREVERSIBLE_SIDE_EFFECT",
+    }:
+        raise ValueError(f"unsupported action_class: {action_class}")
     validate_sanitized_payload(payload)
     payload_json = canonical_json(payload)
     payload_hash = canonical_hash(payload)
-    prior = conn.execute(
-        "select id from integration_intents where dedupe_key=?",
-        (dedupe_key,),
-    ).fetchone()
-    if prior is not None:
-        return get_intent(conn, int(prior[0]))
-    cur = conn.execute(
-        """insert into integration_intents(
-             dedupe_key,provider,target_key,operation,action_class,
-             canonical_entity_type,canonical_entity_id,logical_slot,
-             payload_json,payload_hash,projection_hash,priority,state,
-             required_capability,created_by,source_event_id,task_id
-           ) values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
-        (
-            dedupe_key, provider, target_key, operation, action_class,
-            canonical_entity_type, canonical_entity_id, logical_slot,
-            payload_json, payload_hash, projection_hash, int(priority), "NEW",
-            required_capability, created_by, source_event_id, task_id,
-        ),
-    )
-    new_id = int(cur.lastrowid)
-    older = list(
-        conn.execute(
-            """select id from integration_intents
-                where provider=? and canonical_entity_type=?
-                  and canonical_entity_id=? and logical_slot=?
-                  and id<>? and state in ('NEW','RETRYABLE')
-                  and not exists (
-                    select 1 from integration_claims c
-                     where c.intent_id=integration_intents.id
-                  )
-                order by id""",
+    _begin_immediate(conn)
+    try:
+        prior = conn.execute(
+            "select * from integration_intents where dedupe_key=?",
+            (dedupe_key,),
+        ).fetchone()
+        if prior is not None:
+            existing = _intent_dict(prior)
+            existing_identity = (
+                existing["provider"],
+                existing["target_key"],
+                existing["operation"],
+                existing["action_class"],
+                existing["canonical_entity_type"],
+                existing["canonical_entity_id"],
+                existing["logical_slot"],
+                existing["payload_hash"],
+                existing["projection_hash"],
+                existing["required_capability"],
+            )
+            requested_identity = (
+                provider,
+                target_key,
+                operation,
+                action_class,
+                canonical_entity_type,
+                canonical_entity_id,
+                logical_slot,
+                payload_hash,
+                projection_hash,
+                required_capability,
+            )
+            if existing_identity != requested_identity:
+                raise ValueError(
+                    f"dedupe_key {dedupe_key!r} already exists with different intent content"
+                )
+            intent_id = int(existing["id"])
+            conn.commit()
+            return existing
+
+        cur = conn.execute(
+            """insert into integration_intents(
+                 dedupe_key,provider,target_key,operation,action_class,
+                 canonical_entity_type,canonical_entity_id,logical_slot,
+                 payload_json,payload_hash,projection_hash,priority,state,
+                 required_capability,created_by,source_event_id,task_id
+               ) values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
             (
-                provider, canonical_entity_type, canonical_entity_id,
-                logical_slot, new_id,
+                dedupe_key, provider, target_key, operation, action_class,
+                canonical_entity_type, canonical_entity_id, logical_slot,
+                payload_json, payload_hash, projection_hash, int(priority), "NEW",
+                required_capability, created_by, source_event_id, task_id,
             ),
         )
-    )
-    for row in older:
-        conn.execute(
-            """update integration_intents
-                  set state='SUPERSEDED',superseded_by=?,updated_at=datetime('now')
-                where id=? and state in ('NEW','RETRYABLE')""",
-            (new_id, int(row[0])),
+        new_id = int(cur.lastrowid)
+        older = list(
+            conn.execute(
+                """select id from integration_intents
+                    where provider=? and target_key=? and operation=?
+                      and canonical_entity_type=? and canonical_entity_id=?
+                      and logical_slot=?
+                      and id<>? and state in ('NEW','RETRYABLE')
+                      and not exists (
+                        select 1 from integration_claims c
+                         where c.intent_id=integration_intents.id
+                      )
+                    order by id""",
+                (
+                    provider, target_key, operation, canonical_entity_type,
+                    canonical_entity_id, logical_slot, new_id,
+                ),
+            )
         )
-    conn.commit()
+        for row in older:
+            conn.execute(
+                """update integration_intents
+                      set state='SUPERSEDED',superseded_by=?,updated_at=datetime('now')
+                    where id=? and state in ('NEW','RETRYABLE')""",
+                (new_id, int(row[0])),
+            )
+        conn.commit()
+    except Exception:
+        if conn.in_transaction:
+            conn.rollback()
+        raise
     return get_intent(conn, new_id)
 
 def transition_intent(
@@ -462,6 +510,13 @@ def transition_intent(
     new: str,
     last_error: str | None = None,
 ) -> dict:
+    if expected == "RECONCILING" and new == "RETRYABLE":
+        intent = get_intent(conn, intent_id)
+        if str(intent["action_class"]).upper() == "IRREVERSIBLE_SIDE_EFFECT":
+            raise IntegrationStateConflict(
+                "irreversible side effects cannot transition from "
+                "RECONCILING to RETRYABLE"
+            )
     allowed = _INTENT_TRANSITIONS.get(expected, set())
     if new not in allowed:
         raise IntegrationStateConflict(
@@ -815,31 +870,63 @@ def append_receipt(
     ensure_schema(conn)
     validate_sanitized_payload(response_metadata or {})
     intent = get_intent(conn, intent_id)
-    prior = conn.execute(
-        "select * from integration_receipts where receipt_key=?",
-        (receipt_key,),
-    ).fetchone()
-    if prior is not None:
-        return _receipt_dict(prior)
-    cur = conn.execute(
-        """insert into integration_receipts(
-             receipt_key,intent_id,provider,operation,outcome,
-             provider_entity_type,provider_entity_id,provider_url,provider_version,
-             observed_hash,response_metadata_json,error_class,error_detail,
-             chat_id,attempt_number
-           ) values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
-        (
-            receipt_key, int(intent_id), intent["provider"], intent["operation"],
-            outcome, provider_entity_type, provider_entity_id, provider_url,
-            provider_version, observed_hash, canonical_json(response_metadata or {}),
-            error_class, error_detail, chat_id, int(attempt_number),
-        ),
-    )
-    conn.commit()
-    receipt = conn.execute(
-        "select * from integration_receipts where id=?",
-        (int(cur.lastrowid),),
-    ).fetchone()
+    _begin_immediate(conn)
+    try:
+        prior = conn.execute(
+            "select * from integration_receipts where receipt_key=?",
+            (receipt_key,),
+        ).fetchone()
+        if prior is not None:
+            existing = _receipt_dict(prior)
+            requested = {
+                "intent_id": int(intent_id),
+                "provider": intent["provider"],
+                "operation": intent["operation"],
+                "outcome": outcome,
+                "provider_entity_type": provider_entity_type,
+                "provider_entity_id": provider_entity_id,
+                "provider_url": provider_url,
+                "provider_version": provider_version,
+                "observed_hash": observed_hash,
+                "response_metadata": response_metadata or {},
+                "error_class": error_class,
+                "error_detail": error_detail,
+                "chat_id": chat_id,
+                "attempt_number": int(attempt_number),
+            }
+            comparable_existing = {
+                key: existing[key]
+                for key in requested
+            }
+            if comparable_existing != requested:
+                raise ValueError(
+                    f"receipt_key {receipt_key!r} already exists with different content"
+                )
+            conn.commit()
+            return existing
+        cur = conn.execute(
+            """insert into integration_receipts(
+                 receipt_key,intent_id,provider,operation,outcome,
+                 provider_entity_type,provider_entity_id,provider_url,provider_version,
+                 observed_hash,response_metadata_json,error_class,error_detail,
+                 chat_id,attempt_number
+               ) values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+            (
+                receipt_key, int(intent_id), intent["provider"], intent["operation"],
+                outcome, provider_entity_type, provider_entity_id, provider_url,
+                provider_version, observed_hash, canonical_json(response_metadata or {}),
+                error_class, error_detail, chat_id, int(attempt_number),
+            ),
+        )
+        receipt = conn.execute(
+            "select * from integration_receipts where id=?",
+            (int(cur.lastrowid),),
+        ).fetchone()
+        conn.commit()
+    except Exception:
+        if conn.in_transaction:
+            conn.rollback()
+        raise
     out = _receipt_dict(receipt)
     if (
         bind_on_success
@@ -901,36 +988,43 @@ def set_cursor(
 ) -> dict:
     ensure_schema(conn)
     validate_sanitized_payload(metadata or {})
-    existing = conn.execute(
-        """select cursor_value from integration_cursors
-            where provider=? and target_key=? and cursor_name=?""",
-        (provider, target_key, cursor_name),
-    ).fetchone()
-    if (
-        monotonic
-        and existing is not None
-        and not _cursor_is_forward(str(existing[0]), str(cursor_value))
-    ):
-        return get_cursor(
-            conn,
-            provider=provider,
-            target_key=target_key,
-            cursor_name=cursor_name,
+    _begin_immediate(conn)
+    try:
+        existing = conn.execute(
+            """select cursor_value from integration_cursors
+                where provider=? and target_key=? and cursor_name=?""",
+            (provider, target_key, cursor_name),
+        ).fetchone()
+        if (
+            monotonic
+            and existing is not None
+            and not _cursor_is_forward(str(existing[0]), str(cursor_value))
+        ):
+            conn.commit()
+            return get_cursor(
+                conn,
+                provider=provider,
+                target_key=target_key,
+                cursor_name=cursor_name,
+            )
+        conn.execute(
+            """insert into integration_cursors(
+                 provider,target_key,cursor_name,cursor_value,metadata_json,updated_at
+               ) values(?,?,?,?,?,datetime('now'))
+               on conflict(provider,target_key,cursor_name) do update set
+                 cursor_value=excluded.cursor_value,
+                 metadata_json=excluded.metadata_json,
+                 updated_at=datetime('now')""",
+            (
+                provider, target_key, cursor_name, str(cursor_value),
+                canonical_json(metadata or {}),
+            ),
         )
-    conn.execute(
-        """insert into integration_cursors(
-             provider,target_key,cursor_name,cursor_value,metadata_json,updated_at
-           ) values(?,?,?,?,?,datetime('now'))
-           on conflict(provider,target_key,cursor_name) do update set
-             cursor_value=excluded.cursor_value,
-             metadata_json=excluded.metadata_json,
-             updated_at=datetime('now')""",
-        (
-            provider, target_key, cursor_name, str(cursor_value),
-            canonical_json(metadata or {}),
-        ),
-    )
-    conn.commit()
+        conn.commit()
+    except Exception:
+        if conn.in_transaction:
+            conn.rollback()
+        raise
     return get_cursor(
         conn,
         provider=provider,
@@ -963,31 +1057,59 @@ def create_proposal(
     validate_sanitized_payload(observed)
     if canonical is not None:
         validate_sanitized_payload(canonical)
-    prior = conn.execute(
-        "select * from integration_proposals where dedupe_key=?",
-        (dedupe_key,),
-    ).fetchone()
-    if prior is not None:
-        return _proposal_dict(prior)
-    cur = conn.execute(
-        """insert into integration_proposals(
-             dedupe_key,provider,target_key,provider_entity_id,
-             canonical_entity_type,canonical_entity_id,change_type,
-             observed_json,canonical_json,risk_class
-           ) values(?,?,?,?,?,?,?,?,?,?)""",
-        (
-            dedupe_key, provider, target_key, provider_entity_id,
-            canonical_entity_type, canonical_entity_id, change_type,
-            canonical_json(observed),
-            None if canonical is None else canonical_json(canonical),
-            risk_class,
-        ),
-    )
-    conn.commit()
-    row = conn.execute(
-        "select * from integration_proposals where id=?",
-        (int(cur.lastrowid),),
-    ).fetchone()
+    _begin_immediate(conn)
+    try:
+        prior = conn.execute(
+            "select * from integration_proposals where dedupe_key=?",
+            (dedupe_key,),
+        ).fetchone()
+        if prior is not None:
+            existing = _proposal_dict(prior)
+            requested = {
+                "provider": provider,
+                "target_key": target_key,
+                "provider_entity_id": provider_entity_id,
+                "canonical_entity_type": canonical_entity_type,
+                "canonical_entity_id": canonical_entity_id,
+                "change_type": change_type,
+                "observed": observed,
+                "canonical": canonical,
+                "risk_class": risk_class,
+            }
+            comparable_existing = {
+                key: existing[key]
+                for key in requested
+            }
+            if comparable_existing != requested:
+                raise ValueError(
+                    f"proposal dedupe_key {dedupe_key!r} "
+                    "already exists with different content"
+                )
+            conn.commit()
+            return existing
+        cur = conn.execute(
+            """insert into integration_proposals(
+                 dedupe_key,provider,target_key,provider_entity_id,
+                 canonical_entity_type,canonical_entity_id,change_type,
+                 observed_json,canonical_json,risk_class
+               ) values(?,?,?,?,?,?,?,?,?,?)""",
+            (
+                dedupe_key, provider, target_key, provider_entity_id,
+                canonical_entity_type, canonical_entity_id, change_type,
+                canonical_json(observed),
+                None if canonical is None else canonical_json(canonical),
+                risk_class,
+            ),
+        )
+        row = conn.execute(
+            "select * from integration_proposals where id=?",
+            (int(cur.lastrowid),),
+        ).fetchone()
+        conn.commit()
+    except Exception:
+        if conn.in_transaction:
+            conn.rollback()
+        raise
     return _proposal_dict(row)
 
 def list_proposals(
