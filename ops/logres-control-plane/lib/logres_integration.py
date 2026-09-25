@@ -685,3 +685,361 @@ def classify_uncertain_failure(
         new="RECONCILING",
         last_error=error_detail,
     )
+
+def _binding_dict(row: sqlite3.Row) -> dict:
+    item = dict(row)
+    item["metadata"] = json.loads(item.pop("metadata_json"))
+    return item
+
+def upsert_binding(
+    conn: sqlite3.Connection,
+    *,
+    provider: str,
+    canonical_entity_type: str,
+    canonical_entity_id: str,
+    provider_entity_type: str,
+    provider_entity_id: str,
+    logical_slot: str = "default",
+    provider_url: str | None = None,
+    projected_hash: str | None = None,
+    observed_hash: str | None = None,
+    sync_state: str = "BOUND",
+    metadata: dict | None = None,
+) -> dict:
+    ensure_schema(conn)
+    validate_sanitized_payload(metadata or {})
+    conn.execute(
+        """insert into integration_bindings(
+             provider,logical_slot,canonical_entity_type,canonical_entity_id,
+             provider_entity_type,provider_entity_id,provider_url,
+             projected_hash,observed_hash,sync_state,metadata_json,updated_at
+           ) values(?,?,?,?,?,?,?,?,?,?,?,datetime('now'))
+           on conflict(provider,canonical_entity_type,canonical_entity_id,logical_slot)
+           do update set
+             provider_entity_type=excluded.provider_entity_type,
+             provider_entity_id=excluded.provider_entity_id,
+             provider_url=excluded.provider_url,
+             projected_hash=excluded.projected_hash,
+             observed_hash=excluded.observed_hash,
+             sync_state=excluded.sync_state,
+             metadata_json=excluded.metadata_json,
+             updated_at=datetime('now')""",
+        (
+            provider, logical_slot, canonical_entity_type, canonical_entity_id,
+            provider_entity_type, provider_entity_id, provider_url,
+            projected_hash, observed_hash, sync_state, canonical_json(metadata or {}),
+        ),
+    )
+    conn.commit()
+    return get_binding(
+        conn,
+        provider=provider,
+        canonical_entity_type=canonical_entity_type,
+        canonical_entity_id=canonical_entity_id,
+        logical_slot=logical_slot,
+    )
+
+def get_binding(
+    conn: sqlite3.Connection,
+    *,
+    provider: str,
+    canonical_entity_type: str,
+    canonical_entity_id: str,
+    logical_slot: str = "default",
+) -> dict:
+    ensure_schema(conn)
+    row = conn.execute(
+        """select * from integration_bindings
+            where provider=? and canonical_entity_type=?
+              and canonical_entity_id=? and logical_slot=?""",
+        (provider, canonical_entity_type, canonical_entity_id, logical_slot),
+    ).fetchone()
+    if row is None:
+        raise KeyError(
+            f"binding not found: {provider}:{canonical_entity_type}:"
+            f"{canonical_entity_id}:{logical_slot}"
+        )
+    return _binding_dict(row)
+
+def list_bindings(
+    conn: sqlite3.Connection,
+    *,
+    provider: str | None = None,
+) -> list[dict]:
+    ensure_schema(conn)
+    if provider is None:
+        rows = conn.execute(
+            "select * from integration_bindings order by provider,id"
+        )
+    else:
+        rows = conn.execute(
+            "select * from integration_bindings where provider=? order by id",
+            (provider,),
+        )
+    return [_binding_dict(row) for row in rows]
+
+def _receipt_dict(row: sqlite3.Row) -> dict:
+    item = dict(row)
+    item["response_metadata"] = json.loads(item.pop("response_metadata_json"))
+    return item
+
+def list_receipts(
+    conn: sqlite3.Connection,
+    intent_id: int,
+) -> list[dict]:
+    ensure_schema(conn)
+    rows = conn.execute(
+        "select * from integration_receipts where intent_id=? order by id",
+        (int(intent_id),),
+    )
+    return [_receipt_dict(row) for row in rows]
+
+def append_receipt(
+    conn: sqlite3.Connection,
+    *,
+    intent_id: int,
+    receipt_key: str,
+    outcome: str,
+    chat_id: str,
+    attempt_number: int,
+    provider_entity_type: str | None = None,
+    provider_entity_id: str | None = None,
+    provider_url: str | None = None,
+    provider_version: str | None = None,
+    observed_hash: str | None = None,
+    response_metadata: dict | None = None,
+    error_class: str | None = None,
+    error_detail: str | None = None,
+    bind_on_success: bool = False,
+) -> dict:
+    ensure_schema(conn)
+    validate_sanitized_payload(response_metadata or {})
+    intent = get_intent(conn, intent_id)
+    prior = conn.execute(
+        "select * from integration_receipts where receipt_key=?",
+        (receipt_key,),
+    ).fetchone()
+    if prior is not None:
+        return _receipt_dict(prior)
+    cur = conn.execute(
+        """insert into integration_receipts(
+             receipt_key,intent_id,provider,operation,outcome,
+             provider_entity_type,provider_entity_id,provider_url,provider_version,
+             observed_hash,response_metadata_json,error_class,error_detail,
+             chat_id,attempt_number
+           ) values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+        (
+            receipt_key, int(intent_id), intent["provider"], intent["operation"],
+            outcome, provider_entity_type, provider_entity_id, provider_url,
+            provider_version, observed_hash, canonical_json(response_metadata or {}),
+            error_class, error_detail, chat_id, int(attempt_number),
+        ),
+    )
+    conn.commit()
+    receipt = conn.execute(
+        "select * from integration_receipts where id=?",
+        (int(cur.lastrowid),),
+    ).fetchone()
+    out = _receipt_dict(receipt)
+    if (
+        bind_on_success
+        and outcome == "SUCCEEDED"
+        and provider_entity_type
+        and provider_entity_id
+    ):
+        upsert_binding(
+            conn,
+            provider=intent["provider"],
+            logical_slot=intent["logical_slot"],
+            canonical_entity_type=intent["canonical_entity_type"],
+            canonical_entity_id=intent["canonical_entity_id"],
+            provider_entity_type=provider_entity_type,
+            provider_entity_id=provider_entity_id,
+            provider_url=provider_url,
+            projected_hash=intent["projection_hash"],
+            observed_hash=observed_hash,
+        )
+    return out
+
+def _cursor_dict(row: sqlite3.Row) -> dict:
+    item = dict(row)
+    item["metadata"] = json.loads(item.pop("metadata_json"))
+    return item
+
+def get_cursor(
+    conn: sqlite3.Connection,
+    *,
+    provider: str,
+    target_key: str,
+    cursor_name: str,
+) -> dict:
+    ensure_schema(conn)
+    row = conn.execute(
+        """select * from integration_cursors
+            where provider=? and target_key=? and cursor_name=?""",
+        (provider, target_key, cursor_name),
+    ).fetchone()
+    if row is None:
+        raise KeyError(f"cursor not found: {provider}:{target_key}:{cursor_name}")
+    return _cursor_dict(row)
+
+def _cursor_is_forward(current: str, new: str) -> bool:
+    try:
+        return float(new) >= float(current)
+    except (TypeError, ValueError):
+        return str(new) >= str(current)
+
+def set_cursor(
+    conn: sqlite3.Connection,
+    *,
+    provider: str,
+    target_key: str,
+    cursor_name: str,
+    cursor_value: str,
+    metadata: dict | None = None,
+    monotonic: bool = False,
+) -> dict:
+    ensure_schema(conn)
+    validate_sanitized_payload(metadata or {})
+    existing = conn.execute(
+        """select cursor_value from integration_cursors
+            where provider=? and target_key=? and cursor_name=?""",
+        (provider, target_key, cursor_name),
+    ).fetchone()
+    if (
+        monotonic
+        and existing is not None
+        and not _cursor_is_forward(str(existing[0]), str(cursor_value))
+    ):
+        return get_cursor(
+            conn,
+            provider=provider,
+            target_key=target_key,
+            cursor_name=cursor_name,
+        )
+    conn.execute(
+        """insert into integration_cursors(
+             provider,target_key,cursor_name,cursor_value,metadata_json,updated_at
+           ) values(?,?,?,?,?,datetime('now'))
+           on conflict(provider,target_key,cursor_name) do update set
+             cursor_value=excluded.cursor_value,
+             metadata_json=excluded.metadata_json,
+             updated_at=datetime('now')""",
+        (
+            provider, target_key, cursor_name, str(cursor_value),
+            canonical_json(metadata or {}),
+        ),
+    )
+    conn.commit()
+    return get_cursor(
+        conn,
+        provider=provider,
+        target_key=target_key,
+        cursor_name=cursor_name,
+    )
+
+def _proposal_dict(row: sqlite3.Row) -> dict:
+    item = dict(row)
+    item["observed"] = json.loads(item.pop("observed_json"))
+    canonical = item.pop("canonical_json")
+    item["canonical"] = None if canonical is None else json.loads(canonical)
+    return item
+
+def create_proposal(
+    conn: sqlite3.Connection,
+    *,
+    dedupe_key: str,
+    provider: str,
+    target_key: str,
+    change_type: str,
+    observed: dict,
+    risk_class: str,
+    provider_entity_id: str | None = None,
+    canonical_entity_type: str | None = None,
+    canonical_entity_id: str | None = None,
+    canonical: dict | None = None,
+) -> dict:
+    ensure_schema(conn)
+    validate_sanitized_payload(observed)
+    if canonical is not None:
+        validate_sanitized_payload(canonical)
+    prior = conn.execute(
+        "select * from integration_proposals where dedupe_key=?",
+        (dedupe_key,),
+    ).fetchone()
+    if prior is not None:
+        return _proposal_dict(prior)
+    cur = conn.execute(
+        """insert into integration_proposals(
+             dedupe_key,provider,target_key,provider_entity_id,
+             canonical_entity_type,canonical_entity_id,change_type,
+             observed_json,canonical_json,risk_class
+           ) values(?,?,?,?,?,?,?,?,?,?)""",
+        (
+            dedupe_key, provider, target_key, provider_entity_id,
+            canonical_entity_type, canonical_entity_id, change_type,
+            canonical_json(observed),
+            None if canonical is None else canonical_json(canonical),
+            risk_class,
+        ),
+    )
+    conn.commit()
+    row = conn.execute(
+        "select * from integration_proposals where id=?",
+        (int(cur.lastrowid),),
+    ).fetchone()
+    return _proposal_dict(row)
+
+def list_proposals(
+    conn: sqlite3.Connection,
+    *,
+    disposition: str | None = None,
+    provider: str | None = None,
+) -> list[dict]:
+    ensure_schema(conn)
+    clauses = []
+    params: list[object] = []
+    if disposition is not None:
+        clauses.append("disposition=?")
+        params.append(disposition)
+    if provider is not None:
+        clauses.append("provider=?")
+        params.append(provider)
+    where = f" where {' and '.join(clauses)}" if clauses else ""
+    rows = conn.execute(
+        f"select * from integration_proposals{where} order by id",
+        params,
+    )
+    return [_proposal_dict(row) for row in rows]
+
+def disposition_proposal(
+    conn: sqlite3.Connection,
+    proposal_id: int,
+    *,
+    expected: str,
+    disposition: str,
+    reviewer: str,
+    note: str = "",
+) -> dict:
+    allowed = {"ACCEPTED", "REJECTED", "NOOP", "SUPERSEDED", "NEEDS_HUMAN"}
+    if disposition not in allowed:
+        raise ValueError(f"invalid proposal disposition: {disposition}")
+    cursor = conn.execute(
+        """update integration_proposals
+              set disposition=?,reviewer=?,review_note=?,updated_at=datetime('now')
+            where id=? and disposition=?""",
+        (disposition, reviewer, note, int(proposal_id), expected),
+    )
+    if cursor.rowcount != 1:
+        conn.rollback()
+        raise IntegrationStateConflict(
+            f"proposal {proposal_id} was not in expected disposition {expected}"
+        )
+    conn.commit()
+    row = conn.execute(
+        "select * from integration_proposals where id=?",
+        (int(proposal_id),),
+    ).fetchone()
+    if row is None:
+        raise KeyError(f"proposal not found: {proposal_id}")
+    return _proposal_dict(row)
