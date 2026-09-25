@@ -497,3 +497,50 @@ signal.
 
 This protocol avoids relying on cross-device live Stop-button visibility,
 which is not guaranteed for a response initiated on another device.
+
+### Phone-local AI ambiguity classifier
+
+`logres-phone-local-ai` is an optional advisory classifier for native ChatGPT
+watchdog states. It executes inside Termux on the already-authorized Android
+QA phone and uses no OpenAI API or paid model endpoint.
+
+The deterministic watchdog remains authoritative. The phone classifier is
+queried only when the caller's deterministic result is exactly `AMBIGUOUS`.
+It can emit only:
+
+`ACTIVE`, `ENDED`, `STUCK`, `RATE_LIMITED`, `WAITING_USER`, or `UNKNOWN`.
+
+The production backend is deliberately not a generative LLM. Benchmarks on
+the QA phone showed that small GGUF chat models were either too slow or too
+inconsistent for a safety-critical six-state decision. The deployed backend
+is a compact multinomial Naive-Bayes text/state classifier trained from
+reviewable watchdog examples. Its weights are precomputed on the VM and cached
+as a small pure-Python runner in Termux. The phone performs inference only.
+
+The classifier combines fuzzy native-UI text with explicit signals such as
+Stop visibility, Worked-for / response-tail progress, rate-limit banners,
+user drafts, explicit input requirements, turn-end signals, and fresh turn
+heartbeats. Confidence and class-margin thresholds fail closed to `UNKNOWN`.
+
+Safety is fail-closed. Missing thermal/memory sensors, low available memory,
+high battery temperature, unavailable Termux Python, runner-install failures,
+timeouts, malformed output, or an invalid label all resolve to `UNKNOWN`.
+A cached battery thermal-zone path avoids repeatedly scanning Android thermal
+zones. SSH ControlMaster multiplexing reuses the authorized Termux channel.
+
+The committed default is disabled and contains no phone username or SSH key.
+Runtime configuration belongs at:
+
+`/home/ubuntu/logres/control/android-device/phone-local-ai.json`
+
+Useful commands:
+
+```bash
+logres-phone-local-ai status
+printf '%s\n' '{"visible_text":"Too many requests","rate_limit_banner":true}' |
+  logres-phone-local-ai classify --deterministic-state AMBIGUOUS
+```
+
+Real-device canary on the authorized QA phone classified six held-out states
+6/6 correctly. After runner/sensor caching, repeated classification completed
+in approximately 0.40-0.49 seconds per request.

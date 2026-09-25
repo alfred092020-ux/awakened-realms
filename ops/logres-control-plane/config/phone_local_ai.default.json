@@ -1,0 +1,22 @@
+{
+  "classifier": {
+    "min_confidence": 0.64,
+    "min_margin": 0.1,
+    "runner_path": "/data/data/com.termux/files/home/.cache/logres/phone-local-classifier.py",
+    "timeout_seconds": 5
+  },
+  "enabled": false,
+  "max_observation_chars": 4000,
+  "safety": {
+    "max_battery_temp_c": 42,
+    "min_mem_available_mb": 700
+  },
+  "ssh": {
+    "control_path": "/tmp/logres-termux-%C",
+    "control_persist_seconds": 600,
+    "host": "127.0.0.1",
+    "key_path": "",
+    "port": 22023,
+    "user": ""
+  }
+}
