@@ -28,6 +28,7 @@ from logres_devin import (
     assert_worker_lease,
     build_devin_argv,
     build_prompt,
+    build_task_permission_manifest,
     changed_paths,
     commit_scoped_changes,
     devin_models_report,
@@ -36,6 +37,7 @@ from logres_devin import (
     ensure_worker_branch,
     env_flag,
     lease_owned,
+    load_permission_policy,
     make_lease_renewer,
     parse_verify_specs,
     preserve_failed_attempt,
@@ -45,6 +47,7 @@ from logres_devin import (
     run_child_with_lease,
     run_verification,
     select_model,
+    write_permission_manifest,
 )
 from logres_patch_agent import atomic_json, sha256_text
 from logres_swarm import ensure_schema as ensure_swarm_schema
@@ -58,6 +61,7 @@ CONTROL = str(ROOT / "bin/logres-control")
 FINISH = str(ROOT / "bin/logres-finish-task")
 GATE = str(ROOT / "bin/logres-gate")
 LOGS = ROOT / "logs/swarm"
+DEVIN_WORKER_CONFIG = CONTROL_ROOT / "config/devin_workers.json"
 
 
 def load_config() -> dict:
@@ -237,6 +241,17 @@ def main() -> int:
         payload["packet_sha256"] = sha256_text(packet)
         payload["scopes"] = scopes
 
+        stage = "permission_manifest"
+        permission_policy = load_permission_policy(DEVIN_WORKER_CONFIG)
+        permission_manifest = build_task_permission_manifest(scopes, permission_policy)
+        permission_path = (
+            artifact_dir / "permissions"
+            / f"{args.task}-{args.worker}-{os.getpid()}.json"
+        )
+        permission_meta = write_permission_manifest(permission_path, permission_manifest)
+        permission_meta["policy_version"] = permission_policy["version"]
+        payload["permission_manifest"] = permission_meta
+
         stage = "precheck_worktree"
         assert_worker_lease(conn, run, worktree, args.task, args.worker, branch)
         if changed_paths(worktree):
@@ -279,6 +294,7 @@ def main() -> int:
             model=model,
             permission_mode=permission_mode,
             export_path=export_path,
+            config_path=permission_path,
             sandbox=sandbox,
             execution_mode=execution_mode,
             isolation=isolation,

@@ -29,11 +29,13 @@ from logres_devin import (
     attempt_ref_name,
     build_devin_argv,
     build_prompt,
+    build_task_permission_manifest,
     devin_models_report,
     ensure_isolated_worktree,
     ensure_scoped,
     ensure_worker_branch,
     lease_owned,
+    load_permission_policy,
     make_lease_renewer,
     parse_models_report,
     parse_verify_specs,
@@ -47,6 +49,7 @@ from logres_devin import (
     snapshot_attempt,
     terminate_process_group,
     worktree_branch,
+    write_permission_manifest,
 )
 
 MODELS_REPORT = json.dumps(
@@ -964,6 +967,82 @@ class LeaseLossTests(unittest.TestCase):
         conn.close()
 
 
+
+class PermissionManifestTests(unittest.TestCase):
+    def policy_path(self):
+        return CONTROL_ROOT / "config" / "devin_workers.json"
+
+    def test_policy_loads_and_manifest_is_deterministic(self):
+        policy = load_permission_policy(self.policy_path())
+        a = build_task_permission_manifest(
+            ["src/b.ts", "src/a.ts", "src/a.ts"], policy
+        )
+        b = build_task_permission_manifest(["src/a.ts", "src/b.ts"], policy)
+        self.assertEqual(a, b)
+        allow = a["permissions"]["allow"]
+        self.assertIn("Write(src/a.ts)", allow)
+        self.assertIn("Write(src/b.ts)", allow)
+        self.assertIn("Read(**)", allow)
+
+    def test_invalid_or_empty_scope_fails_closed(self):
+        policy = load_permission_policy(self.policy_path())
+        for scopes in ([], [""], ["/etc/passwd"], ["../escape"], [".git/config"]):
+            with self.assertRaises(DevinAgentError):
+                build_task_permission_manifest(scopes, policy)
+
+    def test_manifest_keeps_base_restrictions_and_supports_recovery_read(self):
+        policy = load_permission_policy(self.policy_path())
+        manifest = build_task_permission_manifest(
+            ["ops/logres-control-plane/lib/example.py"], policy
+        )
+        allow = manifest["permissions"]["allow"]
+        deny = manifest["permissions"]["deny"]
+        self.assertIn("Read(**)", allow)
+        self.assertFalse(any(rule.startswith("Exec(") for rule in allow))
+        self.assertTrue(any(rule.startswith("Read(**/*secret") for rule in deny))
+        self.assertIn(
+            "Write(ops/logres-control-plane/lib/example.py)", allow
+        )
+
+    def test_policy_version_mismatch_fails_closed(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            p = Path(tmp) / "policy.json"
+            p.write_text(json.dumps({
+                "permission_policy": {
+                    "version": "stale-version",
+                    "allow": ["Read(**)"],
+                    "deny": ["Write(.git/**)"],
+                }
+            }))
+            with self.assertRaises(DevinAgentError):
+                load_permission_policy(p)
+
+    def test_write_manifest_is_content_addressed(self):
+        policy = load_permission_policy(self.policy_path())
+        manifest = build_task_permission_manifest(["src/a.ts"], policy)
+        with tempfile.TemporaryDirectory() as tmp:
+            p = Path(tmp) / "permission.json"
+            meta1 = write_permission_manifest(p, manifest)
+            text1 = p.read_text()
+            meta2 = write_permission_manifest(p, manifest)
+            self.assertEqual(meta1["sha256"], meta2["sha256"])
+            self.assertEqual(text1, p.read_text())
+            self.assertEqual(str(p), meta1["path"])
+
+    def test_build_argv_includes_task_config_without_changing_smart_mode(self):
+        argv = build_devin_argv(
+            prompt_file=Path("/p"),
+            config_path=Path("/control/task-permission.json"),
+        )
+        self.assertIn("--config", argv)
+        self.assertEqual(
+            "/control/task-permission.json", argv[argv.index("--config") + 1]
+        )
+        self.assertEqual(
+            DEFAULT_PERMISSION_MODE, argv[argv.index("--permission-mode") + 1]
+        )
+        self.assertNotIn("dangerous", argv)
+
 class BinContractTests(unittest.TestCase):
     def test_bin_preserves_swarm_agent_argument_contract(self):
         script = (CONTROL_ROOT / "bin" / "logres-devin-agent").read_text()
@@ -994,6 +1073,14 @@ class BinContractTests(unittest.TestCase):
         self.assertIn("resolve_execution_isolation", script)
         self.assertIn("lease_ttl_seconds", script)
         self.assertIn("assert_worker_lease", script)
+
+    def test_bin_generates_scoped_permission_manifest(self):
+        script = (CONTROL_ROOT / "bin" / "logres-devin-agent").read_text()
+        self.assertIn("build_task_permission_manifest", script)
+        self.assertIn("write_permission_manifest", script)
+        self.assertIn("config_path=permission_path", script)
+        self.assertIn('"permission_manifest"', script)
+        self.assertNotIn("--permission-mode dangerous", script)
 
     def test_bin_preserves_failed_attempts_before_cleanup(self):
         script = (CONTROL_ROOT / "bin" / "logres-devin-agent").read_text()

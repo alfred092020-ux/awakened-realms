@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import re
@@ -56,6 +57,60 @@ LEASE_OK = "ok"
 LEASE_LOST = "lost"
 LEASE_DEADLINE = "deadline"
 REDACTED = "[REDACTED]"
+PERMISSION_POLICY_VERSION = "2026-09-25-v2"
+
+def load_permission_policy(path: Path) -> dict:
+    path = Path(path)
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise DevinAgentError("invalid Devin permission policy: " + str(path)) from exc
+    policy = data.get("permission_policy") if isinstance(data, dict) else None
+    if not isinstance(policy, dict):
+        raise DevinAgentError("Devin permission policy missing permission_policy object")
+    version = str(policy.get("version") or "").strip()
+    allow = policy.get("allow")
+    deny = policy.get("deny")
+    if not version or not isinstance(allow, list) or not isinstance(deny, list):
+        raise DevinAgentError("malformed Devin permission policy")
+    if version != PERMISSION_POLICY_VERSION:
+        raise DevinAgentError(
+            "unsupported Devin permission policy version: " + version
+        )
+    if not all(isinstance(x, str) and x.strip() for x in [*allow, *deny]):
+        raise DevinAgentError("malformed Devin permission rules")
+    return {"version": version, "allow": list(allow), "deny": list(deny)}
+
+def _permission_scope(value: str) -> str:
+    scope = str(value or "").strip().replace("\\", "/")
+    if not scope or scope.startswith("/"):
+        raise DevinAgentError("invalid empty/absolute task permission scope")
+    parts = [p for p in scope.split("/") if p not in ("", ".")]
+    if ".." in parts or not parts or parts[0] == ".git":
+        raise DevinAgentError("invalid task permission scope: " + scope)
+    return "/".join(parts)
+
+def build_task_permission_manifest(scopes, policy: dict) -> dict:
+    normalized = sorted({_permission_scope(s) for s in scopes or []})
+    if not normalized:
+        raise DevinAgentError("implementation task has no declared permission scopes")
+    base_allow = list(policy.get("allow") or [])
+    base_deny = list(policy.get("deny") or [])
+    if not base_allow or not base_deny:
+        raise DevinAgentError("permission policy must define allow and deny rules")
+    allow = list(base_allow)
+    allow.extend(f"Write({scope})" for scope in normalized)
+    return {"permissions": {"allow": allow, "deny": base_deny}}
+
+def write_permission_manifest(path: Path, manifest: dict) -> dict:
+    path = Path(path)
+    text = json.dumps(manifest, indent=2, sort_keys=True) + "\n"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(text, encoding="utf-8")
+    return {
+        "path": str(path),
+        "sha256": hashlib.sha256(text.encode("utf-8")).hexdigest(),
+    }
 
 _KEY_VALUE_RE = re.compile(
     r"(?i)(api[_-]?key|access[_-]?token|auth(?:orization)?|client[_-]?secret"
@@ -441,6 +496,7 @@ def build_devin_argv(
     model: str = DEFAULT_MODEL,
     permission_mode: str = DEFAULT_PERMISSION_MODE,
     export_path: Path | None = None,
+    config_path: Path | None = None,
     extra: list[str] | tuple[str, ...] = (),
     sandbox: bool = False,
     execution_mode: str = DEFAULT_EXECUTION_MODE,
@@ -466,6 +522,8 @@ def build_devin_argv(
         "--respect-workspace-trust",
         "false",
     ]
+    if config_path is not None:
+        argv += ["--config", str(config_path)]
     if sandbox:
         argv.append("--sandbox")
     if export_path is not None:
@@ -510,6 +568,9 @@ HARD RULES:
 - Never touch the protected branches main or feat/logres-reconstruction,
   and never integrate into them.
 - Modify or create files only inside the declared scopes below.
+- Use only tools pre-approved by the generated task permission manifest. If
+  a shell/Exec action is not pre-approved, do not request it; the harness
+  owns focused verification after you exit.
 - Never read, print, or modify credentials, tokens, dotenv files, SSH
   keys, or Devin/Windsurf/OpenAI configuration or secrets.
 - Implement only what the task packet requires. Do not invent Logres

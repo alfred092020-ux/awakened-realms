@@ -1,0 +1,20 @@
+{
+  "permission_policy": {
+    "allow": [
+      "Read(**)",
+      "grep",
+      "glob"
+    ],
+    "deny": [
+      "Read(.env*)",
+      "Read(**/.env*)",
+      "Read(**/*credential*)",
+      "Read(**/*secret*)",
+      "Read(**/*token*)",
+      "Write(.git/**)",
+      "Write(.env*)",
+      "Write(**/.env*)"
+    ],
+    "version": "2026-09-25-v2"
+  }
+}
