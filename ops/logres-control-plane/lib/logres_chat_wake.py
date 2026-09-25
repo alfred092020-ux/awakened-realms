@@ -403,10 +403,38 @@ class ChatWakeBridge:
         phone_state = health.get("STATE", "UNKNOWN")
         if phone_state in {"NO_ADB", "THERMAL_BLOCK"}:
             return f"DEFERRED_{phone_state}", health
-        if phone_state == "POWER_BLOCK" and not config.get(
-            "allow_low_battery_wake", False
-        ):
-            return "DEFERRED_POWER_BLOCK", health
+        if phone_state == "POWER_BLOCK":
+            if not config.get(
+                "allow_low_battery_wake",
+                False,
+            ):
+                return "DEFERRED_POWER_BLOCK", health
+
+            try:
+                battery_level = int(
+                    health.get(
+                        "BATTERY_LEVEL",
+                        "",
+                    )
+                )
+                hard_floor = int(
+                    config.get(
+                        "low_battery_wake_floor_percent",
+                        10,
+                    )
+                )
+            except (TypeError, ValueError):
+                return "DEFERRED_POWER_BLOCK", health
+
+            hard_floor = max(
+                0,
+                min(
+                    100,
+                    hard_floor,
+                ),
+            )
+            if battery_level < hard_floor:
+                return "DEFERRED_CRITICAL_BATTERY", health
         return "READY", health
 
     def _ui_xml(self) -> str:

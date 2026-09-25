@@ -1,7 +1,7 @@
 {
   "enabled": false,
   "policy": {
-    "allow_low_battery_wake": false,
+    "allow_low_battery_wake": true,
     "ambiguity_probe_seconds": 5,
     "continuation_grace_seconds": 30,
     "cooldown_seconds": 300,

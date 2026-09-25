@@ -94,6 +94,7 @@ class ChatWakeTests(unittest.TestCase):
             "min_interval_seconds": 60,
             "settle_seconds": 0,
             "allow_low_battery_wake": False,
+            "low_battery_wake_floor_percent": 10,
             "approved_messages": {
                 "continue": "Continue Logres work.",
                 "status": "Status",
@@ -195,6 +196,65 @@ class ChatWakeTests(unittest.TestCase):
         result = self.bridge.wake()
         self.assertEqual("DEFERRED_POWER_BLOCK", result["result"])
         self.assertEqual([], self.transport.shell_calls)
+
+    def test_low_battery_wake_allows_above_hard_floor(self):
+        self.write_config(
+            allow_low_battery_wake=True,
+            low_battery_wake_floor_percent=10,
+        )
+        self.transport.health_text = (
+            "STATE=POWER_BLOCK\nBATTERY_LEVEL=18\nADB_STATE=device\n"
+        )
+        config = self.bridge._validate_config(
+            self.bridge.load_config(),
+        )
+        result, health = self.bridge._preflight(
+            config,
+            {},
+        )
+        self.assertEqual("READY", result)
+        self.assertEqual("18", health["BATTERY_LEVEL"])
+
+    def test_low_battery_wake_still_blocks_below_hard_floor(self):
+        self.write_config(
+            allow_low_battery_wake=True,
+            low_battery_wake_floor_percent=10,
+        )
+        self.transport.health_text = (
+            "STATE=POWER_BLOCK\nBATTERY_LEVEL=9\nADB_STATE=device\n"
+        )
+        config = self.bridge._validate_config(
+            self.bridge.load_config(),
+        )
+        result, health = self.bridge._preflight(
+            config,
+            {},
+        )
+        self.assertEqual(
+            "DEFERRED_CRITICAL_BATTERY",
+            result,
+        )
+        self.assertEqual("9", health["BATTERY_LEVEL"])
+
+    def test_thermal_block_remains_absolute_when_low_battery_wake_enabled(self):
+        self.write_config(
+            allow_low_battery_wake=True,
+            low_battery_wake_floor_percent=10,
+        )
+        self.transport.health_text = (
+            "STATE=THERMAL_BLOCK\nBATTERY_LEVEL=18\nADB_STATE=device\n"
+        )
+        config = self.bridge._validate_config(
+            self.bridge.load_config(),
+        )
+        result, _health = self.bridge._preflight(
+            config,
+            {},
+        )
+        self.assertEqual(
+            "DEFERRED_THERMAL_BLOCK",
+            result,
+        )
 
     def test_native_exact_chat_uses_deep_link_and_semantic_verification(self):
         self.prime_open()
