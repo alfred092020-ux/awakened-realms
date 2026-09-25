@@ -91,6 +91,8 @@ class HybridVerifyTests(unittest.TestCase):
             text.index('performance_rc=0'),
         )
         self.assertIn('performance_host_ready', text)
+        self.assertIn('PERF_HOST_SETTLE_ATTEMPTS', text)
+        self.assertIn('PERF_HOST_READY_CONSECUTIVE', text)
         self.assertIn('performance_rc == 75', text)
         self.assertIn('run_performance_control', text)
         self.assertIn('env -u LOGRES_VERIFY_SHA', text)
