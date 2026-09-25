@@ -424,7 +424,12 @@ def preflight(c,limit,min_age=0,min_count=1):
                 env={**os.environ,"LOGRES_GATE_FORCE":"1"})
             duration=time.time()-t0
         log.write_text(gp.stdout or "")
-        state="VERIFIED" if gp.returncode==0 else "FAILED"
+        if gp.returncode==0:
+            state="VERIFIED"
+        elif gp.returncode==75:
+            state="DEFERRED_BUSY"
+        else:
+            state="FAILED"
         now=datetime.now(timezone.utc).isoformat(timespec="seconds")
 
         tasks=[x["task_id"] for x in selected]; candidates=[x["candidate_sha"] for x in selected]
@@ -434,7 +439,7 @@ def preflight(c,limit,min_age=0,min_count=1):
           values(?,?,?,?,?,?,?,?,?,?,?,?,?)""",
           (fingerprint,base,result_sha,result_tree,json.dumps(tasks),json.dumps(candidates),
            state,"full-e2e" if gp.returncode==0 else None,str(log),now,time.time(),now,
-           f"duration={duration:.1f}s conflicts={len(conflicts)}"))
+           f"duration={duration:.1f}s gate_rc={gp.returncode} conflicts={len(conflicts)}"))
         pid=c.execute("select last_insert_rowid()").fetchone()[0]
         if state=="VERIFIED":
             pin_preflight(pid,result_sha)
@@ -450,6 +455,13 @@ def preflight(c,limit,min_age=0,min_count=1):
                "deferred from this preflight batch due to conflict with earlier selected candidates: "
                +detail.replace("\n"," ")[:700],now,task,cand))
         c.commit(); p=packet(c,pid)
+
+        if gp.returncode==75:
+            print(
+                f"PREFLIGHT_DEFERRED_BUSY id={pid} tasks={','.join(tasks)} "
+                f"result={result_sha[:12]} log={log}"
+            )
+            raise SystemExit(75)
 
         if gp.returncode:
             subprocess.run(["/home/ubuntu/logres/bin/logres-regression-capture",
