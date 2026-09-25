@@ -1,0 +1,57 @@
+{
+  "schema": "logres.context-pack-config/v1",
+  "budget": {
+    "max_bytes": 24000,
+    "max_tokens": 6000,
+    "token_bytes": 4
+  },
+  "evidence": {
+    "inline_bytes": 2048,
+    "max_items": 24
+  },
+  "decisions": {
+    "max_items": 12
+  },
+  "ordering": {
+    "authority_rank": {
+      "GLOBAL_ORIGINAL": 0,
+      "GIT_EXACT_SHA": 1,
+      "IMPLEMENTATION_VERIFIED": 2,
+      "CONFIRMED": 3,
+      "HIGH": 4,
+      "MEDIUM": 5,
+      "LOW": 6,
+      "SPECULATION_OR_UNRESOLVED": 7,
+      "UNRESOLVED": 8,
+      "EVIDENCE_CONFLICT": 8
+    },
+    "confidence_rank": {
+      "HIGH": 0,
+      "MEDIUM": 1,
+      "LOW": 2,
+      "UNKNOWN": 3
+    }
+  },
+  "underspecified_phrases": [
+    "continue previous work",
+    "continue the previous",
+    "as before",
+    "same as last time",
+    "keep going",
+    "resume where",
+    "pick up where",
+    "carry on"
+  ],
+  "redaction": {
+    "enabled": true,
+    "replacement": "[REDACTED]",
+    "policy": "credential-shaped strings are redacted from every emitted field; secrets never appear in stdout, stderr, or output files",
+    "patterns": [
+      "pem_private_key_blocks",
+      "key_token_secret_assignments",
+      "github_and_openai_token_prefixes",
+      "aws_access_key_ids",
+      "bearer_tokens"
+    ]
+  }
+}

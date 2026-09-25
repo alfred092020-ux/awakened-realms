@@ -1,0 +1,169 @@
+#!/usr/bin/env python3
+"""Emit a deterministic, engine-neutral context pack for a Brain task.
+
+Reads the Brain control SQLite database, applies config/context_pack.json
+budgets and ordering, redacts credential-shaped strings, and renders the
+canonical pack as JSON, text, or both. Exits nonzero when the task is
+unknown or under-specified.
+"""
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import sqlite3
+import sys
+from pathlib import Path
+
+CONTROL_ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(CONTROL_ROOT / "lib"))
+
+from logres_context_pack import (
+    TaskNotFoundError,
+    UnderspecifiedTaskError,
+    build_pack,
+    canonical_json,
+    render_text,
+)
+
+ROOT = Path(os.environ.get("LOGRES_ROOT", "/home/ubuntu/logres"))
+DEFAULT_DB = ROOT / "control" / "control.sqlite"
+DEFAULT_CONFIG = CONTROL_ROOT / "config" / "context_pack.json"
+
+
+def load_config(path: Path) -> dict:
+    """Translate the nested config file into build_pack's flat config keys."""
+    cfg = json.loads(Path(path).read_text())
+    out = {}
+    budget = cfg.get("budget", {})
+    for key in ("max_bytes", "max_tokens", "token_bytes"):
+        if key in budget:
+            out[key] = budget[key]
+    evidence = cfg.get("evidence", {})
+    if "inline_bytes" in evidence:
+        out["evidence_inline_bytes"] = evidence["inline_bytes"]
+    if "max_items" in evidence:
+        out["evidence_max_items"] = evidence["max_items"]
+    if "max_items" in cfg.get("decisions", {}):
+        out["decisions_max_items"] = cfg["decisions"]["max_items"]
+    ordering = cfg.get("ordering", {})
+    for key in ("authority_rank", "confidence_rank"):
+        if key in ordering:
+            out[key] = ordering[key]
+    if "underspecified_phrases" in cfg:
+        out["underspecified_phrases"] = cfg["underspecified_phrases"]
+    return out
+
+
+def main(argv=None) -> int:
+    ap = argparse.ArgumentParser(
+        prog="logres-context-pack",
+        description="Emit a deterministic engine-neutral context pack.",
+    )
+    ap.add_argument("task_id", help="Brain task id (e.g. TASK-123)")
+    ap.add_argument(
+        "--db",
+        default=os.environ.get("LOGRES_CONTROL_DB", str(DEFAULT_DB)),
+        help="Brain control SQLite path",
+    )
+    ap.add_argument(
+        "--config",
+        default=os.environ.get("LOGRES_CONTEXT_PACK_CONFIG",
+                               str(DEFAULT_CONFIG)),
+        help="context_pack.json path",
+    )
+    ap.add_argument(
+        "--output",
+        choices=["json", "text", "both"],
+        default="both",
+        help="render mode",
+    )
+    ap.add_argument(
+        "--output-file",
+        help="write output to this file instead of stdout",
+    )
+    ap.add_argument(
+        "--integration-sha",
+        help="explicit integration commit SHA override",
+    )
+    ap.add_argument(
+        "--integration-branch",
+        default="feat/logres-reconstruction",
+        help="integration target branch",
+    )
+    ap.add_argument(
+        "--evidence-file",
+        help="JSON list of evidence items to merge into the pack",
+    )
+    ap.add_argument(
+        "--interface",
+        action="append",
+        default=[],
+        help="related interface/dependency file (repeatable)",
+    )
+    ap.add_argument(
+        "--blocker",
+        action="append",
+        default=[],
+        help="blocker description (repeatable)",
+    )
+    args = ap.parse_args(argv)
+
+    try:
+        config = load_config(args.config) if Path(args.config).exists() else {}
+    except (OSError, json.JSONDecodeError) as exc:
+        print(f"context-pack: cannot load config: {exc.__class__.__name__}",
+              file=sys.stderr)
+        return 2
+
+    evidence = None
+    if args.evidence_file:
+        try:
+            evidence = json.loads(Path(args.evidence_file).read_text())
+        except (OSError, json.JSONDecodeError) as exc:
+            print(f"context-pack: cannot load evidence file: "
+                  f"{exc.__class__.__name__}", file=sys.stderr)
+            return 2
+
+    try:
+        conn = sqlite3.connect(f"file:{args.db}?mode=ro", uri=True, timeout=30)
+    except sqlite3.Error:
+        print("context-pack: cannot open Brain database", file=sys.stderr)
+        return 2
+
+    try:
+        pack = build_pack(
+            conn,
+            args.task_id,
+            config=config,
+            evidence=evidence,
+            integration_sha=args.integration_sha,
+            integration_branch=args.integration_branch,
+            interfaces=args.interface,
+            blockers=args.blocker,
+        )
+    except TaskNotFoundError:
+        print(f"context-pack: unknown task {args.task_id}", file=sys.stderr)
+        return 3
+    except UnderspecifiedTaskError as exc:
+        print(f"context-pack: {exc}", file=sys.stderr)
+        return 4
+    finally:
+        conn.close()
+
+    parts = []
+    if args.output in ("json", "both"):
+        parts.append(canonical_json(pack))
+    if args.output in ("text", "both"):
+        parts.append(render_text(pack))
+    out = "\n".join(parts) + "\n"
+
+    if args.output_file:
+        Path(args.output_file).write_text(out)
+    else:
+        sys.stdout.write(out)
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
