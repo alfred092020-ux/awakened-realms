@@ -76,6 +76,18 @@ export class LogresBattleScene
     Phaser.GameObjects.Image | null =
       null
 
+  private playerActor:
+    | Phaser.GameObjects.Image
+    | Phaser.GameObjects.Rectangle
+    | null =
+      null
+
+  private enemyActor:
+    | Phaser.GameObjects.Sprite
+    | Phaser.GameObjects.Ellipse
+    | null =
+      null
+
   private weaponCoverPointerDown:
     Readonly<{
       x: number
@@ -117,6 +129,8 @@ export class LogresBattleScene
     // Phaser reuses this scene after field return. Old display references
     // must not suppress the next harness result/return controls.
     this.weaponCover = null
+    this.playerActor = null
+    this.enemyActor = null
     this.weaponCoverPointerDown = null
     this.epText = null
     this.demoStatusText = null
@@ -208,6 +222,43 @@ export class LogresBattleScene
     const y =
       this.scale.height -
       150
+
+    /*
+     * The original Global client proves the five weapon-control positions,
+     * while their exact retired battle HUD geometry remains unresolved.
+     * Keep this backing rail explicitly reconstructed and preserve the
+     * recovered skill-base and selector artwork as the interactive layer.
+     */
+    this.add
+      .rectangle(
+        this.scale.width / 2,
+        y + 8,
+        648,
+        132,
+        0x090d0c,
+        0.88,
+      )
+      .setStrokeStyle(
+        2,
+        0x8f7a48,
+        0.72,
+      )
+      .setDepth(
+        -1,
+      )
+
+    this.add
+      .rectangle(
+        this.scale.width / 2,
+        y - 62,
+        616,
+        2,
+        0xd7c486,
+        0.45,
+      )
+      .setDepth(
+        0,
+      )
 
     this.presentation.weaponPanels
       .forEach(
@@ -500,12 +551,13 @@ export class LogresBattleScene
           : LOGRES_BATTLE_STAGE_ASSETS
               .playerMale
 
-      this.add
-        .image(
-          player.x,
-          player.y,
-          playerAsset.key,
-        )
+      this.playerActor =
+        this.add
+          .image(
+            player.x,
+            player.y,
+            playerAsset.key,
+          )
         .setOrigin(
           player.anchorX,
           player.anchorY,
@@ -548,16 +600,17 @@ export class LogresBattleScene
         })
       }
 
-      this.add
-        .sprite(
-          enemy.x,
-          enemy.y,
-          LOGRES_BATTLE_STAGE_ASSETS
-            .enemyIdleFrames[
-              0
-            ]
-            .key,
-        )
+      this.enemyActor =
+        this.add
+          .sprite(
+            enemy.x,
+            enemy.y,
+            LOGRES_BATTLE_STAGE_ASSETS
+              .enemyIdleFrames[
+                0
+              ]
+              .key,
+          )
         .setOrigin(
           enemy.anchorX,
           enemy.anchorY,
@@ -580,15 +633,16 @@ export class LogresBattleScene
      * Keep the stage non-empty without claiming these silhouettes as Logres
      * artwork.
      */
-    this.add
-      .rectangle(
-        player.x,
-        player.y,
-        52,
-        112,
-        0x7895a4,
-        0.9,
-      )
+    this.playerActor =
+      this.add
+        .rectangle(
+          player.x,
+          player.y,
+          52,
+          112,
+          0x7895a4,
+          0.9,
+        )
       .setOrigin(
         player.anchorX,
         player.anchorY,
@@ -597,16 +651,17 @@ export class LogresBattleScene
         -10,
       )
 
-    this.add
-      .ellipse(
-        enemy.x,
-        enemy.y -
-          36,
-        112,
-        82,
-        0x6c9b65,
-        0.9,
-      )
+    this.enemyActor =
+      this.add
+        .ellipse(
+          enemy.x,
+          enemy.y -
+            36,
+          112,
+          82,
+          0x6c9b65,
+          0.9,
+        )
       .setDepth(
         -10,
       )
@@ -620,7 +675,7 @@ export class LogresBattleScene
           24,
           this.presentation?.showDemoControls
             ? 'DEMO 0.1 • RECONSTRUCTED BATTLE'
-            : 'RECONSTRUCTED BATTLE • WEAPON PANEL INPUT',
+            : 'BATTLE',
           {
             fontFamily:
               'Arial, sans-serif',
@@ -779,13 +834,17 @@ export class LogresBattleScene
       result.snapshot,
     )
 
+    this.playReconstructedCombatFeedback(
+      command.type,
+    )
+
     if (
       result.outcome !==
       'victory'
     ) {
       this.demoStatusText
         ?.setText(
-          `RECONSTRUCTED BATTLE • ${result.snapshot.acceptedCommandCount}/${result.snapshot.victoryThreshold} COMMANDS ACCEPTED`,
+          `BATTLE • ${result.snapshot.acceptedCommandCount}/${result.snapshot.victoryThreshold}`,
         )
 
       return
@@ -849,13 +908,235 @@ export class LogresBattleScene
     this.demoStatusText
       ?.setText(
         result.rewardApplied
-          ? 'VICTORY • RECONSTRUCTED REWARD RECORDED'
+          ? 'VICTORY • REWARD RECORDED'
           : 'VICTORY • REWARD ALREADY RECORDED',
       )
+
+    this.playReconstructedVictoryFeedback()
 
     this.createFieldReturnControl(
       'logres.playableBattle.status',
     )
+  }
+
+  private playReconstructedCombatFeedback(
+    commandType:
+      | 'normal-attack'
+      | 'special-skill',
+  ) {
+    if (
+      this.playerActor ===
+        null ||
+      this.enemyActor ===
+        null
+    ) {
+      return
+    }
+
+    this.registry.set(
+      'logres.battle.combatFeedbackProvenance',
+      'RECONSTRUCTED_PRESENTATION_ONLY',
+    )
+
+    const player =
+      this.playerActor
+
+    const enemy =
+      this.enemyActor
+
+    const playerStartX =
+      this.stagePresentation
+        ?.player.x ??
+      player.x
+
+    const enemyBaseScale =
+      this.stagePresentation
+        ?.mode ===
+        'RECOVERED_REFERENCE_ART'
+        ? this.stagePresentation
+            .enemy.scale
+        : 1
+
+    this.tweens.killTweensOf(
+      player,
+    )
+
+    this.tweens.killTweensOf(
+      enemy,
+    )
+
+    player.setX(
+      playerStartX,
+    )
+
+    enemy
+      .setScale(
+        enemyBaseScale,
+      )
+      .setAlpha(
+        1,
+      )
+
+    this.tweens.add({
+      targets:
+        player,
+      x:
+        playerStartX +
+        (
+          commandType ===
+            'special-skill'
+            ? 52
+            : 34
+        ),
+      duration:
+        commandType ===
+          'special-skill'
+          ? 120
+          : 90,
+      ease:
+        'Quad.easeOut',
+      yoyo:
+        true,
+    })
+
+    this.tweens.add({
+      targets:
+        enemy,
+      scaleX:
+        enemyBaseScale *
+        1.12,
+      scaleY:
+        enemyBaseScale *
+        0.9,
+      alpha:
+        0.68,
+      duration:
+        90,
+      ease:
+        'Quad.easeOut',
+      yoyo:
+        true,
+      onComplete:
+        () => {
+          if (
+            this.enemyActor !==
+            enemy
+          ) {
+            return
+          }
+
+          enemy
+            .setScale(
+              enemyBaseScale,
+            )
+            .setAlpha(
+              1,
+            )
+        },
+    })
+
+    const slash =
+      this.add
+        .graphics()
+        .setDepth(
+          20,
+        )
+
+    slash
+      .lineStyle(
+        commandType ===
+          'special-skill'
+          ? 8
+          : 5,
+        0xffefb0,
+        0.9,
+      )
+      .beginPath()
+      .moveTo(
+        enemy.x -
+          44,
+        enemy.y -
+          104,
+      )
+      .lineTo(
+        enemy.x +
+          42,
+        enemy.y -
+          28,
+      )
+      .strokePath()
+
+    this.tweens.add({
+      targets:
+        slash,
+      alpha:
+        0,
+      duration:
+        170,
+      ease:
+        'Quad.easeOut',
+      onComplete:
+        () => {
+          slash.destroy()
+        },
+    })
+
+    this.cameras.main.shake(
+      90,
+      0.0018,
+    )
+  }
+
+  private playReconstructedVictoryFeedback() {
+    if (
+      this.enemyActor ===
+      null
+    ) {
+      return
+    }
+
+    const enemy =
+      this.enemyActor
+
+    const enemyBaseScale =
+      this.stagePresentation
+        ?.mode ===
+        'RECOVERED_REFERENCE_ART'
+        ? this.stagePresentation
+            .enemy.scale
+        : 1
+
+    this.tweens.killTweensOf(
+      enemy,
+    )
+
+    enemy
+      .setScale(
+        enemyBaseScale,
+      )
+      .setAlpha(
+        1,
+      )
+
+    this.tweens.add({
+      targets:
+        enemy,
+      alpha:
+        0.16,
+      y:
+        enemy.y +
+        18,
+      scaleX:
+        enemyBaseScale *
+        0.78,
+      scaleY:
+        enemyBaseScale *
+        0.78,
+      duration:
+        260,
+      ease:
+        'Quad.easeIn',
+    })
   }
 
   private createFieldReturnControl(

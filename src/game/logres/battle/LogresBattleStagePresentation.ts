@@ -40,6 +40,9 @@ export const LOGRES_BATTLE_STAGE_PROVENANCE =
     stageGround:
       'RECONSTRUCTED_PRESENTATION_ONLY',
 
+    combatFeedback:
+      'RECONSTRUCTED_PRESENTATION_ONLY',
+
     historicalStats:
       'UNRESOLVED',
 

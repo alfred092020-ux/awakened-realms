@@ -99,6 +99,8 @@ test('selected weapon cover distinguishes tap attack from drag selection', async
     )
   })
 
+  await page.waitForTimeout(250)
+
   let state = await page.evaluate(() => {
     const game = window.__AWAKENED_REALMS_GAME__
     const registry = game.registry
@@ -108,16 +110,27 @@ test('selected weapon cover distinguishes tap attack from drag selection', async
         registry.get('logres.playableBattle.authority')?.acceptedCommandCount,
       provenance:
         registry.get('logres.playableBattle.inputProvenance'),
+      feedbackProvenance:
+        registry.get('logres.battle.combatFeedbackProvenance'),
       selected:
         scene.battleKit?.snapshot()?.selectedWeaponSlot,
+      playerX:
+        scene.playerActor?.x,
+      playerBaseX:
+        registry.get('logres.battle.stagePresentation')?.player?.x,
+      enemyAlpha:
+        scene.enemyActor?.alpha,
     }
   })
 
-  expect(state).toEqual({
+  expect(state).toMatchObject({
     accepted: 1,
     provenance: 'RECONSTRUCTED_PLAYABILITY_FALLBACK',
+    feedbackProvenance: 'RECONSTRUCTED_PRESENTATION_ONLY',
     selected: 0,
+    enemyAlpha: 1,
   })
+  expect(state.playerX).toBeCloseTo(state.playerBaseX, 4)
 
   const slot1 = await canvasPoint(
     page,
