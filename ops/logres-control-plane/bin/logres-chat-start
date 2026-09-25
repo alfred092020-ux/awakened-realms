@@ -67,6 +67,10 @@ if [[ -x "$ROOT/bin/logres-integration" ]]; then
 else
   echo '{"source":"local-control-db-only","status":"not-deployed"}'
 fi
+echo
+echo "=== RELEVANT TASK CONTEXT ==="
+"$ROOT/bin/logres-context-pack" --chat "$CHAT" --fact-limit 12 --knowledge-limit 8 --transcript-limit 8 2>/dev/null || echo "No active task context."
+
 
 if [[ "$CHAT" == "lead" ]]; then
   "$ROOT/bin/logres-integration-pager" >/dev/null 2>&1 || true

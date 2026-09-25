@@ -25,6 +25,10 @@ from logres_context_pack import (
     canonical_json,
     render_text,
 )
+from logres_memory_intelligence import (
+    build_context_packet as build_memory_context_packet,
+    ensure_schema as ensure_memory_schema,
+)
 
 ROOT = Path(os.environ.get("LOGRES_ROOT", "/home/ubuntu/logres"))
 DEFAULT_DB = ROOT / "control" / "control.sqlite"
@@ -60,7 +64,11 @@ def main(argv=None) -> int:
         prog="logres-context-pack",
         description="Emit a deterministic engine-neutral context pack.",
     )
-    ap.add_argument("task_id", help="Brain task id (e.g. TASK-123)")
+    ap.add_argument("task_id", nargs="?", help="Brain task id (e.g. TASK-123)")
+    ap.add_argument("--chat", help="resolve task from this chat's active Brain lease")
+    ap.add_argument("--fact-limit", type=int, default=20)
+    ap.add_argument("--knowledge-limit", type=int, default=12)
+    ap.add_argument("--transcript-limit", type=int, default=12)
     ap.add_argument(
         "--db",
         default=os.environ.get("LOGRES_CONTROL_DB", str(DEFAULT_DB)),
@@ -108,6 +116,44 @@ def main(argv=None) -> int:
         help="blocker description (repeatable)",
     )
     args = ap.parse_args(argv)
+
+    if args.chat:
+        try:
+            conn = sqlite3.connect(args.db, timeout=30)
+            conn.row_factory = sqlite3.Row
+            conn.execute("pragma busy_timeout=30000")
+            ensure_memory_schema(conn)
+            task_id = args.task_id
+            if not task_id:
+                row = conn.execute(
+                    "select task_id from brain_task_leases where chat_id=? order by rowid desc limit 1",
+                    (args.chat,),
+                ).fetchone()
+                if not row:
+                    raise ValueError(f"no active task lease for chat: {args.chat}")
+                task_id = row[0]
+            pack = build_memory_context_packet(
+                conn,
+                task_id,
+                fact_limit=max(1, min(args.fact_limit, 50)),
+                knowledge_limit=max(1, min(args.knowledge_limit, 30)),
+                transcript_limit=max(1, min(args.transcript_limit, 24)),
+            )
+        except (sqlite3.Error, ValueError) as exc:
+            print(f"context-pack: {exc}", file=sys.stderr)
+            return 3
+        finally:
+            if "conn" in locals():
+                conn.close()
+        out = json.dumps(pack, indent=2, sort_keys=True, ensure_ascii=False) + "\n"
+        if args.output_file:
+            Path(args.output_file).write_text(out)
+        else:
+            sys.stdout.write(out)
+        return 0
+
+    if not args.task_id:
+        ap.error("task_id is required unless --chat is provided")
 
     try:
         config = load_config(args.config) if Path(args.config).exists() else {}
