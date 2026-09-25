@@ -39,6 +39,57 @@ describe('logres android client hardening smoke', () => {
     expect(bridgeGuardAt).toBeGreaterThan(superOnCreateAt)
   })
 
+  it('keeps gameplay immersive while restoring system bars when backgrounded', () => {
+    const mainActivity = readRepoFile(
+      'android',
+      'app',
+      'src',
+      'main',
+      'java',
+      'com',
+      'nexuscore',
+      'awakenedrealms',
+      'MainActivity.java',
+    )
+
+    expect(mainActivity).toContain('private void enterImmersiveMode()')
+    expect(mainActivity).toContain('private void restoreSystemBars()')
+    expect(mainActivity).toContain('WindowInsets.Type.statusBars() | WindowInsets.Type.navigationBars()')
+    expect(mainActivity).toContain('WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE')
+    expect(mainActivity).toContain('View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY')
+    expect(mainActivity).toContain('View.SYSTEM_UI_FLAG_HIDE_NAVIGATION')
+    expect(mainActivity).toContain('View.SYSTEM_UI_FLAG_FULLSCREEN')
+    expect(mainActivity).toContain('public void onResume()')
+    expect(mainActivity).toContain('public void onPause()')
+    expect(mainActivity).toContain('public void onWindowFocusChanged(boolean hasFocus)')
+
+    const onResumeAt = mainActivity.indexOf('public void onResume()')
+    const resumeImmersiveAt = mainActivity.indexOf('enterImmersiveMode();', onResumeAt)
+    const onPauseAt = mainActivity.indexOf('public void onPause()')
+    const restoreAt = mainActivity.indexOf('restoreSystemBars();', onPauseAt)
+    expect(resumeImmersiveAt).toBeGreaterThan(onResumeAt)
+    expect(restoreAt).toBeGreaterThan(onPauseAt)
+  })
+
+  it('uses a no-action-bar post-splash theme with dark transparent system bar surfaces', () => {
+    const styles = readRepoFile(
+      'android',
+      'app',
+      'src',
+      'main',
+      'res',
+      'values',
+      'styles.xml',
+    )
+
+    expect(styles).toContain('<style name="AppTheme.NoActionBar"')
+    expect(styles).toContain('<item name="android:statusBarColor">@android:color/transparent</item>')
+    expect(styles).toContain('<item name="android:navigationBarColor">@android:color/transparent</item>')
+    expect(styles).toContain('<item name="android:windowLightStatusBar">false</item>')
+    expect(styles).toContain('<item name="android:windowLightNavigationBar">false</item>')
+    expect(styles).toContain('<item name="postSplashScreenTheme">@style/AppTheme.NoActionBar</item>')
+  })
+
   it('pins Android Capacitor config to mixed-content denial', () => {
     const capacitorConfig = readRepoFile('capacitor.config.ts')
     expect(capacitorConfig).toMatch(/allowMixedContent:\s*false/)
