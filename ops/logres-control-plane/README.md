@@ -513,9 +513,10 @@ It can emit only:
 The production backend is deliberately not a generative LLM. Benchmarks on
 the QA phone showed that small GGUF chat models were either too slow or too
 inconsistent for a safety-critical six-state decision. The deployed backend
-is a compact multinomial Naive-Bayes text/state classifier trained from
-reviewable watchdog examples. Its weights are precomputed on the VM and cached
-as a small pure-Python runner in Termux. The phone performs inference only.
+is a compact multinomial Naive-Bayes text/state classifier built from
+reviewable watchdog examples. A small pure-Python runner containing those
+examples and classifier logic is content-addressed and cached in Termux; each
+ambiguous request is classified locally on the phone.
 
 The classifier combines fuzzy native-UI text with explicit signals such as
 Stop visibility, Worked-for / response-tail progress, rate-limit banners,
@@ -525,8 +526,9 @@ heartbeats. Confidence and class-margin thresholds fail closed to `UNKNOWN`.
 Safety is fail-closed. Missing thermal/memory sensors, low available memory,
 high battery temperature, unavailable Termux Python, runner-install failures,
 timeouts, malformed output, or an invalid label all resolve to `UNKNOWN`.
-A cached battery thermal-zone path avoids repeatedly scanning Android thermal
-zones. SSH ControlMaster multiplexing reuses the authorized Termux channel.
+The safety sensor read, runner cache check, and classification execute in one
+Termux SSH transaction. SSH ControlMaster multiplexing reuses the authorized
+Termux channel, avoiding repeated authentication overhead.
 
 The committed default is disabled and contains no phone username or SSH key.
 Runtime configuration belongs at:
@@ -542,5 +544,6 @@ printf '%s\n' '{"visible_text":"Too many requests","rate_limit_banner":true}' |
 ```
 
 Real-device canary on the authorized QA phone classified six held-out states
-6/6 correctly. After runner/sensor caching, repeated classification completed
-in approximately 0.40-0.49 seconds per request.
+6/6 correctly. With the SSH control channel warm, repeated classification
+completed in approximately 0.42-0.52 seconds per request; the first
+multiplexed request completed in under one second.
