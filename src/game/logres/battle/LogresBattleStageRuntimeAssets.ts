@@ -10,6 +10,10 @@ import {
   preloadLogresPlayerActorAssets,
 } from '../field/LogresPlayerActorRuntimeAssets'
 
+import {
+  logresRuntimeUrl,
+} from '../ui/LogresRuntimeAssets'
+
 export const LOGRES_BATTLE_STAGE_ASSETS =
   Object.freeze({
     playerMale:
@@ -31,6 +35,17 @@ export const LOGRES_BATTLE_STAGE_ASSETS =
         LOGRES_FIELD_ACTOR_ASSETS
           .tutorialGreenJellIdle3,
       ]),
+
+    battleFieldCandidate:
+      Object.freeze({
+        key:
+          'logres-current-jp-battle-field-bfd-002-001',
+
+        url:
+          logresRuntimeUrl(
+            '/__logres_ref/current-jp/battle-field/bfd_002_001.png',
+          ),
+      }),
   } as const)
 
 export const LOGRES_BATTLE_GREEN_JELL_IDLE_ANIMATION_KEY =
@@ -46,6 +61,34 @@ export function preloadLogresBattleStageAssets(
 
   preloadLogresFieldActorAssets(
     scene,
+  )
+
+  if (
+    !scene.textures.exists(
+      LOGRES_BATTLE_STAGE_ASSETS
+        .battleFieldCandidate
+        .key,
+    )
+  ) {
+    scene.load.image(
+      LOGRES_BATTLE_STAGE_ASSETS
+        .battleFieldCandidate
+        .key,
+      LOGRES_BATTLE_STAGE_ASSETS
+        .battleFieldCandidate
+        .url,
+    )
+  }
+}
+
+export function hasRecoveredLogresBattleFieldAsset(
+  scene:
+    Phaser.Scene,
+) {
+  return scene.textures.exists(
+    LOGRES_BATTLE_STAGE_ASSETS
+      .battleFieldCandidate
+      .key,
   )
 }
 

@@ -10,9 +10,11 @@ import {
 } from '../logres/battle/LogresBattleStagePresentation'
 
 import {
+  hasRecoveredLogresBattleFieldAsset,
   hasRecoveredLogresBattleStageAssets,
   LOGRES_BATTLE_GREEN_JELL_IDLE_ANIMATION_KEY,
   LOGRES_BATTLE_STAGE_ASSETS,
+  preloadLogresBattleStageAssets,
 } from '../logres/battle/LogresBattleStageRuntimeAssets'
 
 import {
@@ -119,6 +121,10 @@ export class LogresBattleScene
 
   preload() {
     preloadLogresAssets(
+      this,
+    )
+
+    preloadLogresBattleStageAssets(
       this,
     )
   }
@@ -454,6 +460,11 @@ export class LogresBattleScene
         this,
       )
 
+    const recoveredBattleFieldAvailable =
+      hasRecoveredLogresBattleFieldAsset(
+        this,
+      )
+
     this.stagePresentation =
       createLogresBattleStagePresentation(
         this.scale.width,
@@ -462,6 +473,7 @@ export class LogresBattleScene
           'logres.protocol.C_GMCL_CHAR_CREATE_REQ',
         ),
         recoveredReferenceArtAvailable,
+        recoveredBattleFieldAvailable,
       )
 
     this.registry.set(
@@ -470,6 +482,7 @@ export class LogresBattleScene
     )
 
     const {
+      background,
       ground,
       player,
       enemy,
@@ -477,40 +490,63 @@ export class LogresBattleScene
     } =
       this.stagePresentation
 
-    /*
-     * No Global 3.0.24 battle-background texture is being asserted here.
-     * These low-depth shapes only provide visual stage context while the
-     * original background-resource binding remains unresolved.
-     */
-    this.add
-      .rectangle(
-        ground.x,
-        ground.y,
-        ground.width,
-        ground.height,
-        0x17231f,
-        0.96,
-      )
-      .setDepth(
-        -100,
-      )
+    if (
+      background.mode ===
+      'CURRENT_JP_CANDIDATE'
+    ) {
+      this.add
+        .image(
+          this.scale.width /
+            2,
+          this.scale.height /
+            2,
+          LOGRES_BATTLE_STAGE_ASSETS
+            .battleFieldCandidate
+            .key,
+        )
+        .setDisplaySize(
+          this.scale.width,
+          this.scale.height,
+        )
+        .setDepth(
+          -100,
+        )
+    } else {
+      /*
+       * Clean/public verification has no recovered battle-field derivative.
+       * Keep a bounded non-historical fallback instead of inventing a Global
+       * tutorial background selection.
+       */
+      this.add
+        .rectangle(
+          ground.x,
+          ground.y,
+          ground.width,
+          ground.height,
+          0x17231f,
+          0.96,
+        )
+        .setDepth(
+          -100,
+        )
 
-    this.add
-      .ellipse(
-        ground.x,
-        ground.y +
+      this.add
+        .ellipse(
+          ground.x,
+          ground.y +
+            ground.height *
+              0.31,
+          ground.width *
+            0.86,
           ground.height *
-            0.31,
-        ground.width *
-          0.86,
-        ground.height *
-          0.28,
-        0x31483d,
-        0.52,
-      )
-      .setDepth(
-        -90,
-      )
+            0.28,
+          0x31483d,
+          0.52,
+        )
+        .setDepth(
+          -90,
+        )
+    }
 
     this.add
       .ellipse(
