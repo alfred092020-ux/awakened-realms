@@ -1,0 +1,73 @@
+#!/home/ubuntu/logres/envs/research/bin/python
+from __future__ import annotations
+
+import argparse
+import json
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "lib"))
+
+from logres_phone_local_ai import PhoneLocalAI
+
+
+def emit(value) -> None:
+    print(json.dumps(value, indent=2, sort_keys=True))
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser(prog="logres-phone-local-ai")
+    sub = ap.add_subparsers(dest="cmd", required=True)
+
+    sub.add_parser("status")
+
+    classify = sub.add_parser("classify")
+    classify.add_argument(
+        "--deterministic-state",
+        required=True,
+    )
+    classify.add_argument(
+        "--observation-json",
+        default="",
+    )
+
+    args = ap.parse_args()
+    ai = PhoneLocalAI()
+
+    if args.cmd == "status":
+        emit(ai.status())
+        return 0
+
+    raw = args.observation_json
+    if not raw:
+        raw = sys.stdin.read()
+    try:
+        observation = json.loads(raw)
+    except Exception as exc:
+        emit({
+            "label": "UNKNOWN",
+            "queried": False,
+            "reason": f"invalid_json: {exc}",
+        })
+        return 2
+    if not isinstance(observation, dict):
+        emit({
+            "label": "UNKNOWN",
+            "queried": False,
+            "reason": "observation_must_be_object",
+        })
+        return 2
+
+    emit(
+        ai.classify(
+            observation,
+            deterministic_state=args.deterministic_state,
+        )
+    )
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
+
