@@ -447,3 +447,18 @@ The committed default configuration is disabled. Runtime configuration belongs a
 The versioned units are ops/logres-control-plane/systemd/logres-chat-watchdog.service and logres-chat-watchdog.timer. Install and enable the timer only after deploying the matching control-plane SHA. The timer runs every five minutes, uses the existing phone hardware lock, and applies per-chat cooldowns to prevent restart loops.
 
 No OpenAI API key or paid model endpoint is used by this watchdog.
+
+### Continuous ChatGPT run contracts
+
+The peer watchdog no longer treats Brain heartbeat age as the idle predicate for protected chats. Each configured target has an explicit contract state:
+
+- `RUNNING`: the exact ChatGPT conversation is expected to keep receiving work. If the native chat has no **Stop** control, the prior turn has ended and the watchdog may resume it. If **Stop** is present, the watchdog probes the native **Worked for ...** timer and assistant-response tail before deciding whether the response is still alive.
+- `PAUSED`, `WAITING_USER`, or `DONE`: never auto-resume.
+
+For a `RUNNING` target, advancing **Worked for** time or a changing response tail proves liveness. Only a frozen timer plus frozen response tail across the bounded probe may trigger **Stop → wait → resume**.
+
+Brain presence, leases, and progress remain useful coordination context, but they are advisory for chat liveness. A recent Brain timestamp must never hide an ended ChatGPT turn.
+
+Native-app rate limits are also fail-safe. A visible **Too many requests** / retry-later banner enters a bounded backoff instead of sending more prompts. The watchdog never overwrites a user draft. If a failed watchdog send leaves the exact allowlisted resume text in the composer, it may reuse that exact system-owned draft after backoff rather than typing a duplicate.
+
+The Oracle supervisor remains the continuous project executor; chat recovery is a coordination/recovery layer, not the sole autonomy mechanism.

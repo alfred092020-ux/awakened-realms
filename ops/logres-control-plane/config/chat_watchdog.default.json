@@ -3,10 +3,10 @@
   "policy": {
     "allow_low_battery_wake": false,
     "cooldown_seconds": 300,
+    "rate_limit_backoff_seconds": 600,
     "settle_seconds": 1.2,
-    "stale_seconds": 300,
     "stop_wait_seconds": 7,
-    "stuck_probe_seconds": 7,
+    "stuck_probe_seconds": 15,
     "verify_after_seconds": 8
   },
   "targets": []

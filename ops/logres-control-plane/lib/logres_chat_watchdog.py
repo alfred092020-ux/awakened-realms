@@ -14,7 +14,7 @@ from urllib.parse import urlparse
 from logres_chat_wake import CHATGPT_PACKAGE, ChatWakeBridge, bounds_center, inspect_chat_ui
 
 DEFAULT_ROOT = Path("/home/ubuntu/logres")
-WORKED_TIMER = re.compile(r"^Worked for\s+\d+(?:m\s*)?(?:\d+s)?$", re.I)
+WORKED_TIMER = re.compile(r"^Worked for\s+(?:(?P<minutes>\d+)m(?:\s+(?P<seconds>\d+)s)?|(?P<seconds_only>\d+)s)$", re.I)
 TRANSIENT_UI = {
     "Stop", "Send", "Send Message", "Attachment", "Dictation", "Follow up",
 }
@@ -65,6 +65,112 @@ def visible_activity_digest(xml_text: str) -> str:
             values.append(value)
     payload = "\n".join(values[-120:])
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+
+
+VALID_CONTRACT_STATES = {
+    "RUNNING",
+    "PAUSED",
+    "WAITING_USER",
+    "DONE",
+}
+
+
+def worked_timer_seconds(xml_text: str) -> int | None:
+    from xml.etree import ElementTree
+
+    root = ElementTree.fromstring(xml_text)
+    values: list[int] = []
+    for node in root.iter("node"):
+        if node.attrib.get("package", "") not in {"", CHATGPT_PACKAGE}:
+            continue
+        for key in ("text", "content-desc"):
+            value = str(node.attrib.get(key) or "").strip()
+            match = WORKED_TIMER.fullmatch(value)
+            if not match:
+                continue
+            minutes = int(match.group("minutes") or 0)
+            seconds = int(match.group("seconds") or match.group("seconds_only") or 0)
+            values.append(minutes * 60 + seconds)
+    return max(values) if values else None
+
+
+def response_tail_digest(xml_text: str) -> str:
+    from xml.etree import ElementTree
+
+    root = ElementTree.fromstring(xml_text)
+    values: list[str] = []
+    for node in root.iter("node"):
+        if node.attrib.get("package", "") not in {"", CHATGPT_PACKAGE}:
+            continue
+        for key in ("text", "content-desc"):
+            value = str(node.attrib.get(key) or "").strip()
+            if not value or value in TRANSIENT_UI or WORKED_TIMER.fullmatch(value):
+                continue
+            folded = value.casefold()
+            if any(token in folded for token in RATE_LIMIT_TEXT):
+                continue
+            if folded in {
+                "copy",
+                "read aloud",
+                "good response",
+                "bad response",
+                "share",
+                "regenerate",
+            }:
+                continue
+            values.append(value)
+    payload = "\\n".join(values[-16:])
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+
+
+RATE_LIMIT_TEXT = (
+    "too many requests",
+    "try again later",
+    "you've reached",
+    "you have reached",
+)
+
+
+def ui_rate_limited(xml_text: str) -> bool:
+    folded = xml_text.casefold()
+    return any(token in folded for token in RATE_LIMIT_TEXT)
+
+
+def composer_text(ui: dict) -> str:
+    values = [str(value or "").strip() for value in ui.get("editor_text", [])]
+    if len(values) != 1:
+        return ""
+    return values[0]
+
+
+def contract_probe_action(
+    *,
+    contract_state: str,
+    initial_stop_present: bool,
+    initial_worked_seconds: int | None,
+    initial_tail_digest: str,
+    later_stop_present: bool,
+    later_worked_seconds: int | None,
+    later_tail_digest: str,
+) -> str:
+    contract = str(contract_state or "").upper()
+    if contract not in VALID_CONTRACT_STATES:
+        raise ValueError(f"invalid chat contract state: {contract_state!r}")
+    if contract != "RUNNING":
+        return "HOLD"
+    if not initial_stop_present or not later_stop_present:
+        return "RESUME"
+    timer_advanced = (
+        initial_worked_seconds is not None
+        and later_worked_seconds is not None
+        and later_worked_seconds > initial_worked_seconds
+    )
+    tail_advanced = later_tail_digest != initial_tail_digest
+    if timer_advanced or tail_advanced:
+        return "WORKING"
+    return "STOP_AND_RESUME"
 
 
 def recovery_action(
@@ -243,23 +349,33 @@ class ChatPeerWatchdog:
     def tick_target(self, target: dict, common: dict, state: dict) -> dict:
         chat_id = str(target["chat_id"])
         brain = self._brain_state(chat_id)
-        always_watch = bool(target.get("always_watch", False))
-        if not always_watch and not brain["active_tasks"]:
-            return {"chat_id": chat_id, "result": "NO_ACTIVE_WORK", "brain": brain}
+        contract_state = str(
+            target.get("contract_state", "RUNNING")
+        ).upper()
+        if contract_state not in VALID_CONTRACT_STATES:
+            return {
+                "chat_id": chat_id,
+                "result": "INVALID_CONTRACT_STATE",
+                "contract_state": contract_state,
+                "brain": brain,
+            }
+
+        # Brain activity is advisory only. RUNNING means the exact ChatGPT
+        # conversation is expected to continue until its contract is changed.
+        if contract_state != "RUNNING":
+            return {
+                "chat_id": chat_id,
+                "result": "HOLD",
+                "contract_state": contract_state,
+                "brain": brain,
+            }
 
         now = self.clock()
-        stale_seconds = float(
-            target.get("stale_seconds", common.get("stale_seconds", 300))
-        )
         cooldown_seconds = float(
-            target.get("cooldown_seconds", common.get("cooldown_seconds", 300))
+            target.get("cooldown_seconds", common.get("cooldown_seconds", 20))
         )
         probe_seconds = float(
             target.get("stuck_probe_seconds", common.get("stuck_probe_seconds", 7))
-        )
-        stale_age = max(
-            0.0,
-            now - float(brain["last_activity_epoch"] or 0.0),
         )
         target_state = state.setdefault("targets", {}).setdefault(chat_id, {})
         last_recovery = float(
@@ -267,22 +383,11 @@ class ChatPeerWatchdog:
         )
         cooldown_age = max(0.0, now - last_recovery)
 
-        # The systemd timer runs once per minute. Staying local here is cheap
-        # and guarantees a 300-second stale threshold is acted on at the next
-        # minute tick rather than slipping to a second five-minute interval.
-        if stale_age < stale_seconds:
-            return {
-                "chat_id": chat_id,
-                "result": "FRESH",
-                "stale_age": stale_age,
-                "brain": brain,
-            }
-
         if cooldown_age < cooldown_seconds:
             return {
                 "chat_id": chat_id,
                 "result": "COOLDOWN",
-                "stale_age": stale_age,
+                "contract_state": contract_state,
                 "cooldown_age": cooldown_age,
                 "brain": brain,
             }
@@ -294,55 +399,147 @@ class ChatPeerWatchdog:
                 "chat_id": chat_id,
                 "result": str(opened.get("result")),
                 "open": opened,
+                "contract_state": contract_state,
                 "brain": brain,
             }
 
         initial_xml = bridge._ui_xml()
         initial_ui = inspect_chat_ui(initial_xml, [])
-        initial_digest = visible_activity_digest(initial_xml)
         initial_stop = bool(initial_ui["stop_bounds"])
+        initial_worked = worked_timer_seconds(initial_xml)
+        initial_tail = response_tail_digest(initial_xml)
+        initial_draft = composer_text(initial_ui)
+        resume_message = str(
+            target.get("resume_message") or "Continue Logres work."
+        )
+
+        if ui_rate_limited(initial_xml):
+            backoff_seconds = float(
+                target.get(
+                    "rate_limit_backoff_seconds",
+                    common.get("rate_limit_backoff_seconds", 600),
+                )
+            )
+            target_state["rate_limited_until_epoch"] = now + backoff_seconds
+            target_state["last_rate_limit_epoch"] = now
+            return {
+                "chat_id": chat_id,
+                "result": "RATE_LIMITED",
+                "contract_state": contract_state,
+                "retry_after_seconds": backoff_seconds,
+                "brain": brain,
+            }
+
+        rate_limited_until = float(
+            target_state.get("rate_limited_until_epoch", 0.0) or 0.0
+        )
+        if now < rate_limited_until:
+            return {
+                "chat_id": chat_id,
+                "result": "RATE_LIMIT_BACKOFF",
+                "contract_state": contract_state,
+                "retry_after_seconds": max(0.0, rate_limited_until - now),
+                "brain": brain,
+            }
+
+        if initial_draft and initial_draft != resume_message:
+            return {
+                "chat_id": chat_id,
+                "result": "USER_DRAFT_HOLD",
+                "contract_state": contract_state,
+                "brain": brain,
+            }
 
         later_ui = initial_ui
-        later_digest = initial_digest
         later_stop = initial_stop
+        later_worked = initial_worked
+        later_tail = initial_tail
 
         if initial_stop:
-            # A visible Stop control only proves ChatGPT still considers the
-            # response active. Probe semantic output in this same watchdog run
-            # instead of waiting for another five-minute timer cycle.
             self.sleeper(probe_seconds)
             later_xml = bridge._ui_xml()
             later_ui = inspect_chat_ui(later_xml, [])
-            later_digest = visible_activity_digest(later_xml)
             later_stop = bool(later_ui["stop_bounds"])
+            later_worked = worked_timer_seconds(later_xml)
+            later_tail = response_tail_digest(later_xml)
 
-        action = same_run_probe_action(
+        action = contract_probe_action(
+            contract_state=contract_state,
             initial_stop_present=initial_stop,
-            initial_digest=initial_digest,
+            initial_worked_seconds=initial_worked,
+            initial_tail_digest=initial_tail,
             later_stop_present=later_stop,
-            later_digest=later_digest,
+            later_worked_seconds=later_worked,
+            later_tail_digest=later_tail,
         )
 
         target_state["last_checked_epoch"] = now
         target_state["last_seen_stop"] = later_stop
-        target_state["last_digest"] = later_digest
+        target_state["last_tail_digest"] = later_tail
+        target_state["last_worked_seconds"] = later_worked
+        target_state["contract_state"] = contract_state
 
         if action == "WORKING":
             return {
                 "chat_id": chat_id,
                 "result": "WORKING",
-                "stale_age": stale_age,
+                "contract_state": contract_state,
                 "probe_seconds": probe_seconds,
+                "worked_timer_before": initial_worked,
+                "worked_timer_after": later_worked,
                 "brain": brain,
             }
 
         stopped = False
+
+        # A previous watchdog attempt may have typed the allowlisted resume
+        # text before the native app rejected the send. If the exact system
+        # draft remains, reuse it rather than typing a duplicate. Any other
+        # draft is treated as user-owned and was already held above.
+        if action == "RESUME" and initial_draft == resume_message:
+            if len(initial_ui.get("send_bounds", [])) != 1:
+                return {
+                    "chat_id": chat_id,
+                    "result": "SYSTEM_DRAFT_WAIT",
+                    "contract_state": contract_state,
+                    "brain": brain,
+                }
+            x, y = bounds_center(initial_ui["send_bounds"][0])
+            bridge.transport.shell(f"input tap {x} {y}")
+            before = response_tail_digest(bridge._ui_xml())
+            response = self._response_probe(
+                bridge,
+                before,
+                float(common.get("verify_after_seconds", 8)),
+            )
+            target_state["last_recovery_epoch"] = now
+            target_state["last_recovery_result"] = response
+            self.audit(
+                {
+                    "chat_id": chat_id,
+                    "action": "RESUME_EXISTING_SYSTEM_DRAFT",
+                    "stopped": False,
+                    "result": response,
+                    "contract_state": contract_state,
+                    "active_tasks": brain["active_tasks"],
+                }
+            )
+            return {
+                "chat_id": chat_id,
+                "result": response,
+                "action": "RESUME_EXISTING_SYSTEM_DRAFT",
+                "stopped": False,
+                "contract_state": contract_state,
+                "brain": brain,
+            }
+
         if action == "STOP_AND_RESUME":
             if len(later_ui["stop_bounds"]) != 1:
                 return {
                     "chat_id": chat_id,
                     "result": "STOP_AMBIGUOUS",
                     "ui": later_ui,
+                    "contract_state": contract_state,
                     "brain": brain,
                 }
             x, y = bounds_center(later_ui["stop_bounds"][0])
@@ -363,9 +560,11 @@ class ChatPeerWatchdog:
                 "action": action,
                 "stopped": stopped,
                 "result": outcome["result"],
+                "contract_state": contract_state,
                 "active_tasks": brain["active_tasks"],
-                "stale_age": stale_age,
                 "probe_seconds": probe_seconds if initial_stop else 0,
+                "worked_timer_before": initial_worked,
+                "worked_timer_after": later_worked,
             }
         )
         return {
@@ -373,6 +572,7 @@ class ChatPeerWatchdog:
             "result": outcome["result"],
             "action": action,
             "stopped": stopped,
+            "contract_state": contract_state,
             "brain": brain,
         }
 
