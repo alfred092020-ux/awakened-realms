@@ -42,6 +42,7 @@ PRODUCTION_FILES = (
     "bin/logres-chat-memory",
     "bin/logres-tool-broker",
     "bin/logres-chat-start",
+    "bin/logres-worker-start",
     "bin/logres-journal",
     "bin/logres-mission-coverage",
     "bin/logres-replay",

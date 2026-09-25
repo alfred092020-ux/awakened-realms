@@ -1,0 +1,165 @@
+#!/usr/bin/env bash
+set -euo pipefail
+CHAT="${1:?usage: logres-worker-start <chat-id> <task-id|AUTO> [branch]}"
+TASK="${2:?usage: logres-worker-start <chat-id> <task-id|AUTO> [branch]}"
+REQUESTED="${3:-}"
+
+if [[ "$CHAT" == "lead" && "${LOGRES_ALLOW_LEAD_DEV:-0}" != "1" ]]; then
+  echo "LEAD_RESERVED: Lead is reserved for integration/review. Use another Logres chat for development." >&2
+  exit 22
+fi
+BASE=/home/ubuntu/logres/src/awakened-realms
+DB=/home/ubuntu/logres/control/control.sqlite
+ROOT=/home/ubuntu/logres/work
+mkdir -p "$ROOT" /home/ubuntu/logres/control/packets
+
+/home/ubuntu/logres/bin/logres-chat-start "$CHAT" >/tmp/logres-worker-start-sync.$$
+
+ATOMIC_ACQUIRE=0
+ATOMIC_BRANCH=""
+if [[ "$TASK" == "AUTO" ]]; then
+  acquire=$(/home/ubuntu/logres/bin/logres-coordinator acquire "$CHAT")
+  TASK=$(printf "%s\n" "$acquire" | sed -n 's/^ACQUIRED task=\([^ ]*\).*/\1/p')
+  ATOMIC_BRANCH=$(printf "%s\n" "$acquire" | sed -n 's/^ACQUIRED .* branch=\([^ ]*\).*/\1/p')
+  [[ -n "$TASK" && -n "$ATOMIC_BRANCH" ]] || {
+    printf "%s\n" "$acquire" >&2
+    echo "AUTO_ACQUIRE_FAILED" >&2
+    exit 20
+  }
+  ATOMIC_ACQUIRE=1
+  echo "AUTO_ACQUIRED task=$TASK branch=$ATOMIC_BRANCH"
+fi
+
+row=$(sqlite3 -readonly -separator "|" "$DB" "select status,coalesce(owner,''),coalesce(branch,'') from tasks where id='${TASK//\'/\'\'}';")
+[[ -n "$row" ]] || { echo "unknown task: $TASK" >&2; exit 2; }
+IFS="|" read -r STATUS OWNER TASK_BRANCH <<<"$row"
+if (( ATOMIC_ACQUIRE == 1 )); then
+  BRANCH="$ATOMIC_BRANCH"
+elif [[ -n "$REQUESTED" ]]; then
+  BRANCH="$REQUESTED"
+elif [[ "$OWNER" == "$CHAT" && -n "$TASK_BRANCH" ]]; then
+  BRANCH="$TASK_BRANCH"
+else
+  safe_task=$(printf "%s" "$TASK" | tr "[:upper:]/: " "[:lower:]---")
+  safe_chat=$(printf "%s" "$CHAT" | tr "[:upper:]/: " "[:lower:]---")
+  BRANCH="worker/${safe_chat}-${safe_task}-$(date +%H%M%S)"
+fi
+lease_owner=$(sqlite3 -readonly "$DB" "select coalesce(chat_id,'') from brain_task_leases where task_id='${TASK//\'/\'\'}';")
+NEW_LEASE=0
+CLAIMS_ACQUIRED=0
+if (( ATOMIC_ACQUIRE == 1 )); then
+  [[ "$lease_owner" == "$CHAT" ]] || {
+    echo "atomic acquire lost lease for $TASK" >&2
+    exit 21
+  }
+  NEW_LEASE=1
+  CLAIMS_ACQUIRED=1
+elif [[ "$lease_owner" == "$CHAT" ]]; then
+  /home/ubuntu/logres/bin/logres-brain renew "$CHAT" "$TASK" --minutes 120 >/dev/null
+else
+  /home/ubuntu/logres/bin/logres-brain lease "$CHAT" "$TASK" --minutes 120 --branch "$BRANCH" --note "worker-start bootstrap" >/dev/null
+  NEW_LEASE=1
+fi
+rollback() {
+  rc=$?
+  if (( rc != 0 )); then
+    if (( CLAIMS_ACQUIRED == 1 )); then
+      /home/ubuntu/logres/bin/logres-control release "$TASK" >/dev/null 2>&1 || true
+    fi
+    if (( NEW_LEASE == 1 )); then
+      /home/ubuntu/logres/bin/logres-brain release "$CHAT" "$TASK" --status READY --note "worker-start bootstrap failed" >/dev/null 2>&1 || true
+    fi
+  fi
+  exit $rc
+}
+trap rollback EXIT
+
+existing_claims=$(sqlite3 -readonly "$DB" "select count(*) from claims where task_id='${TASK//\'/\'\'}' and owner='${CHAT//\'/\'\'}';")
+if [[ "$existing_claims" == "0" ]]; then
+  mapfile -t SCOPES < <(sqlite3 -readonly "$DB" "select path_prefix from task_scopes where task_id='${TASK//\'/\'\'}' order by path_prefix;")
+  if (( ${#SCOPES[@]} > 0 )); then
+    /home/ubuntu/logres/bin/logres-control claim "$TASK" "$CHAT" "$BRANCH" "${SCOPES[@]}"
+    CLAIMS_ACQUIRED=1
+  fi
+fi
+
+WT=$(git -C "$BASE" worktree list --porcelain | awk -v b="refs/heads/$BRANCH" '$1=="worktree"{p=$2} $1=="branch" && $2==b {print p; exit}')
+if [[ -z "$WT" ]]; then
+  SAFE=$(printf "%s" "$BRANCH" | tr "/:" "__")
+  WT="$ROOT/$SAFE"
+  [[ ! -e "$WT" ]] || { echo "worktree path exists but is not registered: $WT" >&2; exit 4; }
+  if git -C "$BASE" show-ref --verify --quiet "refs/heads/$BRANCH"; then
+    git -C "$BASE" worktree add "$WT" "$BRANCH" >/dev/null
+  else
+    git -C "$BASE" worktree add -b "$BRANCH" "$WT" "$(git -C "$BASE" rev-parse HEAD)" >/dev/null
+  fi
+fi
+if [[ ! -e "$WT/node_modules" && -d "$BASE/node_modules" ]]; then
+  base_lock=$(sha256sum "$BASE/package-lock.json" | awk '{print $1}')
+  wt_lock=$(sha256sum "$WT/package-lock.json" | awk '{print $1}')
+  if [[ "$base_lock" == "$wt_lock" ]]; then
+    ln -s "$BASE/node_modules" "$WT/node_modules"
+  else
+    (cd "$WT" && npm ci --prefer-offline --no-audit --no-fund)
+  fi
+fi
+
+PACKET="/home/ubuntu/logres/control/packets/${TASK}-${CHAT}.txt"
+/home/ubuntu/logres/bin/logres-worker-packet "$TASK" "$BRANCH" "$CHAT" > "$PACKET"
+
+TOOL_PACKET="/home/ubuntu/logres/control/packets/${TASK}-${CHAT}-tools.json"
+TOOL_BROKER="/home/ubuntu/logres/bin/logres-tool-broker"
+TOOL_ROUTING_STATUS="unavailable"
+if [[ -x "$TOOL_BROKER" ]]; then
+  TOOL_TMP="${TOOL_PACKET}.tmp.$$"
+  if "$TOOL_BROKER" recommend "$TASK" --limit 6 > "$TOOL_TMP" 2>/dev/null; then
+    chmod 600 "$TOOL_TMP"
+    mv "$TOOL_TMP" "$TOOL_PACKET"
+    TOOL_ROUTING_STATUS="ready"
+    python3 - "$TOOL_PACKET" "$PACKET" <<'PY2'
+import json
+import sys
+from pathlib import Path
+
+source = Path(sys.argv[1])
+packet = Path(sys.argv[2])
+data = json.loads(source.read_text(encoding='utf-8'))
+
+def labels(items):
+    out = []
+    for item in items:
+        cap = item.get('capability', {})
+        cid = cap.get('capability_id', 'unknown')
+        provider = cap.get('provider', cid)
+        score = item.get('score')
+        suffix = f' score={score}' if score is not None else ''
+        out.append(f'{cid} ({provider}{suffix})')
+    return ', '.join(out) if out else 'none'
+
+with packet.open('a', encoding='utf-8') as handle:
+    handle.write('\n=== TOOL CAPABILITY ROUTING ===\n')
+    handle.write(f'recommendation_file={source}\n')
+    handle.write(f"use_tool={str(bool(data.get('use_tool'))).lower()}\n")
+    handle.write(f"ready={labels(data.get('ready', []))}\n")
+    handle.write('needs_connection_check=' + labels(data.get('needs_connection_check', [])) + '\n')
+    handle.write('rule=Use recommended ready capabilities when they materially improve accuracy, speed, evidence, automation, or verification. Do not force tool use when it adds no value. Never bypass provider permissions or project ownership.\n')
+PY2
+  else
+    rm -f "$TOOL_TMP"
+    TOOL_ROUTING_STATUS="failed-open"
+  fi
+fi
+
+/home/ubuntu/logres/bin/logres-brain heartbeat "$CHAT" --status ACTIVE >/dev/null
+trap - EXIT
+echo "WORKER_READY"
+echo "chat=$CHAT"
+echo "task=$TASK"
+echo "branch=$BRANCH"
+echo "worktree=$WT"
+echo "packet=$PACKET"
+echo "tool_routing=$TOOL_ROUTING_STATUS"
+if [[ -f "$TOOL_PACKET" ]]; then
+  echo "tool_recommendations=$TOOL_PACKET"
+fi
+echo "next=cd $WT"
