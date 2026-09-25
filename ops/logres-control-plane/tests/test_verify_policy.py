@@ -146,6 +146,24 @@ class VerifyFarmE2EPolicyTests(unittest.TestCase):
         self.assertIn('--log "$PERF_LOG"', text)
         self.assertIn('performance_log=$PERF_LOG', text)
 
+    def test_performance_host_contention_defers_without_false_failure(self):
+        text = SCRIPT.read_text()
+        self.assertIn('performance_host_ready()', text)
+        self.assertIn('LOGRES_PERF_MAX_CPU_PSI_AVG10', text)
+        self.assertIn('/proc/pressure/cpu', text)
+        self.assertIn('performance_rc=75', text)
+        self.assertIn('if (( performance_rc == 75 )); then', text)
+        self.assertIn('exit 75', text)
+        self.assertIn('no verification verdict recorded', text)
+        self.assertLess(
+            text.index('wait "$e2e_pid" || e2e_rc=$?'),
+            text.index('performance_host_ready >"$PERF_LOG"'),
+        )
+        self.assertLess(
+            text.index('performance_host_ready >"$PERF_LOG"'),
+            text.index('npm run test:e2e -- "$PERF_SPEC_REL" --workers=1'),
+        )
+
     def test_canonical_farm_exports_exact_sha_for_visual_truth(self):
         text = SCRIPT.read_text()
         self.assertIn('export LOGRES_VERIFY_SHA="$SHA"', text)
@@ -380,7 +398,7 @@ class VerifyFarmE2EPolicyTests(unittest.TestCase):
         wait_index = text.index('wait "$e2e_pid" || e2e_rc=$?')
         behavior_index = text.index('behavior_rc=0')
         failure_index = text.index(
-            'if (( test_rc != 0 || e2e_rc != 0 || behavior_rc != 0 )); then'
+            'if (( test_rc != 0 || e2e_rc != 0 || performance_rc != 0 || behavior_rc != 0 )); then'
         )
         merge_index = text.index('if ! merge_visual_truth_isolation; then')
         pass_index = text.index('VERIFY_FARM PASS ref=')
