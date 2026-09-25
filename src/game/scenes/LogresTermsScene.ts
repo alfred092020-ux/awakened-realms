@@ -10,6 +10,23 @@ import {
   LOGRES_GLOBAL_3024_WORLD_SELECTION,
 } from '../logres/onboarding/LogresGlobal3024BootEvidence'
 
+export const LOGRES_TERMS_PLAYER_COPY =
+  Object.freeze({
+    heading:
+      'Agreement',
+    section:
+      'Terms of Use',
+    body:
+      Object.freeze([
+        'The Terms of Use page is unavailable in this build.',
+        'No legal text is reproduced on this screen.',
+      ] as const),
+    guidance:
+      'Continue to proceed.',
+    action:
+      'Continue',
+  } as const)
+
 export class LogresTermsScene
   extends Phaser.Scene {
   private agreeing =
@@ -73,6 +90,11 @@ export class LogresTermsScene
       'RECONSTRUCTED_WEBVIEW_SHELL',
     )
 
+    this.registry.set(
+      'logres.ui.termsPlayerCopyStatus',
+      'NO_LEGAL_COPY_AVAILABLE',
+    )
+
     this.add
       .image(
         360,
@@ -85,31 +107,83 @@ export class LogresTermsScene
         -100,
       )
 
+    /*
+     * Presentation is intentionally neutral rather than asserted-original:
+     * the original hosted page is unavailable, while the recovered client
+     * only confirms the AgreementWebView/auth boundary.
+     */
     this.add
       .rectangle(
         360,
-        610,
         640,
-        850,
-        0x111111,
-        0.92,
+        720,
+        1280,
+        0x000000,
+        0.48,
+      )
+      .setDepth(
+        -90,
+      )
+
+    this.add
+      .rectangle(
+        360,
+        600,
+        620,
+        760,
+        0x231d17,
+        0.96,
       )
       .setStrokeStyle(
-        2,
-        0xdddddd,
-        0.8,
+        4,
+        0xc7a45a,
+        1,
       )
 
     this.add
       .text(
         360,
-        235,
-        'Agreement',
+        270,
+        LOGRES_TERMS_PLAYER_COPY
+          .heading,
         {
           fontFamily:
             'sans-serif',
           fontSize:
-            '48px',
+            '46px',
+          fontStyle:
+            'bold',
+          color:
+            '#f4e4b2',
+        },
+      )
+      .setOrigin(
+        0.5,
+      )
+
+    this.add
+      .rectangle(
+        360,
+        325,
+        500,
+        2,
+        0xc7a45a,
+        0.75,
+      )
+
+    this.add
+      .text(
+        360,
+        385,
+        LOGRES_TERMS_PLAYER_COPY
+          .section,
+        {
+          fontFamily:
+            'sans-serif',
+          fontSize:
+            '32px',
+          fontStyle:
+            'bold',
           color:
             '#ffffff',
         },
@@ -121,27 +195,48 @@ export class LogresTermsScene
     this.add
       .text(
         360,
-        585,
-        [
-          'Original Global Terms were hosted',
-          'in an external Agreement WebView.',
-          '',
-          'The historical hosted page is',
-          'unresolved in this reconstruction.',
-        ].join(
-          '\n',
-        ),
+        565,
+        LOGRES_TERMS_PLAYER_COPY
+          .body
+          .join(
+            '\n\n',
+          ),
         {
           align:
             'center',
           fontFamily:
             'sans-serif',
           fontSize:
-            '30px',
+            '27px',
           color:
-            '#eeeeee',
+            '#f2eee6',
           lineSpacing:
-            12,
+            10,
+          wordWrap: {
+            width:
+              500,
+            useAdvancedWrap:
+              true,
+          },
+        },
+      )
+      .setOrigin(
+        0.5,
+      )
+
+    this.add
+      .text(
+        360,
+        795,
+        LOGRES_TERMS_PLAYER_COPY
+          .guidance,
+        {
+          fontFamily:
+            'sans-serif',
+          fontSize:
+            '25px',
+          color:
+            '#d9caa5',
         },
       )
       .setOrigin(
@@ -155,12 +250,12 @@ export class LogresTermsScene
           1110,
           360,
           100,
-          0x2c2c2c,
+          0x853a32,
           1,
         )
         .setStrokeStyle(
-          3,
-          0xffffff,
+          4,
+          0xd8b765,
           1,
         )
         .setName(
@@ -175,12 +270,15 @@ export class LogresTermsScene
       .text(
         360,
         1110,
-        'Agree',
+        LOGRES_TERMS_PLAYER_COPY
+          .action,
         {
           fontFamily:
             'sans-serif',
           fontSize:
-            '38px',
+            '36px',
+          fontStyle:
+            'bold',
           color:
             '#ffffff',
         },

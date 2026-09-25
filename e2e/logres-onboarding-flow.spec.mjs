@@ -126,6 +126,128 @@ async function clickCharacterOk(
   )
 }
 
+test(
+  'agreement boundary shows neutral player copy without inventing legal text',
+  async ({
+    page,
+  }) => {
+    await page.goto(
+      '/',
+    )
+
+    await waitForScene(
+      page,
+      'LogresTitleScene',
+    )
+
+    await page.evaluate(
+      () => {
+        window
+          .__AWAKENED_REALMS_GAME__
+          .scene
+          .start(
+            'LogresTermsScene',
+          )
+      },
+    )
+
+    await waitForScene(
+      page,
+      'LogresTermsScene',
+    )
+
+    const termsPresentation =
+      await page.evaluate(
+        () => {
+          const game =
+            window
+              .__AWAKENED_REALMS_GAME__
+
+          const registry =
+            game.registry
+
+          const scene =
+            game.scene.getScene(
+              'LogresTermsScene',
+            )
+
+          return {
+            hostedPage:
+              registry.get(
+                'logres.auth.termsHostedPage',
+              ),
+            presentation:
+              registry.get(
+                'logres.ui.termsPresentationProvenance',
+              ),
+            playerCopyStatus:
+              registry.get(
+                'logres.ui.termsPlayerCopyStatus',
+              ),
+            visibleText:
+              scene.children.list
+                .filter(
+                  (child) =>
+                    typeof child.text === 'string' &&
+                    child.visible &&
+                    child.alpha > 0,
+                )
+                .map(
+                  (child) =>
+                    child.text,
+                ),
+          }
+        },
+      )
+
+    expect(
+      termsPresentation,
+    ).toMatchObject({
+      hostedPage:
+        'UNRESOLVED',
+      presentation:
+        'RECONSTRUCTED_WEBVIEW_SHELL',
+      playerCopyStatus:
+        'NO_LEGAL_COPY_AVAILABLE',
+    })
+
+    expect(
+      termsPresentation.visibleText,
+    ).toEqual(
+      expect.arrayContaining([
+        'Agreement',
+        'Terms of Use',
+        'The Terms of Use page is unavailable in this build.\n\nNo legal text is reproduced on this screen.',
+        'Continue to proceed.',
+        'Continue',
+      ]),
+    )
+
+    const playerText =
+      termsPresentation.visibleText
+        .join(
+          ' ',
+        )
+        .toLowerCase()
+
+    for (
+      const forbidden of [
+        'reconstruction',
+        'unresolved',
+        'evidence',
+        'original global terms',
+        'historical hosted page',
+      ]
+    ) {
+      expect(
+        playerText,
+      ).not.toContain(
+        forbidden,
+      )
+    }
+  },
+)
+
 for (
   const gender of [
     0,
@@ -183,6 +305,11 @@ for (
             const registry =
               game.registry
 
+            const scene =
+              game.scene.getScene(
+                'LogresTermsScene',
+              )
+
             return {
               loginResult:
                 registry.get(
@@ -204,6 +331,22 @@ for (
                 registry.get(
                   'logres.ui.termsPresentationProvenance',
                 ),
+              playerCopyStatus:
+                registry.get(
+                  'logres.ui.termsPlayerCopyStatus',
+                ),
+              visibleText:
+                scene.children.list
+                  .filter(
+                    (child) =>
+                      typeof child.text === 'string' &&
+                      child.visible &&
+                      child.alpha > 0,
+                  )
+                  .map(
+                    (child) =>
+                      child.text,
+                  ),
               worldSelectActive:
                 game.scene.isActive(
                   'LogresWorldSelectScene',
@@ -214,7 +357,7 @@ for (
 
       expect(
         termsBoundary,
-      ).toEqual({
+      ).toMatchObject({
         loginResult:
           'E_GMCL_ACCLOGIN_NOT_AGREEMENT',
         agreementScene:
@@ -225,9 +368,46 @@ for (
           'UNRESOLVED',
         presentation:
           'RECONSTRUCTED_WEBVIEW_SHELL',
+        playerCopyStatus:
+          'NO_LEGAL_COPY_AVAILABLE',
         worldSelectActive:
           false,
       })
+
+      expect(
+        termsBoundary.visibleText,
+      ).toEqual(
+        expect.arrayContaining([
+          'Agreement',
+          'Terms of Use',
+          'The Terms of Use page is unavailable in this build.\n\nNo legal text is reproduced on this screen.',
+          'Continue to proceed.',
+          'Continue',
+        ]),
+      )
+
+      const visibleTermsCopy =
+        termsBoundary.visibleText
+          .join(
+            ' ',
+          )
+          .toLowerCase()
+
+      for (
+        const forbidden of [
+          'reconstruction',
+          'unresolved',
+          'evidence',
+          'original global terms',
+          'historical hosted page',
+        ]
+      ) {
+        expect(
+          visibleTermsCopy,
+        ).not.toContain(
+          forbidden,
+        )
+      }
 
       // Click the reconstructed shell's auth operation. No historical legal
       // copy is fabricated; only the confirmed agree_to_terms boundary exists.
