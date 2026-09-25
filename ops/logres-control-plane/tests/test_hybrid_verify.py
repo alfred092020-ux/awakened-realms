@@ -69,9 +69,9 @@ class HybridVerifyTests(unittest.TestCase):
             text.index(shared_cmd),
             text.index('if cache_hit; then'),
         )
-        self.assertLess(
+        self.assertGreater(
             text.index(perf_cmd),
-            text.index('if cache_hit; then'),
+            text.index('e2e_rc=0'),
         )
         cache_block = text[
             text.index('if cache_hit; then'):
@@ -79,6 +79,15 @@ class HybridVerifyTests(unittest.TestCase):
         ]
         self.assertNotIn('exit 0', cache_block)
         self.assertIn('wait "$e2e_pid"', text)
+
+    def test_performance_waits_for_shared_e2e_and_unit_lane_before_measurement(self):
+        text = SCRIPT.read_text()
+        self.assertLess(
+            text.index('wait "$e2e_pid" || e2e_rc=$?'),
+            text.index('performance_rc=0'),
+        )
+        self.assertIn('performance_host_ready', text)
+        self.assertIn('performance_rc == 75', text)
 
     def test_cache_dimensions_fail_closed_and_are_exact_sha_keyed(self):
         text = SCRIPT.read_text()
