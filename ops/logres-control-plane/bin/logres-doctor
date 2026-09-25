@@ -395,7 +395,8 @@ try:
         )""",(now,)).fetchone()[0]
     non_done_queue=qc.execute("""select count(*) from integration_queue q
         join tasks t on t.id=q.task_id
-        where t.status<>'DONE'""").fetchone()[0]
+        where q.status not in ('INTEGRATED','SUPERSEDED','QUARANTINED','CANDIDATE_MOVED')
+          and t.status<>'DONE'""").fetchone()[0]
     active_count=qc.execute("""select count(*) from brain_task_leases
         where lease_until_epoch>? and chat_id<>'lead'""",(now,)).fetchone()[0]
     lead_busy=qc.execute("""select count(*) from brain_task_leases

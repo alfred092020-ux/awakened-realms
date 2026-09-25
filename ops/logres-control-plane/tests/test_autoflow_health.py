@@ -121,6 +121,10 @@ class AutoflowHealthTests(unittest.TestCase):
             doctor,
         )
         self.assertIn("elif supervisor_ok:", doctor)
+        self.assertIn(
+            "q.status not in ('INTEGRATED','SUPERSEDED','QUARANTINED','CANDIDATE_MOVED')",
+            doctor,
+        )
 
         for check in (
             "route_schema",
