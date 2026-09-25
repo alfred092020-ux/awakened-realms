@@ -13,6 +13,7 @@ from urllib.parse import urlparse
 
 from logres_chat_contract import CHAT_CONTRACT_STATES, ChatContractStore
 from logres_chat_wake import CHATGPT_PACKAGE, ChatWakeBridge, bounds_center, inspect_chat_ui
+from logres_phone_local_ai import PhoneLocalAI
 
 DEFAULT_ROOT = Path("/home/ubuntu/logres")
 WORKED_TIMER = re.compile(r"^Worked for\s+(?:(?P<minutes>\d+)m(?:\s+(?P<seconds>\d+)s)?|(?P<seconds_only>\d+)s)$", re.I)
@@ -141,6 +142,75 @@ def composer_text(ui: dict) -> str:
     return values[0]
 
 
+def visible_chat_text(
+    xml_text: str,
+    *,
+    max_chars: int = 2400,
+) -> str:
+    from xml.etree import ElementTree
+
+    root = ElementTree.fromstring(xml_text)
+    values: list[str] = []
+    seen: set[str] = set()
+    for node in root.iter("node"):
+        if node.attrib.get("package", "") not in {
+            "",
+            CHATGPT_PACKAGE,
+        }:
+            continue
+        for key in ("text", "content-desc"):
+            value = str(
+                node.attrib.get(key) or ""
+            ).strip()
+            if (
+                not value
+                or value in TRANSIENT_UI
+                or WORKED_TIMER.fullmatch(value)
+            ):
+                continue
+            if value in seen:
+                continue
+            seen.add(value)
+            values.append(value)
+
+    payload = "\n".join(values[-80:])
+    if len(payload) <= max_chars:
+        return payload
+    return payload[-max_chars:]
+
+
+def expired_running_no_stop_probe_action(
+    *,
+    initial_tail_digest: str,
+    later_stop_present: bool,
+    later_tail_digest: str,
+) -> str:
+    if later_stop_present:
+        return "WORKING"
+    if later_tail_digest != initial_tail_digest:
+        return "WORKING"
+    return "AMBIGUOUS"
+
+
+def phone_ai_recovery_action(
+    label: str,
+    *,
+    stop_count: int,
+) -> str:
+    value = str(label or "").upper()
+    if value == "ACTIVE":
+        return "AI_ACTIVE_HOLD"
+    if value == "ENDED":
+        return "RESUME"
+    if value == "RATE_LIMITED":
+        return "AI_RATE_LIMITED"
+    if value == "WAITING_USER":
+        return "AI_WAITING_USER"
+    if value == "STUCK" and stop_count == 1:
+        return "STOP_AND_RESUME"
+    return "AI_HOLD"
+
+
 def contract_gate_action(
     *,
     contract_state: str,
@@ -233,7 +303,14 @@ def same_run_probe_action(
 
 
 class ChatPeerWatchdog:
-    def __init__(self, root: str | Path = DEFAULT_ROOT, *, clock=time.time, sleeper=time.sleep):
+    def __init__(
+        self,
+        root: str | Path = DEFAULT_ROOT,
+        *,
+        clock=time.time,
+        sleeper=time.sleep,
+        phone_ai: PhoneLocalAI | None = None,
+    ):
         self.root = Path(root)
         self.clock = clock
         self.sleeper = sleeper
@@ -250,6 +327,11 @@ class ChatPeerWatchdog:
         self.targets_dir = device_dir / "chat-watchdog-targets"
         self.db_path = self.root / "control/control.sqlite"
         self.contracts = ChatContractStore(self.root, clock=self.clock)
+        self.phone_ai = (
+            phone_ai
+            if phone_ai is not None
+            else PhoneLocalAI(self.root)
+        )
 
     def load_config(self) -> dict:
         source = self.runtime_config if self.runtime_config.is_file() else self.default_config
@@ -463,6 +545,21 @@ class ChatPeerWatchdog:
                 common.get("stuck_probe_seconds", 15),
             )
         )
+        ambiguity_probe_seconds = float(
+            target.get(
+                "ambiguity_probe_seconds",
+                common.get("ambiguity_probe_seconds", 5),
+            )
+        )
+        phone_ai_ambiguity_enabled = bool(
+            target.get(
+                "phone_local_ai_ambiguity_enabled",
+                common.get(
+                    "phone_local_ai_ambiguity_enabled",
+                    False,
+                ),
+            )
+        )
         last_recovery = float(
             target_state.get("last_recovery_epoch", 0.0) or 0.0
         )
@@ -535,10 +632,20 @@ class ChatPeerWatchdog:
                 "brain": brain,
             }
 
+        later_xml = initial_xml
         later_ui = initial_ui
         later_stop = initial_stop
         later_worked = initial_worked
         later_tail = initial_tail
+        phone_ai_result: dict | None = None
+
+        ambiguous_running_candidate = (
+            phone_ai_ambiguity_enabled
+            and use_runtime_contract
+            and contract_state == "RUNNING"
+            and not initial_stop
+            and heartbeat_age >= heartbeat_timeout
+        )
 
         if initial_stop:
             self.sleeper(probe_seconds)
@@ -547,16 +654,123 @@ class ChatPeerWatchdog:
             later_stop = bool(later_ui["stop_bounds"])
             later_worked = worked_timer_seconds(later_xml)
             later_tail = response_tail_digest(later_xml)
+            action = contract_probe_action(
+                contract_state=contract_state,
+                initial_stop_present=initial_stop,
+                initial_worked_seconds=initial_worked,
+                initial_tail_digest=initial_tail,
+                later_stop_present=later_stop,
+                later_worked_seconds=later_worked,
+                later_tail_digest=later_tail,
+            )
+        elif ambiguous_running_candidate:
+            self.sleeper(ambiguity_probe_seconds)
+            later_xml = bridge._ui_xml()
+            later_ui = inspect_chat_ui(later_xml, [])
+            later_stop = bool(later_ui["stop_bounds"])
+            later_worked = worked_timer_seconds(later_xml)
+            later_tail = response_tail_digest(later_xml)
 
-        action = contract_probe_action(
-            contract_state=contract_state,
-            initial_stop_present=initial_stop,
-            initial_worked_seconds=initial_worked,
-            initial_tail_digest=initial_tail,
-            later_stop_present=later_stop,
-            later_worked_seconds=later_worked,
-            later_tail_digest=later_tail,
-        )
+            action = expired_running_no_stop_probe_action(
+                initial_tail_digest=initial_tail,
+                later_stop_present=later_stop,
+                later_tail_digest=later_tail,
+            )
+
+            if action == "AMBIGUOUS":
+                try:
+                    phone_ai_result = self.phone_ai.classify(
+                        {
+                            "visible_text": visible_chat_text(
+                                later_xml,
+                            ),
+                            "stop_present": later_stop,
+                            "worked_timer_advanced": (
+                                initial_worked is not None
+                                and later_worked is not None
+                                and later_worked > initial_worked
+                            ),
+                            "response_tail_changed": (
+                                later_tail != initial_tail
+                            ),
+                            "rate_limit_banner": ui_rate_limited(
+                                later_xml,
+                            ),
+                            "user_draft": bool(
+                                composer_text(later_ui)
+                            ),
+                            "input_required": False,
+                            "turn_ended_signal": False,
+                            "turn_heartbeat_fresh": False,
+                        },
+                        deterministic_state="AMBIGUOUS",
+                    )
+                except Exception as exc:
+                    phone_ai_result = {
+                        "label": "UNKNOWN",
+                        "queried": False,
+                        "confidence": 0.0,
+                        "margin": 0.0,
+                        "reason": (
+                            "classifier_error:"
+                            f"{type(exc).__name__}"
+                        ),
+                    }
+                phone_ai_summary = {
+                    "label": str(
+                        phone_ai_result.get(
+                            "label",
+                            "UNKNOWN",
+                        )
+                    ),
+                    "confidence": phone_ai_result.get(
+                        "confidence",
+                    ),
+                    "margin": phone_ai_result.get(
+                        "margin",
+                    ),
+                    "reason": phone_ai_result.get(
+                        "reason",
+                    ),
+                    "queried": bool(
+                        phone_ai_result.get(
+                            "queried",
+                            False,
+                        )
+                    ),
+                }
+                target_state["last_phone_ai"] = {
+                    **phone_ai_summary,
+                    "epoch": now,
+                }
+                self.audit(
+                    {
+                        "chat_id": chat_id,
+                        "action": "PHONE_AI_DECISION",
+                        "contract_state": contract_state,
+                        "heartbeat_age": heartbeat_age,
+                        "phone_ai": phone_ai_summary,
+                    }
+                )
+                action = phone_ai_recovery_action(
+                    phone_ai_summary["label"],
+                    stop_count=len(
+                        later_ui.get(
+                            "stop_bounds",
+                            [],
+                        )
+                    ),
+                )
+        else:
+            action = contract_probe_action(
+                contract_state=contract_state,
+                initial_stop_present=initial_stop,
+                initial_worked_seconds=initial_worked,
+                initial_tail_digest=initial_tail,
+                later_stop_present=later_stop,
+                later_worked_seconds=later_worked,
+                later_tail_digest=later_tail,
+            )
 
         target_state["last_checked_epoch"] = now
         target_state["last_seen_stop"] = later_stop
@@ -564,19 +778,78 @@ class ChatPeerWatchdog:
         target_state["last_worked_seconds"] = later_worked
         target_state["contract_state"] = contract_state
 
+        if action == "AI_ACTIVE_HOLD":
+            return {
+                "chat_id": chat_id,
+                "result": "PHONE_AI_ACTIVE_HOLD",
+                "contract_state": contract_state,
+                "phone_ai": phone_ai_result,
+                "brain": brain,
+            }
+
+        if action == "AI_RATE_LIMITED":
+            backoff_seconds = float(
+                target.get(
+                    "rate_limit_backoff_seconds",
+                    common.get(
+                        "rate_limit_backoff_seconds",
+                        600,
+                    ),
+                )
+            )
+            target_state["rate_limited_until_epoch"] = (
+                now + backoff_seconds
+            )
+            target_state["last_rate_limit_epoch"] = now
+            return {
+                "chat_id": chat_id,
+                "result": "PHONE_AI_RATE_LIMITED",
+                "contract_state": contract_state,
+                "retry_after_seconds": backoff_seconds,
+                "phone_ai": phone_ai_result,
+                "brain": brain,
+            }
+
+        if action == "AI_WAITING_USER":
+            return {
+                "chat_id": chat_id,
+                "result": "PHONE_AI_WAITING_USER",
+                "contract_state": contract_state,
+                "phone_ai": phone_ai_result,
+                "brain": brain,
+            }
+
+        if action == "AI_HOLD":
+            return {
+                "chat_id": chat_id,
+                "result": "PHONE_AI_HOLD",
+                "contract_state": contract_state,
+                "phone_ai": phone_ai_result,
+                "brain": brain,
+            }
+
         if action == "WORKING":
             if use_runtime_contract and contract_state == "RUNNING":
                 self.contracts.heartbeat(
                     chat_id,
-                    reason="native UI liveness proof",
+                    reason=(
+                        "phone AI liveness proof"
+                        if phone_ai_result is not None
+                        else "native UI liveness proof"
+                    ),
                 )
             return {
                 "chat_id": chat_id,
                 "result": "WORKING",
                 "contract_state": contract_state,
-                "probe_seconds": probe_seconds,
+                "probe_seconds": (
+                    ambiguity_probe_seconds
+                    if phone_ai_result is not None
+                    else probe_seconds
+                ),
                 "worked_timer_before": initial_worked,
                 "worked_timer_after": later_worked,
+                "phone_ai": phone_ai_result,
                 "brain": brain,
             }
 
@@ -671,6 +944,7 @@ class ChatPeerWatchdog:
                 "probe_seconds": probe_seconds if initial_stop else 0,
                 "worked_timer_before": initial_worked,
                 "worked_timer_after": later_worked,
+                "phone_ai": phone_ai_result,
             }
         )
         return {
@@ -679,6 +953,7 @@ class ChatPeerWatchdog:
             "action": action,
             "stopped": stopped,
             "contract_state": contract_state,
+            "phone_ai": phone_ai_result,
             "brain": brain,
         }
 

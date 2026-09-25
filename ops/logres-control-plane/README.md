@@ -547,3 +547,37 @@ Real-device canary on the authorized QA phone classified six held-out states
 6/6 correctly. With the SSH control channel warm, repeated classification
 completed in approximately 0.42-0.52 seconds per request; the first
 multiplexed request completed in under one second.
+
+
+#### Watchdog ambiguity hook
+
+The peer watchdog may optionally consult `logres-phone-local-ai` only for one
+narrow fallback state: a runtime contract is still `RUNNING`, its turn
+heartbeat has expired, the exact native chat exposes no **Stop** control, and a
+short ambiguity probe shows no assistant-response-tail progress.
+
+This hook is disabled by default with
+`phone_local_ai_ambiguity_enabled=false`. Explicit
+`CONTINUE_REQUESTED` handoffs, fresh `RUNNING` heartbeats, native Stop/timer
+progress, rate-limit banners, and user drafts are resolved deterministically
+without calling the classifier.
+
+For the ambiguous fallback:
+
+- `ENDED` may send the allowlisted resume message.
+- `ACTIVE` is advisory only: it holds and rechecks later; it does **not**
+  refresh the turn heartbeat.
+- `RATE_LIMITED` enters the existing bounded backoff.
+- `WAITING_USER` holds without touching the composer.
+- `STUCK` without exactly one native Stop control cannot trigger a stop.
+- `UNKNOWN`, disabled classifier state, timeout, malformed output, or any
+  classifier exception fail closed to a hold.
+
+Every rare classifier decision records only label/confidence/margin/reason in
+the watchdog audit/state. Native conversation text is not copied into those
+records.
+
+The separate `ambiguity_probe_seconds` defaults to five seconds. This probe is
+shorter than the active-generation stuck probe because its purpose is only to
+confirm that an expired no-Stop state is stable before consulting the advisory
+classifier.

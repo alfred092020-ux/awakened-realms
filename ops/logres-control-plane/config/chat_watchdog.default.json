@@ -2,9 +2,11 @@
   "enabled": false,
   "policy": {
     "allow_low_battery_wake": false,
+    "ambiguity_probe_seconds": 5,
     "continuation_grace_seconds": 30,
     "cooldown_seconds": 300,
     "min_resume_interval_seconds": 300,
+    "phone_local_ai_ambiguity_enabled": false,
     "rate_limit_backoff_seconds": 600,
     "running_heartbeat_timeout_seconds": 300,
     "settle_seconds": 1.2,

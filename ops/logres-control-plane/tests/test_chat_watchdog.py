@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -8,16 +9,168 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "lib"))
 
 from logres_chat_watchdog import (
+    ChatPeerWatchdog,
     contract_gate_action,
     composer_text,
     contract_probe_action,
+    expired_running_no_stop_probe_action,
+    phone_ai_recovery_action,
     recovery_action,
     response_tail_digest,
     same_run_probe_action,
     ui_rate_limited,
     visible_activity_digest,
+    visible_chat_text,
     worked_timer_seconds,
 )
+
+
+class MutableClock:
+    def __init__(self, value: float):
+        self.value = float(value)
+
+    def __call__(self) -> float:
+        return self.value
+
+
+class FakePhoneAI:
+    def __init__(self, result=None, *, raises=False):
+        self.result = result or {
+            "label": "UNKNOWN",
+            "queried": True,
+            "confidence": 0.9,
+            "margin": 0.4,
+            "reason": "classified",
+        }
+        self.raises = raises
+        self.calls = []
+
+    def classify(self, observation, *, deterministic_state):
+        self.calls.append(
+            {
+                "observation": observation,
+                "deterministic_state": deterministic_state,
+            }
+        )
+        if self.raises:
+            raise RuntimeError("synthetic classifier failure")
+        return dict(self.result)
+
+
+class FakeBridgeTransport:
+    def __init__(self):
+        self.shell_calls = []
+
+    def shell(self, command):
+        self.shell_calls.append(command)
+        return ""
+
+
+class FakeBridge:
+    COMPLETED_XML = (
+        '<hierarchy>'
+        '<node package="com.openai.chatgpt" '
+        'text="Completed answer" content-desc="" bounds="[0,0][20,20]" />'
+        '<node package="com.openai.chatgpt" '
+        'text="Copy" content-desc="" bounds="[0,20][20,40]" />'
+        '</hierarchy>'
+    )
+    WORKING_XML_1 = (
+        '<hierarchy>'
+        '<node package="com.openai.chatgpt" '
+        'text="Worked for 1s" content-desc="" bounds="[0,0][20,20]" />'
+        '<node package="com.openai.chatgpt" '
+        'text="" content-desc="Stop" bounds="[0,20][20,40]" />'
+        '<node package="com.openai.chatgpt" '
+        'text="Working answer" content-desc="" bounds="[0,40][20,60]" />'
+        '</hierarchy>'
+    )
+    WORKING_XML_2 = (
+        '<hierarchy>'
+        '<node package="com.openai.chatgpt" '
+        'text="Worked for 2s" content-desc="" bounds="[0,0][20,20]" />'
+        '<node package="com.openai.chatgpt" '
+        'text="" content-desc="Stop" bounds="[0,20][20,40]" />'
+        '<node package="com.openai.chatgpt" '
+        'text="Working answer grew" content-desc="" bounds="[0,40][20,60]" />'
+        '</hierarchy>'
+    )
+    DRAFT_XML = (
+        '<hierarchy>'
+        '<node package="com.openai.chatgpt" '
+        'class="android.widget.EditText" '
+        'text="unsent user draft" content-desc="" bounds="[0,0][40,40]" />'
+        '</hierarchy>'
+    )
+    RATE_LIMIT_XML = (
+        '<hierarchy>'
+        '<node package="com.openai.chatgpt" '
+        'text="Too many requests. Try again later." '
+        'content-desc="" bounds="[0,0][40,40]" />'
+        '</hierarchy>'
+    )
+
+    def __init__(self, xml_sequence):
+        self.xml_sequence = list(xml_sequence)
+        self.index = 0
+        self.sent = False
+        self.send_calls = []
+        self.transport = FakeBridgeTransport()
+
+    def wake(self):
+        return {"result": "NATIVE_EXACT_CHAT"}
+
+    def _ui_xml(self):
+        if self.sent:
+            return self.WORKING_XML_1
+        if not self.xml_sequence:
+            return self.COMPLETED_XML
+        index = min(
+            self.index,
+            len(self.xml_sequence) - 1,
+        )
+        value = self.xml_sequence[index]
+        self.index += 1
+        return value
+
+    def send(self, message_key, command_id):
+        self.send_calls.append(
+            (message_key, command_id)
+        )
+        self.sent = True
+        return {"result": "SENT"}
+
+
+class FakeWatchdog(ChatPeerWatchdog):
+    def __init__(
+        self,
+        root,
+        *,
+        clock,
+        phone_ai,
+        bridge,
+    ):
+        super().__init__(
+            root,
+            clock=clock,
+            sleeper=lambda _seconds: None,
+            phone_ai=phone_ai,
+        )
+        self.fake_bridge = bridge
+        self.audit_records = []
+
+    def _brain_state(self, chat_id):
+        return {
+            "member_status": "ACTIVE",
+            "last_activity_epoch": 0.0,
+            "active_tasks": ["SYNTHETIC"],
+        }
+
+    def _bridge(self, target, common):
+        return self.fake_bridge
+
+    def audit(self, payload):
+        self.audit_records.append(dict(payload))
 
 
 class ChatWatchdogTests(unittest.TestCase):
@@ -342,6 +495,10 @@ class ChatWatchdogTests(unittest.TestCase):
         self.assertEqual(300, config["policy"]["cooldown_seconds"])
         self.assertEqual(600, config["policy"]["rate_limit_backoff_seconds"])
         self.assertEqual(15, config["policy"]["stuck_probe_seconds"])
+        self.assertEqual(5, config["policy"]["ambiguity_probe_seconds"])
+        self.assertFalse(
+            config["policy"]["phone_local_ai_ambiguity_enabled"]
+        )
 
     def test_fresh_running_heartbeat_skips_phone_check(self):
         self.assertEqual(
@@ -415,6 +572,373 @@ class ChatWatchdogTests(unittest.TestCase):
                 later_tail_digest="same",
             ),
         )
+
+    def test_expired_running_no_stop_progress_is_working(self):
+        self.assertEqual(
+            "WORKING",
+            expired_running_no_stop_probe_action(
+                initial_tail_digest="before",
+                later_stop_present=False,
+                later_tail_digest="after",
+            ),
+        )
+
+    def test_expired_running_new_stop_is_working(self):
+        self.assertEqual(
+            "WORKING",
+            expired_running_no_stop_probe_action(
+                initial_tail_digest="same",
+                later_stop_present=True,
+                later_tail_digest="same",
+            ),
+        )
+
+    def test_expired_running_stable_no_stop_is_ambiguous(self):
+        self.assertEqual(
+            "AMBIGUOUS",
+            expired_running_no_stop_probe_action(
+                initial_tail_digest="same",
+                later_stop_present=False,
+                later_tail_digest="same",
+            ),
+        )
+
+    def test_phone_ai_action_mapping_is_fail_closed(self):
+        self.assertEqual(
+            "AI_ACTIVE_HOLD",
+            phone_ai_recovery_action(
+                "ACTIVE",
+                stop_count=0,
+            ),
+        )
+        self.assertEqual(
+            "RESUME",
+            phone_ai_recovery_action(
+                "ENDED",
+                stop_count=0,
+            ),
+        )
+        self.assertEqual(
+            "AI_RATE_LIMITED",
+            phone_ai_recovery_action(
+                "RATE_LIMITED",
+                stop_count=0,
+            ),
+        )
+        self.assertEqual(
+            "AI_WAITING_USER",
+            phone_ai_recovery_action(
+                "WAITING_USER",
+                stop_count=0,
+            ),
+        )
+        self.assertEqual(
+            "AI_HOLD",
+            phone_ai_recovery_action(
+                "UNKNOWN",
+                stop_count=0,
+            ),
+        )
+        self.assertEqual(
+            "AI_HOLD",
+            phone_ai_recovery_action(
+                "STUCK",
+                stop_count=0,
+            ),
+        )
+        self.assertEqual(
+            "STOP_AND_RESUME",
+            phone_ai_recovery_action(
+                "STUCK",
+                stop_count=1,
+            ),
+        )
+        self.assertEqual(
+            "AI_HOLD",
+            phone_ai_recovery_action(
+                "nonsense",
+                stop_count=0,
+            ),
+        )
+
+    def test_visible_chat_text_excludes_transient_timer_and_system_ui(self):
+        xml = (
+            '<hierarchy>'
+            '<node package="com.android.systemui" text="9:41" content-desc="" />'
+            '<node package="com.openai.chatgpt" text="Stop" content-desc="" />'
+            '<node package="com.openai.chatgpt" text="Worked for 2m 3s" content-desc="" />'
+            '<node package="com.openai.chatgpt" text="Completed answer" content-desc="" />'
+            '<node package="com.openai.chatgpt" text="Copy" content-desc="" />'
+            '</hierarchy>'
+        )
+        text = visible_chat_text(xml)
+        self.assertNotIn("9:41", text)
+        self.assertNotIn("Worked for", text)
+        self.assertNotIn("Stop", text)
+        self.assertIn("Completed answer", text)
+        self.assertIn("Copy", text)
+
+    def test_phone_ai_hook_is_narrow_and_advisory_in_source(self):
+        source = (ROOT / "lib/logres_chat_watchdog.py").read_text()
+        self.assertIn(
+            'deterministic_state="AMBIGUOUS"',
+            source,
+        )
+        self.assertIn(
+            'contract_state == "RUNNING"',
+            source,
+        )
+        self.assertIn(
+            "heartbeat_age >= heartbeat_timeout",
+            source,
+        )
+        self.assertIn(
+            "not initial_stop",
+            source,
+        )
+        self.assertIn(
+            '"result": "PHONE_AI_HOLD"',
+            source,
+        )
+        self.assertIn(
+            '"result": "PHONE_AI_ACTIVE_HOLD"',
+            source,
+        )
+        self.assertIn(
+            '"label": "UNKNOWN"',
+            source,
+        )
+        self.assertIn(
+            '"classifier_error:"',
+            source,
+        )
+        self.assertIn(
+            '"action": "PHONE_AI_DECISION"',
+            source,
+        )
+
+    def _runtime_watchdog(
+        self,
+        *,
+        phone_ai_result=None,
+        phone_ai_raises=False,
+        xml_sequence=None,
+    ):
+        temp = tempfile.TemporaryDirectory()
+        root = Path(temp.name)
+        (root / "control/android-device").mkdir(
+            parents=True,
+            exist_ok=True,
+        )
+        clock = MutableClock(1000)
+        phone_ai = FakePhoneAI(
+            phone_ai_result,
+            raises=phone_ai_raises,
+        )
+        bridge = FakeBridge(
+            xml_sequence
+            or [
+                FakeBridge.COMPLETED_XML,
+                FakeBridge.COMPLETED_XML,
+            ]
+        )
+        watchdog = FakeWatchdog(
+            root,
+            clock=clock,
+            phone_ai=phone_ai,
+            bridge=bridge,
+        )
+        watchdog.contracts.set_state(
+            "master",
+            "RUNNING",
+            reason="synthetic test",
+        )
+        clock.value = 1401
+        return temp, watchdog, phone_ai, bridge
+
+    def _runtime_target(self):
+        return {
+            "chat_id": "master",
+            "use_runtime_contract": True,
+            "phone_local_ai_ambiguity_enabled": True,
+            "resume_message": "Resume work.",
+            "running_heartbeat_timeout_seconds": 300,
+            "ambiguity_probe_seconds": 5,
+        }
+
+    def test_runtime_ambiguous_unknown_holds_without_send(self):
+        temp, watchdog, phone_ai, bridge = self._runtime_watchdog(
+            phone_ai_result={
+                "label": "UNKNOWN",
+                "queried": True,
+                "confidence": 0.7,
+                "margin": 0.2,
+                "reason": "low_confidence",
+            },
+        )
+        with temp:
+            result = watchdog.tick_target(
+                self._runtime_target(),
+                {},
+                {},
+            )
+        self.assertEqual(
+            "PHONE_AI_HOLD",
+            result["result"],
+        )
+        self.assertEqual(1, len(phone_ai.calls))
+        self.assertEqual("AMBIGUOUS", phone_ai.calls[0]["deterministic_state"])
+        self.assertEqual([], bridge.send_calls)
+        self.assertEqual([], bridge.transport.shell_calls)
+
+    def test_runtime_classifier_exception_holds_without_send(self):
+        temp, watchdog, phone_ai, bridge = self._runtime_watchdog(
+            phone_ai_raises=True,
+        )
+        with temp:
+            result = watchdog.tick_target(
+                self._runtime_target(),
+                {},
+                {},
+            )
+        self.assertEqual(
+            "PHONE_AI_HOLD",
+            result["result"],
+        )
+        self.assertEqual(1, len(phone_ai.calls))
+        self.assertEqual([], bridge.send_calls)
+        self.assertEqual([], bridge.transport.shell_calls)
+        self.assertEqual(
+            "UNKNOWN",
+            result["phone_ai"]["label"],
+        )
+        self.assertTrue(
+            str(result["phone_ai"]["reason"]).startswith(
+                "classifier_error:"
+            )
+        )
+
+    def test_runtime_ai_ended_may_resume_without_pressing_stop(self):
+        temp, watchdog, phone_ai, bridge = self._runtime_watchdog(
+            phone_ai_result={
+                "label": "ENDED",
+                "queried": True,
+                "confidence": 0.95,
+                "margin": 0.7,
+                "reason": "classified",
+            },
+        )
+        with temp:
+            result = watchdog.tick_target(
+                self._runtime_target(),
+                {},
+                {},
+            )
+        self.assertEqual(
+            "RESPONDING",
+            result["result"],
+        )
+        self.assertEqual("RESUME", result["action"])
+        self.assertEqual(1, len(phone_ai.calls))
+        self.assertEqual(1, len(bridge.send_calls))
+        self.assertEqual([], bridge.transport.shell_calls)
+
+    def test_runtime_user_draft_guard_bypasses_phone_ai(self):
+        temp, watchdog, phone_ai, bridge = self._runtime_watchdog(
+            xml_sequence=[
+                FakeBridge.DRAFT_XML,
+            ],
+        )
+        with temp:
+            result = watchdog.tick_target(
+                self._runtime_target(),
+                {},
+                {},
+            )
+        self.assertEqual(
+            "USER_DRAFT_HOLD",
+            result["result"],
+        )
+        self.assertEqual([], phone_ai.calls)
+        self.assertEqual([], bridge.send_calls)
+        self.assertEqual([], bridge.transport.shell_calls)
+
+    def test_runtime_rate_limit_guard_bypasses_phone_ai(self):
+        temp, watchdog, phone_ai, bridge = self._runtime_watchdog(
+            xml_sequence=[
+                FakeBridge.RATE_LIMIT_XML,
+            ],
+        )
+        with temp:
+            result = watchdog.tick_target(
+                self._runtime_target(),
+                {},
+                {},
+            )
+        self.assertEqual(
+            "RATE_LIMITED",
+            result["result"],
+        )
+        self.assertEqual([], phone_ai.calls)
+        self.assertEqual([], bridge.send_calls)
+        self.assertEqual([], bridge.transport.shell_calls)
+
+    def test_runtime_native_progress_bypasses_phone_ai(self):
+        temp, watchdog, phone_ai, bridge = self._runtime_watchdog(
+            xml_sequence=[
+                FakeBridge.WORKING_XML_1,
+                FakeBridge.WORKING_XML_2,
+            ],
+        )
+        with temp:
+            result = watchdog.tick_target(
+                self._runtime_target(),
+                {},
+                {},
+            )
+        self.assertEqual(
+            "WORKING",
+            result["result"],
+        )
+        self.assertEqual([], phone_ai.calls)
+        self.assertEqual([], bridge.send_calls)
+
+    def test_runtime_fresh_contract_bypasses_phone_and_bridge(self):
+        temp = tempfile.TemporaryDirectory()
+        root = Path(temp.name)
+        (root / "control/android-device").mkdir(
+            parents=True,
+            exist_ok=True,
+        )
+        clock = MutableClock(1000)
+        phone_ai = FakePhoneAI()
+        bridge = FakeBridge(
+            [FakeBridge.COMPLETED_XML],
+        )
+        watchdog = FakeWatchdog(
+            root,
+            clock=clock,
+            phone_ai=phone_ai,
+            bridge=bridge,
+        )
+        watchdog.contracts.set_state(
+            "master",
+            "RUNNING",
+            reason="fresh synthetic test",
+        )
+        with temp:
+            result = watchdog.tick_target(
+                self._runtime_target(),
+                {},
+                {},
+            )
+        self.assertEqual(
+            "RUNNING_HEARTBEAT",
+            result["result"],
+        )
+        self.assertEqual([], phone_ai.calls)
+        self.assertEqual(0, bridge.index)
+        self.assertEqual([], bridge.send_calls)
 
     def test_source_has_no_paid_openai_api_path(self):
         source = (ROOT / "lib/logres_chat_watchdog.py").read_text()
