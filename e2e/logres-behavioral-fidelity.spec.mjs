@@ -69,6 +69,144 @@ async function dialoguePoint(page) {
   return logicalPoint(page, logical)
 }
 
+async function closeEvidenceBackedDialogue(page) {
+  for (
+    let attempt =
+      0;
+    attempt <
+      8;
+    attempt +=
+      1
+  ) {
+    const before =
+      await page.evaluate(
+        () =>
+          window
+            .__AWAKENED_REALMS_GAME__
+            .registry
+            .get(
+              'logres.playableField.npcDialogue',
+            ),
+      )
+
+    if (
+      !before ||
+      before.phase !==
+        'DIALOGUE_OPEN'
+    ) {
+      return
+    }
+
+    if (
+      !Number.isInteger(
+        before.lineCount,
+      ) ||
+      before.lineCount <
+        1 ||
+      before.lineCount >
+        8
+    ) {
+      throw new Error(
+        'NPC dialogue exposes an invalid evidence-backed line count.',
+      )
+    }
+
+    const point =
+      await dialoguePoint(
+        page,
+      )
+
+    await page.mouse.click(
+      point.x,
+      point.y,
+    )
+
+    await page.waitForFunction(
+      expected => {
+        const dialogue =
+          window
+            .__AWAKENED_REALMS_GAME__
+            .registry
+            .get(
+              'logres.playableField.npcDialogue',
+            )
+
+        return (
+          !dialogue ||
+          dialogue.phase !==
+            'DIALOGUE_OPEN' ||
+          dialogue.lineIndex !==
+            expected.lineIndex ||
+          dialogue.completedSessions !==
+            expected.completedSessions
+        )
+      },
+      {
+        lineIndex:
+          before.lineIndex,
+        completedSessions:
+          before.completedSessions,
+      },
+      {
+        timeout:
+          5_000,
+      },
+    )
+
+    const after =
+      await page.evaluate(
+        () =>
+          window
+            .__AWAKENED_REALMS_GAME__
+            .registry
+            .get(
+              'logres.playableField.npcDialogue',
+            ),
+      )
+
+    if (
+      after?.phase ===
+      'DIALOGUE_OPEN'
+    ) {
+      expect(
+        after.lineIndex,
+      ).toBe(
+        before.lineIndex +
+          1,
+      )
+      expect(
+        after.completedSessions,
+      ).toBe(
+        before.completedSessions,
+      )
+      continue
+    }
+
+    expect(
+      before.lineIndex,
+    ).toBe(
+      before.lineCount -
+        1,
+    )
+    expect(
+      after?.phase,
+    ).toBe(
+      'READY',
+    )
+    expect(
+      after?.completedSessions,
+    ).toBe(
+      before.completedSessions +
+        1,
+    )
+    return
+  }
+
+  throw new Error(
+    'NPC dialogue did not close within bounded evidence-backed interaction attempts.',
+  )
+}
+
 async function tapSelectedWeaponCover(page) {
   const accepted = await page.evaluate(() => {
     const game = window.__AWAKENED_REALMS_GAME__
@@ -163,18 +301,9 @@ test(
       }
     })
 
-    for (let index = 0; index < 2; index += 1) {
-      const point = await dialoguePoint(page)
-      await page.mouse.click(point.x, point.y)
-      if (index === 0) {
-        await page.waitForFunction(
-          () =>
-            window.__AWAKENED_REALMS_GAME__.registry.get(
-              'logres.playableField.npcDialogue',
-            )?.lineIndex === 1,
-        )
-      }
-    }
+    await closeEvidenceBackedDialogue(
+      page,
+    )
 
     await page.waitForFunction(
       () =>

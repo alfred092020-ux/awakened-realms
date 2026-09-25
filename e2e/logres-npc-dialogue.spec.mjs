@@ -157,13 +157,32 @@ async function closeDialogue(
   page,
 ) {
   for (
-    let index =
+    let attempt =
       0;
-    index <
-      2;
-    index +=
+    attempt <
+      8;
+    attempt +=
       1
   ) {
+    const before =
+      await page.evaluate(
+        () =>
+          window
+            .__AWAKENED_REALMS_GAME__
+            .registry
+            .get(
+              'logres.playableField.npcDialogue',
+            ),
+      )
+
+    if (
+      !before ||
+      before.phase !==
+        'DIALOGUE_OPEN'
+    ) {
+      return
+    }
+
     const point =
       await dialogueSurfacePoint(
         page,
@@ -174,27 +193,46 @@ async function closeDialogue(
       point.y,
     )
 
-    if (
-      index ===
-      0
-    ) {
-      await page.waitForFunction(
-        () =>
+    await page.waitForFunction(
+      expected => {
+        const dialogue =
           window
             .__AWAKENED_REALMS_GAME__
             .registry
             .get(
               'logres.playableField.npcDialogue',
             )
-            ?.lineIndex ===
-          1,
-      )
-    }
+
+        return (
+          !dialogue ||
+          dialogue.phase !==
+            'DIALOGUE_OPEN' ||
+          dialogue.lineIndex !==
+            expected.lineIndex ||
+          dialogue.completedSessions !==
+            expected.completedSessions
+        )
+      },
+      {
+        lineIndex:
+          before.lineIndex,
+        completedSessions:
+          before.completedSessions,
+      },
+      {
+        timeout:
+          5_000,
+      },
+    )
   }
+
+  throw new Error(
+    'NPC dialogue did not close within bounded interaction attempts.',
+  )
 }
 
 test(
-  'visible field NPC repeats reconstructed dialogue without duplicating encounter or listener state',
+  'field NPC hit target repeats bounded dialogue without debug presentation or listener duplication',
   async ({
     page,
     request,
@@ -412,6 +450,25 @@ test(
                 registry.get(
                   'logres.playableField.npcDialoguePresentation',
                 ),
+              npcVisualPresentation:
+                registry.get(
+                  'logres.playableField.npcVisualPresentation',
+                ),
+              npcMarkerType:
+                scene
+                  .playableNpcMarker
+                  ?.type ??
+                null,
+              npcMarkerWidth:
+                scene
+                  .playableNpcMarker
+                  ?.width ??
+                null,
+              npcMarkerHeight:
+                scene
+                  .playableNpcMarker
+                  ?.height ??
+                null,
               encounterStatus:
                 registry.get(
                   'logres.playableField.encounterStatus',
@@ -490,7 +547,7 @@ test(
           lineIndex:
             0,
           lineCount:
-            2,
+            1,
           completedSessions:
             session -
             1,
@@ -505,6 +562,28 @@ test(
           visibleSurfaceCount:
             1,
         },
+        npcVisualPresentation: {
+          mode:
+            'INVISIBLE_INTERACTION_HIT_TARGET',
+          provenance:
+            'RECONSTRUCTED',
+          hitTarget: {
+            width:
+              56,
+            height:
+              72,
+          },
+          historicalGlobalActorIdentity:
+            'UNRESOLVED',
+          historicalGlobalDialoguePayload:
+            'UNRESOLVED',
+        },
+        npcMarkerType:
+          'Zone',
+        npcMarkerWidth:
+          56,
+        npcMarkerHeight:
+          72,
         encounterStatus:
           baseline
             .encounterStatus,
@@ -520,6 +599,27 @@ test(
         npcListeners:
           1,
       })
+
+      const playerDialogue =
+        openState.dialogue
+          .currentLine
+          .toLowerCase()
+
+      for (
+        const forbidden of [
+          'reconstructed',
+          'unresolved',
+          'evidence',
+          'historical',
+          'retired global',
+        ]
+      ) {
+        expect(
+          playerDialogue,
+        ).not.toContain(
+          forbidden,
+        )
+      }
 
       await closeDialogue(
         page,

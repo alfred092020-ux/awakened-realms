@@ -147,6 +147,16 @@ test(
                 'logres.playableField.encounterVisualPresentation',
               ),
 
+            npcVisualPresentation:
+              registry.get(
+                'logres.playableField.npcVisualPresentation',
+              ),
+
+            npcMarkerType:
+              scene.playableNpcMarker
+                ?.type ??
+              null,
+
             playerVisualPresentation:
               registry.get(
                 'logres.playableField.playerVisualPresentation',
@@ -305,6 +315,28 @@ test(
           'RECONSTRUCTED',
       },
     })
+
+    expect(
+      state.npcVisualPresentation,
+    ).toMatchObject({
+      mode:
+        'INVISIBLE_INTERACTION_HIT_TARGET',
+
+      provenance:
+        'RECONSTRUCTED',
+
+      historicalGlobalActorIdentity:
+        'UNRESOLVED',
+
+      historicalGlobalDialoguePayload:
+        'UNRESOLVED',
+    })
+
+    expect(
+      state.npcMarkerType,
+    ).toBe(
+      'Zone',
+    )
 
     expect(
       state.currentCoord,

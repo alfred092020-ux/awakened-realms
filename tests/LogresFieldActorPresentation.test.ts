@@ -1,3 +1,7 @@
+import fs from 'node:fs'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
+
 import {
   execFileSync,
 } from 'node:child_process'
@@ -85,6 +89,75 @@ describe(
           repeat:
             -1,
         })
+      },
+    )
+
+    it(
+      'uses a bounded invisible NPC interaction zone instead of debug presentation',
+      () => {
+        const here =
+          path.dirname(
+            fileURLToPath(
+              import.meta.url,
+            ),
+          )
+
+        const source =
+          fs.readFileSync(
+            path.resolve(
+              here,
+              '../src/game/logres/field/controllers/LogresFieldActorController.ts',
+            ),
+            'utf8',
+          )
+
+        const start =
+          source.indexOf(
+            'createNpcMarker(',
+          )
+        const end =
+          source.indexOf(
+            'createEncounterMarker(',
+            start,
+          )
+        const npcBlock =
+          source.slice(
+            start,
+            end,
+          )
+
+        expect(start)
+          .toBeGreaterThanOrEqual(
+            0,
+          )
+        expect(end)
+          .toBeGreaterThan(
+            start,
+          )
+        expect(npcBlock)
+          .toContain(
+            '.zone(',
+          )
+        expect(npcBlock)
+          .not.toContain(
+            '.circle(',
+          )
+        expect(npcBlock)
+          .not.toContain(
+            "'NPC'",
+          )
+        expect(npcBlock)
+          .toContain(
+            "'INVISIBLE_INTERACTION_HIT_TARGET'",
+          )
+        expect(npcBlock)
+          .toContain(
+            'historicalGlobalActorIdentity',
+          )
+        expect(npcBlock)
+          .toContain(
+            "'UNRESOLVED'",
+          )
       },
     )
 

@@ -47,6 +47,38 @@ describe(
         ).toBe(
           'UNRESOLVED',
         )
+
+
+        expect(
+          LOGRES_RECONSTRUCTED_FIELD_GUIDE_DIALOGUE
+            .lines,
+        ).toEqual([
+          'Welcome to the Millennium Tree.',
+        ])
+
+        const playerDialogue =
+          LOGRES_RECONSTRUCTED_FIELD_GUIDE_DIALOGUE
+            .lines
+            .join(
+              ' ',
+            )
+            .toLowerCase()
+
+        for (
+          const forbidden of [
+            'reconstructed',
+            'unresolved',
+            'evidence',
+            'historical',
+            'retired global',
+          ]
+        ) {
+          expect(
+            playerDialogue,
+          ).not.toContain(
+            forbidden,
+          )
+        }
       },
     )
 
@@ -157,7 +189,7 @@ describe(
     )
 
     it(
-      'advances local reconstructed lines and releases the interaction gate on close',
+      'closes the single local guide line and releases the interaction gate',
       () => {
         const authority =
           new ReconstructedLogresNpcDialogueAuthority(
@@ -179,17 +211,19 @@ describe(
         )
 
         expect(
-          authority.advance(),
-        ).toBe(
-          false,
-        )
-
-        expect(
-          authority.snapshot()
-            .lineIndex,
-        ).toBe(
-          1,
-        )
+          authority.snapshot(),
+        ).toMatchObject({
+          phase:
+            'DIALOGUE_OPEN',
+          lineIndex:
+            0,
+          lineCount:
+            1,
+          currentLine:
+            'Welcome to the Millennium Tree.',
+          historicalGlobalPayload:
+            'UNRESOLVED',
+        })
 
         expect(
           authority.advance(),

@@ -60,7 +60,7 @@ export class LogresFieldActorController {
       null
 
   private npcMarker:
-    | Phaser.GameObjects.Arc
+    | Phaser.GameObjects.Zone
     | null =
       null
 
@@ -425,60 +425,32 @@ export class LogresFieldActorController {
         transform,
       )
 
+    /*
+     * RECONSTRUCTED INTERACTION HIT TARGET.
+     *
+     * The recovered Global client and user-supplied footage establish field
+     * NPC interaction behavior, but the exact historical Global actor sprite
+     * for this local guide remains unresolved. Keep the interaction usable
+     * without presenting a debug circle, placeholder label, or invented actor
+     * identity as player-facing content.
+     */
     this.npcMarker =
       this.scene.add
-        .circle(
+        .zone(
           point.x,
           point.y,
-          18,
-          0x2563eb,
-          0.96,
-        )
-        .setStrokeStyle(
-          4,
-          0x0f172a,
-          1,
+          56,
+          72,
         )
         .setDepth(
           904,
         )
-        .setInteractive({
-          useHandCursor:
-            true,
-        })
+        .setInteractive()
 
-    this.scene.add
-      .text(
-        point.x,
-        point.y -
-          33,
-        'NPC',
-        {
-          fontFamily:
-            'Arial, sans-serif',
-          fontSize:
-            '13px',
-          color:
-            '#ffffff',
-          fontStyle:
-            'bold',
-          backgroundColor:
-            '#0f172a',
-          padding: {
-            x:
-              5,
-            y:
-              3,
-          },
-        },
-      )
-      .setOrigin(
-        0.5,
-        1,
-      )
-      .setDepth(
-        905,
-      )
+    this.npcMarker
+      .input!
+      .cursor =
+        'pointer'
 
     this.npcMarker.on(
       'pointerdown',
@@ -506,9 +478,15 @@ export class LogresFieldActorController {
       'logres.playableField.npcVisualPresentation',
       {
         mode:
-          'RECONSTRUCTED_FALLBACK',
+          'INVISIBLE_INTERACTION_HIT_TARGET',
         provenance:
           'RECONSTRUCTED',
+        hitTarget: {
+          width:
+            56,
+          height:
+            72,
+        },
         historicalGlobalActorIdentity:
           'UNRESOLVED',
         historicalGlobalDialoguePayload:

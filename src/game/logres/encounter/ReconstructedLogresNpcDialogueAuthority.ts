@@ -373,7 +373,6 @@ export const LOGRES_RECONSTRUCTED_FIELD_GUIDE_DIALOGUE =
     lines:
       Object.freeze([
         'Welcome to the Millennium Tree.',
-        'This guide dialogue is reconstructed; the retired Global dialogue payload remains unresolved.',
       ] as const),
     historicalGlobalPayload:
       LOGRES_GLOBAL_NPC_DIALOGUE_PAYLOAD_CONFIDENCE,
