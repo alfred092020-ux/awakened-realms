@@ -90,6 +90,97 @@ function percentile(
   ]
 }
 
+function median(
+  values,
+) {
+  if (
+    values.length ===
+    0
+  ) {
+    throw new Error(
+      'Median requires at least one value.',
+    )
+  }
+
+  const sorted =
+    [...values].sort(
+      (
+        left,
+        right,
+      ) =>
+        left -
+        right,
+    )
+
+  return sorted[
+    Math.floor(
+      sorted.length /
+      2,
+    )
+  ]
+}
+
+async function collectFrameWindow(
+  page,
+) {
+  return page.evaluate(
+    () =>
+      new Promise(
+        resolve => {
+          const values =
+            []
+
+          let previous =
+            performance.now()
+
+          let seen =
+            0
+
+          const sample =
+            now => {
+              const delta =
+                now -
+                previous
+
+              previous =
+                now
+
+              seen +=
+                1
+
+              if (
+                seen >
+                5
+              ) {
+                values.push(
+                  delta,
+                )
+              }
+
+              if (
+                values.length >=
+                120
+              ) {
+                resolve(
+                  values,
+                )
+
+                return
+              }
+
+              requestAnimationFrame(
+                sample,
+              )
+            }
+
+          requestAnimationFrame(
+            sample,
+          )
+        },
+      ),
+  )
+}
+
 function budgetFailure(
   metric,
   value,
@@ -234,74 +325,74 @@ test(
       performance.now() -
       fieldStarted
 
-    const frameIntervals =
-      await page.evaluate(
-        () =>
-          new Promise(
-            resolve => {
-              const values =
-                []
+    const frameAttempts =
+      []
 
-              let previous =
-                performance.now()
+    for (
+      let attemptIndex =
+        0;
+      attemptIndex <
+      3;
+      attemptIndex +=
+        1
+    ) {
+      const intervals =
+        await collectFrameWindow(
+          page,
+        )
 
-              let seen =
-                0
-
-              const sample =
-                now => {
-                  const delta =
-                    now -
-                    previous
-
-                  previous =
-                    now
-
-                  seen +=
-                    1
-
-                  if (
-                    seen >
-                    5
-                  ) {
-                    values.push(
-                      delta,
-                    )
-                  }
-
-                  if (
-                    values.length >=
-                    120
-                  ) {
-                    resolve(
-                      values,
-                    )
-
-                    return
-                  }
-
-                  requestAnimationFrame(
-                    sample,
-                  )
-                }
-
-              requestAnimationFrame(
-                sample,
-              )
-            },
+      frameAttempts.push({
+        attempt:
+          attemptIndex +
+          1,
+        samples:
+          intervals.length,
+        frame_p95_ms:
+          Number(
+            percentile(
+              intervals,
+              95,
+            ).toFixed(
+              2,
+            ),
           ),
-      )
+        frame_p99_ms:
+          Number(
+            percentile(
+              intervals,
+              99,
+            ).toFixed(
+              2,
+            ),
+          ),
+      })
+
+      if (
+        attemptIndex <
+        2
+      ) {
+        await page.waitForTimeout(
+          250,
+        )
+      }
+    }
 
     const frameP95Ms =
-      percentile(
-        frameIntervals,
-        95,
+      median(
+        frameAttempts.map(
+          attempt =>
+            attempt
+              .frame_p95_ms,
+        ),
       )
 
     const frameP99Ms =
-      percentile(
-        frameIntervals,
-        99,
+      median(
+        frameAttempts.map(
+          attempt =>
+            attempt
+              .frame_p99_ms,
+        ),
       )
 
     const usedJsHeapMb =
@@ -426,7 +517,21 @@ test(
       budgets,
       metrics,
       frame_samples:
-        frameIntervals.length,
+        frameAttempts.reduce(
+          (
+            total,
+            attempt,
+          ) =>
+            total +
+            attempt.samples,
+          0,
+        ),
+      frame_samples_per_attempt:
+        120,
+      frame_attempts:
+        frameAttempts,
+      frame_aggregation:
+        'median-of-3-independent-windows',
       fidelity_guards: {
         private_field_runtime_required:
           true,

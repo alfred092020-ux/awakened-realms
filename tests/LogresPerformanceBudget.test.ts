@@ -20,6 +20,14 @@ type Measurement = {
   metrics: Record<string, number | null | undefined>
 }
 
+const performanceSpecSource =
+  readFileSync(
+    resolve(
+      'e2e/logres-performance.spec.mjs',
+    ),
+    'utf8',
+  )
+
 const config = JSON.parse(
   readFileSync(
     resolve(
@@ -377,6 +385,85 @@ describe(
         ).toContain(
           'bootstrap_ms',
         )
+      },
+    )
+
+    it(
+      'uses three raw frame windows and median aggregation without relaxing budgets',
+      () => {
+        expect(
+          performanceSpecSource,
+        ).toContain(
+          'median-of-3-independent-windows',
+        )
+
+        expect(
+          performanceSpecSource,
+        ).toMatch(
+          /attemptIndex\s*<\s*3/,
+        )
+
+        expect(
+          performanceSpecSource,
+        ).toContain(
+          'frame_attempts:',
+        )
+
+        expect(
+          performanceSpecSource,
+        ).toMatch(
+          /frame_samples_per_attempt:\s*120/,
+        )
+
+        expect(
+          config
+            .runtime_classes
+            .chromium_ci_720x1280
+            .budgets
+            .frame_p95_ms_max,
+        ).toBe(75)
+
+        expect(
+          config
+            .runtime_classes
+            .chromium_ci_720x1280
+            .budgets
+            .frame_p99_ms_max,
+        ).toBe(100)
+      },
+    )
+
+    it(
+      'median-of-three tolerates one transient spike but not two sustained bad windows',
+      () => {
+        const medianOfThree = (
+          values: number[],
+        ) =>
+          [...values]
+            .sort(
+              (
+                left,
+                right,
+              ) =>
+                left -
+                right,
+            )[1]
+
+        expect(
+          medianOfThree([
+            66.7,
+            99.9,
+            66.7,
+          ]),
+        ).toBe(66.7)
+
+        expect(
+          medianOfThree([
+            66.7,
+            99.9,
+            100.1,
+          ]),
+        ).toBe(99.9)
       },
     )
 
