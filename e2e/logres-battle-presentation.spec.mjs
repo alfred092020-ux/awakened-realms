@@ -94,9 +94,9 @@ test('normal battle has visible stage actors, five controls, and cannot resolve 
 
   expect(state.controls).toBe(5)
   expect(state.demoButton).toBe(false)
-  expect(state.labels.join(' ')).not.toMatch(/DEMO|RESOLVE|VICTORY/)
-  expect(state.labels.join(' ')).toContain('RECONSTRUCTED BATTLE')
-  expect(state.stageShapeCount).toBeGreaterThanOrEqual(4)
+  expect(state.labels.join(' ')).not.toMatch(/DEMO|RESOLVE|VICTORY|RECONSTRUCTED BATTLE/)
+  expect(state.labels).toContain('BATTLE')
+  expect(state.stageShapeCount).toBeGreaterThanOrEqual(6)
 
   expect(state.stage).toMatchObject({
     referenceSex: 'm',
@@ -107,6 +107,7 @@ test('normal battle has visible stage actors, five controls, and cannot resolve 
       battlePositionToScreenTransform: 'UNRESOLVED',
       screenPlacement: 'RECONSTRUCTED',
       stageGround: 'RECONSTRUCTED_PRESENTATION_ONLY',
+      combatFeedback: 'RECONSTRUCTED_PRESENTATION_ONLY',
       historicalStats: 'UNRESOLVED',
     },
     player: {
