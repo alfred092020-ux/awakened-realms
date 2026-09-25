@@ -404,3 +404,34 @@ For hosts with persistent system services, the versioned unit is `ops/logres-con
     sudo systemctl status logres-supervisor.service --no-pager
 
 The unit uses `Restart=always`, starts after `network-online.target`, runs as `ubuntu`, and preserves the existing supervisor lock as the final duplicate-execution guard. Existing cron entries remain a fallback and share the same task locks.
+
+## Native ChatGPT phone wake bridge
+
+logres-chat-wake is a guarded, local-only bridge from the Logres VM to the
+owner's already-authorized Android phone. It reuses the existing reverse-SSH
+to Termux to phone-side Wireless ADB transport; it does not use the OpenAI API.
+
+The bridge targets one configured ChatGPT conversation with an exact
+https://chatgpt.com/c/... URL and verifies the native app using semantic
+Android UI data. Composer and Send controls are located from the UI hierarchy
+and their current bounds, never from hard-coded screen coordinates.
+
+Runtime configuration lives outside Git at
+/home/ubuntu/logres/control/android-device/chat-bridge.json; the committed
+config/chat_bridge.default.json is disabled and intentionally contains no
+real conversation identifier. Only keys in approved_messages may be sent.
+There is no command-line free-text send interface.
+
+Safety controls are fail-closed: /tmp/logres-phone-hardware-qa.lock prevents
+wake/send while hardware QA owns the phone, chat-bridge.paused is a manual
+kill switch, command IDs are deduplicated, actions are rate limited, low-battery
+or thermal/ADB blocks defer work, existing drafts are never overwritten, and
+every attempted wake/send is appended to chat-bridge-audit.jsonl.
+
+Useful commands:
+  logres-chat-wake status --local-only
+  logres-chat-wake dry-run continue
+  logres-chat-wake pause
+  logres-chat-wake resume
+  logres-chat-wake wake
+  logres-chat-wake send continue --command-id <stable-id>

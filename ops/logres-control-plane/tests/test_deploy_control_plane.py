@@ -40,6 +40,7 @@ PRODUCTION_FILES = (
     "bin/logres-chaos-cert",
     "bin/logres-health-confidence",
     "bin/logres-chat-memory",
+    "bin/logres-chat-wake",
     "bin/logres-tool-broker",
     "bin/logres-chat-start",
     "bin/logres-worker-start",
@@ -109,6 +110,7 @@ PRODUCTION_FILES = (
     "lib/logres_chaos_cert.py",
     "lib/logres_health_confidence.py",
     "lib/logres_journal.py",
+    "lib/logres_chat_wake.py",
     "lib/logres_capability_broker.py",
     "lib/logres_mission_coverage.py",
     "lib/logres_recon_loop.py",
@@ -155,6 +157,7 @@ PRODUCTION_FILES = (
     "lib/logres_supervisor.py",
     "lib/logres_throughput.py",
     "config/autoflow.default.json",
+    "config/chat_bridge.default.json",
     "config/completion_manifest.json",
     "config/milestone_contracts.json",
     "config/mission.default.json",
@@ -213,6 +216,11 @@ class DeployControlPlaneTests(unittest.TestCase):
             self.assertTrue((target / "config" / "autoflow.default.json").is_file())
             self.assertTrue((target / "config" / "mission.default.json").is_file())
             self.assertTrue((target / "bin" / "logres-mission").is_file())
+            self.assertTrue((target / "bin" / "logres-chat-wake").is_file())
+            self.assertTrue((target / "lib" / "logres_chat_wake.py").is_file())
+            self.assertTrue(
+                (target / "config" / "chat_bridge.default.json").is_file()
+            )
             self.assertEqual(
                 0o700,
                 stat.S_IMODE((target / "bin" / "logres-ai").stat().st_mode),

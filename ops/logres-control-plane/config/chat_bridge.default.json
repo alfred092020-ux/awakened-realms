@@ -1,0 +1,16 @@
+{
+  "enabled": false,
+  "target_name": "Logres",
+  "target_url": "https://chatgpt.com/c/CONFIGURE-EXACT-LOGRES-CHAT",
+  "target_semantic_labels": [
+    "Logres"
+  ],
+  "min_interval_seconds": 300,
+  "settle_seconds": 0.8,
+  "allow_low_battery_wake": false,
+  "approved_messages": {
+    "continue": "Continue Logres work.",
+    "status": "Status",
+    "health": "Check Logres system health and continue safe work."
+  }
+}
