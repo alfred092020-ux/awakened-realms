@@ -37,6 +37,7 @@ MANIFEST: dict[str, tuple[str, int]] = {
     "bin/logres-chat-memory": ("bin/logres-chat-memory", 0o755),
     "bin/logres-tool-broker": ("bin/logres-tool-broker", 0o755),
     "bin/logres-chat-start": ("bin/logres-chat-start", 0o755),
+    "bin/logres-worker-start": ("bin/logres-worker-start", 0o755),
     "bin/logres-journal": ("bin/logres-journal", 0o755),
     "bin/logres-mission-coverage": ("bin/logres-mission-coverage", 0o755),
     "bin/logres-replay": ("bin/logres-replay", 0o755),
