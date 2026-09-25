@@ -4,6 +4,8 @@ import sqlite3
 import subprocess
 import sys
 import tempfile
+import threading
+import time
 import unittest
 from pathlib import Path
 
@@ -804,6 +806,355 @@ class IntegrationCliTests(unittest.TestCase):
         )
         self.assertNotEqual(0, failed.returncode)
         self.assertIn("secret-bearing key rejected", failed.stderr)
+
+
+class IntegrationConcurrencyRegressionTests(unittest.TestCase):
+    def test_concurrent_intent_dedupe_converges_without_errors(self):
+        with tempfile.TemporaryDirectory() as td:
+            db = Path(td) / "integration.sqlite"
+            seed = sqlite3.connect(db)
+            seed.row_factory = sqlite3.Row
+            ensure_schema(seed)
+            seed.close()
+
+            barrier = threading.Barrier(8)
+            ids = []
+            errors = []
+            lock = threading.Lock()
+
+            def worker(index):
+                conn = sqlite3.connect(db, timeout=0)
+                conn.row_factory = sqlite3.Row
+                try:
+                    barrier.wait()
+                    result = create_intent(
+                        conn,
+                        provider="linear",
+                        target_key="logres",
+                        operation="issue.upsert",
+                        action_class="REVERSIBLE_WRITE",
+                        canonical_entity_type="task",
+                        canonical_entity_id="T1",
+                        payload={"title": "One"},
+                        created_by=f"worker-{index}",
+                        dedupe_key="same-intent",
+                    )
+                    with lock:
+                        ids.append(result["id"])
+                except Exception as exc:
+                    with lock:
+                        errors.append(type(exc).__name__ + ":" + str(exc))
+                finally:
+                    conn.close()
+
+            threads = [threading.Thread(target=worker, args=(i,)) for i in range(8)]
+            for thread in threads:
+                thread.start()
+            for thread in threads:
+                thread.join(timeout=5)
+
+            self.assertEqual([], errors)
+            self.assertEqual(8, len(ids))
+            self.assertEqual(1, len(set(ids)))
+
+    def test_concurrent_receipt_dedupe_converges_without_errors(self):
+        with tempfile.TemporaryDirectory() as td:
+            db = Path(td) / "integration.sqlite"
+            seed = sqlite3.connect(db)
+            seed.row_factory = sqlite3.Row
+            ensure_schema(seed)
+            intent = create_intent(
+                seed,
+                provider="linear",
+                target_key="logres",
+                operation="issue.upsert",
+                action_class="REVERSIBLE_WRITE",
+                canonical_entity_type="task",
+                canonical_entity_id="T1",
+                payload={"title": "One"},
+                created_by="seed",
+                dedupe_key="receipt-intent",
+            )
+            seed.close()
+
+            barrier = threading.Barrier(8)
+            ids = []
+            errors = []
+            lock = threading.Lock()
+
+            def worker(index):
+                conn = sqlite3.connect(db, timeout=0)
+                conn.row_factory = sqlite3.Row
+                try:
+                    barrier.wait()
+                    result = append_receipt(
+                        conn,
+                        intent_id=intent["id"],
+                        receipt_key="same-receipt",
+                        outcome="SUCCEEDED",
+                        chat_id="plugins",
+                        attempt_number=1,
+                        response_metadata={"ok": True},
+                    )
+                    with lock:
+                        ids.append(result["id"])
+                except Exception as exc:
+                    with lock:
+                        errors.append(type(exc).__name__ + ":" + str(exc))
+                finally:
+                    conn.close()
+
+            threads = [threading.Thread(target=worker, args=(i,)) for i in range(8)]
+            for thread in threads:
+                thread.start()
+            for thread in threads:
+                thread.join(timeout=5)
+
+            self.assertEqual([], errors)
+            self.assertEqual(8, len(ids))
+            self.assertEqual(1, len(set(ids)))
+
+    def test_concurrent_proposal_dedupe_converges_without_errors(self):
+        with tempfile.TemporaryDirectory() as td:
+            db = Path(td) / "integration.sqlite"
+            seed = sqlite3.connect(db)
+            seed.row_factory = sqlite3.Row
+            ensure_schema(seed)
+            seed.close()
+
+            barrier = threading.Barrier(8)
+            ids = []
+            errors = []
+            lock = threading.Lock()
+
+            def worker(index):
+                conn = sqlite3.connect(db, timeout=0)
+                conn.row_factory = sqlite3.Row
+                try:
+                    barrier.wait()
+                    result = create_proposal(
+                        conn,
+                        dedupe_key="same-proposal",
+                        provider="linear",
+                        target_key="logres",
+                        change_type="description.changed",
+                        observed={"description": "edit"},
+                        risk_class="REVIEW",
+                    )
+                    with lock:
+                        ids.append(result["id"])
+                except Exception as exc:
+                    with lock:
+                        errors.append(type(exc).__name__ + ":" + str(exc))
+                finally:
+                    conn.close()
+
+            threads = [threading.Thread(target=worker, args=(i,)) for i in range(8)]
+            for thread in threads:
+                thread.start()
+            for thread in threads:
+                thread.join(timeout=5)
+
+            self.assertEqual([], errors)
+            self.assertEqual(8, len(ids))
+            self.assertEqual(1, len(set(ids)))
+
+    def test_cursor_update_retries_writer_lock_and_preserves_monotonicity(self):
+        with tempfile.TemporaryDirectory() as td:
+            db = Path(td) / "integration.sqlite"
+            holder = sqlite3.connect(db, timeout=0, check_same_thread=False)
+            holder.row_factory = sqlite3.Row
+            contender = sqlite3.connect(db, timeout=0)
+            contender.row_factory = sqlite3.Row
+            ensure_schema(holder)
+            ensure_schema(contender)
+            set_cursor(
+                holder,
+                provider="linear",
+                target_key="logres",
+                cursor_name="updated",
+                cursor_value="100",
+                monotonic=True,
+            )
+            holder.execute("begin immediate")
+
+            def release():
+                time.sleep(0.08)
+                holder.commit()
+
+            thread = threading.Thread(target=release)
+            thread.start()
+            try:
+                result = set_cursor(
+                    contender,
+                    provider="linear",
+                    target_key="logres",
+                    cursor_name="updated",
+                    cursor_value="200",
+                    monotonic=True,
+                )
+            finally:
+                thread.join(timeout=2)
+                holder.close()
+                contender.close()
+
+            self.assertEqual("200", result["cursor_value"])
+
+
+class IntegrationFinalHardeningTests(unittest.TestCase):
+    def setUp(self):
+        self.conn = sqlite3.connect(":memory:")
+        self.conn.row_factory = sqlite3.Row
+        ensure_schema(self.conn)
+
+    def tearDown(self):
+        self.conn.close()
+
+    def _intent(self, **overrides):
+        values = {
+            "provider": "linear",
+            "target_key": "logres",
+            "operation": "issue.upsert",
+            "action_class": "REVERSIBLE_WRITE",
+            "canonical_entity_type": "task",
+            "canonical_entity_id": "T1",
+            "logical_slot": "work-mirror",
+            "payload": {"title": "One"},
+            "projection_hash": "p1",
+            "required_capability": "linear.write",
+            "created_by": "plugins",
+            "dedupe_key": "hardening-intent",
+        }
+        values.update(overrides)
+        return create_intent(self.conn, **values)
+
+    def test_intent_rejects_unknown_action_class(self):
+        with self.assertRaises(ValueError):
+            self._intent(
+                action_class="MAYBE_SAFE_WRITE",
+                dedupe_key="bad-action-class",
+            )
+
+    def test_secret_signing_material_aliases_are_rejected(self):
+        for payload in (
+            {"private_key": "forbidden"},
+            {"signing_key": "forbidden"},
+            {"bearer_token": "forbidden"},
+        ):
+            with self.subTest(payload=payload):
+                with self.assertRaises(ValueError):
+                    validate_sanitized_payload(payload)
+
+    def test_intent_dedupe_key_rejects_different_content(self):
+        self._intent(dedupe_key="same")
+        with self.assertRaises(Exception):
+            self._intent(
+                dedupe_key="same",
+                payload={"title": "Different"},
+            )
+
+    def test_projection_supersession_does_not_cross_target_or_operation(self):
+        first = self._intent(
+            dedupe_key="target-a",
+            target_key="workspace-a",
+            operation="issue.upsert",
+            projection_hash="p1",
+        )
+        self._intent(
+            dedupe_key="target-b",
+            target_key="workspace-b",
+            operation="issue.upsert",
+            projection_hash="p2",
+        )
+        self._intent(
+            dedupe_key="operation-b",
+            target_key="workspace-a",
+            operation="issue.comment",
+            projection_hash="p3",
+        )
+        self.assertEqual("NEW", get_intent(self.conn, first["id"])["state"])
+
+    def test_irreversible_reconciling_cannot_be_marked_retryable(self):
+        intent = self._intent(
+            provider="agentmail",
+            target_key="agents",
+            operation="send",
+            action_class="IRREVERSIBLE_SIDE_EFFECT",
+            canonical_entity_id="mail-1",
+            dedupe_key="irreversible-retry",
+            required_capability="agentmail.send",
+        )
+        transition_intent(self.conn, intent["id"], expected="NEW", new="CLAIMED")
+        transition_intent(
+            self.conn,
+            intent["id"],
+            expected="CLAIMED",
+            new="DISPATCHED",
+        )
+        moved = classify_uncertain_failure(
+            self.conn,
+            intent["id"],
+            error_detail="timeout after provider dispatch",
+        )
+        self.assertEqual("RECONCILING", moved["state"])
+        with self.assertRaises(Exception):
+            transition_intent(
+                self.conn,
+                intent["id"],
+                expected="RECONCILING",
+                new="RETRYABLE",
+            )
+
+    def test_receipt_dedupe_key_rejects_different_content(self):
+        intent = self._intent(dedupe_key="receipt-parent")
+        append_receipt(
+            self.conn,
+            intent_id=intent["id"],
+            receipt_key="same-receipt",
+            outcome="SUCCEEDED",
+            chat_id="plugins",
+            attempt_number=1,
+            response_metadata={"status": "ok"},
+        )
+        with self.assertRaises(Exception):
+            append_receipt(
+                self.conn,
+                intent_id=intent["id"],
+                receipt_key="same-receipt",
+                outcome="FAILED",
+                chat_id="plugins",
+                attempt_number=2,
+                response_metadata={"status": "different"},
+            )
+
+    def test_proposal_dedupe_key_rejects_different_content(self):
+        create_proposal(
+            self.conn,
+            dedupe_key="same-proposal",
+            provider="linear",
+            target_key="logres",
+            provider_entity_id="LIN-1",
+            canonical_entity_type="task",
+            canonical_entity_id="T1",
+            change_type="description.changed",
+            observed={"description": "human edit"},
+            canonical={"description": "managed"},
+            risk_class="REVIEW",
+        )
+        with self.assertRaises(Exception):
+            create_proposal(
+                self.conn,
+                dedupe_key="same-proposal",
+                provider="linear",
+                target_key="logres",
+                provider_entity_id="LIN-1",
+                canonical_entity_type="task",
+                canonical_entity_id="T1",
+                change_type="description.changed",
+                observed={"description": "different edit"},
+                canonical={"description": "managed"},
+                risk_class="REVIEW",
+            )
 
 
 if __name__ == "__main__":
