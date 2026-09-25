@@ -159,10 +159,21 @@ class VerifyFarmE2EPolicyTests(unittest.TestCase):
             text.index('wait "$e2e_pid" || e2e_rc=$?'),
             text.index('performance_host_ready >"$PERF_LOG"'),
         )
+        candidate_perf_index = text.index(
+            'npm run test:e2e -- "$PERF_SPEC_REL" --workers=1',
+            text.index('performance_rc=0'),
+        )
         self.assertLess(
             text.index('performance_host_ready >"$PERF_LOG"'),
-            text.index('npm run test:e2e -- "$PERF_SPEC_REL" --workers=1'),
+            candidate_perf_index,
         )
+        self.assertIn('latest_release_control_sha()', text)
+        self.assertIn('run_performance_control()', text)
+        self.assertIn("milestone_id='RELEASE-1.0'", text)
+        self.assertIn('env -u LOGRES_VERIFY_SHA', text)
+        self.assertIn('PERF_CONTROL_LOG=', text)
+        self.assertIn('certified release control FAIL; timing environment is inconclusive', text)
+        self.assertIn('performance_control_log=$PERF_CONTROL_LOG', text)
 
     def test_canonical_farm_exports_exact_sha_for_visual_truth(self):
         text = SCRIPT.read_text()

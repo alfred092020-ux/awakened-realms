@@ -461,7 +461,7 @@ def preflight(c,limit,min_age=0,min_count=1):
                 f"PREFLIGHT_DEFERRED_BUSY id={pid} tasks={','.join(tasks)} "
                 f"result={result_sha[:12]} log={log}"
             )
-            raise SystemExit(75)
+            return
 
         if gp.returncode:
             subprocess.run(["/home/ubuntu/logres/bin/logres-regression-capture",

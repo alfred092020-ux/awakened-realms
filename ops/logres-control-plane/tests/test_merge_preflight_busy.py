@@ -52,7 +52,8 @@ class MergePreflightBusyTests(unittest.TestCase):
         self.assertNotIn('update integration_queue', block)
         self.assertNotIn('regression-capture', block)
         self.assertNotIn('QUARANTINED', block)
-        self.assertIn('raise SystemExit(75)', block)
+        self.assertIn('return', block)
+        self.assertNotIn('raise SystemExit(75)', block)
 
 
 if __name__ == "__main__":
