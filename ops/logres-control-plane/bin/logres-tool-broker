@@ -1,0 +1,163 @@
+#!/usr/bin/env python3
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import sqlite3
+import sys
+from pathlib import Path
+
+ROOT = Path(os.environ.get("LOGRES_ROOT", "/home/ubuntu/logres"))
+LIB = Path(__file__).resolve().parents[1] / "lib"
+sys.path.insert(0, str(LIB))
+
+from logres_capability_broker import (
+    audit_unused,
+    ensure_schema,
+    list_capabilities,
+    recommend,
+    record_usage,
+    register_capability,
+    report,
+    seed_defaults,
+    set_health,
+)
+
+DB = Path(os.environ.get("LOGRES_CONTROL_DB", ROOT / "control/control.sqlite"))
+
+
+def _csv(value: str) -> list[str]:
+    return [x.strip() for x in value.split(",") if x.strip()]
+
+
+def _json_obj(value: str) -> dict:
+    parsed = json.loads(value)
+    if not isinstance(parsed, dict):
+        raise argparse.ArgumentTypeError("must be a JSON object")
+    return parsed
+
+
+def conn():
+    DB.parent.mkdir(parents=True, exist_ok=True)
+    c = sqlite3.connect(DB, timeout=30)
+    c.row_factory = sqlite3.Row
+    c.execute("pragma busy_timeout=30000")
+    ensure_schema(c)
+    return c
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser(prog="logres-tool-broker")
+    sub = ap.add_subparsers(dest="cmd", required=True)
+
+    sub.add_parser("seed-defaults")
+
+    reg = sub.add_parser("register")
+    reg.add_argument("capability_id")
+    reg.add_argument("provider")
+    reg.add_argument("tool_family")
+    reg.add_argument("--connection-state", default="UNKNOWN")
+    reg.add_argument("--health", default="UNKNOWN")
+    reg.add_argument("--action-class", default="READ_ONLY")
+    reg.add_argument("--fallback-rank", type=int, default=50)
+    reg.add_argument("--actions", type=_csv, default=[])
+    reg.add_argument("--affinities", type=_csv, default=[])
+    reg.add_argument("--metadata", type=_json_obj, default={})
+
+    ls = sub.add_parser("list")
+    ls.add_argument("--connected-only", action="store_true")
+
+    rec = sub.add_parser("recommend")
+    rec.add_argument("task_id")
+    rec.add_argument("--limit", type=int, default=6)
+    rec.add_argument("--confirmed-only", action="store_true")
+    rec.add_argument("--min-score", type=float, default=2.0)
+
+    use = sub.add_parser("record")
+    use.add_argument("capability_id")
+    use.add_argument("outcome")
+    use.add_argument("--useful", action="store_true")
+    use.add_argument("--task")
+    use.add_argument("--chat")
+    use.add_argument("--action", default="")
+    use.add_argument("--latency-ms", type=int)
+    use.add_argument("--error-class")
+    use.add_argument("--metadata", type=_json_obj, default={})
+
+    health = sub.add_parser("health")
+    health.add_argument("capability_id")
+    health.add_argument("--connection-state")
+    health.add_argument("--health")
+
+    audit = sub.add_parser("audit")
+    audit.add_argument("--min-score", type=float, default=3.0)
+    audit.add_argument("--max-items", type=int, default=30)
+
+    sub.add_parser("report")
+
+    args = ap.parse_args()
+    c = conn()
+    try:
+        if args.cmd == "seed-defaults":
+            out = seed_defaults(c)
+        elif args.cmd == "register":
+            out = register_capability(
+                c,
+                capability_id=args.capability_id,
+                provider=args.provider,
+                tool_family=args.tool_family,
+                connection_state=args.connection_state,
+                health=args.health,
+                action_class=args.action_class,
+                fallback_rank=args.fallback_rank,
+                actions=args.actions,
+                affinities=args.affinities,
+                metadata=args.metadata,
+            )
+        elif args.cmd == "list":
+            out = list_capabilities(c, include_disconnected=not args.connected_only)
+        elif args.cmd == "recommend":
+            out = recommend(
+                c,
+                args.task_id,
+                limit=args.limit,
+                include_unknown=not args.confirmed_only,
+                min_score=args.min_score,
+            )
+        elif args.cmd == "record":
+            out = record_usage(
+                c,
+                capability_id=args.capability_id,
+                outcome=args.outcome,
+                useful=args.useful,
+                task_id=args.task,
+                chat_id=args.chat,
+                action=args.action,
+                latency_ms=args.latency_ms,
+                error_class=args.error_class,
+                metadata=args.metadata,
+            )
+        elif args.cmd == "health":
+            out = set_health(
+                c,
+                args.capability_id,
+                connection_state=args.connection_state,
+                health=args.health,
+            )
+        elif args.cmd == "audit":
+            out = audit_unused(
+                c,
+                min_score=args.min_score,
+                max_items=args.max_items,
+            )
+        else:
+            out = report(c)
+    finally:
+        c.close()
+    print(json.dumps(out, indent=2, sort_keys=True, ensure_ascii=False))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
