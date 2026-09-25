@@ -1,5 +1,9 @@
+import json
+import os
 import sqlite3
+import subprocess
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -569,6 +573,237 @@ class IntegrationCursorProposalTests(unittest.TestCase):
                 reviewer="other",
             )
         self.assertEqual(1, len(list_proposals(self.conn)))
+
+
+class IntegrationCliCompatibilityTests(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.db = Path(self.tmp.name) / "control.sqlite"
+        self.cli = TEST_DIR.parent / "bin" / "logres-integration"
+        self.env = os.environ.copy()
+        self.env["LOGRES_CONTROL_DB"] = str(self.db)
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def run_cli(self, *args, check=True):
+        result = subprocess.run(
+            [sys.executable, str(self.cli), "--json", *args],
+            text=True,
+            capture_output=True,
+            env=self.env,
+        )
+        if check and result.returncode != 0:
+            self.fail(
+                f"CLI failed {result.returncode}: {result.stderr}\nstdout={result.stdout}"
+            )
+        return result
+
+    def create_cli_intent(self):
+        result = self.run_cli(
+            "intent-create",
+            "--provider", "linear",
+            "--target-key", "logres",
+            "--operation", "issue.upsert",
+            "--action-class", "REVERSIBLE_WRITE",
+            "--entity-type", "task",
+            "--entity-id", "T1",
+            "--logical-slot", "work-mirror",
+            "--payload", '{"title":"One"}',
+            "--projection-hash", "p1",
+            "--required-capability", "linear.write",
+            "--created-by", "plugins",
+            "--dedupe-key", "cli-intent-1",
+        )
+        return json.loads(result.stdout)
+
+    def test_status_json_and_queue_filtering(self):
+        status = json.loads(self.run_cli("status").stdout)
+        self.assertEqual(0, status["intents"])
+        intent = self.create_cli_intent()
+        queue = json.loads(
+            self.run_cli(
+                "queue",
+                "--provider", "linear",
+                "--state", "NEW",
+                "--capability", "linear.write",
+            ).stdout
+        )
+        self.assertEqual([intent["id"]], [row["id"] for row in queue])
+
+    def test_claim_returns_token_and_receipt_persists(self):
+        intent = self.create_cli_intent()
+        claim = json.loads(
+            self.run_cli(
+                "claim",
+                str(intent["id"]),
+                "--chat-id", "plugins",
+                "--lease-seconds", "30",
+            ).stdout
+        )
+        self.assertTrue(claim["lease_token"])
+        receipt = json.loads(
+            self.run_cli(
+                "receipt",
+                str(intent["id"]),
+                "--receipt-key", "cli-r1",
+                "--outcome", "SUCCEEDED",
+                "--chat-id", "plugins",
+                "--attempt", "1",
+                "--metadata", '{"status":"ok"}',
+            ).stdout
+        )
+        self.assertEqual("cli-r1", receipt["receipt_key"])
+        status = json.loads(self.run_cli("status").stdout)
+        self.assertEqual(1, status["receipts"])
+
+    def test_proposal_listing(self):
+        conn = sqlite3.connect(self.db)
+        conn.row_factory = sqlite3.Row
+        create_proposal(
+            conn,
+            dedupe_key="cli-proposal",
+            provider="linear",
+            target_key="logres",
+            provider_entity_id="LIN-1",
+            canonical_entity_type="task",
+            canonical_entity_id="T1",
+            change_type="description.changed",
+            observed={"description": "human"},
+            canonical={"description": "managed"},
+            risk_class="REVIEW",
+        )
+        conn.close()
+        proposals = json.loads(self.run_cli("proposals", "--disposition", "OPEN").stdout)
+        self.assertEqual(["cli-proposal"], [row["dedupe_key"] for row in proposals])
+
+    def test_secret_payload_is_rejected(self):
+        result = self.run_cli(
+            "intent-create",
+            "--provider", "linear",
+            "--target-key", "logres",
+            "--operation", "issue.upsert",
+            "--action-class", "REVERSIBLE_WRITE",
+            "--entity-type", "task",
+            "--entity-id", "T1",
+            "--payload", '{"api_key":"secret"}',
+            "--created-by", "plugins",
+            "--dedupe-key", "secret-intent",
+            check=False,
+        )
+        self.assertNotEqual(0, result.returncode)
+        self.assertIn("secret-bearing", result.stderr)
+
+
+class IntegrationCliTests(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.db = Path(self.temp.name) / "control.sqlite"
+        self.cli = TEST_DIR.parent / "bin" / "logres-integration"
+        self.env = os.environ.copy()
+        self.env["LOGRES_CONTROL_DB"] = str(self.db)
+
+    def tearDown(self):
+        self.temp.cleanup()
+
+    def _run(self, *args, check=True):
+        return subprocess.run(
+            [sys.executable, str(self.cli), "--json", *args],
+            env=self.env,
+            text=True,
+            capture_output=True,
+            check=check,
+        )
+
+    def test_status_json_initializes_schema(self):
+        result = self._run("status")
+        payload = json.loads(result.stdout)
+        self.assertEqual(0, payload["queue_depth"])
+        self.assertEqual(0, payload["open_proposals"])
+        self.assertTrue(self.db.exists())
+
+    def test_cli_intent_queue_claim_and_receipt(self):
+        created = json.loads(
+            self._run(
+                "intent-create",
+                "--provider", "linear",
+                "--target", "logres",
+                "--operation", "issue.upsert",
+                "--action-class", "REVERSIBLE_WRITE",
+                "--entity-type", "task",
+                "--entity-id", "T1",
+                "--dedupe-key", "cli-intent",
+                "--created-by", "plugins",
+                "--required-capability", "linear.write",
+                "--payload-json", '{"title":"One"}',
+            ).stdout
+        )
+        queued = json.loads(
+            self._run(
+                "queue",
+                "--provider", "linear",
+                "--capability", "linear.write",
+            ).stdout
+        )
+        self.assertEqual([created["id"]], [row["id"] for row in queued])
+
+        claim = json.loads(
+            self._run(
+                "claim",
+                str(created["id"]),
+                "--chat", "plugins",
+                "--now-epoch", "100",
+                "--lease-seconds", "30",
+            ).stdout
+        )
+        self.assertTrue(claim["lease_token"])
+
+        receipt = json.loads(
+            self._run(
+                "receipt",
+                str(created["id"]),
+                "--receipt-key", "cli-r1",
+                "--outcome", "SUCCEEDED",
+                "--chat", "plugins",
+                "--attempt", "1",
+                "--metadata-json", '{"ok":true}',
+            ).stdout
+        )
+        self.assertEqual("SUCCEEDED", receipt["outcome"])
+
+    def test_cli_proposals_and_secret_rejection(self):
+        conn = sqlite3.connect(self.db)
+        conn.row_factory = sqlite3.Row
+        ensure_schema(conn)
+        create_proposal(
+            conn,
+            dedupe_key="p1",
+            provider="linear",
+            target_key="logres",
+            change_type="description.changed",
+            observed={"description": "edit"},
+            risk_class="REVIEW",
+        )
+        conn.close()
+
+        proposals = json.loads(self._run("proposals").stdout)
+        self.assertEqual(1, len(proposals))
+
+        failed = self._run(
+            "intent-create",
+            "--provider", "linear",
+            "--target", "logres",
+            "--operation", "issue.upsert",
+            "--action-class", "REVERSIBLE_WRITE",
+            "--entity-type", "task",
+            "--entity-id", "T2",
+            "--dedupe-key", "secret-intent",
+            "--created-by", "plugins",
+            "--payload-json", '{"api_key":"forbidden"}',
+            check=False,
+        )
+        self.assertNotEqual(0, failed.returncode)
+        self.assertIn("secret-bearing key rejected", failed.stderr)
 
 
 if __name__ == "__main__":
