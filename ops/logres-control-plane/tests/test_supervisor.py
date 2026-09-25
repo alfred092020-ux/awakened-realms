@@ -4,6 +4,7 @@ import signal
 import subprocess
 import sys
 import tempfile
+import threading
 import time
 import types
 import unittest
@@ -16,6 +17,7 @@ sys.path.insert(0, str(LIB_DIR))
 from logres_supervisor import (
     ScheduledJob,
     actionable_integration_backlog,
+    atomic_json,
     actionable_worker_backlog,
     background_lane_busy,
     default_jobs,
@@ -960,6 +962,37 @@ class SupervisorTests(unittest.TestCase):
             self.assertTrue(healthy["healthy"])
             self.assertFalse(stale["healthy"])
 
+
+    def test_atomic_json_survives_concurrent_writers(self):
+        with tempfile.TemporaryDirectory() as td:
+            path = Path(td) / "heartbeat.json"
+            errors = []
+
+            def writer(worker):
+                try:
+                    for sequence in range(40):
+                        atomic_json(
+                            path,
+                            {"worker": worker, "sequence": sequence},
+                        )
+                except Exception as exc:
+                    errors.append(exc)
+
+            threads = [
+                threading.Thread(target=writer, args=(index,))
+                for index in range(6)
+            ]
+            for thread in threads:
+                thread.start()
+            for thread in threads:
+                thread.join()
+
+            self.assertEqual([], errors)
+            payload = json.loads(path.read_text())
+            self.assertIn("worker", payload)
+            self.assertIn("sequence", payload)
+            leftovers = list(path.parent.glob(".heartbeat.json.*.tmp"))
+            self.assertEqual([], leftovers)
 
 if __name__ == "__main__":
     unittest.main()

@@ -50,5 +50,16 @@
     "hybrid_verify_enabled": false,
     "remote_unit_test_role": "heavy",
     "local_e2e_authoritative": true
+  },
+  "implementation": {
+    "enabled": false,
+    "model": "gpt-5.6-luna",
+    "workers": 1,
+    "max_active": 1,
+    "max_attempts": 2,
+    "max_output_tokens": 12000,
+    "repair_attempts": 1,
+    "timeout_seconds": 1800,
+    "gate_timeout_seconds": 900
   }
 }
