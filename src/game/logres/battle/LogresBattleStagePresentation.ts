@@ -37,7 +37,16 @@ export const LOGRES_BATTLE_STAGE_PROVENANCE =
     screenPlacement:
       'RECONSTRUCTED',
 
-    stageGround:
+    battleBackgroundResourceFamily:
+      'CONFIRMED_GLOBAL_BOUTBG_BFD_PATTERN',
+
+    battleBackgroundCandidate:
+      'SUPPORTED_INFERENCE_CURRENT_JP_BFD_002_001',
+
+    historicalBattleBackgroundSelection:
+      'UNRESOLVED',
+
+    stageGroundFallback:
       'RECONSTRUCTED_PRESENTATION_ONLY',
 
     historicalStats:
@@ -93,6 +102,18 @@ export interface LogresBattleStagePresentation {
     | 'RECONSTRUCTED_REFERENCE_FALLBACK'
   readonly provenance:
     typeof LOGRES_BATTLE_STAGE_PROVENANCE
+  readonly background: {
+    readonly mode:
+      | 'CURRENT_JP_CANDIDATE'
+      | 'RECONSTRUCTED_FALLBACK'
+    readonly resource:
+      'battle/field/bfd_002_001.png'
+    readonly provenance:
+      | 'SUPPORTED_INFERENCE_CURRENT_JP_BFD_002_001'
+      | 'RECONSTRUCTED_PRESENTATION_ONLY'
+    readonly historicalGlobalTutorialSelection:
+      'UNRESOLVED'
+  }
   readonly ground: {
     readonly x: number
     readonly y: number
@@ -173,6 +194,8 @@ export function createLogresBattleStagePresentation(
     unknown,
   recoveredReferenceArtAvailable:
     boolean,
+  recoveredBattleFieldAvailable:
+    boolean = false,
 ): LogresBattleStagePresentation {
   if (
     !Number.isFinite(
@@ -225,6 +248,25 @@ export function createLogresBattleStagePresentation(
 
     provenance:
       LOGRES_BATTLE_STAGE_PROVENANCE,
+
+    background:
+      Object.freeze({
+        mode:
+          recoveredBattleFieldAvailable
+            ? 'CURRENT_JP_CANDIDATE'
+            : 'RECONSTRUCTED_FALLBACK',
+
+        resource:
+          'battle/field/bfd_002_001.png',
+
+        provenance:
+          recoveredBattleFieldAvailable
+            ? 'SUPPORTED_INFERENCE_CURRENT_JP_BFD_002_001'
+            : 'RECONSTRUCTED_PRESENTATION_ONLY',
+
+        historicalGlobalTutorialSelection:
+          'UNRESOLVED',
+      }),
 
     ground:
       Object.freeze({

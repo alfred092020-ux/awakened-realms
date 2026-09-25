@@ -31,7 +31,16 @@ describe(
           screenPlacement:
             'RECONSTRUCTED',
 
-          stageGround:
+          battleBackgroundResourceFamily:
+            'CONFIRMED_GLOBAL_BOUTBG_BFD_PATTERN',
+
+          battleBackgroundCandidate:
+            'SUPPORTED_INFERENCE_CURRENT_JP_BFD_002_001',
+
+          historicalBattleBackgroundSelection:
+            'UNRESOLVED',
+
+          stageGroundFallback:
             'RECONSTRUCTED_PRESENTATION_ONLY',
 
           historicalStats:
@@ -149,6 +158,58 @@ describe(
 
           genderSelection:
             'RECONSTRUCTED_REFERENCE_FALLBACK',
+        })
+      },
+    )
+
+    it(
+      'keeps the recovered BFD candidate separate from the unresolved historical tutorial selection',
+      () => {
+        const recovered =
+          createLogresBattleStagePresentation(
+            720,
+            1280,
+            null,
+            true,
+            true,
+          )
+
+        expect(
+          recovered.background,
+        ).toEqual({
+          mode:
+            'CURRENT_JP_CANDIDATE',
+
+          resource:
+            'battle/field/bfd_002_001.png',
+
+          provenance:
+            'SUPPORTED_INFERENCE_CURRENT_JP_BFD_002_001',
+
+          historicalGlobalTutorialSelection:
+            'UNRESOLVED',
+        })
+
+        const fallback =
+          createLogresBattleStagePresentation(
+            720,
+            1280,
+            null,
+            true,
+            false,
+          )
+
+        expect(
+          fallback.background,
+        ).toMatchObject({
+          mode:
+            'RECONSTRUCTED_FALLBACK',
+
+          provenance:
+            'RECONSTRUCTED_PRESENTATION_ONLY',
+
+          historicalGlobalTutorialSelection:
+            'UNRESOLVED',
         })
       },
     )

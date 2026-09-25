@@ -7,6 +7,7 @@ const privateBattleStageUrls = [
   '/__logres_ref/current-jp/tutorial-field/green_jell_idle_1.png',
   '/__logres_ref/current-jp/tutorial-field/green_jell_idle_2.png',
   '/__logres_ref/current-jp/tutorial-field/green_jell_idle_3.png',
+  '/__logres_ref/current-jp/battle-field/bfd_002_001.png',
 ]
 
 test('normal battle has visible stage actors, five controls, and cannot resolve synthetic rewards', async ({ page, request }, testInfo) => {
@@ -14,44 +15,30 @@ test('normal battle has visible stage actors, five controls, and cannot resolve 
     privateBattleStageUrls.map(url => request.get(url)),
   )
 
-  const privateBattleStagePresent = responses.every(response =>
-    response.ok() &&
-    (response.headers()['content-type'] ?? '').includes('image/'),
+  const privateReferenceArtPresent = responses
+    .slice(0, -1)
+    .every(response =>
+      response.ok() &&
+      (response.headers()['content-type'] ?? '').includes('image/'),
+    )
+
+  const battleFieldResponse = responses.at(-1)
+  const privateBattleFieldPresent = Boolean(
+    battleFieldResponse?.ok() &&
+    (battleFieldResponse.headers()['content-type'] ?? '').includes('image/'),
   )
 
   await page.goto('/')
   await page.waitForFunction(() => window.__AWAKENED_REALMS_GAME__?.scene)
 
-  await page.evaluate(
-    privateBattleStagePresent => {
-      const game = window.__AWAKENED_REALMS_GAME__
-      game.registry.set(
-        'logres.protocol.C_GMCL_CHAR_CREATE_REQ',
-        [0, 'Novice', 0, 1, 1, 1, 1, 1],
-      )
-
-      game.scene.start(
-        privateBattleStagePresent
-          ? 'LogresFieldScene'
-          : 'LogresBattleScene',
-      )
-    },
-    privateBattleStagePresent,
-  )
-
-  if (privateBattleStagePresent) {
-    await page.waitForFunction(() =>
-      window.__AWAKENED_REALMS_GAME__.registry.get(
-        'logres.playableField.status',
-      ) === 'READY',
+  await page.evaluate(() => {
+    const game = window.__AWAKENED_REALMS_GAME__
+    game.registry.set(
+      'logres.protocol.C_GMCL_CHAR_CREATE_REQ',
+      [0, 'Novice', 0, 1, 1, 1, 1, 1],
     )
-
-    await page.evaluate(() =>
-      window.__AWAKENED_REALMS_GAME__.scene.start(
-        'LogresBattleScene',
-      ),
-    )
-  }
+    game.scene.start('LogresBattleScene')
+  })
 
   await page.waitForFunction(() => {
     const game = window.__AWAKENED_REALMS_GAME__
@@ -96,7 +83,9 @@ test('normal battle has visible stage actors, five controls, and cannot resolve 
   expect(state.demoButton).toBe(false)
   expect(state.labels.join(' ')).not.toMatch(/DEMO|RESOLVE|VICTORY/)
   expect(state.labels.join(' ')).toContain('RECONSTRUCTED BATTLE')
-  expect(state.stageShapeCount).toBeGreaterThanOrEqual(4)
+  expect(state.stageShapeCount).toBeGreaterThanOrEqual(
+    state.stage.background.mode === 'CURRENT_JP_CANDIDATE' ? 2 : 4,
+  )
 
   expect(state.stage).toMatchObject({
     referenceSex: 'm',
@@ -106,7 +95,10 @@ test('normal battle has visible stage actors, five controls, and cannot resolve 
       battlePositionStructure: 'CONFIRMED_GLOBAL_3_0_24_NATIVE_iX_iY',
       battlePositionToScreenTransform: 'UNRESOLVED',
       screenPlacement: 'RECONSTRUCTED',
-      stageGround: 'RECONSTRUCTED_PRESENTATION_ONLY',
+      battleBackgroundResourceFamily: 'CONFIRMED_GLOBAL_BOUTBG_BFD_PATTERN',
+      battleBackgroundCandidate: 'SUPPORTED_INFERENCE_CURRENT_JP_BFD_002_001',
+      historicalBattleBackgroundSelection: 'UNRESOLVED',
+      stageGroundFallback: 'RECONSTRUCTED_PRESENTATION_ONLY',
       historicalStats: 'UNRESOLVED',
     },
     player: {
@@ -122,7 +114,7 @@ test('normal battle has visible stage actors, five controls, and cannot resolve 
     },
   })
 
-  if (privateBattleStagePresent) {
+  if (privateReferenceArtPresent) {
     expect(state.stage.mode).toBe('RECOVERED_REFERENCE_ART')
     expect(state.stageTextures).toContain(
       'logres-current-jp-player-avatar-reference-m',
@@ -137,6 +129,27 @@ test('normal battle has visible stage actors, five controls, and cannot resolve 
     expect(state.stage.mode).toBe('PLACEHOLDER_FALLBACK')
     expect(state.stageTextures).not.toContain(
       'logres-current-jp-player-avatar-reference-m',
+    )
+  }
+
+  if (privateBattleFieldPresent) {
+    expect(state.stage.background).toMatchObject({
+      mode: 'CURRENT_JP_CANDIDATE',
+      resource: 'battle/field/bfd_002_001.png',
+      provenance: 'SUPPORTED_INFERENCE_CURRENT_JP_BFD_002_001',
+      historicalGlobalTutorialSelection: 'UNRESOLVED',
+    })
+    expect(state.stageTextures).toContain(
+      'logres-current-jp-battle-field-bfd-002-001',
+    )
+  } else {
+    expect(state.stage.background).toMatchObject({
+      mode: 'RECONSTRUCTED_FALLBACK',
+      provenance: 'RECONSTRUCTED_PRESENTATION_ONLY',
+      historicalGlobalTutorialSelection: 'UNRESOLVED',
+    })
+    expect(state.stageTextures).not.toContain(
+      'logres-current-jp-battle-field-bfd-002-001',
     )
   }
 
