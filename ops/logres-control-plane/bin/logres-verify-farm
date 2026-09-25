@@ -44,6 +44,9 @@ PERF_SPEC_REL="e2e/logres-performance.spec.mjs"
 PERF_REQUIRED=0
 PERF_MAX_CPU_PSI_AVG10="${LOGRES_PERF_MAX_CPU_PSI_AVG10:-5.0}"
 PERF_MAX_LOAD_PER_CPU="${LOGRES_PERF_MAX_LOAD_PER_CPU:-0.70}"
+PERF_HOST_SETTLE_ATTEMPTS="${LOGRES_PERF_HOST_SETTLE_ATTEMPTS:-30}"
+PERF_HOST_SETTLE_SLEEP_SEC="${LOGRES_PERF_HOST_SETTLE_SLEEP_SEC:-2}"
+PERF_HOST_READY_CONSECUTIVE="${LOGRES_PERF_HOST_READY_CONSECUTIVE:-2}"
 
 select_e2e_workers() {
   local override="${LOGRES_E2E_WORKERS:-}"
@@ -79,35 +82,58 @@ E2E_WORKERS=$(select_e2e_workers)
 E2E_VERIFY_TAG="e2e-w${E2E_WORKERS}"
 
 performance_host_ready() {
-  python3 - "$PERF_MAX_CPU_PSI_AVG10" "$PERF_MAX_LOAD_PER_CPU" <<'PY2'
+  python3 -     "$PERF_MAX_CPU_PSI_AVG10"     "$PERF_MAX_LOAD_PER_CPU"     "$PERF_HOST_SETTLE_ATTEMPTS"     "$PERF_HOST_SETTLE_SLEEP_SEC"     "$PERF_HOST_READY_CONSECUTIVE" <<'PY2'
 from pathlib import Path
 import os
 import re
 import sys
+import time
 
 psi_limit = float(sys.argv[1])
 load_limit = float(sys.argv[2])
+attempts = max(1, int(sys.argv[3]))
+sleep_sec = max(0.0, float(sys.argv[4]))
+required_consecutive = max(1, int(sys.argv[5]))
 psi = Path("/proc/pressure/cpu")
+consecutive = 0
 
-if psi.is_file():
-    text = psi.read_text()
-    match = re.search(r"^some .*?avg10=([0-9.]+)", text, re.MULTILINE)
-    if match:
-        value = float(match.group(1))
-        print(
-            f"VERIFY_FARM performance host pressure psi_avg10={value:.2f} "
-            f"max={psi_limit:.2f}"
-        )
-        raise SystemExit(0 if value <= psi_limit else 75)
+for attempt in range(1, attempts + 1):
+    source = "load"
+    value = None
+    limit = None
 
-load1 = os.getloadavg()[0]
-cpus = os.cpu_count() or 1
-ratio = load1 / cpus
-print(
-    f"VERIFY_FARM performance host pressure load_per_cpu={ratio:.3f} "
-    f"max={load_limit:.3f} cpus={cpus}"
-)
-raise SystemExit(0 if ratio <= load_limit else 75)
+    if psi.is_file():
+        text = psi.read_text()
+        match = re.search(r"^some .*?avg10=([0-9.]+)", text, re.MULTILINE)
+        if match:
+            source = "psi_avg10"
+            value = float(match.group(1))
+            limit = psi_limit
+
+    if value is None:
+        load1 = os.getloadavg()[0]
+        cpus = os.cpu_count() or 1
+        source = "load_per_cpu"
+        value = load1 / cpus
+        limit = load_limit
+
+    ready = value <= limit
+    consecutive = consecutive + 1 if ready else 0
+
+    print(
+        f"VERIFY_FARM performance host pressure attempt={attempt}/{attempts} "
+        f"{source}={value:.3f} max={limit:.3f} "
+        f"ready_streak={consecutive}/{required_consecutive}",
+        flush=True,
+    )
+
+    if consecutive >= required_consecutive:
+        raise SystemExit(0)
+
+    if attempt < attempts:
+        time.sleep(sleep_sec)
+
+raise SystemExit(75)
 PY2
 }
 
