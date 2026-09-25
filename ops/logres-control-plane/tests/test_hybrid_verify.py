@@ -69,8 +69,12 @@ class HybridVerifyTests(unittest.TestCase):
             text.index(shared_cmd),
             text.index('if cache_hit; then'),
         )
+        candidate_perf_index = text.index(
+            perf_cmd,
+            text.index('performance_rc=0'),
+        )
         self.assertGreater(
-            text.index(perf_cmd),
+            candidate_perf_index,
             text.index('e2e_rc=0'),
         )
         cache_block = text[
@@ -88,6 +92,8 @@ class HybridVerifyTests(unittest.TestCase):
         )
         self.assertIn('performance_host_ready', text)
         self.assertIn('performance_rc == 75', text)
+        self.assertIn('run_performance_control', text)
+        self.assertIn('env -u LOGRES_VERIFY_SHA', text)
 
     def test_cache_dimensions_fail_closed_and_are_exact_sha_keyed(self):
         text = SCRIPT.read_text()

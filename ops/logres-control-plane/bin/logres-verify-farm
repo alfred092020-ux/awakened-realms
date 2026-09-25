@@ -15,6 +15,8 @@ E2E_WT="$ROOT/verify-farm-$STAMP-e2e"
 TEST_LOG="/home/ubuntu/logres/logs/verify-farm-$STAMP-test.log"
 E2E_LOG="/home/ubuntu/logres/logs/verify-farm-$STAMP-e2e.log"
 PERF_LOG="/home/ubuntu/logres/logs/verify-farm-$STAMP-performance.log"
+PERF_CONTROL_LOG="/home/ubuntu/logres/logs/verify-farm-$STAMP-performance-control.log"
+PERF_CONTROL_WT="$ROOT/verify-farm-$STAMP-performance-control"
 BEHAVIOR_LOG="/home/ubuntu/logres/logs/verify-farm-$STAMP-behavior.log"
 BEHAVIOR_TRACE_MERGE_LOG="/home/ubuntu/logres/logs/verify-farm-$STAMP-behavior-trace-merge.log"
 BEHAVIOR_TRACE_FAILURE_DIR="${LOGRES_BEHAVIOR_TRACE_FAILURE_DIR:-/home/ubuntu/logres/artifacts/behavior-trace-merge-failures}"
@@ -231,6 +233,7 @@ cleanup() {
   trap - EXIT INT TERM
   git -C "$BASE" worktree remove --force "$TEST_WT" >/dev/null 2>&1 || true
   git -C "$BASE" worktree remove --force "$E2E_WT" >/dev/null 2>&1 || true
+  git -C "$BASE" worktree remove --force "$PERF_CONTROL_WT" >/dev/null 2>&1 || true
   rm -f     "/tmp/logres-remote-pool-health-$STAMP.json"     "$CACHE_JSON"     "$BEHAVIOR_TRACE_DB"     "$BEHAVIOR_TRACE_DB-shm"     "$BEHAVIOR_TRACE_DB-wal"     "$BEHAVIOR_TRACE_WRAPPER"     "$VISUAL_TRUTH_DB"     "$VISUAL_TRUTH_DB-shm"     "$VISUAL_TRUTH_DB-wal"     "$VISUAL_TRUTH_WRAPPER"
   dur=$(( $(date +%s)-START ))
   if (( rc == 75 )); then
@@ -427,6 +430,87 @@ hydrate() {
   fi
 }
 
+latest_release_control_sha() {
+  python3 - "$CANONICAL_CONTROL_DB" <<'PY2'
+import sqlite3
+import sys
+
+db = sys.argv[1]
+conn = sqlite3.connect(db, timeout=5)
+try:
+    row = conn.execute(
+        """select integration_sha
+             from milestone_certificates
+            where milestone_id='RELEASE-1.0'
+              and status='PASS'
+            order by id desc
+            limit 1"""
+    ).fetchone()
+finally:
+    conn.close()
+
+if row and isinstance(row[0], str):
+    print(row[0])
+PY2
+}
+
+run_performance_control() {
+  local control_sha control_port control_rc
+  control_sha=$(latest_release_control_sha)
+  if [[ ! "$control_sha" =~ ^[0-9a-f]{40}$ ]]; then
+    echo "VERIFY_FARM performance control unavailable: no certified RELEASE-1.0 SHA"       >"$PERF_CONTROL_LOG"
+    return 2
+  fi
+
+  printf 'VERIFY_FARM performance control sha=%s candidate=%s
+'     "$control_sha" "$SHA" >"$PERF_CONTROL_LOG"
+
+  if [[ "$control_sha" == "$SHA" ]]; then
+    echo "VERIFY_FARM candidate is the certified release control; timing failure is environmental"       >>"$PERF_CONTROL_LOG"
+    return 1
+  fi
+
+  git -C "$BASE" worktree remove --force "$PERF_CONTROL_WT" >/dev/null 2>&1 || true
+  git -C "$BASE" worktree add --detach "$PERF_CONTROL_WT" "$control_sha"     >>"$PERF_CONTROL_LOG" 2>&1 || return 2
+  prepare_deps "$PERF_CONTROL_WT" >>"$PERF_CONTROL_LOG" 2>&1 || return 2
+  hydrate "$PERF_CONTROL_WT" >>"$PERF_CONTROL_LOG" 2>&1 || return 2
+
+  control_port=$(python3 - <<'PY2'
+import socket
+s=socket.socket()
+s.bind(("127.0.0.1",0))
+print(s.getsockname()[1])
+s.close()
+PY2
+)
+
+  python3 - "$PERF_CONTROL_WT/playwright.config.mjs" "$control_port" <<'PY2'     >>"$PERF_CONTROL_LOG" 2>&1 || return 2
+from pathlib import Path
+import sys
+p=Path(sys.argv[1]); port=sys.argv[2]
+s=p.read_text()
+s=s.replace("127.0.0.1:4174",f"127.0.0.1:{port}")
+s=s.replace("--port 4174",f"--port {port}")
+p.write_text(s)
+PY2
+
+  (
+    set -e
+    cd "$PERF_CONTROL_WT"
+    npm run build
+    env -u LOGRES_VERIFY_SHA       npm run test:e2e -- "$PERF_SPEC_REL" --workers=1
+  ) >>"$PERF_CONTROL_LOG" 2>&1
+  control_rc=$?
+
+  if (( control_rc == 0 )); then
+    echo "VERIFY_FARM certified release control PASS; candidate timing failure is actionable"       >>"$PERF_CONTROL_LOG"
+    return 0
+  fi
+
+  echo "VERIFY_FARM certified release control FAIL; timing environment is inconclusive"     >>"$PERF_CONTROL_LOG"
+  return 1
+}
+
 run_local_tests() {
   git -C "$BASE" worktree add --detach "$TEST_WT" "$SHA" >/dev/null
   prepare_deps "$TEST_WT"
@@ -553,6 +637,17 @@ if (( e2e_rc == 0 && PERF_REQUIRED == 1 )); then
       cd "$E2E_WT"
       npm run test:e2e -- "$PERF_SPEC_REL" --workers=1
     ) >>"$PERF_LOG" 2>&1 || performance_rc=$?
+
+    if (( performance_rc != 0 )); then
+      control_rc=0
+      run_performance_control || control_rc=$?
+      if (( control_rc == 1 )); then
+        echo "VERIFY_FARM candidate timing failed and certified release control also failed"           >>"$PERF_LOG"
+        performance_rc=75
+      elif (( control_rc == 2 )); then
+        echo "VERIFY_FARM certified release control unavailable; preserving candidate failure"           >>"$PERF_LOG"
+      fi
+    fi
   fi
 else
   printf 'VERIFY_FARM isolated performance lane not required-or-shared-e2e-failed sha=%s e2e_rc=%s required=%s
@@ -562,6 +657,8 @@ fi
 if (( performance_rc == 75 )); then
   echo "VERIFY_FARM BUSY performance host contention sha=${SHA:0:12}" >&2
   tail -40 "$PERF_LOG" >&2 || true
+  echo "--- certified release performance control ---" >&2
+  tail -80 "$PERF_CONTROL_LOG" >&2 || true
   exit 75
 fi
 
@@ -627,6 +724,7 @@ echo "VERIFY_FARM PASS ref=$REF sha=$SHA duration=${dur}s path=$VERIFY_PATH+$E2E
 echo "test_log=$TEST_LOG"
 echo "e2e_log=$E2E_LOG"
 echo "performance_log=$PERF_LOG"
+echo "performance_control_log=$PERF_CONTROL_LOG"
 echo "behavior_log=$BEHAVIOR_LOG"
 echo "behavior_trace_merge_log=$BEHAVIOR_TRACE_MERGE_LOG"
 echo "visual_truth_merge_log=$VISUAL_TRUTH_MERGE_LOG"
