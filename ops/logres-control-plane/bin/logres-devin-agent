@@ -1,0 +1,513 @@
+#!/home/ubuntu/logres/envs/research/bin/python
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import sqlite3
+import subprocess
+import sys
+import traceback
+from datetime import datetime, timezone
+from pathlib import Path
+
+CONTROL_ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(CONTROL_ROOT / "lib"))
+
+from logres_devin import (
+    DEFAULT_EXECUTION_MODE,
+    DEFAULT_LEASE_MINUTES,
+    DEFAULT_MODEL,
+    DEFAULT_PERMISSION_MODE,
+    DEFAULT_RENEW_SECONDS,
+    ISOLATION_ENV_VAR,
+    LEASE_DEADLINE,
+    LEASE_LOST,
+    DevinAgentError,
+    LeaseLostError,
+    assert_worker_lease,
+    build_devin_argv,
+    build_prompt,
+    changed_paths,
+    commit_scoped_changes,
+    devin_models_report,
+    ensure_isolated_worktree,
+    ensure_scoped,
+    ensure_worker_branch,
+    env_flag,
+    lease_owned,
+    make_lease_renewer,
+    parse_verify_specs,
+    preserve_failed_attempt,
+    redact,
+    redact_file,
+    resolve_execution_isolation,
+    run_child_with_lease,
+    run_verification,
+    select_model,
+)
+from logres_patch_agent import atomic_json, sha256_text
+from logres_swarm import ensure_schema as ensure_swarm_schema
+
+ROOT = Path(os.environ.get("LOGRES_ROOT", "/home/ubuntu/logres"))
+DB = Path(os.environ.get("LOGRES_CONTROL_DB", str(ROOT / "control/control.sqlite")))
+CONFIG = Path(os.environ.get("LOGRES_AUTOFLOW_CONFIG", str(ROOT / "control/autoflow.json")))
+BASE = ROOT / "src/awakened-realms"
+BRAIN = str(ROOT / "bin/logres-brain")
+CONTROL = str(ROOT / "bin/logres-control")
+FINISH = str(ROOT / "bin/logres-finish-task")
+GATE = str(ROOT / "bin/logres-gate")
+LOGS = ROOT / "logs/swarm"
+
+
+def load_config() -> dict:
+    try:
+        return json.loads(CONFIG.read_text())
+    except (OSError, json.JSONDecodeError):
+        return {}
+
+
+def run(argv, *, cwd: Path | None = None, timeout: int | None = None, env=None):
+    return subprocess.run(
+        [str(x) for x in argv],
+        cwd=str(cwd) if cwd else None,
+        text=True,
+        capture_output=True,
+        check=False,
+        timeout=timeout,
+        env=env,
+    )
+
+
+def update_job(conn: sqlite3.Connection, job_id: int, *, state: str, artifact=None, error=None):
+    conn.execute(
+        """update swarm_jobs
+              set state=?,artifact_path=coalesce(?,artifact_path),
+                  last_error=?,updated_at=datetime('now'),
+                  finished_at=case when ? in ('DONE','BLOCKED','FAILED')
+                                   then datetime('now') else finished_at end
+            where id=?""",
+        (state, artifact, error, state, job_id),
+    )
+    conn.commit()
+
+
+def release(worker: str, task: str, status: str, note: str):
+    run([CONTROL, "release", task])
+    result = run(
+        [BRAIN, "release", worker, task, "--status", status, "--note", note[:1800]]
+    )
+    if result.returncode:
+        raise DevinAgentError(
+            "brain release failed: " + redact(((result.stderr or "") + (result.stdout or "")).strip())
+        )
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser(prog="logres-devin-agent")
+    ap.add_argument("--task", required=True)
+    ap.add_argument("--worker", required=True)
+    ap.add_argument("--job-id", type=int, required=True)
+    ap.add_argument("--branch", required=True)
+    ap.add_argument("--worktree", type=Path, required=True)
+    ap.add_argument("--model", default=os.environ.get("LOGRES_DEVIN_MODEL", ""))
+    ap.add_argument(
+        "--permission-mode",
+        default=os.environ.get("LOGRES_DEVIN_PERMISSION_MODE", DEFAULT_PERMISSION_MODE),
+    )
+    ap.add_argument(
+        "--allow-paid",
+        action="store_true",
+        default=env_flag(os.environ, "LOGRES_DEVIN_ALLOW_PAID"),
+    )
+    ap.add_argument(
+        "--execution-mode",
+        choices=sorted(["interactive", "unattended"]),
+        default=os.environ.get("LOGRES_DEVIN_EXECUTION_MODE", ""),
+    )
+    ap.add_argument(
+        "--sandbox",
+        action="store_true",
+        default=env_flag(os.environ, "LOGRES_DEVIN_SANDBOX"),
+        help="run Devin CLI with its native OS sandbox (--sandbox)",
+    )
+    ap.add_argument(
+        "--isolation",
+        default=os.environ.get("LOGRES_DEVIN_ISOLATION", ""),
+        help="external OS isolation marker supplied by the launcher "
+        "(systemd unit, container runtime, etc.)",
+    )
+    ap.add_argument("--verify", action="append", default=[])
+    ap.add_argument(
+        "--renew-seconds",
+        type=float,
+        default=float(os.environ.get("LOGRES_DEVIN_RENEW_SECONDS", DEFAULT_RENEW_SECONDS)),
+    )
+    ap.add_argument(
+        "--lease-minutes",
+        type=int,
+        default=int(os.environ.get("LOGRES_DEVIN_LEASE_MINUTES", DEFAULT_LEASE_MINUTES)),
+    )
+    ap.add_argument("--devin-bin", default=os.environ.get("LOGRES_DEVIN_BIN", "devin"))
+    ap.add_argument("--prompt-file", type=Path, default=None)
+    args = ap.parse_args()
+
+    cfg = load_config()
+    devin_cfg = cfg.get("devin", {})
+    requested_model = (
+        args.model
+        or str(devin_cfg.get("model") or "")
+        or DEFAULT_MODEL
+    )
+    permission_mode = args.permission_mode or str(
+        devin_cfg.get("permission_mode") or DEFAULT_PERMISSION_MODE
+    )
+    execution_mode = args.execution_mode or str(
+        devin_cfg.get("execution_mode") or DEFAULT_EXECUTION_MODE
+    )
+    sandbox = bool(args.sandbox or devin_cfg.get("sandbox"))
+    isolation = args.isolation or str(devin_cfg.get("isolation") or "")
+    gate_timeout = int(devin_cfg.get("gate_timeout_seconds", 900) or 900)
+
+    cfg_verify = devin_cfg.get("verify")
+    if isinstance(cfg_verify, str):
+        cfg_verify = [cfg_verify]
+    env_verify = os.environ.get("LOGRES_DEVIN_VERIFY", "").strip()
+    verify_source = args.verify or ([env_verify] if env_verify else None) or cfg_verify
+    verify_commands = parse_verify_specs(verify_source, [GATE, "fast"])
+
+    conn = sqlite3.connect(DB, timeout=30)
+    conn.row_factory = sqlite3.Row
+    conn.execute("pragma busy_timeout=30000")
+    ensure_swarm_schema(conn)
+
+    worktree = args.worktree
+    packet_path = ROOT / "control/packets" / f"{args.task}-{args.worker}.txt"
+    artifact_dir = ROOT / "artifacts/swarm-devin"
+    artifact_dir.mkdir(parents=True, exist_ok=True)
+    artifact_path = artifact_dir / (
+        f"{args.task}-{datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')}.json"
+    )
+    raw_log_path = artifact_dir / f".{args.task}-{args.job_id}-{os.getpid()}.raw.log"
+    log_path = LOGS / f"{args.job_id}-{args.task}-devin.log"
+
+    committed = False
+    child_rc = None
+    stage = "precheck"
+    lease_lost = False
+    worktree_ok = False
+    payload: dict = {
+        "task_id": args.task,
+        "worker_id": args.worker,
+        "branch": args.branch,
+        "model": requested_model,
+        "permission_mode": permission_mode,
+        "execution_mode": execution_mode,
+        "sandbox": sandbox,
+        "isolation": isolation or None,
+    }
+
+    try:
+        branch = ensure_worker_branch(args.branch)
+        worktree = ensure_isolated_worktree(worktree, BASE)
+        worktree_ok = True
+        if not lease_owned(conn, args.task, args.worker, branch):
+            raise LeaseLostError("worker no longer owns the expected task lease")
+
+        stage = "packet"
+        task = conn.execute(
+            "select priority,title from tasks where id=?",
+            (args.task,),
+        ).fetchone()
+        if task is None:
+            raise DevinAgentError("task missing from control database")
+        scopes = [
+            str(row[0])
+            for row in conn.execute(
+                "select path_prefix from task_scopes where task_id=? order by path_prefix",
+                (args.task,),
+            )
+        ]
+        if not scopes:
+            raise DevinAgentError("implementation task has no declared file scopes")
+
+        if not packet_path.is_file():
+            raise DevinAgentError(f"worker packet missing: {packet_path}")
+        packet = packet_path.read_text(encoding="utf-8", errors="replace")
+        payload["packet_sha256"] = sha256_text(packet)
+        payload["scopes"] = scopes
+
+        stage = "precheck_worktree"
+        assert_worker_lease(conn, run, worktree, args.task, args.worker, branch)
+        if changed_paths(worktree):
+            raise DevinAgentError("implementation worktree is dirty before agent start")
+
+        stage = "model"
+        report = devin_models_report(run, args.devin_bin)
+        model = select_model(report, requested_model, allow_paid=args.allow_paid)
+        payload["model"] = model
+        payload["model_paid_opt_in"] = bool(args.allow_paid)
+
+        stage = "isolation"
+        contract = resolve_execution_isolation(
+            execution_mode=execution_mode,
+            sandbox=sandbox,
+            isolation=isolation,
+        )
+        payload["execution"] = contract
+
+        stage = "prompt"
+        prompt_path = args.prompt_file or (
+            artifact_dir / f"{args.task}-{args.worker}-prompt.txt"
+        )
+        prompt_path.parent.mkdir(parents=True, exist_ok=True)
+        prompt_path.write_text(
+            build_prompt(
+                task_id=args.task,
+                worker_id=args.worker,
+                branch=branch,
+                packet=packet[:50000],
+                scopes=scopes,
+                verify_commands=verify_commands,
+            ),
+            encoding="utf-8",
+        )
+        export_path = artifact_dir / f"{args.task}-{args.worker}-session.json"
+        child_argv = build_devin_argv(
+            prompt_file=prompt_path,
+            devin_bin=args.devin_bin,
+            model=model,
+            permission_mode=permission_mode,
+            export_path=export_path,
+            sandbox=sandbox,
+            execution_mode=execution_mode,
+            isolation=isolation,
+        )
+        child_env = os.environ.copy()
+        if contract.get("isolation"):
+            child_env[ISOLATION_ENV_VAR] = contract["isolation"]
+        stage = "devin_child"
+        renew = make_lease_renewer(run, BRAIN, args.worker, args.task, args.lease_minutes)
+        child = run_child_with_lease(
+            child_argv,
+            log_path=raw_log_path,
+            renew=renew,
+            cwd=worktree,
+            env=child_env,
+            renew_seconds=args.renew_seconds,
+            lease_ttl_seconds=args.lease_minutes * 60,
+        )
+        child_rc = int(child["rc"])
+        payload["devin_run"] = child
+        try:
+            redact_file(raw_log_path, log_path)
+        finally:
+            raw_log_path.unlink(missing_ok=True)
+        payload["log"] = str(log_path)
+        atomic_json(artifact_path, payload)
+
+        lease_status = (child.get("lease") or {}).get("status")
+        if lease_status in (LEASE_LOST, LEASE_DEADLINE):
+            stage = "lease_" + lease_status
+            payload["attempt"] = preserve_failed_attempt(
+                run, worktree, args.task, stage=stage
+            )
+            atomic_json(artifact_path, payload)
+            update_job(
+                conn,
+                args.job_id,
+                state="FAILED",
+                artifact=str(artifact_path),
+                error=f"lease {lease_status}: "
+                + str((child["lease"].get("detail") or ""))[:400],
+            )
+            conn.close()
+            if lease_status == LEASE_DEADLINE:
+                try:
+                    release(
+                        args.worker,
+                        args.task,
+                        "READY",
+                        "Devin worker lease renewal deadline reached; child "
+                        "terminated before TTL expiry. Work preserved under "
+                        f"{payload['attempt']['ref']}. artifact={artifact_path}",
+                    )
+                except Exception:
+                    pass
+            print(redact(json.dumps(payload, indent=2, sort_keys=True)))
+            return 1
+
+        if child_rc != 0:
+            stage = "child_exit"
+            payload["attempt"] = preserve_failed_attempt(
+                run, worktree, args.task, stage=stage
+            )
+            atomic_json(artifact_path, payload)
+            update_job(
+                conn,
+                args.job_id,
+                state="FAILED",
+                artifact=str(artifact_path),
+                error=f"devin child exited rc={child_rc}",
+            )
+            conn.close()
+            release(
+                args.worker,
+                args.task,
+                "READY",
+                f"Devin worker child exited rc={child_rc}; attempt preserved under "
+                f"{payload['attempt']['ref']}; lease returned READY. "
+                f"artifact={artifact_path}",
+            )
+            return child_rc if 0 < child_rc < 256 else 1
+
+        stage = "scope"
+        changed = changed_paths(worktree)
+        ensure_scoped(changed, scopes)
+        if not changed:
+            raise DevinAgentError("devin child produced no repository diff")
+
+        stage = "verify"
+        verify = run_verification(run, worktree, verify_commands)
+        payload["verify"] = verify
+        atomic_json(artifact_path, payload)
+        if any(item["rc"] for item in verify):
+            payload["attempt"] = preserve_failed_attempt(
+                run, worktree, args.task, stage="verify"
+            )
+            atomic_json(artifact_path, payload)
+            update_job(
+                conn,
+                args.job_id,
+                state="FAILED",
+                artifact=str(artifact_path),
+                error="focused verification failed after devin run",
+            )
+            conn.close()
+            release(
+                args.worker,
+                args.task,
+                "READY",
+                "Devin worker failed focused verification; failed attempt "
+                "preserved under "
+                f"{payload['attempt']['ref']}. artifact={artifact_path}",
+            )
+            return 1
+
+        stage = "commit"
+        assert_worker_lease(conn, run, worktree, args.task, args.worker, branch)
+        candidate_sha = commit_scoped_changes(run, worktree, args.task, changed)
+        committed = True
+        payload["candidate_sha"] = candidate_sha
+        payload["changed_paths"] = changed
+        atomic_json(artifact_path, payload)
+
+        stage = "finish"
+        assert_worker_lease(conn, run, worktree, args.task, args.worker, branch)
+        finished = run([FINISH, args.worker, args.task, branch], timeout=gate_timeout + 300)
+        payload["finish"] = {
+            "rc": finished.returncode,
+            "tail": redact(((finished.stdout or "") + (finished.stderr or ""))[-12000:]),
+        }
+        atomic_json(artifact_path, payload)
+        if finished.returncode:
+            update_job(
+                conn,
+                args.job_id,
+                state="FAILED",
+                artifact=str(artifact_path),
+                error="finish-task failed after candidate commit",
+            )
+            conn.close()
+            release(
+                args.worker,
+                args.task,
+                "READY",
+                f"Candidate {candidate_sha[:12]} committed but finish-task failed; "
+                f"preserved for retry. artifact={artifact_path}",
+            )
+            return 1
+
+        update_job(conn, args.job_id, state="DONE", artifact=str(artifact_path))
+        conn.close()
+        print(
+            redact(
+                json.dumps(
+                    {
+                        "task_id": args.task,
+                        "worker": args.worker,
+                        "status": "DONE",
+                        "model": model,
+                        "candidate_sha": candidate_sha,
+                        "artifact": str(artifact_path),
+                        "changed_paths": changed,
+                        "devin_run": child,
+                        "execution": contract,
+                    },
+                    indent=2,
+                    sort_keys=True,
+                )
+            )
+        )
+        return 0
+    except subprocess.TimeoutExpired as exc:
+        detail = f"timeout: {exc}"
+    except LeaseLostError as exc:
+        detail = f"lease_lost: {exc}"
+        lease_lost = True
+    except Exception as exc:
+        detail = f"{type(exc).__name__}: {exc}"
+
+    try:
+        payload["error"] = redact(detail)
+        payload["stage"] = stage
+        atomic_json(artifact_path, payload)
+    except Exception:
+        pass
+    try:
+        if raw_log_path.is_file():
+            redact_file(raw_log_path, log_path)
+            raw_log_path.unlink(missing_ok=True)
+    except Exception:
+        pass
+    try:
+        if (
+            worktree_ok
+            and not committed
+            and "attempt" not in payload
+            and Path(worktree).is_dir()
+        ):
+            payload["attempt"] = preserve_failed_attempt(
+                run, worktree, args.task, stage=stage
+            )
+            atomic_json(artifact_path, payload)
+    except Exception as snap_exc:
+        try:
+            payload["attempt_error"] = redact(
+                f"{type(snap_exc).__name__}: {snap_exc}"
+            )
+            atomic_json(artifact_path, payload)
+        except Exception:
+            pass
+    try:
+        update_job(conn, args.job_id, state="FAILED", artifact=str(artifact_path), error=redact(detail))
+        conn.close()
+    except Exception:
+        pass
+    if not lease_lost:
+        try:
+            note = (
+                "Devin worker failed safely and returned the task to READY. "
+                + redact(detail)[:1000]
+            )
+            if payload.get("attempt"):
+                note += " Attempt preserved under " + str(payload["attempt"].get("ref"))
+            release(args.worker, args.task, "READY", note)
+        except Exception:
+            pass
+    traceback.print_exc()
+    return 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
