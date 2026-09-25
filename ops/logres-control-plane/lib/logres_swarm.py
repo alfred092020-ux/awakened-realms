@@ -23,6 +23,7 @@ class SwarmCapacity:
     max_workers: int
     active_leases: int
     active_research: int
+    active_patch: int
     active_copilot: int
     free_slots: int
 
@@ -115,6 +116,29 @@ def active_copilot_job_count(conn: sqlite3.Connection) -> int:
         return 0
 
 
+def active_swarm_task_ids(conn: sqlite3.Connection) -> set[str]:
+    ensure_schema(conn)
+    return {
+        str(row[0])
+        for row in conn.execute(
+            "select distinct task_id from swarm_jobs "
+            "where state in ('STARTING','RUNNING')"
+        )
+        if row[0]
+    }
+
+
+def active_swarm_engine_count(conn: sqlite3.Connection, engine: str) -> int:
+    ensure_schema(conn)
+    return int(
+        conn.execute(
+            "select count(*) from swarm_jobs "
+            "where engine=? and state in ('STARTING','RUNNING')",
+            (engine,),
+        ).fetchone()[0]
+    )
+
+
 def swarm_capacity(conn: sqlite3.Connection, config: dict) -> SwarmCapacity:
     ensure_schema(conn)
     now = time.time()
@@ -126,25 +150,25 @@ def swarm_capacity(conn: sqlite3.Connection, config: dict) -> SwarmCapacity:
             (now,),
         ).fetchone()[0]
     )
-    active_research = int(
-        conn.execute(
-            "select count(*) from swarm_jobs "
-            "where engine='research' and state in ('STARTING','RUNNING')"
-        ).fetchone()[0]
-    )
+    active_research = active_swarm_engine_count(conn, "research")
+    active_patch = active_swarm_engine_count(conn, "openai-patch")
     active_copilot = active_copilot_job_count(conn)
+    # Research and OpenAI patch workers both hold Brain leases, so they are
+    # already represented in active_leases. Copilot jobs are external and do
+    # not necessarily hold a Brain lease, so only Copilot is added separately.
     free_slots = max(0, max_workers - active_leases - active_copilot)
     return SwarmCapacity(
         max_workers=max_workers,
         active_leases=active_leases,
         active_research=active_research,
+        active_patch=active_patch,
         active_copilot=active_copilot,
         free_slots=free_slots,
     )
 
 
 def ready_tasks(conn: sqlite3.Connection) -> list[dict]:
-    copilot_owned = active_copilot_task_ids(conn)
+    owned = active_copilot_task_ids(conn) | active_swarm_task_ids(conn)
     rows = conn.execute(
         """select t.id,t.priority,t.title,t.lane,t.status,
                   coalesce(m.work_type,'implementation') work_type,
@@ -161,7 +185,7 @@ def ready_tasks(conn: sqlite3.Connection) -> list[dict]:
     return [
         dict(row)
         for row in rows
-        if str(row["id"]) not in copilot_owned
+        if str(row["id"]) not in owned
     ]
 
 
@@ -174,11 +198,14 @@ def classify_engine(task: dict) -> str:
     return "manual"
 
 
-def select_research_tasks(
+def _select_tasks(
     conn: sqlite3.Connection,
     limit: int,
     *,
+    work_types: set[str],
+    engine: str,
     skip_task_ids: set[str] | None = None,
+    require_scopes: bool = False,
 ) -> list[dict]:
     skip_task_ids = skip_task_ids or set()
     selected: list[dict] = []
@@ -193,31 +220,34 @@ def select_research_tasks(
     ranked_ids = rank_task_ids(
         conn,
         limit=max(16, max(1, limit) * 4),
-        work_type_filter=RESEARCH_WORK_TYPES,
+        work_type_filter=work_types,
     )
     for task_id in ranked_ids:
         task = task_map.get(task_id)
-        if task is None:
+        if task is None or task["id"] in skip_task_ids:
             continue
-        if task["id"] in skip_task_ids or classify_engine(task) != "research":
+        work_type = str(task.get("work_type") or "").lower()
+        if work_type not in work_types:
             continue
         key = task.get("concurrency_key") or task.get("lane") or ""
         if key and key in keys:
             continue
         scopes = [
-            row[0]
+            str(row[0])
             for row in conn.execute(
                 "select path_prefix from task_scopes where task_id=? order by path_prefix",
                 (task["id"],),
             )
         ]
+        if require_scopes and not scopes:
+            continue
         conflict = False
         for scope in scopes:
             a = scope.rstrip("/") + "/"
             for owner_task, prior in claimed + selected_scopes:
                 if owner_task == task["id"]:
                     continue
-                b = prior.rstrip("/") + "/"
+                b = str(prior).rstrip("/") + "/"
                 if a.startswith(b) or b.startswith(a):
                     conflict = True
                     break
@@ -234,16 +264,51 @@ def select_research_tasks(
     return selected
 
 
-def prior_failures(conn: sqlite3.Connection, task_id: str) -> int:
-    ensure_schema(conn)
-    return int(
-        conn.execute(
-            """select count(*) from swarm_jobs
-                where task_id=? and state='FAILED'
-                  and artifact_path is not null""",
-            (task_id,),
-        ).fetchone()[0]
+def select_research_tasks(
+    conn: sqlite3.Connection,
+    limit: int,
+    *,
+    skip_task_ids: set[str] | None = None,
+) -> list[dict]:
+    return _select_tasks(
+        conn,
+        limit,
+        work_types=RESEARCH_WORK_TYPES,
+        engine="research",
+        skip_task_ids=skip_task_ids,
     )
+
+
+def select_implementation_tasks(
+    conn: sqlite3.Connection,
+    limit: int,
+    *,
+    skip_task_ids: set[str] | None = None,
+) -> list[dict]:
+    return _select_tasks(
+        conn,
+        limit,
+        work_types=IMPLEMENTATION_WORK_TYPES,
+        engine="openai-patch",
+        skip_task_ids=skip_task_ids,
+        require_scopes=True,
+    )
+
+def prior_failures(
+    conn: sqlite3.Connection,
+    task_id: str,
+    *,
+    engine: str | None = None,
+) -> int:
+    ensure_schema(conn)
+    sql = """select count(*) from swarm_jobs
+               where task_id=? and state='FAILED'
+                 and artifact_path is not null"""
+    params: list[str] = [task_id]
+    if engine:
+        sql += " and engine=?"
+        params.append(engine)
+    return int(conn.execute(sql, tuple(params)).fetchone()[0])
 
 
 def worker_ids(config: dict) -> list[str]:
@@ -261,6 +326,27 @@ def available_worker_ids(conn: sqlite3.Connection, config: dict) -> list[str]:
         )
     }
     return [worker for worker in worker_ids(config) if worker not in busy]
+
+
+def patch_worker_ids(config: dict) -> list[str]:
+    impl = config.get("implementation", {})
+    count = int(impl.get("workers", 1) or 1)
+    return [f"auto-patch-{i}" for i in range(1, max(1, count) + 1)]
+
+
+def available_patch_worker_ids(
+    conn: sqlite3.Connection,
+    config: dict,
+) -> list[str]:
+    now = time.time()
+    busy = {
+        str(row[0])
+        for row in conn.execute(
+            "select chat_id from brain_task_leases where lease_until_epoch>?",
+            (now,),
+        )
+    }
+    return [worker for worker in patch_worker_ids(config) if worker not in busy]
 
 
 def register_worker(root: Path, worker_id: str) -> None:
@@ -332,6 +418,7 @@ def status_dict(conn: sqlite3.Connection, config: dict) -> dict:
             "max_workers": cap.max_workers,
             "active_leases": cap.active_leases,
             "active_research": cap.active_research,
+            "active_patch": cap.active_patch,
             "active_copilot": cap.active_copilot,
             "free_slots": cap.free_slots,
         },

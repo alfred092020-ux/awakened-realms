@@ -1,0 +1,18 @@
+[Unit]
+Description=Logres persistent autonomy supervisor
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/home/ubuntu/logres
+Environment=LOGRES_ROOT=/home/ubuntu/logres
+ExecStart=/home/ubuntu/logres/bin/logres-supervisor run
+Restart=always
+RestartSec=5
+KillMode=control-group
+TimeoutStopSec=30
+
+[Install]
+WantedBy=multi-user.target

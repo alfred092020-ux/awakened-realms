@@ -18,6 +18,7 @@ from logres_optimizer import record_swarm_observations
 from logres_resource_broker import infer_task_workload, plan_workload
 from logres_swarm import (
     acquire_task,
+    available_patch_worker_ids,
     available_worker_ids,
     create_job,
     ensure_schema,
@@ -27,6 +28,7 @@ from logres_swarm import (
     ready_tasks,
     reconcile_jobs,
     register_worker,
+    select_implementation_tasks,
     select_research_tasks,
     status_dict,
     swarm_capacity,
@@ -50,6 +52,8 @@ LOGS = ROOT / "logs/swarm"
 BRAIN = str(ROOT / "bin/logres-brain")
 COPILOT = str(ROOT / "bin/logres-copilot-router")
 RESEARCH = str(ROOT / "bin/logres-research-agent")
+PATCH_AGENT = str(ROOT / "bin/logres-patch-agent")
+WORKER_START = str(ROOT / "bin/logres-worker-start")
 SUPERVISOR = str(ROOT / "bin/logres-supervisor")
 
 
@@ -61,20 +65,47 @@ def connect() -> sqlite3.Connection:
     return conn
 
 
-def run(argv):
+def run(argv, *, timeout: int | None = None):
     return subprocess.run(
         [str(x) for x in argv],
         text=True,
         capture_output=True,
         check=False,
+        timeout=timeout,
     )
+
+
+def worktree_for_branch(branch: str) -> Path | None:
+    if not branch:
+        return None
+    base = ROOT / "src/awakened-realms"
+    proc = run(["git", "-C", base, "worktree", "list", "--porcelain"])
+    if proc.returncode:
+        return None
+    current = None
+    target = f"refs/heads/{branch}"
+    for line in (proc.stdout or "").splitlines():
+        if line.startswith("worktree "):
+            current = Path(line.split(" ", 1)[1])
+        elif line == f"branch {target}" and current is not None:
+            return current
+    return None
+
+
+def clean_stale_patch_worktree(branch: str) -> bool:
+    worktree = worktree_for_branch(branch)
+    if worktree is None or not worktree.is_dir():
+        return False
+    reset = run(["git", "-C", worktree, "reset", "--hard", "HEAD"], timeout=60)
+    clean = run(["git", "-C", worktree, "clean", "-fd"], timeout=60)
+    return reset.returncode == 0 and clean.returncode == 0
 
 
 def release_stale(conn: sqlite3.Connection, stale_ids: list[int]) -> list[dict]:
     released = []
     for job_id in stale_ids:
         row = conn.execute(
-            "select task_id,worker_id from swarm_jobs where id=?",
+            "select task_id,worker_id,engine from swarm_jobs where id=?",
             (job_id,),
         ).fetchone()
         if not row:
@@ -84,6 +115,14 @@ def release_stale(conn: sqlite3.Connection, stale_ids: list[int]) -> list[dict]:
             (row["task_id"], row["worker_id"]),
         ).fetchone()
         if lease:
+            if str(row["engine"] or "") == "openai-patch":
+                branch_row = conn.execute(
+                    "select branch from brain_task_leases "
+                    "where task_id=? and chat_id=?",
+                    (row["task_id"], row["worker_id"]),
+                ).fetchone()
+                if branch_row and branch_row["branch"]:
+                    clean_stale_patch_worktree(str(branch_row["branch"]))
             run([str(ROOT / "bin/logres-control"), "release", row["task_id"]])
             run(
                 [
@@ -94,7 +133,7 @@ def release_stale(conn: sqlite3.Connection, stale_ids: list[int]) -> list[dict]:
                     "--status",
                     "READY",
                     "--note",
-                    "Swarm research process exited unexpectedly; stale lease recovered.",
+                    "Swarm worker process exited unexpectedly; stale lease recovered.",
                 ]
             )
             released.append(
@@ -242,6 +281,193 @@ def dispatch_research(
     return dispatched
 
 
+def release_worker(worker: str, task_id: str, note: str) -> None:
+    run([str(ROOT / "bin/logres-control"), "release", task_id])
+    run(
+        [
+            BRAIN,
+            "release",
+            worker,
+            task_id,
+            "--status",
+            "READY",
+            "--note",
+            note[:1800],
+        ]
+    )
+
+
+def materialize_worker(
+    worker: str,
+    task_id: str,
+    branch: str,
+) -> tuple[Path | None, str]:
+    try:
+        started = run(
+            [WORKER_START, worker, task_id, branch],
+            timeout=300,
+        )
+    except subprocess.TimeoutExpired:
+        return None, "worker-start timed out"
+    detail = ((started.stderr or "") + "\n" + (started.stdout or "")).strip()
+    if started.returncode:
+        return None, detail[-2000:]
+    for line in (started.stdout or "").splitlines():
+        if line.startswith("worktree="):
+            path = Path(line.split("=", 1)[1].strip())
+            if path.is_dir():
+                return path, detail
+    return None, "worker-start did not report a valid worktree"
+
+
+def dispatch_patch(
+    conn: sqlite3.Connection,
+    cfg: dict,
+    *,
+    limit: int,
+) -> list[dict]:
+    impl = cfg.get("implementation", {})
+    if not bool(impl.get("enabled", False)) or limit <= 0:
+        return []
+    if not Path(PATCH_AGENT).is_file() or not Path(WORKER_START).is_file():
+        return []
+
+    workers = available_patch_worker_ids(conn, cfg)
+    if not workers:
+        return []
+
+    cap = swarm_capacity(conn, cfg)
+    max_active = int(impl.get("max_active", 1) or 1)
+    remaining_active = max(0, max_active - cap.active_patch)
+    limit = min(limit, len(workers), remaining_active)
+    if limit <= 0:
+        return []
+
+    model = str(
+        impl.get("model")
+        or cfg.get("openai", {}).get("auto_model")
+        or "gpt-5.6-luna"
+    )
+    max_attempts = int(impl.get("max_attempts", 2) or 2)
+    timeout_seconds = int(impl.get("timeout_seconds", 1800) or 1800)
+    candidates = select_implementation_tasks(conn, max(1, limit) * 4)
+    dispatched: list[dict] = []
+
+    for task in candidates:
+        if len(dispatched) >= limit:
+            break
+        task_id = str(task["id"])
+        failures = prior_failures(conn, task_id, engine="openai-patch")
+        if failures >= max_attempts:
+            post_once(
+                f"OpenAI patch retry ceiling: {task_id}",
+                (
+                    f"Automatic implementation failed {failures} time(s); "
+                    "leaving task READY for manual/Lead review."
+                ),
+                f"patch-retry-ceiling:{task_id}:{failures}",
+                task_id,
+            )
+            continue
+
+        priority = int(task.get("priority") or 9)
+        budget = budget_state(conn, cfg, priority, model)
+        if not automatic_api_allowed(budget, priority):
+            continue
+
+        worker = workers[len(dispatched)]
+        register_worker(ROOT, worker)
+        branch = acquire_task(ROOT, worker, task_id)
+        if not branch:
+            continue
+
+        worktree, detail = materialize_worker(worker, task_id, branch)
+        if worktree is None:
+            release_worker(
+                worker,
+                task_id,
+                "OpenAI patch worker bootstrap failed; task returned READY. " + detail,
+            )
+            continue
+
+        try:
+            job_id = create_job(
+                conn,
+                task_id,
+                worker,
+                "openai-patch",
+            )
+        except sqlite3.IntegrityError:
+            release_worker(
+                worker,
+                task_id,
+                "Duplicate live swarm implementation job detected; released safely.",
+            )
+            continue
+
+        LOGS.mkdir(parents=True, exist_ok=True)
+        log_path = LOGS / f"{job_id}-{task_id}-patch.log"
+        log_handle = open(log_path, "ab", buffering=0)
+        try:
+            proc = subprocess.Popen(
+                [
+                    "/usr/bin/timeout",
+                    "--signal=TERM",
+                    "--kill-after=30s",
+                    str(timeout_seconds),
+                    PATCH_AGENT,
+                    "--task",
+                    task_id,
+                    "--worker",
+                    worker,
+                    "--job-id",
+                    str(job_id),
+                    "--branch",
+                    branch,
+                    "--worktree",
+                    str(worktree),
+                ],
+                stdout=log_handle,
+                stderr=subprocess.STDOUT,
+                start_new_session=True,
+                close_fds=True,
+                env=os.environ.copy(),
+            )
+        except OSError as exc:
+            log_handle.close()
+            conn.execute(
+                """update swarm_jobs
+                      set state='FAILED',last_error=?,updated_at=datetime('now'),
+                          finished_at=datetime('now')
+                    where id=?""",
+                (f"worker launch failed: {exc}", job_id),
+            )
+            conn.commit()
+            release_worker(
+                worker,
+                task_id,
+                f"OpenAI patch worker launch failed; task returned READY. {exc}",
+            )
+            continue
+        log_handle.close()
+        mark_job_running(conn, job_id, proc.pid)
+        dispatched.append(
+            {
+                "task_id": task_id,
+                "worker_id": worker,
+                "job_id": job_id,
+                "pid": proc.pid,
+                "branch": branch,
+                "worktree": str(worktree),
+                "log": str(log_path),
+                "budget": budget,
+                "model": model,
+                "timeout_seconds": timeout_seconds,
+            }
+        )
+    return dispatched
+
+
 def placement_hints(
     conn: sqlite3.Connection,
     task_ids: list[str],
@@ -336,6 +562,7 @@ def tick(dry_run: bool = False) -> dict:
         "before": before.__dict__,
         "stale_recovered": recovered,
         "copilot": {"dispatched": 0, "jobs": []},
+        "implementation": [],
         "research": [],
         "dry_run": dry_run,
     }
@@ -345,6 +572,13 @@ def tick(dry_run: bool = False) -> dict:
         return payload
 
     if dry_run:
+        payload["implementation_candidates"] = [
+            task["id"]
+            for task in select_implementation_tasks(
+                conn,
+                before.free_slots,
+            )
+        ]
         payload["research_candidates"] = [
             task["id"]
             for task in select_research_tasks(
@@ -360,15 +594,31 @@ def tick(dry_run: bool = False) -> dict:
         conn.close()
         return payload
 
-    # Code agents first: they can produce candidates while research workers
-    # independently attack evidence gaps.
+    # Code agents first: external Copilot retains its existing route when
+    # enabled. The bounded OpenAI patch lane fills remaining implementation
+    # capacity without granting the model shell or repository credentials.
     impl_limit = min(
         before.free_slots,
         int(swarm_cfg.get("implementation_dispatch_per_tick", 2) or 2),
     )
     payload["copilot"] = dispatch_copilot(impl_limit)
 
-    # Recompute because Copilot jobs consume swarm capacity.
+    cap = swarm_capacity(conn, cfg)
+    openai_hard = int(
+        cfg.get("openai", {}).get("max_active_hard", 2) or 2
+    )
+    patch_limit = min(
+        cap.free_slots,
+        impl_limit,
+        max(0, openai_hard - cap.active_research - cap.active_patch),
+    )
+    payload["implementation"] = dispatch_patch(
+        conn,
+        cfg,
+        limit=patch_limit,
+    )
+
+    # Recompute because implementation workers hold Brain leases.
     cap = swarm_capacity(conn, cfg)
     research_cfg_limit = int(
         swarm_cfg.get("research_workers", 2) or 2
@@ -380,7 +630,7 @@ def tick(dry_run: bool = False) -> dict:
     research_limit = min(
         cap.free_slots,
         max(0, research_cfg_limit - cap.active_research),
-        openai_soft_limit,
+        max(0, openai_soft_limit - cap.active_patch),
     )
     payload["research"] = dispatch_research(
         conn,

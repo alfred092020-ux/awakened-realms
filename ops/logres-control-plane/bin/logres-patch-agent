@@ -1,0 +1,584 @@
+#!/home/ubuntu/logres/envs/research/bin/python
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import sqlite3
+import subprocess
+import sys
+import traceback
+from datetime import datetime, timezone
+from pathlib import Path
+
+from openai import OpenAI
+
+CONTROL_ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(CONTROL_ROOT / "lib"))
+
+from logres_ai_runner import (
+    automatic_api_allowed,
+    budget_state,
+    ensure_db as ensure_ai_schema,
+    usage_from_response,
+)
+from logres_patch_agent import (
+    PatchAgentError,
+    apply_operations,
+    atomic_json,
+    bounded_file_bundle,
+    git_changed_paths,
+    rank_index,
+    scoped_file_index,
+    sha256_text,
+    validate_paths,
+)
+from logres_swarm import ensure_schema as ensure_swarm_schema
+
+ROOT = Path(os.environ.get("LOGRES_ROOT", "/home/ubuntu/logres"))
+DB = Path(os.environ.get("LOGRES_CONTROL_DB", str(ROOT / "control/control.sqlite")))
+CONFIG = Path(os.environ.get("LOGRES_AUTOFLOW_CONFIG", str(ROOT / "control/autoflow.json")))
+KEY_FILE = Path(os.environ.get("LOGRES_OPENAI_KEY_FILE", "/home/ubuntu/.config/logres/openai_api_key"))
+BRAIN = str(ROOT / "bin/logres-brain")
+CONTROL = str(ROOT / "bin/logres-control")
+FINISH = str(ROOT / "bin/logres-finish-task")
+GATE = str(ROOT / "bin/logres-gate")
+
+PLANNER_SYSTEM = """You are the Logres implementation context planner.
+Use only the supplied task packet and file index. Never invent original Logres behavior.
+Choose the smallest set of existing files needed to implement or repair the task.
+Do not choose files outside the supplied index. Return JSON only."""
+
+PATCH_SYSTEM = """You are a bounded Logres code editor.
+Use only the supplied task packet, plan, and file contents. Preserve verified behavior.
+Never invent original Logres behavior when evidence is missing.
+Return exact search-and-replace operations, creates, or deletes only within declared task scopes.
+For replace operations, old text must be copied exactly from supplied file content and must be unique.
+Do not request shell access, network access, branch changes, commits, pushes, or merges.
+Return JSON only."""
+
+
+def load_config() -> dict:
+    try:
+        return json.loads(CONFIG.read_text())
+    except (OSError, json.JSONDecodeError):
+        return {}
+
+
+def openai_client() -> OpenAI:
+    key = os.environ.get("OPENAI_API_KEY", "").strip()
+    if not key and KEY_FILE.is_file():
+        key = KEY_FILE.read_text().strip()
+    if not key:
+        raise PatchAgentError("OpenAI credential unavailable")
+    return OpenAI(api_key=key)
+
+
+def run(argv, *, cwd: Path | None = None, timeout: int | None = None, env=None):
+    return subprocess.run(
+        [str(x) for x in argv],
+        cwd=str(cwd) if cwd else None,
+        text=True,
+        capture_output=True,
+        check=False,
+        timeout=timeout,
+        env=env,
+    )
+
+
+def update_job(conn: sqlite3.Connection, job_id: int, *, state: str, artifact=None, error=None):
+    conn.execute(
+        """update swarm_jobs
+              set state=?,artifact_path=coalesce(?,artifact_path),
+                  last_error=?,updated_at=datetime('now'),
+                  finished_at=case when ? in ('DONE','BLOCKED','FAILED')
+                                   then datetime('now') else finished_at end
+            where id=?""",
+        (state, artifact, error, state, job_id),
+    )
+    conn.commit()
+
+
+def release(worker: str, task: str, status: str, note: str):
+    run([CONTROL, "release", task])
+    result = run(
+        [BRAIN, "release", worker, task, "--status", status, "--note", note[:1800]]
+    )
+    if result.returncode:
+        raise PatchAgentError(
+            "brain release failed: " + ((result.stderr or "") + (result.stdout or "")).strip()
+        )
+
+
+def record_usage(
+    conn: sqlite3.Connection,
+    response,
+    *,
+    model: str,
+    cfg: dict,
+    task_id: str,
+    artifact_sha: str,
+    status: str,
+) -> dict:
+    rates = cfg.get("openai", {}).get("model_rates_per_million", {})
+    usage = usage_from_response(response, model, rates)
+    conn.execute(
+        """insert into api_usage(
+             route_job_id,ai_run_id,task_id,artifact_sha,model,input_tokens,
+             cached_input_tokens,output_tokens,reasoning_tokens,
+             estimated_cost_usd,status,created_at
+           ) values(null,null,?,?,?,?,?,?,?,?,?,datetime('now'))""",
+        (
+            task_id,
+            artifact_sha,
+            model,
+            usage.input_tokens,
+            usage.cached_input_tokens,
+            usage.output_tokens,
+            usage.reasoning_tokens,
+            usage.estimated_cost_usd,
+            status,
+        ),
+    )
+    conn.commit()
+    return usage.to_dict()
+
+
+def call_json(
+    client: OpenAI,
+    conn: sqlite3.Connection,
+    cfg: dict,
+    *,
+    model: str,
+    priority: int,
+    task_id: str,
+    artifact_sha: str,
+    instructions: str,
+    prompt: str,
+    schema_name: str,
+    schema: dict,
+    max_output_tokens: int,
+) -> tuple[dict, dict]:
+    state = budget_state(conn, cfg, priority, model)
+    if not automatic_api_allowed(state, priority):
+        raise PatchAgentError(f"OpenAI implementation budget state {state}")
+    response = client.responses.create(
+        model=model,
+        instructions=instructions,
+        input=prompt,
+        max_output_tokens=max_output_tokens,
+        reasoning={"effort": "none"},
+        text={
+            "format": {
+                "type": "json_schema",
+                "name": schema_name,
+                "strict": True,
+                "schema": schema,
+            }
+        },
+        store=False,
+    )
+    if getattr(response, "status", "completed") != "completed":
+        reason = getattr(getattr(response, "incomplete_details", None), "reason", "unknown")
+        record_usage(
+            conn,
+            response,
+            model=model,
+            cfg=cfg,
+            task_id=task_id,
+            artifact_sha=artifact_sha,
+            status="FAIL",
+        )
+        raise PatchAgentError(f"incomplete model response: {reason}")
+    usage = record_usage(
+        conn,
+        response,
+        model=model,
+        cfg=cfg,
+        task_id=task_id,
+        artifact_sha=artifact_sha,
+        status="PASS",
+    )
+    try:
+        return json.loads(response.output_text), usage
+    except json.JSONDecodeError as exc:
+        raise PatchAgentError("model returned invalid JSON") from exc
+
+
+def planner_schema() -> dict:
+    return {
+        "type": "object",
+        "properties": {
+            "read_paths": {"type": "array", "items": {"type": "string"}},
+            "plan": {"type": "array", "items": {"type": "string"}},
+            "blocker": {"type": "string"},
+        },
+        "required": ["read_paths", "plan", "blocker"],
+        "additionalProperties": False,
+    }
+
+
+def patch_schema() -> dict:
+    operation = {
+        "type": "object",
+        "properties": {
+            "type": {"type": "string", "enum": ["replace", "create", "delete"]},
+            "path": {"type": "string"},
+            "old": {"type": "string"},
+            "new": {"type": "string"},
+        },
+        "required": ["type", "path", "old", "new"],
+        "additionalProperties": False,
+    }
+    return {
+        "type": "object",
+        "properties": {
+            "summary": {"type": "string"},
+            "operations": {"type": "array", "items": operation},
+            "tests": {"type": "array", "items": {"type": "string"}},
+            "blocker": {"type": "string"},
+        },
+        "required": ["summary", "operations", "tests", "blocker"],
+        "additionalProperties": False,
+    }
+
+
+def clean_uncommitted(worktree: Path):
+    run(["git", "-C", worktree, "restore", "--staged", "--worktree", "."])
+    run(["git", "-C", worktree, "clean", "-fd"])
+
+
+def commit_changes(worktree: Path, task_id: str, changed: list[str]) -> str:
+    add = run(["git", "-C", worktree, "add", "-A", "--", *changed])
+    if add.returncode:
+        raise PatchAgentError((add.stderr or add.stdout).strip())
+    commit = run(
+        [
+            "git",
+            "-C",
+            worktree,
+            "-c",
+            "user.name=Logres OpenAI Patch Worker",
+            "-c",
+            "user.email=openai-patch@local.invalid",
+            "commit",
+            "-m",
+            f"worker: {task_id} automated implementation",
+        ]
+    )
+    if commit.returncode:
+        raise PatchAgentError((commit.stderr or commit.stdout).strip())
+    sha = run(["git", "-C", worktree, "rev-parse", "HEAD"])
+    if sha.returncode:
+        raise PatchAgentError((sha.stderr or sha.stdout).strip())
+    return sha.stdout.strip()
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser(prog="logres-patch-agent")
+    ap.add_argument("--task", required=True)
+    ap.add_argument("--worker", required=True)
+    ap.add_argument("--job-id", type=int, required=True)
+    ap.add_argument("--branch", required=True)
+    ap.add_argument("--worktree", type=Path, required=True)
+    args = ap.parse_args()
+
+    cfg = load_config()
+    impl = cfg.get("implementation", {})
+    model = str(impl.get("model") or cfg.get("openai", {}).get("auto_model") or "gpt-5.6-luna")
+    max_output = int(impl.get("max_output_tokens", 12000) or 12000)
+    repair_attempts = int(impl.get("repair_attempts", 1) or 0)
+    gate_timeout = int(impl.get("gate_timeout_seconds", 900) or 900)
+
+    conn = sqlite3.connect(DB, timeout=30)
+    conn.row_factory = sqlite3.Row
+    conn.execute("pragma busy_timeout=30000")
+    ensure_swarm_schema(conn)
+    ensure_ai_schema(conn)
+
+    worktree = args.worktree.resolve()
+    packet_path = ROOT / "control/packets" / f"{args.task}-{args.worker}.txt"
+    artifact_dir = ROOT / "artifacts/swarm-implementation"
+    artifact_dir.mkdir(parents=True, exist_ok=True)
+    artifact_path = artifact_dir / (
+        f"{args.task}-{datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')}.json"
+    )
+
+    committed = False
+    usage_records: list[dict] = []
+    payload: dict = {
+        "task_id": args.task,
+        "worker_id": args.worker,
+        "branch": args.branch,
+        "model": model,
+    }
+
+    try:
+        lease = conn.execute(
+            "select branch from brain_task_leases where task_id=? and chat_id=?",
+            (args.task, args.worker),
+        ).fetchone()
+        if lease is None or str(lease["branch"] or "") != args.branch:
+            raise PatchAgentError("worker no longer owns the expected task lease")
+
+        task = conn.execute(
+            "select priority,title from tasks where id=?",
+            (args.task,),
+        ).fetchone()
+        if task is None:
+            raise PatchAgentError("task missing from control database")
+        priority = int(task["priority"])
+        scopes = [
+            str(row[0])
+            for row in conn.execute(
+                "select path_prefix from task_scopes where task_id=? order by path_prefix",
+                (args.task,),
+            )
+        ]
+        if not scopes:
+            raise PatchAgentError("implementation task has no declared file scopes")
+
+        if not packet_path.is_file():
+            raise PatchAgentError(f"worker packet missing: {packet_path}")
+        packet = packet_path.read_text(encoding="utf-8", errors="replace")
+        packet_sha = sha256_text(packet)
+        payload["packet_sha256"] = packet_sha
+        payload["scopes"] = scopes
+
+        branch_now = run(["git", "-C", worktree, "branch", "--show-current"])
+        if branch_now.returncode or branch_now.stdout.strip() != args.branch:
+            raise PatchAgentError("worktree is not on the leased worker branch")
+        initial = git_changed_paths(worktree)
+        if initial:
+            raise PatchAgentError("implementation worktree is dirty before agent start")
+
+        index = rank_index(scoped_file_index(worktree, scopes), packet)
+        if not index:
+            raise PatchAgentError("declared scopes contain no tracked context files")
+
+        client = openai_client()
+        planner_prompt = (
+            "TASK PACKET:\n" + packet[:50000]
+            + "\n\nDECLARED SCOPES:\n" + json.dumps(scopes)
+            + "\n\nAVAILABLE TRACKED FILES:\n" + json.dumps(index)
+            + "\n\nChoose at most 14 existing files to read. If the task cannot be safely "
+              "implemented from these scopes, set blocker to a concise reason."
+        )
+        plan, usage = call_json(
+            client,
+            conn,
+            cfg,
+            model=model,
+            priority=priority,
+            task_id=args.task,
+            artifact_sha=packet_sha,
+            instructions=PLANNER_SYSTEM,
+            prompt=planner_prompt,
+            schema_name="logres_patch_plan",
+            schema=planner_schema(),
+            max_output_tokens=min(3000, max_output),
+        )
+        usage_records.append(usage)
+        read_paths = [str(path) for path in plan.get("read_paths", [])][:14]
+        available = {item["path"] for item in index}
+        if any(path not in available for path in read_paths):
+            raise PatchAgentError("planner requested a path outside the supplied file index")
+        if plan.get("blocker") and not read_paths:
+            raise PatchAgentError("planner blocked: " + str(plan["blocker"]))
+        context = bounded_file_bundle(worktree, read_paths, scopes)
+
+        patch_prompt = (
+            "TASK PACKET:\n" + packet[:50000]
+            + "\n\nDECLARED SCOPES:\n" + json.dumps(scopes)
+            + "\n\nPLAN:\n" + json.dumps(plan)
+            + "\n\nSELECTED FILE CONTENTS:\n" + context
+            + "\n\nProduce the smallest exact edit set satisfying the task. "
+              "Do not weaken tests merely to hide a runtime defect. "
+              "If safe implementation is impossible from supplied evidence, return no operations "
+              "and explain blocker."
+        )
+        patch, usage = call_json(
+            client,
+            conn,
+            cfg,
+            model=model,
+            priority=priority,
+            task_id=args.task,
+            artifact_sha=packet_sha,
+            instructions=PATCH_SYSTEM,
+            prompt=patch_prompt,
+            schema_name="logres_patch_edits",
+            schema=patch_schema(),
+            max_output_tokens=max_output,
+        )
+        usage_records.append(usage)
+        payload["plan"] = plan
+        payload["patch"] = patch
+
+        operations = list(patch.get("operations") or [])
+        if not operations:
+            raise PatchAgentError("model produced no edits: " + str(patch.get("blocker") or "unspecified"))
+        apply_operations(worktree, operations, scopes)
+        changed = git_changed_paths(worktree)
+        validate_paths(changed, scopes)
+        if not changed:
+            raise PatchAgentError("edit operations produced no repository diff")
+
+        diff_check = run(["git", "-C", worktree, "diff", "--check"])
+        if diff_check.returncode:
+            raise PatchAgentError("git diff --check failed: " + (diff_check.stderr or diff_check.stdout)[-2000:])
+
+        gate_runs = []
+        gate = run([GATE, "fast"], cwd=worktree, timeout=gate_timeout)
+        gate_runs.append({"rc": gate.returncode, "tail": ((gate.stdout or "") + (gate.stderr or ""))[-12000:]})
+
+        for _ in range(repair_attempts):
+            if gate.returncode == 0:
+                break
+            current_paths = git_changed_paths(worktree)
+            current_bundle = bounded_file_bundle(worktree, current_paths, scopes, total_chars=90000)
+            diff = run(["git", "-C", worktree, "diff", "--", *current_paths])
+            repair_prompt = (
+                "TASK PACKET:\n" + packet[:35000]
+                + "\n\nCURRENT CHANGED FILES:\n" + current_bundle
+                + "\n\nCURRENT DIFF:\n" + (diff.stdout or "")[-35000:]
+                + "\n\nFAST GATE FAILURE:\n" + gate_runs[-1]["tail"]
+                + "\n\nReturn only corrective operations within the same declared scopes."
+            )
+            repair, usage = call_json(
+                client,
+                conn,
+                cfg,
+                model=model,
+                priority=priority,
+                task_id=args.task,
+                artifact_sha=packet_sha,
+                instructions=PATCH_SYSTEM,
+                prompt=repair_prompt,
+                schema_name="logres_patch_repair",
+                schema=patch_schema(),
+                max_output_tokens=max_output,
+            )
+            usage_records.append(usage)
+            payload.setdefault("repairs", []).append(repair)
+            if not repair.get("operations"):
+                break
+            apply_operations(worktree, list(repair["operations"]), scopes)
+            changed = git_changed_paths(worktree)
+            validate_paths(changed, scopes)
+            diff_check = run(["git", "-C", worktree, "diff", "--check"])
+            if diff_check.returncode:
+                break
+            gate = run([GATE, "fast"], cwd=worktree, timeout=gate_timeout)
+            gate_runs.append({"rc": gate.returncode, "tail": ((gate.stdout or "") + (gate.stderr or ""))[-12000:]})
+
+        payload["gate_runs"] = gate_runs
+        payload["usage"] = usage_records
+        if gate.returncode != 0:
+            clean_uncommitted(worktree)
+            atomic_json(artifact_path, payload)
+            update_job(
+                conn,
+                args.job_id,
+                state="FAILED",
+                artifact=str(artifact_path),
+                error="fast gate failed after bounded repair attempts",
+            )
+            conn.close()
+            release(
+                args.worker,
+                args.task,
+                "READY",
+                "OpenAI patch worker failed fast gate; uncommitted edits were discarded. "
+                f"artifact={artifact_path}",
+            )
+            return 1
+
+        changed = git_changed_paths(worktree)
+        validate_paths(changed, scopes)
+        candidate_sha = commit_changes(worktree, args.task, changed)
+        committed = True
+        payload["candidate_sha"] = candidate_sha
+        payload["changed_paths"] = changed
+        atomic_json(artifact_path, payload)
+
+        finished = run([FINISH, args.worker, args.task, args.branch], timeout=gate_timeout + 300)
+        payload["finish"] = {
+            "rc": finished.returncode,
+            "tail": ((finished.stdout or "") + (finished.stderr or ""))[-12000:],
+        }
+        atomic_json(artifact_path, payload)
+        if finished.returncode:
+            update_job(
+                conn,
+                args.job_id,
+                state="FAILED",
+                artifact=str(artifact_path),
+                error="finish-task failed after candidate commit",
+            )
+            conn.close()
+            release(
+                args.worker,
+                args.task,
+                "READY",
+                f"Candidate {candidate_sha[:12]} committed but finish-task failed; preserved for retry. "
+                f"artifact={artifact_path}",
+            )
+            return 1
+
+        update_job(conn, args.job_id, state="DONE", artifact=str(artifact_path))
+        conn.close()
+        print(
+            json.dumps(
+                {
+                    "task_id": args.task,
+                    "worker": args.worker,
+                    "status": "DONE",
+                    "candidate_sha": candidate_sha,
+                    "artifact": str(artifact_path),
+                    "changed_paths": changed,
+                    "usage": usage_records,
+                },
+                indent=2,
+                sort_keys=True,
+            )
+        )
+        return 0
+    except subprocess.TimeoutExpired as exc:
+        detail = f"timeout: {exc}"
+    except Exception as exc:
+        detail = f"{type(exc).__name__}: {exc}"
+
+    try:
+        payload["error"] = detail
+        payload["usage"] = usage_records
+        atomic_json(artifact_path, payload)
+    except Exception:
+        pass
+    try:
+        if not committed and worktree.is_dir():
+            clean_uncommitted(worktree)
+    except Exception:
+        pass
+    try:
+        update_job(conn, args.job_id, state="FAILED", artifact=str(artifact_path), error=detail)
+        conn.close()
+    except Exception:
+        pass
+    try:
+        release(
+            args.worker,
+            args.task,
+            "READY",
+            "OpenAI patch worker failed safely and returned the task to READY. "
+            + detail[:1200],
+        )
+    except Exception:
+        pass
+    traceback.print_exc()
+    return 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
+

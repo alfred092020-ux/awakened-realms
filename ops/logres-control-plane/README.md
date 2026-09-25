@@ -373,3 +373,34 @@ Useful commands:
 logres-regression-dedupe
 logres-regression-dedupe --apply
 ```
+
+## OpenAI patch implementation fallback
+
+When runtime `implementation.enabled=true`, `logres-swarm` can fill remaining scoped implementation capacity with `auto-patch-N` workers using `logres-patch-agent`. This is a bounded fallback for periods when Copilot is unavailable or has no capacity. Committed defaults keep the lane disabled.
+
+The model never receives shell access, GitHub credentials, the OpenAI credential, or unrestricted filesystem access. The host wrapper supplies only the deterministic worker packet, declared task scopes, a bounded tracked-file index, and selected scoped file contents. The model returns strict JSON edit operations. The wrapper rejects out-of-scope edits, runs `git diff --check` and the existing fast gate, commits only a passing scoped diff, and delegates push, handoff, and integration review to `logres-finish-task`. Failed gates discard uncommitted edits and return the task to READY. Research and patch workers share the existing `api_usage` budget ledger and OpenAI concurrency ceiling.
+
+Runtime configuration example:
+
+    "implementation": {
+      "enabled": true,
+      "model": "gpt-5.6-luna",
+      "workers": 1,
+      "max_active": 1,
+      "max_attempts": 2,
+      "max_output_tokens": 12000,
+      "repair_attempts": 1,
+      "timeout_seconds": 1800,
+      "gate_timeout_seconds": 900
+    }
+
+## Persistent supervisor systemd service
+
+For hosts with persistent system services, the versioned unit is `ops/logres-control-plane/systemd/logres-supervisor.service`. Install it only after the matching control-plane SHA has been deployed to `/home/ubuntu/logres`. Stop any detached legacy supervisor first so the single-flight lock transfers cleanly.
+
+    sudo install -m 0644 ops/logres-control-plane/systemd/logres-supervisor.service /etc/systemd/system/logres-supervisor.service
+    sudo systemctl daemon-reload
+    sudo systemctl enable --now logres-supervisor.service
+    sudo systemctl status logres-supervisor.service --no-pager
+
+The unit uses `Restart=always`, starts after `network-online.target`, runs as `ubuntu`, and preserves the existing supervisor lock as the final duplicate-execution guard. Existing cron entries remain a fallback and share the same task locks.

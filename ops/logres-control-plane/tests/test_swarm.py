@@ -21,6 +21,7 @@ from logres_swarm import (
     prior_failures,
     ready_tasks,
     reconcile_jobs,
+    select_implementation_tasks,
     select_research_tasks,
     swarm_capacity,
 )
@@ -280,6 +281,100 @@ class SwarmTests(unittest.TestCase):
         self.assertEqual("FAILED", row["state"])
         self.assertIn("exited", row["last_error"])
 
+
+    def test_patch_worker_is_reported_without_double_counting_capacity(self):
+        now = time.time()
+        seed_task(
+            self.conn,
+            task_id="I1",
+            status="ACTIVE",
+            work_type="implementation",
+        )
+        self.conn.execute(
+            """insert into brain_task_leases(
+                 task_id,chat_id,branch,lease_until_epoch,acquired_at,
+                 renewed_at,progress,note
+               ) values(?,?,?,?,datetime('now'),datetime('now'),0,'')""",
+            ("I1", "auto-patch-1", "worker/auto-patch-1-i1", now + 3600),
+        )
+        job_id = create_job(self.conn, "I1", "auto-patch-1", "openai-patch")
+        self.conn.execute(
+            "update swarm_jobs set state='RUNNING',pid=? where id=?",
+            (os.getpid(), job_id),
+        )
+        self.conn.commit()
+
+        cap = swarm_capacity(
+            self.conn,
+            {"swarm": {"max_workers": 6}},
+        )
+
+        self.assertEqual(1, cap.active_leases)
+        self.assertEqual(1, cap.active_patch)
+        self.assertEqual(0, cap.active_research)
+        self.assertEqual(5, cap.free_slots)
+
+    def test_select_implementation_requires_scopes_and_avoids_claims(self):
+        for task_id in ("I1", "I2", "I3"):
+            seed_task(
+                self.conn,
+                task_id=task_id,
+                status="READY",
+                work_type="implementation",
+            )
+        self.conn.execute(
+            "insert into task_scopes(task_id,path_prefix) values('I1','src/a')"
+        )
+        self.conn.execute(
+            "insert into task_scopes(task_id,path_prefix) values('I3','src/c')"
+        )
+        self.conn.execute(
+            """insert into claims(path_prefix,task_id,owner,branch,created_at,note)
+               values('src/c','OTHER','x','worker/x',datetime('now'),'')"""
+        )
+        self.conn.commit()
+
+        selected = select_implementation_tasks(self.conn, 3)
+        ids = [row["id"] for row in selected]
+
+        self.assertEqual(["I1"], ids)
+        self.assertNotIn("I2", ids)
+        self.assertNotIn("I3", ids)
+
+    def test_engine_specific_retry_budget_separates_patch_from_research(self):
+        seed_task(
+            self.conn,
+            task_id="I1",
+            status="READY",
+            work_type="implementation",
+        )
+        self.conn.execute(
+            """insert into swarm_jobs(
+                 task_id,worker_id,engine,state,pid,artifact_path,last_error
+               ) values('I1','auto-research-1','research','FAILED',101,
+                        '/tmp/research.json','semantic failure')"""
+        )
+        self.conn.execute(
+            """insert into swarm_jobs(
+                 task_id,worker_id,engine,state,pid,artifact_path,last_error
+               ) values('I1','auto-patch-1','openai-patch','FAILED',102,
+                        '/tmp/patch.json','gate failure')"""
+        )
+        self.conn.commit()
+
+        self.assertEqual(2, prior_failures(self.conn, "I1"))
+        self.assertEqual(
+            1,
+            prior_failures(self.conn, "I1", engine="openai-patch"),
+        )
+
+    def test_swarm_script_has_bounded_patch_lane(self):
+        script = (CONTROL_ROOT / "bin" / "logres-swarm").read_text()
+        self.assertIn('PATCH_AGENT = str(ROOT / "bin/logres-patch-agent")', script)
+        self.assertIn('WORKER_START = str(ROOT / "bin/logres-worker-start")', script)
+        self.assertIn("select_implementation_tasks", script)
+        self.assertIn('"/usr/bin/timeout"', script)
+        self.assertIn('"openai-patch"', script)
 
 if __name__ == "__main__":
     unittest.main()
