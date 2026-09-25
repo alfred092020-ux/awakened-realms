@@ -435,3 +435,15 @@ Useful commands:
   logres-chat-wake resume
   logres-chat-wake wake
   logres-chat-wake send continue --command-id <stable-id>
+
+## ChatGPT peer idle recovery watchdog
+
+logres-chat-watchdog is the no-API peer recovery layer for active Logres ChatGPT workers. Recovery is performed through the already-authorized Android phone and the native ChatGPT app.
+
+The watchdog is designed for a five-minute systemd timer. It consults Brain presence and active leases before touching a worker chat. Fresh workers are left alone. A stale completed chat receives an allowlisted resume prompt. If a stale chat still exposes the native Stop control, the watchdog observes semantic UI progress for another stuck interval. If the content remains unchanged, it presses Stop, waits the configured 5-10 second recovery delay, sends a fresh resume prompt, and then verifies that the chat either enters working state again or produces new visible response content. Dynamic Worked-for timers are excluded from progress detection so a frozen run cannot look healthy merely because its timer increments.
+
+The committed default configuration is disabled. Runtime configuration belongs at /home/ubuntu/logres/control/android-device/chat-watchdog.json. Each target contains a Brain chat_id, exact ChatGPT conversation URL, optional semantic labels, and an allowlisted resume message. The master coordination chat can set always_watch=true so peers can recover it even when it does not currently hold a worker lease.
+
+The versioned units are ops/logres-control-plane/systemd/logres-chat-watchdog.service and logres-chat-watchdog.timer. Install and enable the timer only after deploying the matching control-plane SHA. The timer runs every five minutes, uses the existing phone hardware lock, and applies per-chat cooldowns to prevent restart loops.
+
+No OpenAI API key or paid model endpoint is used by this watchdog.

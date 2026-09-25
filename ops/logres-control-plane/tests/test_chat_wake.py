@@ -128,6 +128,31 @@ class ChatWakeTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 validate_target_url(bad)
 
+    def test_assistant_message_text_does_not_become_fake_composer(self):
+        xml = (
+            '<hierarchy>'
+            '<node package="com.openai.chatgpt" class="android.widget.TextView" '
+            'text="Send a message when ready" content-desc="" enabled="true" '
+            'clickable="false" bounds="[10,10][500,100]" />'
+            '<node package="com.openai.chatgpt" class="android.widget.EditText" '
+            'text="" content-desc="" enabled="true" clickable="true" '
+            'bounds="[100,1800][760,2100]" />'
+            '</hierarchy>'
+        )
+        result = inspect_chat_ui(xml, [])
+        self.assertEqual(["[100,1800][760,2100]"], result["editor_bounds"])
+
+    def test_semantic_ui_finds_stop_control(self):
+        xml = (
+            '<hierarchy>'
+            '<node package="com.openai.chatgpt" class="android.view.View" '
+            'text="" content-desc="Stop" enabled="true" clickable="true" '
+            'bounds="[900,1900][1000,2100]" />'
+            '</hierarchy>'
+        )
+        result = inspect_chat_ui(xml, [])
+        self.assertEqual(["[900,1900][1000,2100]"], result["stop_bounds"])
+
     def test_semantic_ui_finds_label_composer_and_send(self):
         result = inspect_chat_ui(
             ui_xml(

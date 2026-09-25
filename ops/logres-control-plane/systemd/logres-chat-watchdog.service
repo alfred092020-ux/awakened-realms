@@ -1,0 +1,12 @@
+[Unit]
+Description=Logres ChatGPT peer idle recovery watchdog
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=ubuntu
+WorkingDirectory=/home/ubuntu/logres
+Environment=LOGRES_ROOT=/home/ubuntu/logres
+ExecStart=/home/ubuntu/logres/bin/logres-chat-watchdog tick
+Nice=10

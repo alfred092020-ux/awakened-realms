@@ -115,17 +115,27 @@ def inspect_chat_ui(xml_text: str, semantic_labels: list[str]) -> dict:
         if str(label).strip() and str(label).strip().casefold() in visible_folded
     ]
 
+    # The native app exposes the real composer as android.widget.EditText.
+    # Do not infer a composer merely because an assistant/user message contains
+    # words such as "message" or "reply"; that produced false positives in long
+    # chats and could make an exact-chat recovery fail closed unnecessarily.
     editor_candidates = []
     for node in package_nodes:
         klass = node.attrib.get("class", "")
-        semantics = _semantic_text(node).casefold()
         if not _is_enabled(node):
             continue
-        if klass.endswith("EditText") or any(
-            token in semantics for token in ("message", "ask anything", "reply")
-        ):
-            if node.attrib.get("bounds"):
-                editor_candidates.append(node)
+        if klass.endswith("EditText") and node.attrib.get("bounds"):
+            editor_candidates.append(node)
+
+    stop_candidates = []
+    for node in package_nodes:
+        if not _is_enabled(node):
+            continue
+        semantics = _semantic_text(node).casefold()
+        if semantics == "stop":
+            target = _nearest_clickable(node, parents)
+            if target.attrib.get("bounds"):
+                stop_candidates.append(target)
 
     send_candidates = []
     for node in package_nodes:
@@ -151,6 +161,11 @@ def inspect_chat_ui(xml_text: str, semantic_labels: list[str]) -> dict:
         "editor_bounds": [node.attrib.get("bounds", "") for node in editor_candidates],
         "editor_text": [node.attrib.get("text", "") for node in editor_candidates],
         "send_bounds": [node.attrib.get("bounds", "") for node in unique_send],
+        "stop_bounds": [
+            node.attrib.get("bounds", "")
+            for node in stop_candidates
+            if node.attrib.get("bounds")
+        ],
     }
 
 

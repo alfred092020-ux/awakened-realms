@@ -1,0 +1,24 @@
+#!/home/ubuntu/logres/envs/research/bin/python
+from __future__ import annotations
+import argparse, json, sys
+from pathlib import Path
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "lib"))
+from logres_chat_watchdog import ChatPeerWatchdog
+
+def main() -> int:
+    ap = argparse.ArgumentParser(prog="logres-chat-watchdog")
+    sub = ap.add_subparsers(dest="cmd", required=True)
+    sub.add_parser("tick")
+    sub.add_parser("status")
+    args = ap.parse_args()
+    wd = ChatPeerWatchdog()
+    result = wd.tick() if args.cmd == "tick" else {
+        "config": wd.load_config(),
+        "state": wd.load_state(),
+    }
+    print(json.dumps(result, indent=2, sort_keys=True))
+    return 0
+
+if __name__ == "__main__":
+    raise SystemExit(main())
