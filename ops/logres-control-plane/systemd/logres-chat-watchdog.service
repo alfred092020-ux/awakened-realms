@@ -9,5 +9,5 @@ User=ubuntu
 WorkingDirectory=/home/ubuntu/logres
 Environment=LOGRES_ROOT=/home/ubuntu/logres
 ExecStart=/home/ubuntu/logres/bin/logres-chat-watchdog tick
-TimeoutStartSec=90s
+TimeoutStartSec=240s
 Nice=10

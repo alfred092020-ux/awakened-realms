@@ -127,9 +127,18 @@ class ChatWatchdogTests(unittest.TestCase):
         )
         self.assertEqual(visible_activity_digest(a), visible_activity_digest(b))
 
-    def test_systemd_watchdog_has_hard_runtime_timeout(self):
+    def test_systemd_watchdog_runtime_timeout_fits_recovery_and_cadence(self):
         service = (ROOT / 'systemd/logres-chat-watchdog.service').read_text()
-        self.assertIn('TimeoutStartSec=90s', service)
+        timeout_line = next(
+            line for line in service.splitlines()
+            if line.startswith('TimeoutStartSec=')
+        )
+        timeout_seconds = int(
+            timeout_line.split('=', 1)[1].removesuffix('s')
+        )
+        self.assertGreaterEqual(timeout_seconds, 180)
+        self.assertLess(timeout_seconds, 300)
+        self.assertEqual(timeout_seconds, 240)
 
     def test_real_content_change_counts_as_progress(self):
         a = '<hierarchy><node text="Alpha" content-desc="" /></hierarchy>'
