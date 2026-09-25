@@ -1,0 +1,73 @@
+#!/usr/bin/env python3
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import sqlite3
+import sys
+from pathlib import Path
+
+ROOT = Path(os.environ.get("LOGRES_ROOT", "/home/ubuntu/logres"))
+LIB = Path(__file__).resolve().parents[1] / "lib"
+sys.path.insert(0, str(LIB))
+
+from logres_memory_intelligence import (
+    distill_message,
+    distill_pending,
+    ensure_schema,
+    mark_truth,
+)
+
+DB = Path(os.environ.get("LOGRES_CONTROL_DB", ROOT / "control/control.sqlite"))
+
+
+def conn():
+    DB.parent.mkdir(parents=True, exist_ok=True)
+    c = sqlite3.connect(DB, timeout=30)
+    c.row_factory = sqlite3.Row
+    c.execute("pragma busy_timeout=30000")
+    ensure_schema(c)
+    return c
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser(prog="logres-memory-distill")
+    sub = ap.add_subparsers(dest="cmd", required=True)
+
+    msg = sub.add_parser("message")
+    msg.add_argument("message_id", type=int)
+
+    pending = sub.add_parser("pending")
+    pending.add_argument("--session")
+    pending.add_argument("--limit", type=int, default=200)
+
+    mark = sub.add_parser("mark")
+    mark.add_argument("fact_id", type=int)
+    mark.add_argument("status")
+    mark.add_argument("--confidence", type=float)
+    mark.add_argument("--supersedes", type=int)
+
+    args = ap.parse_args()
+    c = conn()
+    try:
+        if args.cmd == "message":
+            out = distill_message(c, args.message_id)
+        elif args.cmd == "pending":
+            out = distill_pending(c, session_id=args.session, limit=args.limit)
+        else:
+            out = mark_truth(
+                c,
+                args.fact_id,
+                args.status,
+                confidence=args.confidence,
+                supersedes_id=args.supersedes,
+            )
+    finally:
+        c.close()
+    print(json.dumps(out, indent=2, sort_keys=True, ensure_ascii=False))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

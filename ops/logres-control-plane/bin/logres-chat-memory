@@ -16,6 +16,7 @@ LIB = Path(__file__).resolve().parents[1] / "lib"
 sys.path.insert(0, str(LIB))
 
 from logres_journal import append_chat_message, open_chat
+from logres_memory_intelligence import distill_message
 
 DB = Path(os.environ.get("LOGRES_CONTROL_DB", ROOT / "control/control.sqlite"))
 STATE_ROOT = Path(
@@ -166,6 +167,12 @@ def append_live(
     finally:
         c.close()
     result["chat_id"] = chat_id
+    if result.get("id"):
+        c = _conn()
+        try:
+            result["distill"] = distill_message(c, int(result["id"]))
+        finally:
+            c.close()
     return result
 
 
