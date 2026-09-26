@@ -27,9 +27,15 @@ class FakeTransport:
             "topResumedActivity=ActivityRecord{x u0 "
             "com.openai.chatgpt/.MainActivity t1}"
         )
+        self.owner_fd = None
+        self.owner_fd_history = []
 
     def health(self):
         return self.health_text
+
+    def set_owner_fd(self, fd):
+        self.owner_fd = fd
+        self.owner_fd_history.append(fd)
 
     def shell(self, command):
         self.shell_calls.append(command)
@@ -266,6 +272,13 @@ class ChatWakeTests(unittest.TestCase):
         self.assertIn("https://chatgpt.com/c/abcDEF_123", calls)
         self.assertIn("com.openai.chatgpt/.MainActivity", calls)
         self.assertIn("uiautomator dump", calls)
+
+    def test_send_lends_hardware_lock_handle_to_transport_then_clears_it(self):
+        self.prime_send()
+        result = self.bridge.send("continue", "owner-proof-001")
+        self.assertEqual("SENT", result["result"])
+        self.assertTrue(any(isinstance(fd, int) for fd in self.transport.owner_fd_history))
+        self.assertIsNone(self.transport.owner_fd_history[-1])
 
     def test_semantic_send_targets_dynamic_bounds_not_fixed_coordinates(self):
         self.prime_send(

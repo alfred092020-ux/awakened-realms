@@ -172,8 +172,19 @@ def inspect_chat_ui(xml_text: str, semantic_labels: list[str]) -> dict:
 class PhoneTransport:
     def __init__(self, root: Path):
         self.root = root
-        self.phone_qa = root / "control/android-device/logres-phone-qa"
+        self.phone_qa = root / "bin/logres-phone-qa"
         self.phone_health = root / "bin/logres-phone-health"
+        self.owner_fd: int | None = None
+
+    def set_owner_fd(self, fd: int | None) -> None:
+        self.owner_fd = fd
+
+    def _child_kwargs(self) -> dict:
+        if self.owner_fd is None:
+            return {}
+        env = os.environ.copy()
+        env["LOGRES_PHONE_QA_LOCK_FD"] = str(self.owner_fd)
+        return {"env": env, "pass_fds": (self.owner_fd,)}
 
     def health(self) -> str:
         proc = subprocess.run(
@@ -196,6 +207,7 @@ class PhoneTransport:
             stderr=subprocess.PIPE,
             timeout=30,
             check=False,
+            **self._child_kwargs(),
         )
         if proc.returncode:
             raise RuntimeError((proc.stderr or proc.stdout or "phone shell failed").strip())
@@ -296,12 +308,24 @@ class ChatWakeBridge:
         handle = os.fdopen(descriptor, "r+")
         try:
             fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
-            yield
+            yield handle
         finally:
             try:
                 fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
             finally:
                 handle.close()
+
+    @contextmanager
+    def _hardware_ownership(self):
+        with self._lock(self.hardware_lock_path) as handle:
+            setter = getattr(self.transport, "set_owner_fd", None)
+            if callable(setter):
+                setter(handle.fileno())
+            try:
+                yield
+            finally:
+                if callable(setter):
+                    setter(None)
 
     def _validate_config(self, config: dict) -> dict:
         target_url = validate_target_url(str(config.get("target_url") or ""))
@@ -488,7 +512,7 @@ class ChatWakeBridge:
         try:
             with self._lock(self.bridge_lock_path):
                 try:
-                    with self._lock(self.hardware_lock_path):
+                    with self._hardware_ownership():
                         result, health = self._preflight(config, state)
                         if result != "READY":
                             self.audit("wake", result, config=config, health=health)
@@ -553,7 +577,7 @@ class ChatWakeBridge:
         try:
             with self._lock(self.bridge_lock_path):
                 try:
-                    with self._lock(self.hardware_lock_path):
+                    with self._hardware_ownership():
                         result, health = self._preflight(
                             config, state, command_id=command_id
                         )
