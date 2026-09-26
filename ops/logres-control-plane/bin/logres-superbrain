@@ -1,0 +1,247 @@
+#!/usr/bin/env python3
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import sqlite3
+import sys
+from pathlib import Path
+
+CONTROL_ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(CONTROL_ROOT / "lib"))
+
+from logres_migrations import apply as apply_migrations
+from logres_superbrain import (
+    ack_wake,
+    assert_evidence,
+    ensure_schema,
+    export_context,
+    pending_wakes,
+    reconcile,
+    register_session,
+    retract_evidence,
+    status,
+    subscribe,
+    upsert_capability,
+)
+
+ROOT = Path(os.environ.get("LOGRES_ROOT", "/home/ubuntu/logres"))
+DEFAULT_DB = ROOT / "control" / "control.sqlite"
+DEFAULT_CONTEXT_DIR = ROOT / "control" / "superbrain-context"
+DEFAULT_MIGRATIONS = CONTROL_ROOT / "migrations"
+
+
+def parse_json_object(value: str) -> dict:
+    try:
+        out = json.loads(value)
+    except json.JSONDecodeError as exc:
+        raise argparse.ArgumentTypeError(str(exc))
+    if not isinstance(out, dict):
+        raise argparse.ArgumentTypeError("expected JSON object")
+    return out
+
+
+def parse_json_value(value: str):
+    try:
+        return json.loads(value)
+    except json.JSONDecodeError as exc:
+        raise argparse.ArgumentTypeError(str(exc))
+
+
+def connect(path: str) -> sqlite3.Connection:
+    conn = sqlite3.connect(path, timeout=30)
+    conn.row_factory = sqlite3.Row
+    conn.execute("pragma busy_timeout=30000")
+    return conn
+
+
+def main(argv=None) -> int:
+    ap = argparse.ArgumentParser(prog="logres-superbrain")
+    ap.add_argument("--db", default=os.environ.get("LOGRES_CONTROL_DB", str(DEFAULT_DB)))
+    sub = ap.add_subparsers(dest="command", required=True)
+
+    sub.add_parser("init")
+    sub.add_parser("status")
+
+    p = sub.add_parser("migrate")
+    p.add_argument(
+        "--apply",
+        action="store_true",
+        help="apply pending versioned migrations; without this flag the command is dry-run",
+    )
+    p.add_argument(
+        "--migration-dir",
+        default=os.environ.get("LOGRES_MIGRATION_DIR", str(DEFAULT_MIGRATIONS)),
+    )
+
+    p = sub.add_parser("register-session")
+    p.add_argument("session_key")
+    p.add_argument("member_id")
+    p.add_argument("provider")
+    p.add_argument("--external-session-id")
+    p.add_argument("--session-kind", default="agent")
+    p.add_argument("--state", default="UNKNOWN")
+    p.add_argument("--cost-class", default="unknown")
+    p.add_argument("--capability", action="append", default=[])
+    p.add_argument("--wake-method", default="brain_event")
+    p.add_argument("--wake-target")
+    p.add_argument("--metadata-json", type=parse_json_object, default={})
+
+    p = sub.add_parser("capability-upsert")
+    p.add_argument("member_id")
+    p.add_argument("capability")
+    p.add_argument("--provider", default="")
+    p.add_argument("--model", default="")
+    p.add_argument("--cost-class", default="unknown")
+    p.add_argument("--cost-per-mtoken", type=float)
+    p.add_argument("--isolation-level", default="unknown")
+    p.add_argument("--max-concurrency", type=int, default=1)
+    p.add_argument("--health", default="UNKNOWN")
+    p.add_argument("--metadata-json", type=parse_json_object, default={})
+
+    p = sub.add_parser("subscribe")
+    p.add_argument("subscriber")
+    p.add_argument("--event-type", default="*")
+    p.add_argument("--priority-ceiling", type=int, default=9)
+    p.add_argument("--task-id")
+    p.add_argument("--wake-method", default="brain_event")
+    p.add_argument("--subscription-id")
+    p.add_argument("--metadata-json", type=parse_json_object, default={})
+
+    p = sub.add_parser("wakes")
+    p.add_argument("--subscriber")
+    p.add_argument("--limit", type=int, default=100)
+
+    p = sub.add_parser("ack-wake")
+    p.add_argument("wake_id", type=int)
+    p.add_argument("--state", default="DELIVERED")
+    p.add_argument("--error")
+
+    p = sub.add_parser("reconcile")
+    p.add_argument("--stale-seconds", type=int, default=1800)
+
+    p = sub.add_parser("context-export")
+    p.add_argument("task_id")
+    p.add_argument("recipient")
+    p.add_argument("--output-dir", default=str(DEFAULT_CONTEXT_DIR))
+    p.add_argument("--integration-branch", default="feat/logres-reconstruction")
+
+    p = sub.add_parser("assert-evidence")
+    p.add_argument("subject")
+    p.add_argument("predicate")
+    p.add_argument("value_json", type=parse_json_value)
+    p.add_argument("--provenance", default="")
+    p.add_argument("--confidence", type=float, default=0.0)
+    p.add_argument("--source-task-id")
+    p.add_argument("--source-event-id", type=int)
+    p.add_argument("--supersedes-id")
+    p.add_argument("--assertion-id")
+    p.add_argument("--metadata-json", type=parse_json_object, default={})
+
+    p = sub.add_parser("retract-evidence")
+    p.add_argument("assertion_id")
+    p.add_argument("reason")
+
+    args = ap.parse_args(argv)
+    conn = connect(args.db)
+    try:
+        if args.command == "init":
+            ensure_schema(conn)
+            result = {"ok": True}
+        elif args.command == "migrate":
+            result = apply_migrations(
+                conn, args.migration_dir, dry_run=not args.apply
+            )
+        elif args.command == "status":
+            result = status(conn)
+        elif args.command == "register-session":
+            result = register_session(
+                conn,
+                session_key=args.session_key,
+                member_id=args.member_id,
+                provider=args.provider,
+                external_session_id=args.external_session_id,
+                session_kind=args.session_kind,
+                state=args.state,
+                cost_class=args.cost_class,
+                capabilities=args.capability,
+                wake_method=args.wake_method,
+                wake_target=args.wake_target,
+                metadata=args.metadata_json,
+            )
+        elif args.command == "capability-upsert":
+            result = upsert_capability(
+                conn,
+                member_id=args.member_id,
+                capability=args.capability,
+                provider=args.provider,
+                model=args.model,
+                cost_class=args.cost_class,
+                cost_per_mtoken=args.cost_per_mtoken,
+                isolation_level=args.isolation_level,
+                max_concurrency=args.max_concurrency,
+                health=args.health,
+                metadata=args.metadata_json,
+            )
+        elif args.command == "subscribe":
+            result = {
+                "subscription_id": subscribe(
+                    conn,
+                    subscriber=args.subscriber,
+                    event_type=args.event_type,
+                    priority_ceiling=args.priority_ceiling,
+                    task_id=args.task_id,
+                    wake_method=args.wake_method,
+                    subscription_id=args.subscription_id,
+                    metadata=args.metadata_json,
+                )
+            }
+        elif args.command == "wakes":
+            result = {
+                "wakes": pending_wakes(
+                    conn, subscriber=args.subscriber, limit=args.limit
+                )
+            }
+        elif args.command == "ack-wake":
+            ack_wake(conn, args.wake_id, state=args.state, error=args.error)
+            result = {"ok": True, "wake_id": args.wake_id, "state": args.state.upper()}
+        elif args.command == "reconcile":
+            result = reconcile(conn, stale_seconds=args.stale_seconds)
+        elif args.command == "context-export":
+            result = export_context(
+                conn,
+                task_id=args.task_id,
+                recipient=args.recipient,
+                output_dir=args.output_dir,
+                integration_branch=args.integration_branch,
+            )
+        elif args.command == "assert-evidence":
+            result = assert_evidence(
+                conn,
+                subject=args.subject,
+                predicate=args.predicate,
+                value=args.value_json,
+                provenance=args.provenance,
+                confidence=args.confidence,
+                source_task_id=args.source_task_id,
+                source_event_id=args.source_event_id,
+                supersedes_id=args.supersedes_id,
+                assertion_id=args.assertion_id,
+                metadata=args.metadata_json,
+            )
+        elif args.command == "retract-evidence":
+            result = retract_evidence(
+                conn, args.assertion_id, reason=args.reason
+            )
+        else:
+            raise AssertionError(args.command)
+    finally:
+        conn.close()
+
+    print(json.dumps(result, indent=2, sort_keys=True))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

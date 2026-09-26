@@ -1,0 +1,1013 @@
+#!/usr/bin/env python3
+from __future__ import annotations
+import argparse, hashlib, json, os, sqlite3, subprocess, sys, time
+from datetime import datetime, timezone
+from pathlib import Path
+
+DB=Path(os.environ.get("LOGRES_CONTROL_DB","/home/ubuntu/logres/control/control.sqlite"))
+BRAIN_SCHEMA_VERSION="2026-09-24.1"
+INTEGRATION_REPO=Path(os.environ.get(
+    "LOGRES_INTEGRATION_REPO","/home/ubuntu/logres/src/awakened-realms"
+))
+# Brain Network is intentionally roleless.
+# The legacy role/authority columns remain only for SQLite schema compatibility.
+DEFAULT_MEMBERS=[]
+PRIORITY={"CRITICAL":0,"HIGH":1,"NORMAL":5,"LOW":9}
+PRIORITY_NAME={v:k for k,v in PRIORITY.items()}
+EVENT_TYPES={
+    "INFO","DISCOVERY","EVIDENCE","DECISION","BLOCKER","ASSIGNMENT",
+    "PROGRESS","DONE","CONFLICT","HANDOFF","WARNING","QUESTION","ANSWER",
+    "WORKER_STALE","TASK_AT_RISK","LEASE_EXPIRING","TASK_RECLAIMED",
+    "READY_FOR_INTEGRATION","BUILD_PASS","BUILD_FAIL","REGRESSION",
+    "MACHINE_OVERLOADED","EVIDENCE_CONFLICT","DEPENDENCY_READY"
+}
+
+def iso(ts:float|None=None)->str:
+    if ts is None: ts=time.time()
+    return datetime.fromtimestamp(ts,timezone.utc).isoformat(timespec="seconds")
+
+def refresh_integration_sha(c:sqlite3.Connection)->None:
+    try:
+        p=subprocess.run(
+            ["git","-C",str(INTEGRATION_REPO),"rev-parse","HEAD"],
+            text=True,stdout=subprocess.PIPE,stderr=subprocess.DEVNULL,check=False
+        )
+        sha=p.stdout.strip()
+        if p.returncode==0 and len(sha)==40:
+            row=c.execute("select value from meta where key='integration_sha'").fetchone()
+            if not row or row[0]!=sha:
+                c.execute("""insert into meta(key,value) values('integration_sha',?)
+                             on conflict(key) do update set value=excluded.value""",(sha,))
+    except Exception:
+        pass
+
+def conn()->sqlite3.Connection:
+    DB.parent.mkdir(parents=True,exist_ok=True)
+    c=sqlite3.connect(DB,timeout=30,isolation_level=None)
+    c.row_factory=sqlite3.Row
+    c.execute("pragma journal_mode=WAL")
+    c.execute("pragma synchronous=NORMAL")
+    c.execute("pragma busy_timeout=30000")
+    c.execute("pragma foreign_keys=ON")
+    ensure_schema(c)
+    refresh_integration_sha(c)
+    return c
+
+def ensure_schema(c:sqlite3.Connection)->None:
+    c.executescript("""
+    create table if not exists meta(
+      key text primary key,
+      value text not null
+    );
+    create table if not exists brain_members(
+      chat_id text primary key,
+      role text not null,
+      display_name text not null,
+      authority integer not null default 10,
+      status text not null default 'IDLE',
+      last_seen_epoch real not null default 0,
+      joined_at text not null,
+      capabilities_json text not null default '{}',
+      metadata_json text not null default '{}'
+    );
+    create table if not exists brain_cursors(
+      chat_id text primary key,
+      last_event_id integer not null default 0,
+      synced_at text,
+      foreign key(chat_id) references brain_members(chat_id) on delete cascade
+    );
+    create table if not exists brain_events(
+      id integer primary key autoincrement,
+      ts_epoch real not null,
+      ts text not null,
+      sender text not null,
+      recipient text not null default 'ALL',
+      event_type text not null,
+      priority integer not null default 5,
+      task_id text,
+      subject text not null,
+      body text not null default '',
+      artifact_path text,
+      artifact_sha256 text,
+      dedupe_key text,
+      meta_json text not null default '{}'
+    );
+    create unique index if not exists brain_events_dedupe_uq
+      on brain_events(dedupe_key) where dedupe_key is not null;
+    create index if not exists brain_events_recipient_id_idx
+      on brain_events(recipient,id);
+    create index if not exists brain_events_sender_id_idx
+      on brain_events(sender,id);
+    create index if not exists brain_events_task_id_idx
+      on brain_events(task_id,id);
+    create index if not exists brain_events_type_id_idx
+      on brain_events(event_type,id);
+    create index if not exists brain_events_priority_id_idx
+      on brain_events(priority,id);
+    create table if not exists brain_task_leases(
+      task_id text primary key,
+      chat_id text not null,
+      branch text,
+      lease_until_epoch real not null,
+      acquired_at text not null,
+      renewed_at text not null,
+      progress integer,
+      note text not null default '',
+      foreign key(chat_id) references brain_members(chat_id)
+    );
+    create index if not exists brain_task_leases_chat_idx
+      on brain_task_leases(chat_id,lease_until_epoch);
+    create table if not exists brain_decisions(
+      id integer primary key autoincrement,
+      ts text not null,
+      author text not null,
+      scope text not null,
+      subject text not null,
+      decision text not null,
+      status text not null default 'ACTIVE',
+      supersedes_id integer,
+      task_id text,
+      artifact_path text
+    );
+    create index if not exists brain_decisions_scope_idx
+      on brain_decisions(scope,status,id);
+    create table if not exists brain_discoveries(
+      id integer primary key autoincrement,
+      ts text not null,
+      author text not null,
+      task_id text,
+      confidence text not null,
+      subject text not null,
+      summary text not null,
+      artifact_path text,
+      artifact_sha256 text,
+      status text not null default 'OPEN'
+    );
+    create index if not exists brain_discoveries_task_idx
+      on brain_discoveries(task_id,status,id);
+    """)
+    now=iso()
+    c.execute("begin immediate")
+    try:
+        for chat_id,role,name,auth in DEFAULT_MEMBERS:
+            c.execute("""insert into brain_members
+              (chat_id,role,display_name,authority,status,last_seen_epoch,joined_at)
+              values(?,?,?,?,?,?,?)
+              on conflict(chat_id) do update set
+                display_name=excluded.display_name""",
+              (chat_id,"",name,0,"IDLE",0,now))
+            c.execute("insert or ignore into brain_cursors(chat_id,last_event_id) values(?,0)",(chat_id,))
+        # Role columns remain only for schema compatibility. Brain Network is roleless.
+        c.execute("update brain_members set role='', authority=0 where role<>'' or authority<>0")
+        c.commit()
+    except Exception:
+        c.rollback(); raise
+
+def get_member(c,chat_id:str)->sqlite3.Row:
+    r=c.execute("select * from brain_members where chat_id=?",(chat_id,)).fetchone()
+    if not r:
+        raise SystemExit(f"unknown chat '{chat_id}'; use: logres-brain join {chat_id}")
+    return r
+
+def touch(c,chat_id:str,status:str="ACTIVE")->None:
+    get_member(c,chat_id)
+    c.execute("update brain_members set last_seen_epoch=?,status=? where chat_id=?",
+              (time.time(),status,chat_id))
+
+def expire_leases(c)->list[sqlite3.Row]:
+    now=time.time()
+    rows=list(c.execute("""select * from brain_task_leases
+                           where lease_until_epoch<=?""",(now,)))
+    if not rows: return []
+
+    # Preserve dirty work before changing task ownership/branch state. The
+    # recovery helper never modifies the worktree; it only snapshots diff,
+    # staged changes, and untracked files into /home/ubuntu/logres/recovery.
+    recovery={}
+    committed_progress={}
+    base_p=subprocess.run(
+        ["git","-C",str(INTEGRATION_REPO),"rev-parse","origin/feat/logres-reconstruction"],
+        text=True,stdout=subprocess.PIPE,stderr=subprocess.DEVNULL,check=False,
+    )
+    integration_sha=base_p.stdout.strip() if base_p.returncode==0 else ""
+    for r in rows:
+        p=subprocess.run(
+            ["/home/ubuntu/logres/bin/logres-stale-work-recover",
+             "--task",r["task_id"],"--quiet"],
+            text=True,stdout=subprocess.PIPE,stderr=subprocess.DEVNULL,check=False,
+        )
+        lines=(p.stdout or "").strip().splitlines()
+        recovery[r["task_id"]]=lines[-1] if lines else None
+        branch_sha=""
+        if r["branch"]:
+            for ref in (r["branch"],"origin/"+r["branch"]):
+                bp=subprocess.run(
+                    ["git","-C",str(INTEGRATION_REPO),"rev-parse","--verify",ref+"^{commit}"],
+                    text=True,stdout=subprocess.PIPE,stderr=subprocess.DEVNULL,check=False,
+                )
+                if bp.returncode==0:
+                    branch_sha=bp.stdout.strip()
+                    break
+        has_committed=False
+        if branch_sha and integration_sha:
+            ap=subprocess.run(
+                ["git","-C",str(INTEGRATION_REPO),"merge-base","--is-ancestor",
+                 branch_sha,integration_sha],
+                stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,check=False,
+            )
+            has_committed=ap.returncode!=0
+        committed_progress[r["task_id"]]=has_committed
+
+    c.execute("begin immediate")
+    try:
+        for r in rows:
+            c.execute("delete from brain_task_leases where task_id=?",(r["task_id"],))
+            t=c.execute("select status,owner from tasks where id=?",(r["task_id"],)).fetchone()
+            recovered=recovery.get(r["task_id"])
+            committed=committed_progress.get(r["task_id"],False)
+            if t and t["owner"]==r["chat_id"] and t["status"] in (
+                "ACTIVE","READY","BLOCKED_DEP","BLOCKED_EVIDENCE"
+            ):
+                preserved_branch=r["branch"] if (recovered or committed) else None
+                note=(
+                    "stale work preserved: "+recovered
+                    if recovered else
+                    ("expired lease reclaimed; committed branch preserved for resume"
+                     if committed else
+                     "expired lease reclaimed; no dirty or committed recovery payload")
+                )
+                target_status=(
+                    "READY" if t["status"] in ("ACTIVE","READY") else t["status"]
+                )
+                c.execute("""update tasks
+                             set status=?,owner=null,branch=?,note=?,updated_at=?
+                             where id=?""",
+                          (target_status,preserved_branch,note,iso(),r["task_id"]))
+                c.execute("delete from claims where task_id=?",(r["task_id"],))
+            body=(
+                f"{r['chat_id']} lease expired; task returned to READY automatically."
+                + (f" Recovery preserved: {recovered}" if recovered else "")
+            )
+            post_event(c,"brain","ALL","TASK_RECLAIMED","HIGH",
+                       f"Lease reclaimed: {r['task_id']}",
+                       body,
+                       task_id=r["task_id"],dedupe_key=f"lease-expired:{r['task_id']}:{int(r['lease_until_epoch'])}",
+                       in_transaction=True)
+        c.commit()
+    except Exception:
+        c.rollback(); raise
+    return rows
+
+def artifact_sha(path:str|None)->str|None:
+    if not path: return None
+    p=Path(path).expanduser()
+    if not p.is_file(): return None
+    h=hashlib.sha256()
+    with p.open("rb") as f:
+        while True:
+            b=f.read(8*1024*1024)
+            if not b: break
+            h.update(b)
+    return h.hexdigest()
+
+def normalize_recipient(c,recipient:str)->str:
+    r=recipient.strip()
+    up=r.upper()
+    if up=="ALL":
+        return "ALL"
+    if up.startswith("ROLE:"):
+        raise SystemExit("role recipients are disabled; use ALL or a chat_id")
+    if not c.execute("select 1 from brain_members where chat_id=?",(r,)).fetchone():
+        raise SystemExit(f"unknown recipient chat: {r}")
+    return r
+
+def post_event(c,sender:str,recipient:str,event_type:str,priority:str|int,
+               subject:str,body:str="",task_id:str|None=None,
+               artifact_path:str|None=None,artifact_sha256:str|None=None,
+               dedupe_key:str|None=None,meta:dict|None=None,
+               in_transaction:bool=False)->int:
+    if sender!="brain": get_member(c,sender)
+    recipient=normalize_recipient(c,recipient)
+    et=event_type.upper()
+    if et not in EVENT_TYPES:
+        raise SystemExit("event type must be one of: "+",".join(sorted(EVENT_TYPES)))
+    pr=PRIORITY.get(priority.upper(),None) if isinstance(priority,str) else int(priority)
+    if pr is None: raise SystemExit("priority must be CRITICAL/HIGH/NORMAL/LOW")
+    if len(subject)>240: raise SystemExit("subject too long (max 240 chars)")
+    if len(body)>8000: raise SystemExit("body too long; store large content as an artifact and post its path")
+    if artifact_path and not artifact_sha256:
+        artifact_sha256=artifact_sha(artifact_path)
+    vals=(time.time(),iso(),sender,recipient,et,pr,task_id,subject,body,
+          artifact_path,artifact_sha256,dedupe_key,json.dumps(meta or {},separators=(",",":")))
+    started=False
+    if not in_transaction:
+        c.execute("begin immediate"); started=True
+    try:
+        try:
+            cur=c.execute("""insert into brain_events
+              (ts_epoch,ts,sender,recipient,event_type,priority,task_id,subject,body,
+               artifact_path,artifact_sha256,dedupe_key,meta_json)
+              values(?,?,?,?,?,?,?,?,?,?,?,?,?)""",vals)
+            event_id=cur.lastrowid
+        except sqlite3.IntegrityError as e:
+            if dedupe_key and "dedupe" in str(e).lower():
+                row=c.execute("select id from brain_events where dedupe_key=?",(dedupe_key,)).fetchone()
+                event_id=row["id"] if row else -1
+            else: raise
+        if sender!="brain": touch(c,sender)
+        if started: c.commit()
+        return int(event_id)
+    except Exception:
+        if started: c.rollback()
+        raise
+
+def presence_state(r:sqlite3.Row)->str:
+    if r["status"]=="DONE": return "DONE"
+    age=time.time()-float(r["last_seen_epoch"] or 0)
+    if not r["last_seen_epoch"]: return "IDLE"
+    if age<600: return "ACTIVE"
+    if age<3600: return "IDLE"
+    return "STALE"
+
+def fmt_age(epoch:float|None)->str:
+    if not epoch: return "never"
+    s=max(0,int(time.time()-epoch))
+    if s<60:return f"{s}s"
+    if s<3600:return f"{s//60}m"
+    if s<86400:return f"{s//3600}h"
+    return f"{s//86400}d"
+
+def cmd_join(c,args):
+    chat=args.chat_id.strip()
+    name=args.name or chat
+    role=""
+    authority=0
+    current_max=c.execute("select coalesce(max(id),0) from brain_events").fetchone()[0]
+    c.execute("begin immediate")
+    try:
+        c.execute("""insert into brain_members
+          (chat_id,role,display_name,authority,status,last_seen_epoch,joined_at)
+          values(?,?,?,?,?,?,?)
+          on conflict(chat_id) do update set
+            role='',display_name=excluded.display_name,
+            authority=0,status='ACTIVE',last_seen_epoch=excluded.last_seen_epoch""",
+          (chat,role,name,authority,"ACTIVE",time.time(),iso()))
+        cursor=0 if args.replay else current_max
+        c.execute("""insert into brain_cursors(chat_id,last_event_id,synced_at)
+                     values(?,?,?)
+                     on conflict(chat_id) do nothing""",(chat,cursor,iso()))
+        c.commit()
+    except Exception:
+        c.rollback(); raise
+    eid=post_event(c,chat,"ALL","INFO","LOW",f"{name} joined the Brain Network",
+                   "roleless member",dedupe_key=f"join:{chat}")
+    print(f"JOINED chat={chat} cursor={cursor} event={eid}")
+
+def cmd_presence(c,args):
+    status=args.status.upper()
+    if status not in {"ACTIVE","IDLE","DONE"}:
+        raise SystemExit("status must be ACTIVE, IDLE, or DONE")
+    touch(c,args.chat_id,status)
+    print(f"{args.chat_id} status={status}")
+
+def task_row(c,task_id):
+    r=c.execute("select * from tasks where id=?",(task_id,)).fetchone()
+    if not r: raise SystemExit(f"unknown task: {task_id}")
+    return r
+
+def lease_task(c,chat_id,task_id,minutes:int,branch:str|None,note:str,
+               force:bool=False,assigned_by:str|None=None):
+    get_member(c,chat_id); t=task_row(c,task_id)
+    if chat_id=="lead" and os.environ.get("LOGRES_ALLOW_LEAD_DEV")!="1":
+        raise SystemExit(
+            "LEAD_RESERVED: lead is permanently reserved for integration/review. "
+            "Assign development work to another chat. "
+            "LOGRES_ALLOW_LEAD_DEV=1 is emergency recovery only."
+        )
+    if t["status"].startswith("BLOCKED") and not force:
+        raise SystemExit(f"{task_id} is {t['status']}; Lead may use --force only if intentionally overriding")
+    now=time.time(); until=now+max(5,minutes)*60
+    c.execute("begin immediate")
+    try:
+        existing=c.execute("select * from brain_task_leases where task_id=?",(task_id,)).fetchone()
+        if existing and existing["lease_until_epoch"]>now and existing["chat_id"]!=chat_id and not force:
+            left=max(0,int((existing["lease_until_epoch"]-now)/60))
+            raise RuntimeError(f"TASK_BUSY owner={existing['chat_id']} lease_remaining={left}m")
+        c.execute("""insert into brain_task_leases
+          (task_id,chat_id,branch,lease_until_epoch,acquired_at,renewed_at,progress,note)
+          values(?,?,?,?,?,?,?,?)
+          on conflict(task_id) do update set
+            chat_id=excluded.chat_id,branch=excluded.branch,
+            lease_until_epoch=excluded.lease_until_epoch,
+            renewed_at=excluded.renewed_at,note=excluded.note""",
+          (task_id,chat_id,branch,until,iso(),iso(),0,note))
+        c.execute("""update tasks set status='ACTIVE',owner=?,branch=coalesce(?,branch),
+                     updated_at=? where id=?""",(chat_id,branch,iso(),task_id))
+        touch(c,chat_id)
+        c.commit()
+    except Exception:
+        c.rollback(); raise
+    sender=assigned_by or chat_id
+    et="ASSIGNMENT" if assigned_by else "INFO"
+    recipient=chat_id if assigned_by else "ALL"
+    subj=f"{task_id} assigned to {chat_id}" if assigned_by else f"{chat_id} leased {task_id}"
+    post_event(c,sender,recipient,et,"HIGH" if assigned_by else "NORMAL",subj,
+               note or f"lease={minutes}m branch={branch or '-'}",task_id=task_id)
+    return until
+
+def cmd_lease(c,args):
+    try:
+        until=lease_task(c,args.chat_id,args.task_id,args.minutes,args.branch,args.note,args.force)
+    except RuntimeError as e:
+        print(str(e)); raise SystemExit(3)
+    print(f"LEASED task={args.task_id} chat={args.chat_id} until={iso(until)} branch={args.branch or '-'}")
+
+def cmd_assign(c,args):
+    get_member(c,args.lead_chat)
+    if args.lead_chat not in {"lead","brain"}:
+        raise SystemExit("only coordinator chat_id 'lead' or 'brain' may assign another chat")
+    get_member(c,args.target_chat)
+    try:
+        until=lease_task(c,args.target_chat,args.task_id,args.minutes,args.branch,args.note,args.force,
+                         assigned_by=args.lead_chat)
+    except RuntimeError as e:
+        print(str(e)); raise SystemExit(3)
+    touch(c,args.lead_chat)
+    print(f"ASSIGNED task={args.task_id} to={args.target_chat} until={iso(until)} branch={args.branch or '-'}")
+
+def cmd_renew(c,args):
+    get_member(c,args.chat_id); now=time.time()
+    c.execute("begin immediate")
+    try:
+        r=c.execute("select * from brain_task_leases where task_id=?",(args.task_id,)).fetchone()
+        if not r or r["chat_id"]!=args.chat_id:
+            raise RuntimeError(f"not lease owner for {args.task_id}")
+        until=now+max(5,args.minutes)*60
+        c.execute("""update brain_task_leases set lease_until_epoch=?,renewed_at=?
+                     where task_id=?""",(until,iso(),args.task_id))
+        touch(c,args.chat_id)
+        c.commit()
+    except Exception:
+        c.rollback(); raise
+    print(f"RENEWED task={args.task_id} until={iso(until)}")
+
+def cmd_progress(c,args):
+    get_member(c,args.chat_id)
+    pct=max(0,min(100,args.percent))
+    c.execute("begin immediate")
+    try:
+        r=c.execute("select * from brain_task_leases where task_id=?",(args.task_id,)).fetchone()
+        if not r or r["chat_id"]!=args.chat_id:
+            raise RuntimeError(f"{args.chat_id} does not own lease for {args.task_id}")
+        until=max(r["lease_until_epoch"],time.time()+30*60)
+        c.execute("""update brain_task_leases set progress=?,note=?,renewed_at=?,lease_until_epoch=?
+                     where task_id=?""",(pct,args.note,iso(),until,args.task_id))
+        touch(c,args.chat_id); c.commit()
+    except Exception:
+        c.rollback(); raise
+    post_event(c,args.chat_id,"ALL","PROGRESS","NORMAL",f"{args.task_id}: {pct}%",
+               args.note,task_id=args.task_id)
+    print(f"PROGRESS task={args.task_id} percent={pct} lease_until={iso(until)}")
+
+def cmd_release(c,args):
+    get_member(c,args.chat_id)
+    final=args.status.upper()
+    if final not in {"READY","DONE","BLOCKED_DEP","BLOCKED_EVIDENCE"}:
+        raise SystemExit("release status must be READY, DONE, BLOCKED_DEP, or BLOCKED_EVIDENCE")
+    c.execute("begin immediate")
+    try:
+        r=c.execute("select * from brain_task_leases where task_id=?",(args.task_id,)).fetchone()
+        if not r or (r["chat_id"]!=args.chat_id and not args.force):
+            raise RuntimeError(f"{args.chat_id} does not own lease for {args.task_id}")
+        c.execute("delete from brain_task_leases where task_id=?",(args.task_id,))
+        c.execute("""update tasks set status=?,owner=null,
+                     branch=case when ?='DONE' then branch else null end,
+                     updated_at=? where id=?""",(final,final,iso(),args.task_id))
+        touch(c,args.chat_id); c.commit()
+    except Exception:
+        c.rollback(); raise
+    et="DONE" if final=="DONE" else ("BLOCKER" if final.startswith("BLOCKED") else "INFO")
+    pr="HIGH" if et in {"DONE","BLOCKER"} else "NORMAL"
+    post_event(c,args.chat_id,"ALL",et,pr,f"{args.task_id} -> {final}",args.note,task_id=args.task_id)
+    print(f"RELEASED task={args.task_id} status={final}")
+
+def cmd_post(c,args):
+    eid=post_event(
+        c,args.chat_id,args.recipient,args.type,args.priority,args.subject,
+        args.body or "",task_id=args.task,artifact_path=args.artifact,
+        artifact_sha256=args.sha256,dedupe_key=args.dedupe
+    )
+    print(f"POSTED event={eid}")
+
+def cmd_decision(c,args):
+    get_member(c,args.chat_id)
+    if args.chat_id not in {"lead","brain"}:
+        raise SystemExit("decisions may be recorded only by chat_id 'lead' or 'brain'")
+    c.execute("begin immediate")
+    try:
+        cur=c.execute("""insert into brain_decisions
+          (ts,author,scope,subject,decision,status,supersedes_id,task_id,artifact_path)
+          values(?,?,?,?,?,'ACTIVE',?,?,?)""",
+          (iso(),args.chat_id,args.scope,args.subject,args.decision,
+           args.supersedes,args.task,args.artifact))
+        did=cur.lastrowid
+        if args.supersedes:
+            c.execute("update brain_decisions set status='SUPERSEDED' where id=?",
+                      (args.supersedes,))
+        touch(c,args.chat_id)
+        c.commit()
+    except Exception:
+        c.rollback()
+        raise
+    post_event(
+        c,args.chat_id,"ALL","DECISION","HIGH",args.subject,args.decision,
+        task_id=args.task,artifact_path=args.artifact,
+        dedupe_key=f"decision:{did}",
+        meta={"decision_id":did,"scope":args.scope}
+    )
+    print(f"DECISION id={did} scope={args.scope}")
+
+def cmd_evidence(c,args):
+    conf=args.confidence.upper()
+    allowed={"CONFIRMED","HIGH","MEDIUM","LOW","VERSION_SENSITIVE","INFERENCE"}
+    if conf not in allowed:
+        raise SystemExit("invalid confidence")
+    sha=args.sha256 or artifact_sha(args.artifact)
+    c.execute("begin immediate")
+    try:
+        cur=c.execute("""insert into brain_discoveries
+          (ts,author,task_id,confidence,subject,summary,artifact_path,artifact_sha256,status)
+          values(?,?,?,?,?,?,?,?, 'OPEN')""",
+          (iso(),args.chat_id,args.task,conf,args.subject,args.summary,
+           args.artifact,sha))
+        did=cur.lastrowid
+        touch(c,args.chat_id)
+        c.commit()
+    except Exception:
+        c.rollback()
+        raise
+    post_event(
+        c,args.chat_id,args.recipient,"EVIDENCE",
+        "HIGH" if conf in {"CONFIRMED","HIGH"} else "NORMAL",
+        args.subject,args.summary,task_id=args.task,
+        artifact_path=args.artifact,artifact_sha256=sha,
+        dedupe_key=args.dedupe,
+        meta={"discovery_id":did,"confidence":conf}
+    )
+    print(f"EVIDENCE id={did} confidence={conf} sha256={sha or '-'}")
+
+def relevant_where(member:sqlite3.Row):
+    return "(recipient='ALL' or recipient=?)",(member["chat_id"],)
+
+def render_event(r:sqlite3.Row)->str:
+    pr=PRIORITY_NAME.get(r["priority"],str(r["priority"]))
+    task=f" task={r['task_id']}" if r["task_id"] else ""
+    out=[f"[{r['id']}] [{pr}] {r['event_type']} {r['sender']}→{r['recipient']}{task}: {r['subject']}"]
+    if r["body"]:
+        out.append("  "+r["body"].replace("\n"," ")[:700])
+    if r["artifact_path"]:
+        out.append(
+            f"  artifact={r['artifact_path']} sha256={(r['artifact_sha256'] or '')[:12] or '-'}"
+        )
+    return "\n".join(out)
+
+def cmd_sync(c,args):
+    member=get_member(c,args.chat_id)
+    expire_leases(c)
+    row=c.execute("select last_event_id from brain_cursors where chat_id=?",
+                  (args.chat_id,)).fetchone()
+    last=int(row["last_event_id"] if row else 0)
+    max_id=int(c.execute("select coalesce(max(id),0) from brain_events").fetchone()[0])
+    where,params=relevant_where(member)
+    rows=list(c.execute(
+        f"""select * from brain_events
+             where id>? and id<=? and {where}
+             order by id limit ?""",
+        (last,max_id,*params,args.limit)
+    ))
+    truncated=False
+    if rows:
+        visible_max=rows[-1]["id"]
+        more=c.execute(
+            f"""select 1 from brain_events
+                 where id>? and id<=? and {where} limit 1""",
+            (visible_max,max_id,*params)
+        ).fetchone()
+        truncated=bool(more)
+    advance=(rows[-1]["id"] if truncated and rows else max_id)
+
+    c.execute("begin immediate")
+    try:
+        touch(c,args.chat_id)
+        c.execute("""insert into brain_cursors(chat_id,last_event_id,synced_at)
+                     values(?,?,?)
+                     on conflict(chat_id) do update set
+                       last_event_id=excluded.last_event_id,
+                       synced_at=excluded.synced_at""",
+                  (args.chat_id,advance,iso()))
+        now=time.time()
+        leases=list(c.execute(
+            "select task_id,lease_until_epoch from brain_task_leases where chat_id=?",
+            (args.chat_id,)
+        ))
+        for lease in leases:
+            if lease["lease_until_epoch"]<now+1800:
+                c.execute("""update brain_task_leases
+                             set lease_until_epoch=?,renewed_at=?
+                             where task_id=?""",
+                          (now+3600,iso(),lease["task_id"]))
+        c.commit()
+    except Exception:
+        c.rollback()
+        raise
+
+    integ=c.execute("select value from meta where key='integration_sha'").fetchone()
+    print("LOGRES BRAIN SYNC")
+    print(
+        f"chat={args.chat_id} "
+        f"integration={(integ[0][:12] if integ else 'unknown')}"
+    )
+    mine=list(c.execute("""select l.*,t.title from brain_task_leases l
+                           left join tasks t on t.id=l.task_id
+                           where l.chat_id=? and l.lease_until_epoch>?
+                           order by l.task_id""",
+                        (args.chat_id,time.time())))
+    if mine:
+        print("MY WORK")
+        for x in mine:
+            pct=f"{x['progress']}%" if x["progress"] is not None else "?"
+            print(
+                f"- {x['task_id']} {pct} until={iso(x['lease_until_epoch'])} "
+                f":: {x['title'] or ''}"
+            )
+    else:
+        print("MY WORK: none")
+    suffix=" (more available; sync again)" if truncated else ""
+    print(f"NEW EVENTS: {len(rows)}{suffix}")
+    for r in rows:
+        print(render_event(r))
+
+def cmd_catchup(c,args):
+    member=get_member(c,args.chat_id)
+    expire_leases(c)
+    row=c.execute("select last_event_id from brain_cursors where chat_id=?",
+                  (args.chat_id,)).fetchone()
+    last=int(row["last_event_id"] if row else 0)
+    max_id=int(c.execute("select coalesce(max(id),0) from brain_events").fetchone()[0])
+    total=c.execute("""select count(*) from brain_events
+      where id>? and id<=? and (recipient='ALL' or recipient=?)""",
+      (last,max_id,args.chat_id)).fetchone()[0]
+    mine=[r[0] for r in c.execute(
+        "select task_id from brain_task_leases where chat_id=? and lease_until_epoch>?",
+        (args.chat_id,time.time())
+    )]
+    important_types=(
+        "DECISION","BLOCKER","CONFLICT","DONE","EVIDENCE","ASSIGNMENT",
+        "HANDOFF","READY_FOR_INTEGRATION","BUILD_FAIL","REGRESSION",
+        "EVIDENCE_CONFLICT","DEPENDENCY_READY","TASK_RECLAIMED",
+    )
+    type_marks=",".join("?" for _ in important_types)
+    task_clause=""
+    params=[last,max_id,args.chat_id,args.chat_id,*important_types]
+    if mine:
+        task_clause=" or task_id in ("+",".join("?" for _ in mine)+")"
+        params.extend(mine)
+    params.append(args.limit)
+    rows=list(c.execute(f"""select * from brain_events
+      where id>? and id<=? and (recipient='ALL' or recipient=?)
+        and (priority<=1 or recipient=? or event_type in ({type_marks}){task_clause})
+      order by id desc limit ?""",tuple(params)))
+    rows=list(reversed(rows))
+
+    c.execute("begin immediate")
+    try:
+        touch(c,args.chat_id)
+        c.execute("""insert into brain_cursors(chat_id,last_event_id,synced_at)
+          values(?,?,?)
+          on conflict(chat_id) do update set
+            last_event_id=excluded.last_event_id,synced_at=excluded.synced_at""",
+          (args.chat_id,max_id,iso()))
+        now=time.time()
+        for lease in c.execute(
+            "select task_id,lease_until_epoch from brain_task_leases where chat_id=?",
+            (args.chat_id,)
+        ).fetchall():
+            if lease["lease_until_epoch"]<now+1800:
+                c.execute("""update brain_task_leases
+                  set lease_until_epoch=?,renewed_at=? where task_id=?""",
+                  (now+3600,iso(),lease["task_id"]))
+        c.commit()
+    except Exception:
+        c.rollback(); raise
+
+    integ=c.execute("select value from meta where key='integration_sha'").fetchone()
+    print("LOGRES BRAIN CATCHUP")
+    print(f"chat={args.chat_id} integration={(integ[0][:12] if integ else 'unknown')}")
+    print(f"UNREAD_CONSUMED={total} HIGH_SIGNAL_SHOWN={len(rows)} ROUTINE_SKIPPED={max(0,total-len(rows))}")
+    for r in rows:
+        print(render_event(r))
+
+def cmd_inbox(c,args):
+    member=get_member(c,args.chat_id)
+    row=c.execute("select last_event_id from brain_cursors where chat_id=?",
+                  (args.chat_id,)).fetchone()
+    last=int(row["last_event_id"] if row else 0)
+    where,params=relevant_where(member)
+    rows=list(c.execute(
+        f"""select * from brain_events
+             where id>? and {where}
+             order by id limit ?""",
+        (last,*params,args.limit)
+    ))
+    print(f"UNREAD {len(rows)}")
+    for r in rows:
+        print(render_event(r))
+
+def cmd_who(c,args):
+    expire_leases(c)
+    print("LOGRES BRAIN NETWORK")
+    for r in c.execute(
+        "select * from brain_members order by chat_id"
+    ):
+        state=presence_state(r)
+        leases=list(c.execute(
+            """select task_id,progress,lease_until_epoch
+               from brain_task_leases
+               where chat_id=? and lease_until_epoch>?
+               order by task_id""",
+            (r["chat_id"],time.time())
+        ))
+        work=", ".join(
+            f"{x['task_id']}:{x['progress'] if x['progress'] is not None else '?'}%"
+            for x in leases
+        ) or "-"
+        cursor=c.execute("select last_event_id from brain_cursors where chat_id=?",
+                         (r["chat_id"],)).fetchone()
+        last=int(cursor["last_event_id"] if cursor else 0)
+        unread=c.execute("""select count(*) from brain_events
+                            where id>? and
+                              (recipient='ALL' or recipient=?)""",
+                         (last,r["chat_id"])).fetchone()[0]
+        print(
+            f"{r['chat_id']:12} {state:6} "
+            f"seen={fmt_age(r['last_seen_epoch']):>5} unread={unread:<3} work={work}"
+        )
+
+def cmd_digest(c,args):
+    expire_leases(c)
+    print("=== BRAIN DIGEST ===")
+    cmd_who(c,args)
+    print("\n=== ACTIVE TASK LEASES ===")
+    rows=list(c.execute(
+        """select l.*,t.priority,t.title from brain_task_leases l
+           left join tasks t on t.id=l.task_id
+           where l.lease_until_epoch>?
+           order by coalesce(t.priority,99),l.task_id""",
+        (time.time(),)
+    ))
+    if not rows:
+        print("none")
+    for r in rows:
+        pr=r["priority"] if r["priority"] is not None else "?"
+        print(
+            f"P{pr} {r['task_id']} owner={r['chat_id']} "
+            f"progress={r['progress']}% branch={r['branch'] or '-'} "
+            f"until={iso(r['lease_until_epoch'])}"
+        )
+
+    print("\n=== READY WORK PACKAGES ===")
+    try:
+        ready=list(c.execute("""select t.id,t.priority,t.title,
+          coalesce(m.work_type,'implementation') work_type,
+          coalesce(m.expected_minutes,60) expected_minutes
+          from tasks t left join task_metadata m on m.task_id=t.id
+          where t.status='READY'
+            and not exists(
+              select 1 from brain_task_leases l
+              where l.task_id=t.id and l.lease_until_epoch>?
+            )
+          order by t.priority,t.id limit 8""",(time.time(),)))
+    except sqlite3.OperationalError:
+        ready=list(c.execute("""select id,priority,title,'implementation' work_type,
+          60 expected_minutes from tasks where status='READY'
+          order by priority,id limit 8"""))
+    if not ready:
+        print("none")
+    for r in ready:
+        print(
+            f"P{r['priority']} {r['id']} [{r['work_type']}] "
+            f"~{r['expected_minutes']}m :: {r['title']}"
+        )
+
+    print("\n=== RECENT HIGH-SIGNAL EVENTS ===")
+    ev=list(c.execute(
+        """select * from brain_events
+           where event_type in
+             ('DECISION','BLOCKER','CONFLICT','DONE','EVIDENCE','ASSIGNMENT',
+              'WORKER_STALE','TASK_AT_RISK','LEASE_EXPIRING','TASK_RECLAIMED',
+              'READY_FOR_INTEGRATION','BUILD_FAIL','REGRESSION','MACHINE_OVERLOADED',
+              'EVIDENCE_CONFLICT','DEPENDENCY_READY')
+           order by id desc limit ?""",
+        (args.limit,)
+    ))
+    if not ev:
+        print("none")
+    for r in reversed(ev):
+        print(render_event(r))
+
+    print("\n=== ACTIVE DECISIONS ===")
+    decs=list(c.execute(
+        """select * from brain_decisions
+           where status='ACTIVE'
+           order by id desc limit 12"""
+    ))
+    if not decs:
+        print("none")
+    for r in decs:
+        print(
+            f"[{r['id']}] {r['scope']} {r['subject']} "
+            f":: {r['decision'][:500]}"
+        )
+
+def cmd_history(c,args):
+    q="select * from brain_events"
+    vals=[]
+    where=[]
+    if args.task:
+        where.append("task_id=?"); vals.append(args.task)
+    if args.type:
+        where.append("event_type=?"); vals.append(args.type.upper())
+    if args.sender:
+        where.append("sender=?"); vals.append(args.sender)
+    if where:
+        q+=" where "+" and ".join(where)
+    q+=" order by id desc limit ?"
+    vals.append(args.limit)
+    rows=list(c.execute(q,tuple(vals)))
+    for r in reversed(rows):
+        print(render_event(r))
+
+def cmd_heartbeat(c,args):
+    touch(c,args.chat_id,args.status.upper())
+    print(f"HEARTBEAT chat={args.chat_id} status={args.status.upper()}")
+
+def cmd_health(c,args):
+    checks=[]
+    integ=c.execute("pragma integrity_check").fetchone()[0]
+    checks.append(("sqlite_integrity",integ=="ok",integ))
+    wal=c.execute("pragma journal_mode").fetchone()[0]
+    checks.append(("wal_mode",str(wal).lower()=="wal",str(wal)))
+    orphan=c.execute(
+        """select count(*) from brain_task_leases l
+           left join brain_members m on m.chat_id=l.chat_id
+           where m.chat_id is null"""
+    ).fetchone()[0]
+    checks.append(("lease_owners",orphan==0,str(orphan)))
+    dups=c.execute(
+        """select count(*) from (
+             select task_id,count(*) n from brain_task_leases
+             group by task_id having n>1
+           )"""
+    ).fetchone()[0]
+    checks.append(("one_lease_per_task",dups==0,str(dups)))
+    cursor_orphan=c.execute(
+        """select count(*) from brain_cursors x
+           left join brain_members m on m.chat_id=x.chat_id
+           where m.chat_id is null"""
+    ).fetchone()[0]
+    checks.append(("cursor_owners",cursor_orphan==0,str(cursor_orphan)))
+    print("LOGRES BRAIN HEALTH")
+    fail=0
+    for name,ok,detail in checks:
+        print(f"{'PASS' if ok else 'FAIL':4} {name:24} {detail}")
+        if not ok: fail+=1
+    print(f"SUMMARY fails={fail} checks={len(checks)}")
+    raise SystemExit(1 if fail else 0)
+
+def build_parser():
+    p=argparse.ArgumentParser(prog="logres-brain")
+    sub=p.add_subparsers(dest="cmd",required=True)
+
+    x=sub.add_parser("init")
+    x.set_defaults(func=lambda c,a: print("BRAIN READY"))
+
+    x=sub.add_parser("join")
+    x.add_argument("chat_id")
+    x.add_argument("--name")
+    x.add_argument("--replay",action="store_true")
+    x.set_defaults(func=cmd_join)
+
+    x=sub.add_parser("presence")
+    x.add_argument("chat_id"); x.add_argument("status")
+    x.set_defaults(func=cmd_presence)
+
+    x=sub.add_parser("heartbeat")
+    x.add_argument("chat_id")
+    x.add_argument("--status",default="ACTIVE",choices=["ACTIVE","IDLE","DONE"])
+    x.set_defaults(func=cmd_heartbeat)
+
+    x=sub.add_parser("sync")
+    x.add_argument("chat_id"); x.add_argument("--limit",type=int,default=40)
+    x.set_defaults(func=cmd_sync)
+
+    x=sub.add_parser("catchup")
+    x.add_argument("chat_id"); x.add_argument("--limit",type=int,default=20)
+    x.set_defaults(func=cmd_catchup)
+
+    x=sub.add_parser("inbox")
+    x.add_argument("chat_id"); x.add_argument("--limit",type=int,default=40)
+    x.set_defaults(func=cmd_inbox)
+
+    x=sub.add_parser("who")
+    x.set_defaults(func=cmd_who)
+
+    x=sub.add_parser("digest")
+    x.add_argument("--limit",type=int,default=20)
+    x.set_defaults(func=cmd_digest)
+
+    x=sub.add_parser("history")
+    x.add_argument("--task"); x.add_argument("--type"); x.add_argument("--sender")
+    x.add_argument("--limit",type=int,default=30)
+    x.set_defaults(func=cmd_history)
+
+    x=sub.add_parser("post")
+    x.add_argument("chat_id"); x.add_argument("recipient")
+    x.add_argument("type"); x.add_argument("priority"); x.add_argument("subject")
+    x.add_argument("--body",default=""); x.add_argument("--task")
+    x.add_argument("--artifact"); x.add_argument("--sha256"); x.add_argument("--dedupe")
+    x.set_defaults(func=cmd_post)
+
+    x=sub.add_parser("lease")
+    x.add_argument("chat_id"); x.add_argument("task_id")
+    x.add_argument("--minutes",type=int,default=90); x.add_argument("--branch")
+    x.add_argument("--note",default=""); x.add_argument("--force",action="store_true")
+    x.set_defaults(func=cmd_lease)
+
+    x=sub.add_parser("assign")
+    x.add_argument("lead_chat"); x.add_argument("task_id"); x.add_argument("target_chat")
+    x.add_argument("--minutes",type=int,default=90); x.add_argument("--branch")
+    x.add_argument("--note",default=""); x.add_argument("--force",action="store_true")
+    x.set_defaults(func=cmd_assign)
+
+    x=sub.add_parser("renew")
+    x.add_argument("chat_id"); x.add_argument("task_id")
+    x.add_argument("--minutes",type=int,default=90)
+    x.set_defaults(func=cmd_renew)
+
+    x=sub.add_parser("progress")
+    x.add_argument("chat_id"); x.add_argument("task_id"); x.add_argument("percent",type=int)
+    x.add_argument("--note",default="")
+    x.set_defaults(func=cmd_progress)
+
+    x=sub.add_parser("release")
+    x.add_argument("chat_id"); x.add_argument("task_id")
+    x.add_argument("--status",default="READY")
+    x.add_argument("--note",default=""); x.add_argument("--force",action="store_true")
+    x.set_defaults(func=cmd_release)
+
+    x=sub.add_parser("done")
+    x.add_argument("chat_id"); x.add_argument("task_id")
+    x.add_argument("--note",default="")
+    def done(c,a):
+        a.status="DONE"; a.force=False; return cmd_release(c,a)
+    x.set_defaults(func=done)
+
+    x=sub.add_parser("block")
+    x.add_argument("chat_id"); x.add_argument("task_id"); x.add_argument("reason")
+    x.add_argument("--kind",choices=["BLOCKED_DEP","BLOCKED_EVIDENCE"],default="BLOCKED_DEP")
+    def block(c,a):
+        a.status=a.kind; a.note=a.reason; a.force=False; return cmd_release(c,a)
+    x.set_defaults(func=block)
+
+    x=sub.add_parser("decision")
+    x.add_argument("chat_id"); x.add_argument("scope"); x.add_argument("subject")
+    x.add_argument("decision"); x.add_argument("--task"); x.add_argument("--artifact")
+    x.add_argument("--supersedes",type=int)
+    x.set_defaults(func=cmd_decision)
+
+    x=sub.add_parser("evidence")
+    x.add_argument("chat_id"); x.add_argument("confidence"); x.add_argument("subject")
+    x.add_argument("summary"); x.add_argument("--task"); x.add_argument("--artifact")
+    x.add_argument("--sha256"); x.add_argument("--recipient",default="ALL")
+    x.add_argument("--dedupe")
+    x.set_defaults(func=cmd_evidence)
+
+    x=sub.add_parser("health")
+    x.set_defaults(func=cmd_health)
+    return p
+
+def main():
+    p=build_parser()
+    args=p.parse_args()
+    c=conn()
+    try:
+        expire_leases(c)
+        args.func(c,args)
+    except RuntimeError as e:
+        print(str(e),file=sys.stderr)
+        raise SystemExit(3)
+    finally:
+        c.close()
+
+if __name__=="__main__":
+    main()
