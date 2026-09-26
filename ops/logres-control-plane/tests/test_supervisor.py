@@ -1,6 +1,7 @@
 import json
 import os
 import signal
+import sqlite3
 import subprocess
 import sys
 import tempfile
@@ -20,16 +21,24 @@ from logres_supervisor import (
     atomic_json,
     actionable_worker_backlog,
     background_lane_busy,
+    baton_path,
     default_jobs,
     direct_child_pids,
     due,
     ensure_running,
+    evaluate_failover,
+    failover_stage2_status,
+    failover_state_path,
+    failover_tick,
+    handback_path,
     launch_background_job,
+    live_brain_leases,
     refresh_background_run,
     reload_if_idle,
     should_run_job,
     supervisor_health,
     tick,
+    write_baton,
 )
 
 
@@ -993,6 +1002,429 @@ class SupervisorTests(unittest.TestCase):
             self.assertIn("sequence", payload)
             leftovers = list(path.parent.glob(".heartbeat.json.*.tmp"))
             self.assertEqual([], leftovers)
+
+
+class ChatGptFailoverTests(unittest.TestCase):
+    def _root(self, td):
+        root = Path(td)
+        (root / "control").mkdir(parents=True, exist_ok=True)
+        (root / "bin").mkdir(parents=True, exist_ok=True)
+        (root / "logs").mkdir(parents=True, exist_ok=True)
+        return root
+
+    def _control_db(self, root, *, leases=(), integrated=(), tasks=()):
+        import sqlite3
+
+        db = root / "control" / "control.sqlite"
+        conn = sqlite3.connect(db)
+        conn.execute(
+            "create table brain_task_leases("
+            "chat_id text, task_id text, branch text, "
+            "lease_until_epoch real, renewed_at text, "
+            "progress text, note text)"
+        )
+        conn.execute(
+            "create table integration_queue(task_id text, status text)"
+        )
+        conn.execute("create table tasks(id text, status text)")
+        conn.executemany(
+            "insert into brain_task_leases values(?,?,?,?,?,?,?)",
+            leases,
+        )
+        conn.executemany(
+            "insert into integration_queue values(?,?)",
+            [(task_id, "INTEGRATED") for task_id in integrated],
+        )
+        conn.executemany("insert into tasks values(?,?)", tasks)
+        conn.commit()
+        conn.close()
+        return db
+
+    def _lease_rows(self, root):
+        import sqlite3
+
+        conn = sqlite3.connect(root / "control" / "control.sqlite")
+        rows = sorted(conn.execute("select * from brain_task_leases"))
+        conn.close()
+        return rows
+
+    def test_baton_write_is_atomic_and_carries_fencing_fields(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = self._root(td)
+            baton = write_baton(
+                root,
+                run_state="running",
+                objective="coordinate DEMO-0.2",
+                task="CHATGPT-DEVIN-FAILOVER-001",
+                note="first turn",
+                now_epoch=100.0,
+            )
+            self.assertEqual("RUNNING", baton["run_state"])
+            self.assertEqual(1, baton["generation"])
+            self.assertEqual(100.0, baton["updated_epoch"])
+            self.assertEqual("coordinate DEMO-0.2", baton["objective"])
+            self.assertEqual("CHATGPT-DEVIN-FAILOVER-001", baton["task"])
+            saved = json.loads(baton_path(root).read_text())
+            self.assertEqual(1, saved["generation"])
+            heartbeat = write_baton(
+                root, run_state="RUNNING", note="hb", now_epoch=110.0
+            )
+            self.assertEqual(1, heartbeat["generation"])
+            self.assertEqual(110.0, heartbeat["updated_epoch"])
+            bumped = write_baton(
+                root,
+                run_state="RUNNING",
+                new_generation=True,
+                now_epoch=120.0,
+            )
+            self.assertEqual(2, bumped["generation"])
+            with self.assertRaises(ValueError):
+                write_baton(root, run_state="exploding")
+
+    def test_stale_running_baton_launches_one_fenced_generation(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = self._root(td)
+            write_baton(
+                root,
+                run_state="RUNNING",
+                objective="lead",
+                now_epoch=100.0,
+            )
+            popen = FakePopen(pid=4242)
+            result = failover_tick(
+                root,
+                now_epoch=100.0 + 200.0,
+                stale_seconds=120.0,
+                popen=popen,
+            )
+            self.assertEqual("launch", result["action"])
+            launch = result["launch"]
+            self.assertEqual("stage1", launch["stage"])
+            self.assertEqual(1, launch["generation"])
+            self.assertEqual(4242, launch["pid"])
+            self.assertEqual(1, len(popen.calls))
+            argv = popen.calls[0][0][0]
+            self.assertIn("--prompt-file", argv)
+            self.assertIn("--export", argv)
+            prompt = Path(argv[argv.index("--prompt-file") + 1]).read_text()
+            self.assertIn("reasoning-only", prompt)
+            self.assertIn("Do NOT mutate", prompt)
+            state = json.loads(failover_state_path(root).read_text())
+            self.assertEqual(1, state["active"]["generation"])
+
+    def test_stale_continue_requested_also_launches(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = self._root(td)
+            write_baton(
+                root,
+                run_state="CONTINUE_REQUESTED",
+                now_epoch=50.0,
+            )
+            popen = FakePopen()
+            result = failover_tick(
+                root,
+                now_epoch=400.0,
+                stale_seconds=120.0,
+                popen=popen,
+            )
+            self.assertEqual("launch", result["action"])
+            self.assertEqual(1, len(popen.calls))
+
+    def test_suppressed_run_states_never_failover(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = self._root(td)
+            popen = FakePopen()
+            for state in ("PAUSED", "WAITING_USER", "DONE"):
+                write_baton(
+                    root, run_state=state, now_epoch=10.0,
+                    new_generation=True,
+                )
+                result = failover_tick(
+                    root,
+                    now_epoch=10_000.0,
+                    stale_seconds=120.0,
+                    popen=popen,
+                )
+                self.assertEqual("suppressed", result["action"], state)
+            self.assertEqual([], popen.calls)
+
+    def test_fresh_baton_never_fails_over(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = self._root(td)
+            write_baton(root, run_state="RUNNING", now_epoch=100.0)
+            popen = FakePopen()
+            result = failover_tick(
+                root,
+                now_epoch=150.0,
+                stale_seconds=120.0,
+                popen=popen,
+            )
+            self.assertEqual("fresh", result["action"])
+            self.assertEqual([], popen.calls)
+
+    def test_same_stale_generation_is_deduped_and_cooled_down(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = self._root(td)
+            write_baton(root, run_state="RUNNING", now_epoch=100.0)
+            popen = FakePopen()
+            first = failover_tick(
+                root, now_epoch=300.0, stale_seconds=120.0, popen=popen
+            )
+            self.assertEqual("launch", first["action"])
+            second = failover_tick(
+                root, now_epoch=400.0, stale_seconds=120.0, popen=popen
+            )
+            self.assertEqual("dedupe", second["action"])
+            self.assertEqual(1, len(popen.calls))
+
+            # A new fenced generation hands back first, then the stale
+            # generation-2 baton is still inside the cooldown window.
+            write_baton(
+                root,
+                run_state="RUNNING",
+                new_generation=True,
+                now_epoch=150.0,
+            )
+            third = failover_tick(
+                root,
+                now_epoch=400.0,
+                stale_seconds=120.0,
+                cooldown_seconds=600.0,
+                popen=popen,
+            )
+            self.assertEqual("handback", third["action"])
+            self.assertEqual(1, len(popen.calls))
+
+            cooled = failover_tick(
+                root,
+                now_epoch=400.0,
+                stale_seconds=120.0,
+                cooldown_seconds=600.0,
+                popen=popen,
+            )
+            self.assertEqual("cooldown", cooled["action"])
+            self.assertEqual(1, len(popen.calls))
+
+            fourth = failover_tick(
+                root,
+                now_epoch=1000.0,
+                stale_seconds=120.0,
+                cooldown_seconds=600.0,
+                popen=popen,
+            )
+            self.assertEqual("launch", fourth["action"])
+            self.assertEqual(2, fourth["launch"]["generation"])
+            self.assertEqual(2, len(popen.calls))
+
+    def test_failover_never_steals_live_brain_leases(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = self._root(td)
+            leases = (
+                (
+                    "worker-a",
+                    "TASK-A",
+                    "worker/worker-a-task-a",
+                    10_000.0,
+                    "t",
+                    "",
+                    "",
+                ),
+            )
+            self._control_db(root, leases=leases)
+            before = self._lease_rows(root)
+            write_baton(root, run_state="RUNNING", now_epoch=100.0)
+            popen = FakePopen()
+            result = failover_tick(
+                root,
+                now_epoch=900.0,
+                stale_seconds=120.0,
+                popen=popen,
+            )
+            self.assertEqual("launch", result["action"])
+            self.assertEqual(before, self._lease_rows(root))
+            observed = live_brain_leases(root, 900.0)
+            self.assertEqual("worker-a", observed[0]["chat_id"])
+            snapshot = json.loads(
+                Path(result["launch"]["snapshot_path"]).read_text()
+            )
+            self.assertEqual("worker-a", snapshot["live_brain_leases"][0]["chat_id"])
+            self.assertEqual(
+                "eligible", snapshot["lanes"]["autonomy"]
+            )
+            self.assertEqual(
+                "eligible", snapshot["lanes"]["merge_preflight"]
+            )
+
+    def test_stage2_does_not_unlock_from_done_task_status_without_integration(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = self._root(td)
+            db = self._control_db(root)
+            conn = sqlite3.connect(db)
+            try:
+                conn.executemany(
+                    "insert into tasks(id,status) values(?,?)",
+                    [
+                        ("DEVIN-OS-ISOLATION-001", "DONE"),
+                        ("DEVIN-SWARM-ROUTER-001", "DONE"),
+                    ],
+                )
+                conn.commit()
+            finally:
+                conn.close()
+            status = failover_stage2_status(root)
+            self.assertFalse(status["unlocked"])
+            self.assertEqual(
+                ["DEVIN-OS-ISOLATION-001", "DEVIN-SWARM-ROUTER-001"],
+                status["missing"],
+            )
+
+    def test_stage1_blocks_delegation_stage2_unlocks_guarded_swarm(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = self._root(td)
+            self._control_db(root)
+            status = failover_stage2_status(root)
+            self.assertFalse(status["unlocked"])
+            self.assertEqual(
+                ["DEVIN-OS-ISOLATION-001", "DEVIN-SWARM-ROUTER-001"],
+                status["missing"],
+            )
+            write_baton(root, run_state="RUNNING", now_epoch=100.0)
+            swarm_calls = []
+
+            def runner(argv, **kwargs):
+                swarm_calls.append(list(argv))
+                return subprocess.CompletedProcess(argv, 0, "ok", "")
+
+            popen = FakePopen()
+            result = failover_tick(
+                root,
+                now_epoch=500.0,
+                stale_seconds=120.0,
+                popen=popen,
+                runner=runner,
+            )
+            self.assertEqual("stage1", result["launch"]["stage"])
+            self.assertNotIn("delegation", result["launch"])
+            self.assertEqual([], swarm_calls)
+
+        with tempfile.TemporaryDirectory() as td:
+            root = self._root(td)
+            self._control_db(
+                root,
+                integrated=[
+                    "DEVIN-OS-ISOLATION-001",
+                    "DEVIN-SWARM-ROUTER-001",
+                ],
+            )
+            (root / "bin" / "logres-swarm").write_text("#!/bin/sh\n")
+            self.assertTrue(failover_stage2_status(root)["unlocked"])
+            write_baton(root, run_state="RUNNING", now_epoch=100.0)
+            swarm_calls = []
+
+            def runner2(argv, **kwargs):
+                swarm_calls.append(list(argv))
+                return subprocess.CompletedProcess(argv, 0, "ok", "")
+
+            popen = FakePopen()
+            result = failover_tick(
+                root,
+                now_epoch=500.0,
+                stale_seconds=120.0,
+                popen=popen,
+                runner=runner2,
+            )
+            self.assertEqual("stage2", result["launch"]["stage"])
+            delegation = result["launch"]["delegation"]
+            self.assertEqual("guarded-devin-swarm", delegation["engine"])
+            self.assertEqual(0, delegation["rc"])
+            self.assertEqual(
+                [[str(root / "bin" / "logres-swarm"), "tick"]],
+                swarm_calls,
+            )
+
+    def test_fresh_heartbeat_triggers_deterministic_handback(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = self._root(td)
+            write_baton(root, run_state="RUNNING", now_epoch=100.0)
+            popen = FakePopen()
+            first = failover_tick(
+                root, now_epoch=400.0, stale_seconds=120.0, popen=popen
+            )
+            self.assertEqual("launch", first["action"])
+
+            # ChatGPT heartbeats again on the same generation.
+            write_baton(root, run_state="RUNNING", now_epoch=430.0)
+            second = failover_tick(
+                root, now_epoch=450.0, stale_seconds=120.0, popen=popen
+            )
+            self.assertEqual("handback", second["action"])
+            summary = json.loads(handback_path(root).read_text())
+            self.assertEqual(1, summary["generation"])
+            self.assertIn("no new Devin", summary["note"])
+            state = json.loads(failover_state_path(root).read_text())
+            self.assertIsNone(state["active"])
+            self.assertEqual(1, len(popen.calls))
+
+            # Deterministic: no new failover action while the baton
+            # stays fresh, then a stale re-launch is fenced to the new
+            # generation.
+            third = failover_tick(
+                root, now_epoch=470.0, stale_seconds=120.0, popen=popen
+            )
+            self.assertEqual("fresh", third["action"])
+            self.assertEqual(1, len(popen.calls))
+
+    def test_new_generation_also_hands_back(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = self._root(td)
+            write_baton(root, run_state="RUNNING", now_epoch=100.0)
+            popen = FakePopen()
+            failover_tick(
+                root, now_epoch=400.0, stale_seconds=120.0, popen=popen
+            )
+            write_baton(
+                root,
+                run_state="RUNNING",
+                new_generation=True,
+                now_epoch=390.0,
+            )
+            result = failover_tick(
+                root, now_epoch=395.0, stale_seconds=120.0, popen=popen
+            )
+            self.assertEqual("handback", result["action"])
+            self.assertEqual(1, len(popen.calls))
+
+    def test_tick_runs_failover_without_disturbing_schedule(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = self._root(td)
+            heartbeat = root / "heartbeat.json"
+            job = ScheduledJob("probe", ("probe",), 60, 5)
+            write_baton(root, run_state="PAUSED", now_epoch=90.0)
+            result = tick(
+                root,
+                heartbeat,
+                jobs=(job,),
+                runner=lambda argv, **kw: subprocess.CompletedProcess(
+                    argv, 0, "ok", ""
+                ),
+                now_epoch=100.0,
+            )
+            self.assertEqual(["probe"], result["ran"])
+            self.assertEqual(
+                "suppressed",
+                result["state"]["devin_failover"]["action"],
+            )
+
+    def test_missing_baton_is_inert(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = self._root(td)
+            popen = FakePopen()
+            result = failover_tick(
+                root, now_epoch=100.0, stale_seconds=120.0, popen=popen
+            )
+            self.assertEqual("no-baton", result["action"])
+            self.assertEqual([], popen.calls)
+
 
 if __name__ == "__main__":
     unittest.main()
