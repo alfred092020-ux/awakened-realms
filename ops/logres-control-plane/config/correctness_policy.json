@@ -1,0 +1,326 @@
+{
+  "schema": 1,
+  "policy_id": "logres-correctness-oracle",
+  "integration_ref": "origin/feat/logres-reconstruction",
+  "unclassified_domain": "general",
+  "unclassified_code_roots": [
+    "src/",
+    "scripts/",
+    "e2e/",
+    "ops/",
+    "tests/"
+  ],
+  "domains": {
+    "docs": {
+      "kind": "non_fidelity"
+    },
+    "build_config": {
+      "kind": "non_fidelity"
+    },
+    "tests": {
+      "kind": "non_fidelity"
+    },
+    "control_plane": {
+      "kind": "non_fidelity"
+    },
+    "general": {
+      "kind": "non_fidelity"
+    },
+    "gameplay": {
+      "kind": "fidelity"
+    },
+    "protocol": {
+      "kind": "fidelity"
+    },
+    "map": {
+      "kind": "fidelity"
+    },
+    "visual": {
+      "kind": "fidelity"
+    },
+    "battle": {
+      "kind": "fidelity"
+    },
+    "field": {
+      "kind": "fidelity"
+    },
+    "onboarding": {
+      "kind": "fidelity"
+    },
+    "historical_fidelity": {
+      "kind": "fidelity"
+    },
+    "evidence_pipeline": {
+      "kind": "fidelity"
+    },
+    "device": {
+      "kind": "fidelity"
+    },
+    "evaluator": {
+      "kind": "evaluator",
+      "requires_independent_verification": true
+    }
+  },
+  "classification": [
+    {
+      "domain": "evaluator",
+      "globs": [
+        "ops/logres-control-plane/bin/logres-correctness*",
+        "ops/logres-control-plane/bin/logres-gate*",
+        "ops/logres-control-plane/bin/logres-verify-*",
+        "ops/logres-control-plane/bin/logres-fast-verify",
+        "ops/logres-control-plane/bin/logres-behavior-trace",
+        "ops/logres-control-plane/bin/logres-visual-*",
+        "ops/logres-control-plane/bin/logres-device-proof",
+        "ops/logres-control-plane/bin/logres-hardware-qa",
+        "ops/logres-control-plane/bin/logres-merge-preflight",
+        "ops/logres-control-plane/bin/logres-merge-train",
+        "ops/logres-control-plane/bin/logres-integration",
+        "ops/logres-control-plane/bin/logres-finish-task",
+        "ops/logres-control-plane/bin/logres-scope-check*",
+        "ops/logres-control-plane/lib/logres_correctness.py",
+        "ops/logres-control-plane/lib/logres_verify_*.py",
+        "ops/logres-control-plane/lib/logres_behavior_trace.py",
+        "ops/logres-control-plane/lib/logres_visual_*.py",
+        "ops/logres-control-plane/config/correctness_policy.json",
+        "ops/logres-control-plane/config/performance_budgets.json",
+        "ops/logres-control-plane/tests/test_correctness.py",
+        "ops/logres-control-plane/tests/test_verify_*.py",
+        "ops/logres-control-plane/tests/test_hybrid_verify.py",
+        "ops/logres-control-plane/tests/test_visual_*.py",
+        "ops/logres-control-plane/tests/test_behavior_*.py",
+        "ops/logres-control-plane/tests/test_device_proof.py",
+        "ops/logres-control-plane/tests/test_hardware_qa.py",
+        "ops/logres-control-plane/tests/test_deploy_control_plane.py",
+        "e2e/*",
+        "playwright.config.mjs",
+        "vitest.config.ts",
+        "scripts/logres/verify_*.py",
+        "scripts/logres/merge_*_records.py",
+        "scripts/logres/hydrate_*.py",
+        "scripts/logres/test_verify_*.py",
+        "scripts/logres/*checkpoint*.sh",
+        "scripts/logres/build_release_candidate.sh",
+        "scripts/logres/verify_release_candidate.py"
+      ]
+    },
+    {
+      "domain": "battle",
+      "globs": [
+        "src/game/logres/battle/*",
+        "src/game/logres/encounter/*",
+        "src/**/*Battle*.ts",
+        "src/**/*Combat*.ts",
+        "src/**/*Encounter*.ts"
+      ]
+    },
+    {
+      "domain": "field",
+      "globs": [
+        "src/game/logres/field/*",
+        "src/**/*Field*.ts"
+      ]
+    },
+    {
+      "domain": "protocol",
+      "globs": [
+        "src/game/logres/protocol/*",
+        "src/game/logres/server/*",
+        "src/game/logres/replacement-server/*",
+        "src/game/cloud/*",
+        "src/**/*Protocol*.ts",
+        "src/**/*Client*.ts",
+        "database.rules.json",
+        "firestore.rules",
+        "firebase.json"
+      ]
+    },
+    {
+      "domain": "map",
+      "globs": [
+        "src/**/*Map*.ts",
+        "src/**/*map*.ts",
+        "src/assets/**/*map*",
+        "public/**/*map*",
+        "**/*.map.bin"
+      ]
+    },
+    {
+      "domain": "onboarding",
+      "globs": [
+        "src/game/logres/onboarding/*",
+        "src/game/logres/tutorial/*",
+        "src/**/*Tutorial*.ts",
+        "src/**/*Onboarding*.ts",
+        "src/**/*CharacterCreate*.ts",
+        "src/**/*WorldSelect*.ts",
+        "src/**/*Loading*.ts",
+        "src/**/*Boot*.ts"
+      ]
+    },
+    {
+      "domain": "visual",
+      "globs": [
+        "src/game/scenes/*",
+        "src/game/logres/ui/*",
+        "src/game/logres/assets/*",
+        "src/game/logres/audio/*",
+        "src/**/*Scene*.ts",
+        "src/**/*Presentation*.ts",
+        "src/**/*Render*.ts",
+        "src/**/*Sprite*.ts",
+        "src/**/*Hud*.ts",
+        "src/**/*UI*.ts",
+        "src/**/*Ui*.ts",
+        "src/**/*Audio*.ts",
+        "src/**/*.css",
+        "src/assets/*",
+        "public/*",
+        "index.html"
+      ]
+    },
+    {
+      "domain": "historical_fidelity",
+      "globs": [
+        "src/**/*Evidence*.ts",
+        "src/**/*Twin*.ts",
+        "src/**/*Certificate*.ts",
+        "src/**/*Genealogy*.ts",
+        "src/**/*Arbiter*.ts",
+        "src/**/*Semantic*.ts",
+        "src/**/*Counterfactual*.ts",
+        "src/**/*Consistency*.ts",
+        "src/**/*Reconstruction*.ts",
+        "src/**/*Extracted*Facts*.ts",
+        "reference/*"
+      ]
+    },
+    {
+      "domain": "evidence_pipeline",
+      "globs": [
+        "scripts/logres/build_*.py",
+        "scripts/logres/global*.py",
+        "scripts/logres/inspect_*.py",
+        "scripts/logres/synthesize_*.py",
+        "scripts/logres/run_global_*.py",
+        "scripts/logres/catalog_*.py",
+        "scripts/logres/decode_*.py",
+        "scripts/logres/flatten_*.py",
+        "scripts/logres/download_*.py",
+        "scripts/logres/logres_reconstruction_compiler.py"
+      ]
+    },
+    {
+      "domain": "device",
+      "globs": [
+        "android/*",
+        "capacitor.config.ts"
+      ]
+    },
+    {
+      "domain": "gameplay",
+      "globs": [
+        "src/game/*",
+        "src/main.ts"
+      ]
+    },
+    {
+      "domain": "tests",
+      "globs": [
+        "tests/*",
+        "ops/logres-control-plane/tests/*"
+      ]
+    },
+    {
+      "domain": "control_plane",
+      "globs": [
+        "ops/logres-control-plane/*"
+      ]
+    },
+    {
+      "domain": "docs",
+      "globs": [
+        "docs/*",
+        "*.md",
+        "**/*.md"
+      ]
+    },
+    {
+      "domain": "build_config",
+      "globs": [
+        "package.json",
+        "package-lock.json",
+        "tsconfig*.json",
+        "*.config.*",
+        ".github/*"
+      ]
+    }
+  ],
+  "l2_oracles": {
+    "gameplay": [
+      "behavior_trace:playable-field-battle-reward-return",
+      "e2e:logres-behavioral-checkpoint.spec.mjs",
+      "e2e:logres-behavioral-fidelity.spec.mjs",
+      "e2e:logres-smoke.spec.mjs"
+    ],
+    "battle": [
+      "behavior_trace:playable-field-battle-reward-return",
+      "e2e:logres-behavioral-checkpoint.spec.mjs",
+      "e2e:logres-playable-battle-input.spec.mjs",
+      "e2e:logres-battle-presentation.spec.mjs",
+      "visual_truth:battle"
+    ],
+    "field": [
+      "behavior_trace:playable-field-battle-reward-return",
+      "e2e:logres-behavioral-checkpoint.spec.mjs",
+      "e2e:logres-playable-field.spec.mjs",
+      "visual_truth:field"
+    ],
+    "map": [
+      "e2e:logres-playable-field.spec.mjs",
+      "e2e:logres-renderer-proof.spec.mjs",
+      "visual_truth:field"
+    ],
+    "visual": [
+      "e2e:logres-visual-checkpoints.spec.mjs",
+      "e2e:logres-ui-runtime.spec.mjs",
+      "visual_truth:title",
+      "visual_truth:field",
+      "visual_truth:battle"
+    ],
+    "onboarding": [
+      "e2e:logres-onboarding-flow.spec.mjs",
+      "e2e:logres-smoke.spec.mjs",
+      "visual_truth:title"
+    ],
+    "historical_fidelity": [
+      "behavior_trace:playable-field-battle-reward-return",
+      "e2e:logres-behavioral-fidelity.spec.mjs",
+      "e2e:logres-visual-checkpoints.spec.mjs"
+    ],
+    "protocol": [],
+    "evidence_pipeline": [],
+    "device": []
+  },
+  "ceilings": {
+    "confirmed_labels": [
+      "CONFIRMED ORIGINAL",
+      "CONFIRMED",
+      "HIGH"
+    ],
+    "unresolved_labels": [
+      "UNRESOLVED"
+    ],
+    "non_global_provenance_markers": [
+      "current_jp",
+      "current-jp",
+      "later_jp",
+      "later-jp"
+    ],
+    "review_verdicts_are_ceilings": true
+  },
+  "evaluator": {
+    "requires_independent_verification": true,
+    "independent_attestation_required": true
+  }
+}

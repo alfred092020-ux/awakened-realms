@@ -1,0 +1,310 @@
+#!/usr/bin/env python3
+"""logres-correctness: tiered correctness oracle CLI.
+
+Subcommands:
+  plan       Classify a candidate diff (L0) and emit the verification plan.
+  evaluate   Evaluate L1-L3 against run outcomes + existing truth stores and
+             emit/persist the exact-SHA correctness receipt.
+  receipt    Fetch the latest correctness receipt for an exact SHA.
+  latest     List latest receipts per SHA.
+
+Exit codes: 0 PASS, 1 FAIL, 2 ERROR (fail closed), 3 BLOCKED.
+"""
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import sqlite3
+import sys
+from pathlib import Path
+
+ROOT = Path(os.environ.get("LOGRES_ROOT", "/home/ubuntu/logres"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "lib"))
+
+import logres_correctness as lc
+
+DEFAULT_POLICY = Path(
+    os.environ.get(
+        "LOGRES_CORRECTNESS_POLICY",
+        Path(__file__).resolve().parents[1] / "config" / "correctness_policy.json",
+    )
+)
+DEFAULT_DB = Path(os.environ.get("LOGRES_CONTROL_DB", ROOT / "control" / "control.sqlite"))
+DEFAULT_REPO = Path(os.environ.get("LOGRES_REPO_ROOT", "/home/ubuntu/logres/src/awakened-realms"))
+
+EXIT = {"PASS": 0, "FAIL": 1, "BLOCKED": 3, "ERROR": 2}
+
+
+def _load_policy(path: str | None) -> dict:
+    return lc.load_policy(Path(path) if path else DEFAULT_POLICY)
+
+
+def _print(payload) -> None:
+    print(json.dumps(payload, indent=2, sort_keys=True))
+
+
+def cmd_plan(args) -> int:
+    policy = _load_policy(args.policy)
+    base = args.base or policy.get("integration_ref") or "origin/feat/logres-reconstruction"
+    if args.paths is not None or args.paths_file is not None:
+        paths = list(args.paths or [])
+        if args.paths_file:
+            paths.extend(
+                ln.strip()
+                for ln in Path(args.paths_file).read_text().splitlines()
+                if ln.strip()
+            )
+        merge_base_sha = None
+        sha = args.sha
+        base_ref = None
+    elif args.worktree:
+        repo = Path(args.repo)
+        base_ref = base
+        merge_base_sha, paths = lc.worktree_paths(repo, base_ref)
+        sha = args.sha
+    else:
+        repo = Path(args.repo)
+        sha = lc.require_sha(args.sha or "")
+        base_ref = base
+        merge_base_sha, paths = lc.changed_paths(repo, sha, base_ref)
+    plan = lc.build_plan(
+        policy,
+        sha=sha,
+        ref=args.ref,
+        base_ref=base_ref,
+        merge_base_sha=merge_base_sha,
+        paths=sorted(set(paths)),
+    )
+    if args.output:
+        Path(args.output).write_text(json.dumps(plan, indent=2, sort_keys=True) + "\n")
+    _print(plan)
+    return 0
+
+
+def _parse_attestation(raw: str) -> dict:
+    fields = {}
+    for part in raw.split(";"):
+        key, _, value = part.partition("=")
+        fields[key.strip()] = value.strip()
+    return fields
+
+
+def cmd_evaluate(args) -> int:
+    policy = _load_policy(args.policy)
+    plan = json.loads(Path(args.plan).read_text())
+    outcomes = json.loads(Path(args.outcomes).read_text())
+    if args.sha:
+        lc.require_sha(args.sha)
+        plan["sha"] = args.sha
+        outcomes.setdefault("sha", args.sha)
+    dbs = [Path(p) for p in args.aux_db]
+    if args.control_db:
+        dbs.append(Path(args.control_db))
+    truth = lc.collect_truth(dbs, plan["sha"])
+    attestations = [_parse_attestation(a) for a in args.attestation]
+    receipt = lc.evaluate(
+        plan,
+        outcomes,
+        truth,
+        policy,
+        attestations=attestations,
+        run_id=args.run_id,
+    )
+    if args.control_db and Path(args.control_db).is_file():
+        conn = sqlite3.connect(args.control_db, timeout=10)
+        try:
+            conn.execute("pragma busy_timeout=10000")
+            receipt["receipt_row_id"] = lc.record_receipt(conn, receipt)
+        finally:
+            conn.close()
+    if args.output:
+        Path(args.output).write_text(
+            json.dumps(receipt, indent=2, sort_keys=True) + "\n"
+        )
+    _print(receipt)
+    return EXIT.get(receipt["verdict"], 2)
+
+
+def cmd_backfill(args) -> int:
+    """Retroactively evaluate a SHA that was verified before the ladder.
+
+    Lane outcomes are synthesized from the recorded full-e2e verification row
+    and the e2e spec list at the exact SHA; oracle checks still require real
+    truth records, so missing evidence BLOCKS instead of grading thin air.
+    """
+    policy = _load_policy(args.policy)
+    sha = lc.require_sha(args.sha)
+    repo = Path(args.repo)
+    db = Path(args.control_db or DEFAULT_DB)
+    conn = sqlite3.connect(db, timeout=10)
+    conn.row_factory = sqlite3.Row
+    try:
+        ver_rows = [
+            dict(r)
+            for r in conn.execute(
+                """select rowid as id, ref, sha, mode, status, duration_sec,
+                     ran_at, details from verification
+                     where sha=? order by ran_at""",
+                (sha,),
+            )
+        ]
+    finally:
+        conn.close()
+    passes = [
+        r for r in ver_rows if r["status"] == "PASS" and r["mode"] == "full-e2e"
+    ]
+    if not passes:
+        raise lc.CorrectnessError(
+            f"no recorded full-e2e PASS verification for {sha} to backfill"
+        )
+    base = args.base or policy.get("integration_ref")
+    merge_base_sha, paths = lc.changed_paths(repo, sha, base)
+    spec_out = lc._git(repo, "ls-tree", "--name-only", sha, "--", "e2e/")
+    specs = sorted(
+        n
+        for n in spec_out.split()
+        if n.endswith(".spec.mjs") and n != "logres-performance.spec.mjs"
+    )
+    plan = lc.build_plan(
+        policy,
+        sha=sha,
+        ref=args.ref or passes[-1].get("ref"),
+        base_ref=base,
+        merge_base_sha=merge_base_sha,
+        paths=paths,
+    )
+    inferred = "inferred from recorded full-e2e PASS verification"
+    outcomes = {
+        "sha": sha,
+        "ref": plan["ref"],
+        "synthesized": True,
+        "source_verification_ids": [r["id"] for r in passes],
+        "lanes": {
+            "unit": {"ran": True, "rc": 0, "path": f"recorded:{passes[-1].get('mode')}"},
+            "build": {"ran": True, "rc": 0, "note": inferred},
+            "e2e": {"ran": True, "rc": 0, "specs": specs or None,
+                    "note": "spec list read from candidate SHA tree"},
+            "hydration": {"ran": True, "rc": 0, "note": inferred},
+            "performance": {"required": False, "ran": False, "rc": 0},
+            "behavior": {"ran": True, "rc": 0,
+                         "note": f"{inferred}; must be backed by truth records"},
+            "merge": {"behavior": {"ran": True, "ok": True},
+                      "visual": {"ran": True, "ok": True}},
+        },
+    }
+    truth = lc.collect_truth([db], sha)
+    receipt = lc.evaluate(
+        plan, outcomes, truth, policy, run_id=f"backfill-{sha[:12]}"
+    )
+    conn = sqlite3.connect(db, timeout=10)
+    try:
+        conn.execute("pragma busy_timeout=10000")
+        receipt["receipt_row_id"] = lc.record_receipt(conn, receipt)
+    finally:
+        conn.close()
+    receipt["backfilled"] = True
+    _print(receipt)
+    return EXIT.get(receipt["verdict"], 2)
+
+
+def cmd_receipt(args) -> int:
+    sha = lc.require_sha(args.sha)
+    conn = sqlite3.connect(args.control_db or DEFAULT_DB, timeout=10)
+    conn.row_factory = sqlite3.Row
+    try:
+        row = lc.latest_receipt(conn, sha)
+    finally:
+        conn.close()
+    if row is None:
+        print(
+            json.dumps(
+                {"sha": sha, "verdict": "ERROR", "error": "no correctness receipt for SHA"},
+                sort_keys=True,
+            )
+        )
+        return 2
+    _print(row)
+    if args.require:
+        return 0 if row["verdict"] == args.require else (1 if args.require == "PASS" else 3)
+    return 0
+
+
+def cmd_latest(args) -> int:
+    conn = sqlite3.connect(args.control_db or DEFAULT_DB, timeout=10)
+    conn.row_factory = sqlite3.Row
+    try:
+        _print(lc.latest_receipt(conn))
+    finally:
+        conn.close()
+    return 0
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(prog="logres-correctness")
+    sub = parser.add_subparsers(dest="cmd", required=True)
+
+    p = sub.add_parser("plan", help="classify candidate diff, emit L0 plan")
+    p.add_argument("--repo", default=str(DEFAULT_REPO))
+    p.add_argument("--sha")
+    p.add_argument("--ref")
+    p.add_argument("--base", default=None)
+    p.add_argument("--worktree", action="store_true",
+                   help="classify uncommitted working-tree diff vs --base")
+    p.add_argument("--paths", nargs="*", default=None,
+                   help="explicit changed paths (no git)")
+    p.add_argument("--paths-file")
+    p.add_argument("--policy")
+    p.add_argument("--output")
+
+    e = sub.add_parser("evaluate", help="evaluate ladder, emit exact-SHA receipt")
+    e.add_argument("--plan", required=True)
+    e.add_argument("--outcomes", required=True)
+    e.add_argument("--sha")
+    e.add_argument("--ref")
+    e.add_argument("--policy")
+    e.add_argument("--control-db", default=None)
+    e.add_argument("--aux-db", action="append", default=[],
+                   help="additional truth DB (isolated farm DBs)")
+    e.add_argument("--run-id")
+    e.add_argument("--attestation", action="append", default=[],
+                   help="L3 attestation 'reviewer=<who>;note=<what>'")
+    e.add_argument("--output")
+
+    r = sub.add_parser("receipt", help="fetch latest receipt for exact SHA")
+    r.add_argument("sha")
+    r.add_argument("--control-db", default=None)
+    r.add_argument("--require", choices=["PASS", "FAIL", "BLOCKED"])
+
+    b = sub.add_parser(
+        "backfill",
+        help="evaluate a pre-ladder SHA from recorded verification + truth",
+    )
+    b.add_argument("sha")
+    b.add_argument("--repo", default=str(DEFAULT_REPO))
+    b.add_argument("--ref")
+    b.add_argument("--base", default=None)
+    b.add_argument("--policy")
+    b.add_argument("--control-db", default=None)
+
+    l = sub.add_parser("latest", help="list latest receipt per SHA")
+    l.add_argument("--control-db", default=None)
+
+    args = parser.parse_args()
+    try:
+        if args.cmd == "plan":
+            return cmd_plan(args)
+        if args.cmd == "evaluate":
+            return cmd_evaluate(args)
+        if args.cmd == "receipt":
+            return cmd_receipt(args)
+        if args.cmd == "backfill":
+            return cmd_backfill(args)
+        return cmd_latest(args)
+    except (lc.CorrectnessError, OSError, ValueError, json.JSONDecodeError) as exc:
+        print(f"logres-correctness ERROR (fail closed): {exc}", file=sys.stderr)
+        return 2
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

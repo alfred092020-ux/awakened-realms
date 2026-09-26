@@ -1,0 +1,118 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Canonical logres-gate. candidate/final keep their existing semantics; the
+# correctness oracle ladder is layered on top without weakening either:
+#   fast      -> advisory L0 diff classification, then the existing fast gate
+#   candidate -> prior full-e2e PASS cache or logres-verify-farm (which now
+#                emits an exact-SHA correctness receipt); a fresh candidate
+#                PASS additionally requires a PASS correctness receipt
+#   final     -> authoritative private-hydrated verify (unchanged)
+# The oracle fails closed: a missing oracle or a malformed policy blocks the
+# gate rather than letting a candidate self-grade.
+
+mode="${1:-candidate}"
+ref="${2:-feat/logres-reconstruction}"
+BIN=/home/ubuntu/logres/bin
+CORRECTNESS="${LOGRES_CORRECTNESS_BIN:-$BIN/logres-correctness}"
+CONTROL_DB="${LOGRES_CANONICAL_CONTROL_DB:-/home/ubuntu/logres/control/control.sqlite}"
+BASE="${LOGRES_REPO_ROOT:-/home/ubuntu/logres/src/awakened-realms}"
+
+case "$mode" in
+  fast)
+    echo "[gate] FAST changed-tests + build in current worktree"
+    if [[ -x "$CORRECTNESS" ]]; then
+      echo "[gate] L0 correctness classification (advisory)"
+      "$CORRECTNESS" plan --repo "$PWD" --worktree 2>&1 \
+        | python3 -c 'import json,sys
+try:
+    plan=json.load(sys.stdin)
+except Exception:
+    print("[gate] correctness plan unavailable (advisory only)"); sys.exit(0)
+print("[gate] domains=" + ",".join(sorted(plan.get("domains") or ["none"]))
+      + " required=" + ",".join(plan.get("required_levels") or []))
+if plan.get("requires_independent_verification"):
+    print("[gate] WARNING: evaluator surface modified - independent verification required")
+for r in plan.get("l3_reasons") or []:
+    print("[gate] L3:", r)' || true
+    else
+      echo "[gate] correctness oracle not deployed; L0 classification skipped (advisory)"
+    fi
+    exec "$BIN/logres-fast-verify" origin/feat/logres-reconstruction
+    ;;
+  candidate)
+    sha=$(git -C "$BASE" rev-parse "$ref")
+    cached=$(python3 - "$sha" <<'PY'
+import sqlite3,sys
+sha=sys.argv[1]
+c=sqlite3.connect('/home/ubuntu/logres/control/control.sqlite')
+r=c.execute(
+    "select ref,ran_at from verification "
+    "where sha=? and mode='full-e2e' and status='PASS' "
+    "order by ran_at desc limit 1",
+    (sha,),
+).fetchone()
+if r:
+    print(r[0]+'|'+r[1])
+PY
+)
+    if [[ "${LOGRES_GATE_FORCE:-0}" != "1" && -n "$cached" ]]; then
+      receipt_ok=0
+      if [[ -x "$CORRECTNESS" ]]; then
+        if "$CORRECTNESS" receipt "$sha" --require PASS --control-db "$CONTROL_DB" >/dev/null 2>&1; then
+          receipt_ok=1
+        elif "$CORRECTNESS" backfill "$sha" --repo "$BASE" --control-db "$CONTROL_DB" >/dev/null 2>&1 \
+          && "$CORRECTNESS" receipt "$sha" --require PASS --control-db "$CONTROL_DB" >/dev/null 2>&1; then
+          receipt_ok=1
+        fi
+      fi
+      if (( receipt_ok == 1 )); then
+        echo "[gate] CANDIDATE cache HIT sha=${sha:0:12} prior=${cached%%|*} ran_at=${cached#*|} receipt=PASS"
+        exit 0
+      fi
+      if [[ -x "$CORRECTNESS" ]]; then
+        echo "[gate] cached PASS lacks a PASS correctness receipt at sha=${sha:0:12}; verifying under ladder" >&2
+      else
+        echo "[gate] correctness oracle missing; cannot validate cached PASS, verifying under ladder" >&2
+      fi
+    fi
+    echo "[gate] CANDIDATE parallel RAM test/build/E2E: $ref"
+    "$BIN/logres-verify-farm" "$ref"
+    if [[ ! -x "$CORRECTNESS" ]]; then
+      echo "[gate] FAIL: correctness oracle missing after verify-farm ($CORRECTNESS)" >&2
+      exit 2
+    fi
+    if ! receipt=$("$CORRECTNESS" receipt "$sha" --control-db "$CONTROL_DB"); then
+      echo "[gate] FAIL: no correctness receipt for sha=${sha:0:12} after verify-farm" >&2
+      exit 1
+    fi
+    verdict=$(printf '%s' "$receipt" | python3 -c 'import json,sys; print(json.load(sys.stdin).get("verdict",""))')
+    if [[ "$verdict" != "PASS" ]]; then
+      echo "[gate] FAIL: correctness receipt verdict=$verdict sha=${sha:0:12}" >&2
+      exit 1
+    fi
+    echo "[gate] CANDIDATE correctness receipt PASS sha=${sha:0:12}"
+    exit 0
+    ;;
+  final)
+    echo "[gate] FINAL authoritative private-hydrated verify: $ref"
+    sha=$(git -C "$BASE" rev-parse "$ref" 2>/dev/null || echo unknown)
+    log="/home/ubuntu/logres/logs/final-gate-$(date +%Y%m%dT%H%M%S)-${sha:0:12}.log"
+    set +e
+    "$BIN/logres-verify-all-ref" "$ref" 2>&1 | tee "$log"
+    rc=${PIPESTATUS[0]}
+    set -e
+    if (( rc != 0 )); then
+      "$BIN/logres-regression-capture" \
+        --kind final-verify --ref "$ref" --sha "$sha" \
+        --summary "authoritative final gate failed rc=$rc" \
+        --log "$log" >/dev/null 2>&1 || true
+      exit "$rc"
+    fi
+    exit 0
+    ;;
+  *)
+    echo "usage: logres-gate {fast|candidate|final} [ref]" >&2
+    exit 2
+    ;;
+esac
