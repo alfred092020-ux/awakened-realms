@@ -34,6 +34,13 @@ CANONICAL_CONTROL_DB="${LOGRES_CANONICAL_CONTROL_DB:-/home/ubuntu/logres/control
 BEHAVIOR_TRACE_MERGE_TIMEOUT_MS="${LOGRES_BEHAVIOR_TRACE_MERGE_TIMEOUT_MS:-4000}"
 VISUAL_TRUTH_MERGE_TIMEOUT_MS="${LOGRES_VISUAL_TRUTH_MERGE_TIMEOUT_MS:-15000}"
 VISUAL_TRUTH_SPOOL_DIR="${LOGRES_VISUAL_TRUTH_SPOOL_DIR:-/home/ubuntu/logres/control/visual-truth-spool}"
+CORRECTNESS_BIN="${LOGRES_CORRECTNESS_BIN:-/home/ubuntu/logres/bin/logres-correctness}"
+CORRECTNESS_POLICY="${LOGRES_CORRECTNESS_POLICY:-/home/ubuntu/logres/control/correctness_policy.json}"
+CORRECTNESS_BASE_REF="${LOGRES_CORRECTNESS_BASE_REF:-origin/feat/logres-reconstruction}"
+CORRECTNESS_PLAN="$ROOT/verify-farm-$STAMP-correctness-plan.json"
+CORRECTNESS_OUTCOMES="$ROOT/verify-farm-$STAMP-correctness-outcomes.json"
+CORRECTNESS_RECEIPT="/home/ubuntu/logres/logs/verify-farm-$STAMP-correctness-receipt.json"
+CORRECTNESS_LOG="/home/ubuntu/logres/logs/verify-farm-$STAMP-correctness.log"
 START=$(date +%s)
 SHA=unknown
 VERIFY_PATH="local-test+local-build-e2e"
@@ -248,6 +255,31 @@ SHA=$(git -C "$BASE" rev-parse "$REF")
   echo "VERIFY_FARM could not pin exact source SHA for $REF" >&2
   exit 2
 }
+
+# L0 correctness classification is computed from the committed policy before
+# any lane runs, so the receipt can record what the diff required versus what
+# executed. A missing oracle or malformed policy fails the farm closed.
+if [[ ! -x "$CORRECTNESS_BIN" ]]; then
+  echo "VERIFY_FARM correctness oracle missing: $CORRECTNESS_BIN" >&2
+  exit 2
+fi
+if ! "$CORRECTNESS_BIN" plan \
+    --repo "$BASE" --sha "$SHA" --ref "$REF" \
+    --base "$CORRECTNESS_BASE_REF" --policy "$CORRECTNESS_POLICY" \
+    --output "$CORRECTNESS_PLAN" >"$CORRECTNESS_LOG" 2>&1; then
+  echo "VERIFY_FARM correctness oracle plan failed closed sha=${SHA:0:12}" >&2
+  tail -60 "$CORRECTNESS_LOG" >&2 || true
+  exit 2
+fi
+python3 - "$CORRECTNESS_PLAN" <<'PY'
+import json,sys
+plan=json.load(open(sys.argv[1]))
+print("VERIFY_FARM correctness domains=%s required=%s paths=%s" % (
+    ",".join(sorted(plan.get("domains") or ["none"])),
+    "+".join(plan.get("required_levels") or []),
+    plan.get("path_count")))
+PY
+
 if git -C "$BASE" cat-file -e "$SHA:$PERF_SPEC_REL" 2>/dev/null; then
   PERF_REQUIRED=1
   E2E_VERIFY_TAG="${E2E_VERIFY_TAG}+perf-w1"
@@ -548,6 +580,77 @@ run_local_tests() {
   ) >"$TEST_LOG" 2>&1
 }
 
+# Assemble the run's lane outcomes and ask the deployed correctness oracle to
+# evaluate the ladder and emit/persist the exact-SHA receipt. Truth records
+# are read from both the isolated farm DBs and the canonical control DB, so
+# the receipt is consistent whether merges already ran or not.
+run_correctness_evaluate() {
+  local phase="$1" behavior_merge="$2" visual_merge="$3"
+  mapfile -t receipt_e2e_specs < <(
+    cd "$E2E_WT" 2>/dev/null \
+      && find e2e -maxdepth 1 -type f -name '*.spec.mjs' \
+        ! -name 'logres-performance.spec.mjs' -printf '%f\n' | sort
+  )
+  python3 - "$CORRECTNESS_OUTCOMES" "$phase" \
+    "$VERIFY_PATH" "$E2E_VERIFY_TAG" "$E2E_WORKERS" \
+    "$test_rc" "$e2e_rc" "$performance_rc" "$behavior_rc" \
+    "$PERF_REQUIRED" "$cache_used" "$remote_used" \
+    "$behavior_merge" "$visual_merge" \
+    "${receipt_e2e_specs[@]}" <<'PY'
+import json,sys
+(out_path, phase, verify_path, e2e_tag, e2e_workers, test_rc, e2e_rc,
+ perf_rc, behavior_rc, perf_required, cache_used, remote_used,
+ behavior_merge, visual_merge, *specs) = sys.argv[1:]
+e2e_rc = int(e2e_rc); perf_rc = int(perf_rc); behavior_rc = int(behavior_rc)
+test_rc = int(test_rc); perf_required = int(perf_required)
+def merge_lane(state):
+    return {"pending": {"ran": False, "ok": None},
+            "ok": {"ran": True, "ok": True},
+            "failed": {"ran": True, "ok": False}}[state]
+# An empty spec list means enumeration failed (missing worktree/dir), not that
+# the candidate SHA removed every spec; emit null so the oracle treats spec
+# evidence as missing rather than reporting every required e2e check skipped.
+e2e_specs = list(specs) or None
+outcomes = {
+  "phase": phase,
+  "verify_path": verify_path + "+" + e2e_tag,
+  "lanes": {
+    "unit": {"ran": True, "rc": test_rc, "path": verify_path,
+             "cache_used": cache_used == "1", "remote_used": remote_used == "1"},
+    "build": {"ran": True, "rc": e2e_rc,
+              "note": "npm run build executes inside the local E2E lane"},
+    "e2e": {"ran": True, "rc": e2e_rc, "workers": int(e2e_workers),
+            "tag": e2e_tag, "specs": e2e_specs},
+    "hydration": {"ran": True, "rc": e2e_rc,
+                  "note": "private-anchor hydration precedes the E2E lane"},
+    "performance": {"required": bool(perf_required),
+                    "ran": bool(perf_required) and e2e_rc == 0,
+                    "rc": perf_rc},
+    "behavior": {"ran": e2e_rc == 0 and perf_rc == 0, "rc": behavior_rc},
+    "merge": {"behavior": merge_lane(behavior_merge),
+              "visual": merge_lane(visual_merge)},
+  },
+}
+with open(out_path, "w") as fh:
+    json.dump(outcomes, fh, indent=2, sort_keys=True)
+PY
+  local attest_args=()
+  if [[ -n "${LOGRES_CORRECTNESS_ATTESTATION:-}" ]]; then
+    attest_args=(--attestation "$LOGRES_CORRECTNESS_ATTESTATION")
+  fi
+  "$CORRECTNESS_BIN" evaluate \
+    --plan "$CORRECTNESS_PLAN" \
+    --outcomes "$CORRECTNESS_OUTCOMES" \
+    --sha "$SHA" --ref "$REF" \
+    --policy "$CORRECTNESS_POLICY" \
+    --control-db "$CANONICAL_CONTROL_DB" \
+    --aux-db "$BEHAVIOR_TRACE_DB" \
+    --aux-db "$VISUAL_TRUTH_DB" \
+    --run-id "verify-farm-$STAMP" \
+    "${attest_args[@]}" \
+    --output "$CORRECTNESS_RECEIPT" >>"$CORRECTNESS_LOG" 2>&1
+}
+
 # E2E always stays local and authoritative because it exercises private runtime
 # hydration, browser behavior, and the actual playable vertical slice.
 git -C "$BASE" worktree add --detach "$E2E_WT" "$SHA" >/dev/null
@@ -708,6 +811,8 @@ if (( test_rc != 0 || e2e_rc != 0 || performance_rc != 0 || behavior_rc != 0 ));
   echo "--- behavior tail ---" >&2
   tail -120 "$BEHAVIOR_LOG" >&2 || true
   /home/ubuntu/logres/bin/logres-regression-capture     --kind candidate-verify     --ref "$REF"     --sha "$SHA"     --summary "verify-farm test_rc=$test_rc e2e_rc=$e2e_rc performance_rc=$performance_rc behavior_rc=$behavior_rc path=$VERIFY_PATH+$E2E_VERIFY_TAG"     --log "$TEST_LOG"     --log "$E2E_LOG" --log "$PERF_LOG" --log "$BEHAVIOR_LOG" >/dev/null 2>&1 || true
+  run_correctness_evaluate lanes pending pending || true
+  echo "correctness_receipt=$CORRECTNESS_RECEIPT" >&2 || true
   exit 1
 fi
 
@@ -728,6 +833,7 @@ if ! merge_behavior_trace_isolation; then
     --sha "$SHA" \
     --summary "behavior-trace isolated merge failed after successful E2E" \
     --log "$BEHAVIOR_TRACE_MERGE_LOG" >/dev/null 2>&1 || true
+  run_correctness_evaluate lanes failed pending || true
   exit 1
 fi
 
@@ -742,8 +848,42 @@ if ! merge_visual_truth_isolation; then
   echo "--- visual truth merge tail ---" >&2
   tail -120 "$VISUAL_TRUTH_MERGE_LOG" >&2 || true
   /home/ubuntu/logres/bin/logres-regression-capture     --kind candidate-verify     --ref "$REF"     --sha "$SHA"     --summary "visual-truth isolated merge failed after successful E2E"     --log "$VISUAL_TRUTH_MERGE_LOG" >/dev/null 2>&1 || true
+  run_correctness_evaluate lanes ok failed || true
   exit 1
 fi
+
+# The correctness oracle emits the machine-readable exact-SHA receipt last so
+# it records every lane, both truth merges, all skips, blocking failures and
+# unresolved evidence ceilings. Its verdict gates promotion, never the farm's
+# own machinery (evaluator self-changes require independent verification).
+correctness_rc=0
+run_correctness_evaluate complete ok ok || correctness_rc=$?
+case "$correctness_rc" in
+  0)
+    ;;
+  3)
+    echo "VERIFY_FARM BLOCKED correctness ladder requires L3 review/independent verification sha=${SHA:0:12}" >&2
+    echo "correctness_receipt=$CORRECTNESS_RECEIPT" >&2
+    tail -60 "$CORRECTNESS_LOG" >&2 || true
+    exit 1
+    ;;
+  2)
+    echo "VERIFY_FARM correctness oracle failed closed sha=${SHA:0:12}" >&2
+    tail -60 "$CORRECTNESS_LOG" >&2 || true
+    exit 2
+    ;;
+  *)
+    echo "VERIFY_FARM FAIL correctness ladder verdict sha=${SHA:0:12}" >&2
+    tail -80 "$CORRECTNESS_LOG" >&2 || true
+    /home/ubuntu/logres/bin/logres-regression-capture \
+      --kind candidate-verify \
+      --ref "$REF" \
+      --sha "$SHA" \
+      --summary "correctness ladder FAIL at exact SHA $SHA" \
+      --log "$CORRECTNESS_LOG" >/dev/null 2>&1 || true
+    exit 1
+    ;;
+esac
 
 dur=$(( $(date +%s)-START ))
 echo "VERIFY_FARM PASS ref=$REF sha=$SHA duration=${dur}s path=$VERIFY_PATH+$E2E_VERIFY_TAG+behavior-truth"
@@ -754,3 +894,5 @@ echo "performance_control_log=$PERF_CONTROL_LOG"
 echo "behavior_log=$BEHAVIOR_LOG"
 echo "behavior_trace_merge_log=$BEHAVIOR_TRACE_MERGE_LOG"
 echo "visual_truth_merge_log=$VISUAL_TRUTH_MERGE_LOG"
+echo "correctness_log=$CORRECTNESS_LOG"
+echo "correctness_receipt=$CORRECTNESS_RECEIPT"
