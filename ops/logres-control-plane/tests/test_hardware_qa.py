@@ -97,6 +97,9 @@ def victory_state(*, reward=True):
 
 
 class HardwareQaTests(unittest.TestCase):
+    def test_hardware_qa_uses_canonical_deployed_phone_transport(self):
+        self.assertEqual(qa.ROOT / "bin/logres-phone-qa", qa.PHONE_QA)
+
     def test_success_path_uses_weapon_panel_fallback_contract(self):
         plan = qa.playable_battle_plan(
             battle_state(),

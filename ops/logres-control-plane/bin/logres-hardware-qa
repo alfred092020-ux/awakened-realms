@@ -9,10 +9,11 @@ REPO=ROOT/"src/awakened-realms"
 CONTROL=ROOT/"control"
 DB=CONTROL/"control.sqlite"
 PHONE_DIR=CONTROL/"android-device"
-PHONE_QA=PHONE_DIR/"logres-phone-qa"
+PHONE_QA=ROOT/"bin/logres-phone-qa"
 KEY=PHONE_DIR/"qa_controller_ed25519"
 PHONE_PORT="22023"
 PHONE="u0_a452@127.0.0.1"
+QA_LOCK_FD=None
 PKG="com.nexuscore.awakenedrealms"
 ACTIVITY=f"{PKG}/.MainActivity"
 APK_DIR=ROOT/"artifacts/apk"
@@ -26,8 +27,15 @@ DEVICE_PROOF_BIN=Path(os.environ.get(
 class QAError(RuntimeError): pass
 
 def run(args, *, check=True, capture=True, timeout=None):
+    child_env=None
+    pass_fds=()
+    if QA_LOCK_FD is not None:
+        child_env=os.environ.copy()
+        child_env["LOGRES_PHONE_QA_LOCK_FD"]=str(QA_LOCK_FD)
+        pass_fds=(QA_LOCK_FD,)
     p=subprocess.run(args, text=True, stdout=subprocess.PIPE if capture else None,
-                     stderr=subprocess.PIPE if capture else None, timeout=timeout)
+                     stderr=subprocess.PIPE if capture else None, timeout=timeout,
+                     env=child_env, pass_fds=pass_fds)
     if check and p.returncode:
         raise QAError(f"command failed rc={p.returncode}: {shlex.join(map(str,args))}\n{p.stderr or p.stdout}")
     return (p.stdout or "").strip()
@@ -347,6 +355,10 @@ def main():
     try: fcntl.flock(lf.fileno(),fcntl.LOCK_EX|fcntl.LOCK_NB)
     except BlockingIOError:
         print("HARDWARE_QA busy"); return 0
+
+    global QA_LOCK_FD
+    QA_LOCK_FD=lf.fileno()
+    os.set_inheritable(QA_LOCK_FD, True)
 
     sha=args.sha or canonical_sha()
     v=verified(sha)
