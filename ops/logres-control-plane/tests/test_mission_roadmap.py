@@ -86,6 +86,52 @@ class MissionRoadmapTests(unittest.TestCase):
         self.assertIn(("SLICE_CERTIFICATION", "VISUAL-CHECKPOINT-JITTER-001", "required"), links)
         self.assertIn(("SLICE_HISTORICAL_TRUTH", "G17-TUT-001", "supporting"), links)
 
+    def test_jp_live_reference_lab_is_persisted_with_global_first_policy(self):
+        mission = json.loads(MISSION_CONFIG.read_text())
+        objectives = {item["id"]: item for item in mission["objectives"]}
+
+        self.assertEqual(
+            "LOGRES-RECONSTRUCTION",
+            objectives["JP_LIVE_REFERENCE_LAB"]["parent_id"],
+        )
+        expected_children = {
+            "JP_LIVE_PROVENANCE",
+            "JP_LIVE_AUTOMATION",
+            "JP_LIVE_G17_CLUES",
+            "JP_LIVE_COMPARISON",
+        }
+        self.assertTrue(expected_children.issubset(objectives))
+        self.assertTrue(
+            all(
+                objectives[item]["parent_id"] == "JP_LIVE_REFERENCE_LAB"
+                for item in expected_children
+            )
+        )
+        self.assertIn(
+            "VERSION SENSITIVE",
+            objectives["JP_LIVE_REFERENCE_LAB"]["definition_of_done"],
+        )
+        self.assertIn(
+            "historical Global truth",
+            objectives["JP_LIVE_REFERENCE_LAB"]["definition_of_done"],
+        )
+
+        links = {
+            (item["objective_id"], item.get("task_id"), item["gate_type"])
+            for item in mission["links"]
+        }
+        expected_links = {
+            ("JP_LIVE_PROVENANCE", "JP-LIVE-REF-PROVENANCE-001", "required"),
+            ("JP_LIVE_AUTOMATION", "JP-LIVE-REF-AUTOMATION-001", "required"),
+            ("JP_LIVE_AUTOMATION", "JP-LIVE-REF-OFFLINE-COMPILER-001", "required"),
+            ("JP_LIVE_AUTOMATION", "PHONE-INPUT-LOCK-NAMESPACE-REPAIR-001", "required"),
+            ("JP_LIVE_G17_CLUES", "JP-LIVE-REF-G17-RUNTIME-001", "required"),
+            ("JP_LIVE_G17_CLUES", "G17-TUT-001", "supporting"),
+            ("JP_LIVE_COMPARISON", "JP-LIVE-REF-CROSSCOMPARE-001", "required"),
+            ("JP_LIVE_COMPARISON", "GJP-TRUTH-KERNEL-001", "supporting"),
+        }
+        self.assertTrue(expected_links.issubset(links))
+
     def test_existing_milestone_status_is_preserved(self):
         conn = make_db()
         conn.execute(

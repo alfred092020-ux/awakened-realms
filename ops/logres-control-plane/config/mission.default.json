@@ -3,6 +3,46 @@
   "title": "Persistent Logres Reconstruction",
   "objectives": [
     {
+      "id": "JP_LIVE_REFERENCE_LAB",
+      "parent_id": "LOGRES-RECONSTRUCTION",
+      "title": "JP live reference lab",
+      "weight": 10,
+      "sort_order": -70,
+      "definition_of_done": "Current Japanese Logres client is a VERSION SENSITIVE live reference with reusable automated captures; no JP observation is promoted to historical Global truth without corroboration."
+    },
+    {
+      "id": "JP_LIVE_PROVENANCE",
+      "parent_id": "JP_LIVE_REFERENCE_LAB",
+      "title": "JP artifact provenance and reuse",
+      "weight": 20,
+      "sort_order": 10,
+      "definition_of_done": "Exact stored JP client package/version/split/native hashes and existing reverse-engineering databases are indexed and reusable without reacquisition or duplicate analysis."
+    },
+    {
+      "id": "JP_LIVE_AUTOMATION",
+      "parent_id": "JP_LIVE_REFERENCE_LAB",
+      "title": "Automated JP reference workflows",
+      "weight": 35,
+      "sort_order": 20,
+      "definition_of_done": "Bounded ADB/UI workflows can capture requested JP boot, UI, field, movement, interaction, transition, battle, results, reward and menu evidence without mutating the reconstruction package/data."
+    },
+    {
+      "id": "JP_LIVE_G17_CLUES",
+      "parent_id": "JP_LIVE_REFERENCE_LAB",
+      "title": "Millennium Tree runtime clues",
+      "weight": 20,
+      "sort_order": 30,
+      "definition_of_done": "JP runtime captures produce VERSION SENSITIVE map/transition/geometry/NPC/collision leads for G17-TUT-001 without promoting JP-only identity to historical Global proof."
+    },
+    {
+      "id": "JP_LIVE_COMPARISON",
+      "parent_id": "JP_LIVE_REFERENCE_LAB",
+      "title": "Global/JP/reconstruction comparison",
+      "weight": 25,
+      "sort_order": 40,
+      "definition_of_done": "Each material live JP observation is compared against Global 3.0.24 native evidence, Global videos/assets and the reconstruction with explicit contradiction and provenance classification."
+    },
+    {
       "id": "LOGRES_COMPLETE",
       "parent_id": "LOGRES-RECONSTRUCTION",
       "title": "Faithful Logres Reconstruction",
@@ -557,6 +597,81 @@
     {
       "objective_id": "SLICE_HISTORICAL_TRUTH",
       "task_id": "G17-TUT-001",
+      "gate_type": "supporting"
+    },
+    {
+      "objective_id": "JP_LIVE_PROVENANCE",
+      "task_id": "JP-LIVE-REF-PROVENANCE-001",
+      "gate_type": "required"
+    },
+    {
+      "objective_id": "JP_LIVE_PROVENANCE",
+      "task_id": "GJP-FUNC-MATCH-001",
+      "gate_type": "supporting"
+    },
+    {
+      "objective_id": "JP_LIVE_PROVENANCE",
+      "task_id": "GJP-MAP-GENEALOGY-001",
+      "gate_type": "supporting"
+    },
+    {
+      "objective_id": "JP_LIVE_PROVENANCE",
+      "task_id": "GJP-PROTOCOL-SCHEMA-001",
+      "gate_type": "supporting"
+    },
+    {
+      "objective_id": "JP_LIVE_AUTOMATION",
+      "task_id": "JP-LIVE-REF-AUTOMATION-001",
+      "gate_type": "required"
+    },
+    {
+      "objective_id": "JP_LIVE_AUTOMATION",
+      "task_id": "JP-LIVE-REF-OFFLINE-COMPILER-001",
+      "gate_type": "required"
+    },
+    {
+      "objective_id": "JP_LIVE_AUTOMATION",
+      "task_id": "PHONE-INPUT-LOCK-NAMESPACE-REPAIR-001",
+      "gate_type": "required"
+    },
+    {
+      "objective_id": "JP_LIVE_AUTOMATION",
+      "task_id": "JP-LIVE-REF-AUTOMATION-SPEC-001",
+      "gate_type": "supporting"
+    },
+    {
+      "objective_id": "JP_LIVE_G17_CLUES",
+      "task_id": "JP-LIVE-REF-G17-RUNTIME-001",
+      "gate_type": "required"
+    },
+    {
+      "objective_id": "JP_LIVE_G17_CLUES",
+      "task_id": "G17-TUT-001",
+      "gate_type": "supporting"
+    },
+    {
+      "objective_id": "JP_LIVE_G17_CLUES",
+      "task_id": "GJP-MAP-GENEALOGY-001",
+      "gate_type": "supporting"
+    },
+    {
+      "objective_id": "JP_LIVE_COMPARISON",
+      "task_id": "JP-LIVE-REF-CROSSCOMPARE-001",
+      "gate_type": "required"
+    },
+    {
+      "objective_id": "JP_LIVE_COMPARISON",
+      "task_id": "GJP-CONTRADICTION-ARBITER-001",
+      "gate_type": "supporting"
+    },
+    {
+      "objective_id": "JP_LIVE_COMPARISON",
+      "task_id": "GJP-TRUTH-KERNEL-001",
+      "gate_type": "supporting"
+    },
+    {
+      "objective_id": "JP_LIVE_COMPARISON",
+      "task_id": "JP-LIVE-REF-BASELINE-INDEX-001",
       "gate_type": "supporting"
     }
   ],
