@@ -91,3 +91,85 @@ def write_heartbeat(root: Path, payload: dict) -> None:
         os.replace(tmp, path)
     finally:
         tmp.unlink(missing_ok=True)
+
+
+def default_policy() -> dict:
+    return {
+        "cycle_seconds": 60,
+        "leader_ttl_seconds": 180,
+        "heartbeat_seconds": 30,
+        "task_generation_cap_per_cycle": 3,
+        "assignment_cap_per_cycle": 4,
+        "predicate_cooldown_seconds": 900,
+        "infrastructure_work_ratio_max": 0.35,
+        "stale_worker_seconds": 900,
+        "models": {"preferred": "swe-2-max", "allow_paid_default": False},
+    }
+
+
+def _table_rows(conn, table: str) -> list[dict]:
+    try:
+        return [dict(row) for row in conn.execute(f"select * from {table}").fetchall()]
+    except Exception:
+        return []
+
+
+def _load_json_file(path: Path) -> dict:
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    return data if isinstance(data, dict) else {}
+
+
+def collect_planning_snapshot(conn, root: Path, policy: dict) -> dict:
+    root = Path(root)
+    return {
+        "tasks": _table_rows(conn, "tasks"),
+        "leases": _table_rows(conn, "brain_task_leases"),
+        "dependencies": _table_rows(conn, "task_dependencies"),
+        "scopes": _table_rows(conn, "task_scopes"),
+        "metadata": _table_rows(conn, "task_metadata"),
+        "integration_queue": _table_rows(conn, "integration_queue"),
+        "regressions": _table_rows(conn, "regressions"),
+        "capacity": _load_json_file(root / "control" / "capacity-state.json"),
+        "swarm": _load_json_file(root / "control" / "swarm-state.json"),
+        "policy": policy,
+    }
+
+
+def score_ready_task(task: dict, snapshot: dict, policy: dict) -> tuple:
+    priority = int(task.get("priority", 9) if task.get("priority") is not None else 9)
+    lane = str(task.get("lane") or "").lower()
+    title = str(task.get("title") or "").lower()
+    note = str(task.get("note") or "").lower()
+    visible_game = lane in {"game", "release", "android", "presentation"} or any(
+        token in title for token in ("battle", "field", "onboarding", "android", "playable", "visual", "game")
+    )
+    critical = "critical" in note or "critical" in title
+    infra = lane in {"control-plane", "infra", "devops", "security"}
+    explicit_unblock = "unblock" in title or "unblock" in note or "blocker" in note
+    class_rank = 0 if (visible_game or critical) else (1 if (infra and explicit_unblock) else 2 if not infra else 3)
+    return (class_rank, priority, str(task.get("id") or ""))
+
+
+def select_frontier(snapshot: dict, policy: dict) -> list[dict]:
+    candidates = [
+        dict(task)
+        for task in snapshot.get("tasks", [])
+        if str(task.get("status") or "") == "READY" and not task.get("owner")
+    ]
+    candidates.sort(key=lambda item: score_ready_task(item, snapshot, policy))
+    capacity = snapshot.get("capacity", {}) if isinstance(snapshot.get("capacity"), dict) else {}
+    plan = capacity.get("plan", {}) if isinstance(capacity.get("plan"), dict) else {}
+    signals = capacity.get("signals", {}) if isinstance(capacity.get("signals"), dict) else {}
+    verifier = signals.get("verifier", {}) if isinstance(signals.get("verifier"), dict) else {}
+    pressure = str(plan.get("pressure") or "normal")
+    logical = max(1, int(plan.get("logical_workers") or policy.get("assignment_cap_per_cycle", 4) or 4))
+    limit = min(int(policy.get("assignment_cap_per_cycle", 4) or 4), logical)
+    backlog = int(verifier.get("backlog") or 0)
+    if pressure == "high" or backlog >= 8:
+        limit = min(limit, 1)
+    elif pressure in {"medium", "elevated"} or backlog >= 4:
+        limit = min(limit, 2)
+    return candidates[: max(0, limit)]
