@@ -356,6 +356,9 @@ def dispatch_devin(
     if not Path(DEVIN_AGENT).is_file() or not Path(DEVIN_ISOLATE).is_file():
         result["blocked"] = "devin_runtime_missing"
         return result
+    if not DEVIN_WORKER_CONFIG.is_file():
+        result["blocked"] = "devin_worker_config_missing"
+        return result
 
     worker_cfg = load_json(DEVIN_WORKER_CONFIG)
     router = worker_cfg.get("router", {}) if isinstance(worker_cfg, dict) else {}
@@ -453,9 +456,28 @@ def dispatch_devin(
             )
             continue
 
-        LOGS.mkdir(parents=True, exist_ok=True)
-        log_path = LOGS / f"{job_id}-{task_id}-devin-harness.log"
-        log_handle = open(log_path, "ab", buffering=0)
+        try:
+            preflight_report = json.loads(preflight.stdout or "{}")
+        except json.JSONDecodeError:
+            preflight_report = {}
+        unit = str(preflight_report.get("unit") or "").strip()
+        if not unit:
+            conn.execute(
+                """update swarm_jobs
+                      set state='FAILED',last_error=?,updated_at=datetime('now'),
+                          finished_at=datetime('now')
+                    where id=?""",
+                ("Devin isolation preflight did not report a unit", job_id),
+            )
+            conn.commit()
+            release_worker(
+                worker,
+                task_id,
+                "Devin OS isolation preflight omitted the systemd unit; task returned READY.",
+            )
+            continue
+        isolation_marker = f"systemd-run/system:{unit}"
+
         argv = [
             DEVIN_AGENT,
             "--task",
@@ -476,50 +498,119 @@ def dispatch_devin(
             "unattended",
             "--sandbox",
             "--isolation",
-            "systemd/logres-devin-worker@.service",
+            isolation_marker,
         ]
-        try:
-            proc = subprocess.Popen(
-                argv,
-                stdout=log_handle,
-                stderr=subprocess.STDOUT,
-                start_new_session=True,
-                close_fds=True,
-                env=os.environ.copy(),
-            )
-        except OSError as exc:
-            log_handle.close()
+        launch = run(
+            [
+                DEVIN_ISOLATE,
+                "start",
+                "--task",
+                task_id,
+                "--worker",
+                worker,
+                "--branch",
+                branch,
+                "--worktree",
+                str(worktree),
+                "--",
+                *argv,
+            ],
+            timeout=int(router.get("launch_timeout_seconds", 120) or 120),
+        )
+        if launch.returncode:
+            detail = ((launch.stderr or "") + "\n" + (launch.stdout or "")).strip()
             conn.execute(
                 """update swarm_jobs
                       set state='FAILED',last_error=?,updated_at=datetime('now'),
                           finished_at=datetime('now')
                     where id=?""",
-                (f"Devin harness launch failed: {exc}", job_id),
+                (("Devin isolation launch failed: " + detail)[-1800:], job_id),
             )
             conn.commit()
             release_worker(
                 worker,
                 task_id,
-                f"Devin harness launch failed; task returned READY. {exc}",
+                "Devin isolated launch failed; task returned READY. " + detail[-1400:],
             )
             continue
-        log_handle.close()
+
+        try:
+            launch_payload = json.loads(launch.stdout or "{}")
+        except json.JSONDecodeError:
+            launch_payload = {}
+        launched_unit = str(launch_payload.get("unit") or "").strip()
+        state_path = str(launch_payload.get("state") or "").strip()
+        if launched_unit != unit:
+            if launched_unit:
+                run([DEVIN_ISOLATE, "stop", "--unit", launched_unit], timeout=30)
+            conn.execute(
+                """update swarm_jobs
+                      set state='FAILED',last_error=?,updated_at=datetime('now'),
+                          finished_at=datetime('now')
+                    where id=?""",
+                ("Devin isolation launcher returned an unexpected unit", job_id),
+            )
+            conn.commit()
+            release_worker(
+                worker,
+                task_id,
+                "Devin isolation unit mismatch; task returned READY.",
+            )
+            continue
+
+        main_pid = 0
+        status_payload = {}
+        for _ in range(10):
+            status = run([DEVIN_ISOLATE, "status", "--unit", unit], timeout=20)
+            try:
+                status_payload = json.loads(status.stdout or "{}")
+            except json.JSONDecodeError:
+                status_payload = {}
+            properties = str(status_payload.get("properties") or "")
+            match = re.search(r"(?m)^MainPID=(\d+)$", properties)
+            if match and int(match.group(1)) > 0:
+                main_pid = int(match.group(1))
+                break
+            time.sleep(0.1)
+
+        if main_pid <= 0:
+            run([DEVIN_ISOLATE, "stop", "--unit", unit], timeout=30)
+            conn.execute(
+                """update swarm_jobs
+                      set state='FAILED',last_error=?,updated_at=datetime('now'),
+                          finished_at=datetime('now')
+                    where id=?""",
+                ("Devin isolated unit did not expose a live MainPID", job_id),
+            )
+            conn.commit()
+            release_worker(
+                worker,
+                task_id,
+                "Devin isolated unit had no live MainPID; stopped and returned READY.",
+            )
+            continue
+
+        state_payload = load_json(Path(state_path)) if state_path else {}
+        log_path = str(state_payload.get("log_file") or "")
         mark_job_running(
             conn,
             job_id,
-            proc.pid,
-            session_id=f"harness-pid:{proc.pid}",
+            main_pid,
+            session_id=f"systemd:{unit}",
         )
         result["jobs"].append(
             {
                 "task_id": task_id,
                 "worker_id": worker,
                 "job_id": job_id,
-                "pid": proc.pid,
+                "pid": main_pid,
+                "session_id": f"systemd:{unit}",
+                "unit": unit,
                 "branch": branch,
                 "worktree": str(worktree),
                 "model": model,
-                "log": str(log_path),
+                "log": log_path,
+                "state": state_path,
                 "isolation_certificate": str(DEVIN_CERTIFICATE),
             }
         )

@@ -477,10 +477,13 @@ class SwarmTests(unittest.TestCase):
             '"preflight"',
             '"unattended"',
             '"--sandbox"',
-            '"systemd/logres-devin-worker@.service"',
+            '"start"',
+            'systemd-run/system:',
         ):
             self.assertIn(needle, script)
         self.assertNotIn('"--allow-paid"', script)
+        self.assertIn('DEVIN_ISOLATE,\n                "start"', script)
+        self.assertIn('session_id=f"systemd:{unit}"', script)
 
     def test_devin_worker_config_is_conservative(self):
         cfg = json.loads(
