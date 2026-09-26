@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "domains": {
+    "game_prefixes": ["game/", "client/", "src/", "assets/", "unity/", "godot/"],
+    "infra_prefixes": ["ops/", "tools/", "infra/", ".github/", ".devin/", "bin/", "lib/", "config/", "tests/"]
+  },
+  "windows_seconds": {"hour": 3600, "day": 86400},
+  "worker_capacity": 4,
+  "verifier_saturation_backlog": 8,
+  "baseline_tolerance_ratio": 0.05,
+  "devin_models_timeout_sec": 10,
+  "repo_path_env": "LOGRES_ROOT"
+}

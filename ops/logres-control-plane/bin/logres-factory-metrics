@@ -1,0 +1,66 @@
+#!/usr/bin/env python3
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import sqlite3
+import sys
+from pathlib import Path
+
+ROOT = Path(os.environ.get("LOGRES_ROOT", "/home/ubuntu/logres"))
+DB = os.environ.get("LOGRES_CONTROL_DB", str(ROOT / "control" / "control.sqlite"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "lib"))
+
+from logres_factory_metrics import (
+    compare_baseline,
+    collect_metrics,
+    load_config,
+    metric_definitions,
+    timeseries_lines,
+)
+
+
+def main() -> int:
+    p = argparse.ArgumentParser(prog="logres-factory-metrics")
+    p.add_argument("--timeseries", action="store_true",
+                   help="emit one JSON object per metric per line (appendable)")
+    p.add_argument("--definitions", action="store_true",
+                   help="emit metric definitions and exit")
+    p.add_argument("--baseline", metavar="PATH",
+                   help="compare snapshot to a prior snapshot JSON file")
+    p.add_argument("--config", metavar="PATH")
+    args = p.parse_args()
+
+    cfg = load_config(Path(args.config) if args.config else None)
+
+    if args.definitions:
+        print(json.dumps(metric_definitions(cfg), indent=2, sort_keys=True))
+        return 0
+
+    conn = sqlite3.connect(DB, timeout=30)
+    conn.row_factory = sqlite3.Row
+    conn.execute("pragma busy_timeout=30000")
+    try:
+        snap = collect_metrics(conn, cfg)
+    finally:
+        conn.close()
+
+    if args.baseline:
+        try:
+            base = json.loads(Path(args.baseline).read_text())
+        except (OSError, json.JSONDecodeError):
+            base = None
+        snap["change_detection"] = compare_baseline(
+            snap, base, float(cfg.get("baseline_tolerance_ratio") or 0.05))
+
+    if args.timeseries:
+        for line in timeseries_lines(snap):
+            print(line)
+    else:
+        print(json.dumps(snap, indent=2, sort_keys=True))
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
