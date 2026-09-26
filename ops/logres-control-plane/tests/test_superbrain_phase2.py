@@ -365,3 +365,78 @@ def test_stale_claim_recovery_uses_epoch_comparison():
     assert wake["claimed_by"] is None
     assert wake["claimed_at"] is None
     assert wake["last_error"] == "stale dispatch claim reclaimed"
+
+
+
+def test_terminal_failure_does_not_feedback_to_wildcard():
+    conn = db()
+    register_session(
+        conn,
+        session_key="devin:wildcard-failure",
+        member_id="devin-wildcard-failure",
+        provider="devin-mcp",
+        external_session_id="wildcard-failure",
+        state="SUSPENDED",
+        cost_class="paid",
+    )
+    subscribe(
+        conn,
+        subscriber="devin-wildcard-failure",
+        event_type="*",
+        priority_ceiling=9,
+        wake_method="devin_mcp",
+    )
+    post_event(conn, event_type="BLOCKER", priority=1, task_id="T-WILD")
+
+    def fail(_payload):
+        raise RuntimeError("dead session")
+
+    result = dispatch_wakes(
+        conn,
+        dispatchers={"devin_mcp": fail},
+        now_epoch=time.time(),
+        max_attempts=1,
+        paid_priority_ceiling=1,
+    )
+    assert result["results"][0]["state"] == "FAILED"
+    rows = conn.execute(
+        "select id,state,event_id from brain_wake_queue order by id"
+    ).fetchall()
+    assert len(rows) == 1
+    assert rows[0]["state"] == "FAILED"
+    assert conn.execute(
+        "select count(*) from brain_events where event_type='WAKE_FAILED'"
+    ).fetchone()[0] == 1
+
+
+def test_directed_event_only_wakes_intended_subscriber():
+    conn = db()
+    subscribe(conn, subscriber="worker-a", event_type="*", priority_ceiling=9)
+    subscribe(conn, subscriber="worker-b", event_type="*", priority_ceiling=9)
+    now = time.time()
+    conn.execute(
+        """insert into brain_events(
+             ts_epoch,ts,sender,recipient,event_type,priority,task_id,subject,body
+           ) values(?,?,?,?,?,?,?,?,?)""",
+        (now, "now", "lead", "worker-a", "HANDOFF", 2, "T-DIR", "directed", ""),
+    )
+    conn.commit()
+    rows = conn.execute(
+        "select subscriber,state from brain_wake_queue order by id"
+    ).fetchall()
+    assert [tuple(r) for r in rows] == [("worker-a", "PENDING")]
+
+
+def test_maintenance_events_never_enqueue_wakes():
+    conn = db()
+    subscribe(conn, subscriber="worker-all", event_type="*", priority_ceiling=9)
+    for event_type in ("WAKE_FAILED", "RECONCILIATION"):
+        now = time.time()
+        conn.execute(
+            """insert into brain_events(
+                 ts_epoch,ts,sender,recipient,event_type,priority,subject
+               ) values(?,?,?,?,?,?,?)""",
+            (now, "now", "superbrain", "ALL", event_type, 1, event_type),
+        )
+    conn.commit()
+    assert conn.execute("select count(*) from brain_wake_queue").fetchone()[0] == 0
