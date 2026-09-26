@@ -24,6 +24,7 @@ class SwarmCapacity:
     active_leases: int
     active_research: int
     active_patch: int
+    active_devin: int
     active_copilot: int
     free_slots: int
 
@@ -37,6 +38,10 @@ def ensure_schema(conn: sqlite3.Connection) -> None:
              engine text not null,
              state text not null,
              pid integer,
+             branch text,
+             model text,
+             session_id text,
+             verification text,
              artifact_path text,
              last_error text,
              started_at text not null default (datetime('now')),
@@ -44,6 +49,18 @@ def ensure_schema(conn: sqlite3.Connection) -> None:
              finished_at text
            )"""
     )
+    existing = {
+        str(row[1])
+        for row in conn.execute("pragma table_info(swarm_jobs)").fetchall()
+    }
+    for name, ddl in (
+        ("branch", "text"),
+        ("model", "text"),
+        ("session_id", "text"),
+        ("verification", "text"),
+    ):
+        if name not in existing:
+            conn.execute(f"alter table swarm_jobs add column {name} {ddl}")
     conn.execute(
         "create index if not exists idx_swarm_jobs_state on swarm_jobs(state)"
     )
@@ -152,6 +169,7 @@ def swarm_capacity(conn: sqlite3.Connection, config: dict) -> SwarmCapacity:
     )
     active_research = active_swarm_engine_count(conn, "research")
     active_patch = active_swarm_engine_count(conn, "openai-patch")
+    active_devin = active_swarm_engine_count(conn, "devin")
     active_copilot = active_copilot_job_count(conn)
     # Research and OpenAI patch workers both hold Brain leases, so they are
     # already represented in active_leases. Copilot jobs are external and do
@@ -162,6 +180,7 @@ def swarm_capacity(conn: sqlite3.Connection, config: dict) -> SwarmCapacity:
         active_leases=active_leases,
         active_research=active_research,
         active_patch=active_patch,
+        active_devin=active_devin,
         active_copilot=active_copilot,
         free_slots=free_slots,
     )
@@ -349,6 +368,27 @@ def available_patch_worker_ids(
     return [worker for worker in patch_worker_ids(config) if worker not in busy]
 
 
+def devin_worker_ids(config: dict) -> list[str]:
+    router = config.get("router", {}) if isinstance(config, dict) else {}
+    count = int(router.get("workers", 2) or 2)
+    return [f"auto-devin-{i}" for i in range(1, max(1, count) + 1)]
+
+
+def available_devin_worker_ids(
+    conn: sqlite3.Connection,
+    config: dict,
+) -> list[str]:
+    now = time.time()
+    busy = {
+        str(row[0])
+        for row in conn.execute(
+            "select chat_id from brain_task_leases where lease_until_epoch>?",
+            (now,),
+        )
+    }
+    return [worker for worker in devin_worker_ids(config) if worker not in busy]
+
+
 def register_worker(root: Path, worker_id: str) -> None:
     subprocess.run(
         [str(root / "bin/logres-brain"), "join", worker_id, "--name", worker_id],
@@ -384,22 +424,35 @@ def create_job(
     task_id: str,
     worker_id: str,
     engine: str,
+    *,
+    branch: str | None = None,
+    model: str | None = None,
+    verification: str | None = None,
 ) -> int:
     ensure_schema(conn)
     cur = conn.execute(
-        """insert into swarm_jobs(task_id,worker_id,engine,state)
-           values(?,?,?,'STARTING')""",
-        (task_id, worker_id, engine),
+        """insert into swarm_jobs(
+             task_id,worker_id,engine,state,branch,model,verification
+           ) values(?,?,?,'STARTING',?,?,?)""",
+        (task_id, worker_id, engine, branch, model, verification),
     )
     conn.commit()
     return int(cur.lastrowid)
 
 
-def mark_job_running(conn: sqlite3.Connection, job_id: int, pid: int) -> None:
+def mark_job_running(
+    conn: sqlite3.Connection,
+    job_id: int,
+    pid: int,
+    *,
+    session_id: str | None = None,
+) -> None:
     conn.execute(
-        """update swarm_jobs set state='RUNNING',pid=?,updated_at=datetime('now')
-           where id=?""",
-        (pid, job_id),
+        """update swarm_jobs
+              set state='RUNNING',pid=?,session_id=coalesce(?,session_id),
+                  updated_at=datetime('now')
+            where id=?""",
+        (pid, session_id, job_id),
     )
     conn.commit()
 
@@ -419,6 +472,7 @@ def status_dict(conn: sqlite3.Connection, config: dict) -> dict:
             "active_leases": cap.active_leases,
             "active_research": cap.active_research,
             "active_patch": cap.active_patch,
+            "active_devin": cap.active_devin,
             "active_copilot": cap.active_copilot,
             "free_slots": cap.free_slots,
         },
