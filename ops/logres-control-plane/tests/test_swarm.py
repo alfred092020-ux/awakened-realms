@@ -702,5 +702,163 @@ class SwarmTests(unittest.TestCase):
         self.assertIn('"/usr/bin/timeout"', script)
         self.assertIn('"openai-patch"', script)
 
+    def test_structural_preflight_fingerprint_ignores_volatile_worker_details(self):
+        first = {
+            "unit": "logres-devin-worker-one.service",
+            "netns": "volatile-a",
+            "blockers": ["network_netns", "network_policy"],
+            "checks": [
+                {"name": "network_netns", "required": True, "ok": False, "detail": "missing /run/netns/a"},
+                {"name": "network_policy", "required": True, "ok": False, "detail": "missing table a"},
+                {"name": "sandbox_exec_probe", "required": True, "ok": True, "detail": "ok"},
+            ],
+        }
+        second = {
+            "unit": "logres-devin-worker-two.service",
+            "netns": "volatile-b",
+            "blockers": ["network_policy", "network_netns"],
+            "checks": [
+                {"name": "network_policy", "required": True, "ok": False, "detail": "missing table b"},
+                {"name": "network_netns", "required": True, "ok": False, "detail": "missing /run/netns/b"},
+                {"name": "sandbox_exec_probe", "required": True, "ok": True, "detail": "ok"},
+            ],
+        }
+
+        a = logres_swarm.structural_preflight_fingerprint(
+            first, "isolation_preflight_failed"
+        )
+        b = logres_swarm.structural_preflight_fingerprint(
+            second, "isolation_preflight_failed"
+        )
+
+        self.assertEqual(a["fingerprint"], b["fingerprint"])
+        self.assertEqual(
+            ["network_netns", "network_policy"], a["required_failures"]
+        )
+
+    def test_repeated_structural_preflight_failure_creates_one_manual_repair_dependency(self):
+        seed_task(self.conn, task_id="NORMAL-A", status="READY", work_type="implementation")
+        seed_task(self.conn, task_id="NORMAL-B", status="READY", work_type="implementation")
+        report = {
+            "production_ready": False,
+            "blockers": ["network_netns", "network_policy"],
+            "checks": [
+                {"name": "network_netns", "required": True, "ok": False},
+                {"name": "network_policy", "required": True, "ok": False},
+            ],
+        }
+
+        first = logres_swarm.record_structural_preflight_failure(
+            self.conn,
+            "NORMAL-A",
+            report,
+            "isolation_preflight_failed",
+            threshold=2,
+        )
+        self.assertIsNone(first["repair_task_id"])
+        self.assertEqual(
+            "READY",
+            self.conn.execute("select status from tasks where id='NORMAL-A'").fetchone()[0],
+        )
+
+        second = logres_swarm.record_structural_preflight_failure(
+            self.conn,
+            "NORMAL-B",
+            report,
+            "isolation_preflight_failed",
+            threshold=2,
+        )
+        repair = second["repair_task_id"]
+        self.assertTrue(repair)
+        self.assertTrue(second["created"])
+        self.assertEqual(
+            1,
+            self.conn.execute(
+                "select count(*) from tasks where id=?", (repair,)
+            ).fetchone()[0],
+        )
+        meta = self.conn.execute(
+            "select work_type,concurrency_key from task_metadata where task_id=?",
+            (repair,),
+        ).fetchone()
+        self.assertEqual("manual", meta["work_type"])
+        self.assertTrue(meta["concurrency_key"].startswith("devin-isolation-repair:"))
+        for task_id in ("NORMAL-A", "NORMAL-B"):
+            task = self.conn.execute(
+                "select status,note from tasks where id=?", (task_id,)
+            ).fetchone()
+            self.assertEqual("BLOCKED_DEP", task["status"])
+            self.assertIn(repair, task["note"])
+            dep = self.conn.execute(
+                "select kind from task_dependencies where task_id=? and depends_on=?",
+                (task_id, repair),
+            ).fetchone()
+            self.assertEqual("hard", dep["kind"])
+
+        third = logres_swarm.record_structural_preflight_failure(
+            self.conn,
+            "NORMAL-A",
+            report,
+            "isolation_preflight_failed",
+            threshold=2,
+        )
+        self.assertEqual(repair, third["repair_task_id"])
+        self.assertFalse(third["created"])
+        self.assertEqual(
+            1,
+            self.conn.execute(
+                "select count(*) from tasks where id like 'REPAIR-DEVIN-ISOLATION-%'"
+            ).fetchone()[0],
+        )
+
+
+    def test_swarm_preflight_failure_escalates_only_after_worker_release(self):
+        script = (CONTROL_ROOT / "bin" / "logres-swarm").read_text()
+        self.assertIn("record_structural_preflight_failure", script)
+        marker = 'if not preflight_ok:'
+        start = script.index(marker)
+        end = script.index('unit = str(preflight_report.get("unit")', start)
+        block = script[start:end]
+        self.assertIn("release_worker(", block)
+        self.assertIn("record_structural_preflight_failure(", block)
+        self.assertLess(
+            block.index("release_worker("),
+            block.index("record_structural_preflight_failure("),
+        )
+        self.assertIn('swarm-structural-repair:', block)
+
+
+    def test_open_structural_repair_blocks_devin_until_repair_is_terminal(self):
+        seed_task(self.conn, task_id="NORMAL-C", status="READY", work_type="implementation")
+        report = {
+            "blockers": ["network_netns", "network_policy"],
+            "checks": [
+                {"name": "network_netns", "required": True, "ok": False},
+                {"name": "network_policy", "required": True, "ok": False},
+            ],
+        }
+        routed = logres_swarm.record_structural_preflight_failure(
+            self.conn, "NORMAL-C", report, "isolation_preflight_failed", threshold=1
+        )
+        repair = routed["repair_task_id"]
+        active = logres_swarm.active_structural_repair(self.conn)
+        self.assertEqual(repair, active["repair_task_id"])
+        self.conn.execute("update tasks set status='DONE' where id=?", (repair,))
+        self.conn.commit()
+        self.assertIsNone(logres_swarm.active_structural_repair(self.conn))
+
+    def test_swarm_dispatch_checks_structural_repair_gate_before_task_selection(self):
+        script = (CONTROL_ROOT / "bin" / "logres-swarm").read_text()
+        start = script.index("def dispatch_devin(")
+        end = script.index("def dispatch_patch(", start)
+        block = script[start:end]
+        self.assertIn("active_structural_repair(conn)", block)
+        self.assertLess(
+            block.index("active_structural_repair(conn)"),
+            block.index("select_implementation_tasks("),
+        )
+        self.assertIn('"structural_repair_pending"', block)
+
+
 if __name__ == "__main__":
     unittest.main()

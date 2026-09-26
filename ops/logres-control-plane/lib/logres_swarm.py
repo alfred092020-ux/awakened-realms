@@ -193,8 +193,289 @@ def ensure_schema(conn: sqlite3.Connection) -> None:
         "create unique index if not exists idx_swarm_jobs_live_task "
         "on swarm_jobs(task_id) where state in ('STARTING','RUNNING')"
     )
+    conn.execute(
+        """create table if not exists swarm_structural_failures(
+             fingerprint text primary key,
+             blocker text not null,
+             signature_json text not null,
+             observation_count integer not null default 0,
+             generation integer not null default 1,
+             repair_task_id text,
+             first_seen_at text not null default (datetime('now')),
+             last_seen_at text not null default (datetime('now'))
+           )"""
+    )
+    conn.execute(
+        """create table if not exists swarm_structural_failure_tasks(
+             fingerprint text not null,
+             generation integer not null default 1,
+             task_id text not null,
+             observation_count integer not null default 0,
+             first_seen_at text not null default (datetime('now')),
+             last_seen_at text not null default (datetime('now')),
+             primary key(fingerprint,generation,task_id)
+           )"""
+    )
     conn.commit()
 
+
+
+def structural_preflight_fingerprint(
+    preflight_report: dict, blocker: str | None
+) -> dict:
+    """Return a stable infrastructure signature with volatile worker details removed."""
+    report = preflight_report if isinstance(preflight_report, dict) else {}
+    checks = report.get("checks")
+    required_failures = sorted(
+        {
+            str(item.get("name") or "").strip()
+            for item in checks or []
+            if isinstance(item, dict)
+            and bool(item.get("required"))
+            and not bool(item.get("ok"))
+            and str(item.get("name") or "").strip()
+        }
+    )
+    blockers = sorted(
+        {
+            str(item).strip()
+            for item in (report.get("blockers") or [])
+            if str(item).strip()
+        }
+    )
+    if not required_failures:
+        required_failures = ["preflight_report_malformed_or_inconsistent"]
+    signature = {
+        "blocker": str(blocker or "isolation_preflight_failed"),
+        "required_failures": required_failures,
+        "blockers": blockers,
+    }
+    encoded = json.dumps(signature, sort_keys=True, separators=(",", ":"))
+    return {
+        **signature,
+        "fingerprint": hashlib.sha256(encoded.encode("utf-8")).hexdigest(),
+        "signature_json": encoded,
+    }
+
+
+def _table_exists(conn: sqlite3.Connection, name: str) -> bool:
+    return conn.execute(
+        "select 1 from sqlite_master where type='table' and name=?", (name,)
+    ).fetchone() is not None
+
+
+def record_structural_preflight_failure(
+    conn: sqlite3.Connection,
+    task_id: str,
+    preflight_report: dict,
+    blocker: str | None,
+    *,
+    threshold: int = 2,
+) -> dict:
+    """Deduplicate repeated structural failures into one bounded repair dependency."""
+    ensure_schema(conn)
+    signature = structural_preflight_fingerprint(preflight_report, blocker)
+    fingerprint = signature["fingerprint"]
+    threshold = max(1, int(threshold))
+    now = time.strftime("%Y-%m-%dT%H:%M:%S+00:00", time.gmtime())
+    row = conn.execute(
+        "select * from swarm_structural_failures where fingerprint=?",
+        (fingerprint,),
+    ).fetchone()
+    generation = int(row["generation"] if row is not None else 1)
+    existing_repair = str(row["repair_task_id"] or "") if row is not None else ""
+    if existing_repair:
+        repair_row = conn.execute(
+            "select status from tasks where id=?", (existing_repair,)
+        ).fetchone()
+        if repair_row and str(repair_row[0]) in {
+            "DONE", "RESOLVED", "SUPERSEDED", "CANCELLED"
+        }:
+            generation += 1
+            existing_repair = ""
+            conn.execute(
+                """update swarm_structural_failures
+                      set observation_count=0,generation=?,repair_task_id=null,
+                          first_seen_at=?,last_seen_at=?
+                    where fingerprint=?""",
+                (generation, now, now, fingerprint),
+            )
+            row = conn.execute(
+                "select * from swarm_structural_failures where fingerprint=?",
+                (fingerprint,),
+            ).fetchone()
+
+    if row is None:
+        conn.execute(
+            """insert into swarm_structural_failures(
+                 fingerprint,blocker,signature_json,observation_count,generation,
+                 repair_task_id,first_seen_at,last_seen_at
+               ) values(?,?,?,1,1,null,?,?)""",
+            (
+                fingerprint,
+                signature["blocker"],
+                signature["signature_json"],
+                now,
+                now,
+            ),
+        )
+        count = 1
+        generation = 1
+    else:
+        conn.execute(
+            """update swarm_structural_failures
+                  set observation_count=observation_count+1,
+                      blocker=?,signature_json=?,last_seen_at=?
+                where fingerprint=?""",
+            (
+                signature["blocker"],
+                signature["signature_json"],
+                now,
+                fingerprint,
+            ),
+        )
+        count = int(
+            conn.execute(
+                "select observation_count from swarm_structural_failures where fingerprint=?",
+                (fingerprint,),
+            ).fetchone()[0]
+        )
+
+    conn.execute(
+        """insert into swarm_structural_failure_tasks(
+             fingerprint,generation,task_id,observation_count,first_seen_at,last_seen_at
+           ) values(?,?,?,1,?,?)
+           on conflict(fingerprint,generation,task_id) do update set
+             observation_count=observation_count+1,last_seen_at=excluded.last_seen_at""",
+        (fingerprint, generation, task_id, now, now),
+    )
+
+    repair_task_id = existing_repair or None
+    created = False
+    if count >= threshold:
+        if not repair_task_id:
+            suffix = fingerprint[:8].upper()
+            repair_task_id = f"REPAIR-DEVIN-ISOLATION-{suffix}"
+            if generation > 1:
+                repair_task_id += f"-G{generation}"
+            existing = conn.execute(
+                "select 1 from tasks where id=?", (repair_task_id,)
+            ).fetchone()
+            if not existing:
+                title = (
+                    "Repair repeated Devin isolation preflight failure: "
+                    + ", ".join(signature["required_failures"])
+                )[:240]
+                conn.execute(
+                    """insert into tasks(
+                         id,priority,lane,title,status,branch,owner,note,updated_at
+                       ) values(?,0,'control-plane',?,'READY',null,null,?,?)""",
+                    (
+                        repair_task_id,
+                        title,
+                        "Auto-escalated after repeated identical structural Devin "
+                        "preflight failures. fingerprint=" + fingerprint,
+                        now,
+                    ),
+                )
+                if _table_exists(conn, "task_metadata"):
+                    conn.execute(
+                        """insert or ignore into task_metadata(
+                             task_id,milestone,work_type,concurrency_key,
+                             expected_minutes,evidence_policy,created_at,updated_at
+                           ) values(?, 'autoflow','manual',?,45,?,?,?)""",
+                        (
+                            repair_task_id,
+                            "devin-isolation-repair:" + fingerprint,
+                            "Infrastructure repair. Preserve governed privilege and "
+                            "prove one live canary before unblocking dependents.",
+                            now,
+                            now,
+                        ),
+                    )
+                if _table_exists(conn, "task_acceptance"):
+                    for ordinal, criterion in enumerate(
+                        (
+                            "Identify and repair the structural isolation failure without weakening governed privilege.",
+                            "Prove exact lease-bound provision/start and bounded AUTO cleanup.",
+                            "Pass focused isolation/swarm tests and one live Devin canary.",
+                        ),
+                        1,
+                    ):
+                        conn.execute(
+                            "insert into task_acceptance(task_id,ordinal,criterion) values(?,?,?)",
+                            (repair_task_id, ordinal, criterion),
+                        )
+                created = True
+            conn.execute(
+                "update swarm_structural_failures set repair_task_id=? where fingerprint=?",
+                (repair_task_id, fingerprint),
+            )
+
+        affected = [
+            str(r[0])
+            for r in conn.execute(
+                """select task_id from swarm_structural_failure_tasks
+                     where fingerprint=? and generation=? order by task_id""",
+                (fingerprint, generation),
+            )
+        ]
+        for affected_task in affected:
+            if affected_task == repair_task_id:
+                continue
+            if _table_exists(conn, "task_dependencies"):
+                conn.execute(
+                    """insert or ignore into task_dependencies(
+                         task_id,depends_on,kind,rationale
+                       ) values(?,?,'hard',?)""",
+                    (
+                        affected_task,
+                        repair_task_id,
+                        "Repeated structural Devin preflight failure " + fingerprint,
+                    ),
+                )
+            conn.execute(
+                """update tasks
+                      set status='BLOCKED_DEP',note=?,updated_at=?
+                    where id=? and status in ('READY','ACTIVE','BLOCKED_DEP')""",
+                (
+                    f"Blocked by structural repair {repair_task_id} "
+                    f"(fingerprint={fingerprint}).",
+                    now,
+                    affected_task,
+                ),
+            )
+
+    conn.commit()
+    return {
+        **signature,
+        "observation_count": count,
+        "generation": generation,
+        "repair_task_id": repair_task_id,
+        "created": created,
+    }
+
+
+def active_structural_repair(conn: sqlite3.Connection) -> dict | None:
+    """Return one open structural repair that globally gates fresh Devin dispatch."""
+    ensure_schema(conn)
+    row = conn.execute(
+        """select f.fingerprint,f.generation,f.repair_task_id,t.status
+             from swarm_structural_failures f
+             join tasks t on t.id=f.repair_task_id
+            where f.repair_task_id is not null
+              and t.status not in ('DONE','RESOLVED','SUPERSEDED','CANCELLED')
+            order by f.last_seen_at desc,f.fingerprint
+            limit 1"""
+    ).fetchone()
+    if not row:
+        return None
+    return {
+        "fingerprint": str(row["fingerprint"]),
+        "generation": int(row["generation"]),
+        "repair_task_id": str(row["repair_task_id"]),
+        "status": str(row["status"]),
+    }
 
 def pid_alive(pid: int | None) -> bool:
     if not pid or pid <= 0:
