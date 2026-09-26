@@ -1,3 +1,4 @@
+import json
 import os
 import sqlite3
 import sys
@@ -15,11 +16,14 @@ from fixtures import make_test_db, seed_task
 from logres_route_store import ensure_route_schema
 from logres_swarm import (
     ACTIVE_COPILOT_STATES,
+    available_devin_worker_ids,
     classify_engine,
     create_job,
+    devin_worker_ids,
     ensure_schema,
     prior_failures,
     ready_tasks,
+    mark_job_running,
     reconcile_jobs,
     select_implementation_tasks,
     select_research_tasks,
@@ -367,6 +371,131 @@ class SwarmTests(unittest.TestCase):
             1,
             prior_failures(self.conn, "I1", engine="openai-patch"),
         )
+
+    def test_devin_capacity_is_informational_not_double_counted(self):
+        now = time.time()
+        seed_task(
+            self.conn,
+            task_id="D1",
+            status="ACTIVE",
+            work_type="implementation",
+        )
+        self.conn.execute(
+            """insert into brain_task_leases(
+                 task_id,chat_id,branch,lease_until_epoch,acquired_at,
+                 renewed_at,progress,note
+               ) values(?,?,?,?,datetime('now'),datetime('now'),0,'')""",
+            ("D1", "auto-devin-1", "worker/auto-devin-1-d1", now + 3600),
+        )
+        job_id = create_job(
+            self.conn,
+            "D1",
+            "auto-devin-1",
+            "devin",
+            branch="worker/auto-devin-1-d1",
+            model="swe-2-max",
+            verification="devin-agent-artifact",
+        )
+        mark_job_running(
+            self.conn,
+            job_id,
+            os.getpid(),
+            session_id="harness-pid:test",
+        )
+
+        cap = swarm_capacity(self.conn, {"swarm": {"max_workers": 6}})
+
+        self.assertEqual(1, cap.active_leases)
+        self.assertEqual(1, cap.active_devin)
+        self.assertEqual(5, cap.free_slots)
+
+    def test_devin_worker_pool_honors_config_and_live_leases(self):
+        cfg = {"router": {"workers": 3}}
+        self.assertEqual(
+            ["auto-devin-1", "auto-devin-2", "auto-devin-3"],
+            devin_worker_ids(cfg),
+        )
+        now = time.time()
+        seed_task(
+            self.conn,
+            task_id="D-BUSY",
+            status="ACTIVE",
+            work_type="implementation",
+        )
+        self.conn.execute(
+            """insert into brain_task_leases(
+                 task_id,chat_id,branch,lease_until_epoch,acquired_at,
+                 renewed_at,progress,note
+               ) values(?,?,?,?,datetime('now'),datetime('now'),0,'')""",
+            ("D-BUSY", "auto-devin-2", "worker/d-busy", now + 3600),
+        )
+        self.conn.commit()
+
+        self.assertEqual(
+            ["auto-devin-1", "auto-devin-3"],
+            available_devin_worker_ids(self.conn, cfg),
+        )
+
+    def test_devin_job_persists_branch_model_session_and_verification(self):
+        job_id = create_job(
+            self.conn,
+            "D1",
+            "auto-devin-1",
+            "devin",
+            branch="worker/d1",
+            model="swe-2-max",
+            verification="devin-agent-artifact",
+        )
+        mark_job_running(
+            self.conn,
+            job_id,
+            os.getpid(),
+            session_id="harness-pid:123",
+        )
+        row = self.conn.execute(
+            """select engine,branch,model,session_id,verification,state,pid
+                 from swarm_jobs where id=?""",
+            (job_id,),
+        ).fetchone()
+        self.assertEqual("devin", row["engine"])
+        self.assertEqual("worker/d1", row["branch"])
+        self.assertEqual("swe-2-max", row["model"])
+        self.assertEqual("harness-pid:123", row["session_id"])
+        self.assertEqual("devin-agent-artifact", row["verification"])
+        self.assertEqual("RUNNING", row["state"])
+        self.assertEqual(os.getpid(), row["pid"])
+
+    def test_swarm_script_has_fail_closed_devin_lane(self):
+        script = (CONTROL_ROOT / "bin" / "logres-swarm").read_text()
+        for needle in (
+            'DEVIN_AGENT = str(ROOT / "bin/logres-devin-agent")',
+            'DEVIN_ISOLATE = str(ROOT / "bin/logres-devin-isolate")',
+            "production-certified.json",
+            '"isolation_not_certified"',
+            "devin_models_report",
+            "select_model(report, requested_model, allow_paid=False)",
+            '"preflight"',
+            '"unattended"',
+            '"--sandbox"',
+            '"systemd/logres-devin-worker@.service"',
+        ):
+            self.assertIn(needle, script)
+        self.assertNotIn('"--allow-paid"', script)
+
+    def test_devin_worker_config_is_conservative(self):
+        cfg = json.loads(
+            (CONTROL_ROOT / "config" / "devin_workers.json").read_text()
+        )
+        router = cfg["router"]
+        self.assertTrue(router["enabled"])
+        self.assertEqual(2, router["workers"])
+        self.assertEqual(2, router["max_active"])
+        self.assertEqual("swe-2-max", router["model"])
+        self.assertEqual("smart", router["permission_mode"])
+        self.assertEqual("unattended", router["execution_mode"])
+        self.assertTrue(router["sandbox"])
+        self.assertFalse(router["allow_paid"])
+        self.assertTrue(router["require_production_certificate"])
 
     def test_swarm_script_has_bounded_patch_lane(self):
         script = (CONTROL_ROOT / "bin" / "logres-swarm").read_text()

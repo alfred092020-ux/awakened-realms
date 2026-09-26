@@ -16,5 +16,19 @@
       "Write(**/.env*)"
     ],
     "version": "2026-09-25-v2"
+  },
+  "router": {
+    "allow_paid": false,
+    "devin_bin": "devin",
+    "dispatch_per_tick": 2,
+    "enabled": true,
+    "execution_mode": "unattended",
+    "max_active": 2,
+    "model": "swe-2-max",
+    "permission_mode": "smart",
+    "preflight_timeout_seconds": 120,
+    "require_production_certificate": true,
+    "sandbox": true,
+    "workers": 2
   }
 }
