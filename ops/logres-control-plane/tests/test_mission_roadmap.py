@@ -60,6 +60,32 @@ class MissionRoadmapTests(unittest.TestCase):
         ]
         self.assertEqual([], missing)
 
+    def test_persistent_reconstruction_mission_exposes_vertical_slice_critical_path(self):
+        mission = json.loads(MISSION_CONFIG.read_text())
+        self.assertEqual("LOGRES-RECONSTRUCTION", mission["mission_id"])
+
+        objectives = {item["id"]: item for item in mission["objectives"]}
+        self.assertEqual("LOGRES-RECONSTRUCTION", objectives["LOGRES_COMPLETE"]["parent_id"])
+        self.assertEqual("LOGRES-RECONSTRUCTION", objectives["VERTICAL_SLICE"]["parent_id"])
+
+        expected_slice = {
+            "SLICE_ENTRY",
+            "SLICE_FIELD",
+            "SLICE_NPC",
+            "SLICE_ENCOUNTER",
+            "SLICE_BATTLE",
+            "SLICE_REWARD",
+            "SLICE_CERTIFICATION",
+            "SLICE_HISTORICAL_TRUTH",
+        }
+        self.assertTrue(expected_slice.issubset(objectives))
+        self.assertTrue(all(objectives[item]["parent_id"] == "VERTICAL_SLICE" for item in expected_slice))
+
+        links = {(item["objective_id"], item.get("task_id"), item["gate_type"]) for item in mission["links"]}
+        self.assertIn(("SLICE_CERTIFICATION", "LOGRES-VERTICAL-SLICE-DEVICE-CERT-001", "required"), links)
+        self.assertIn(("SLICE_CERTIFICATION", "VISUAL-CHECKPOINT-JITTER-001", "required"), links)
+        self.assertIn(("SLICE_HISTORICAL_TRUTH", "G17-TUT-001", "supporting"), links)
+
     def test_existing_milestone_status_is_preserved(self):
         conn = make_db()
         conn.execute(
@@ -151,7 +177,15 @@ class MissionRoadmapTests(unittest.TestCase):
         }
 
         self.assertEqual(
-            set(links) | {"GAME_CLIENT", "GAMEPLAY", "LOGRES_COMPLETE"},
+            set(links)
+            | {
+                "GAME_CLIENT",
+                "GAMEPLAY",
+                "LOGRES_COMPLETE",
+                "SLICE_NPC",
+                "VERTICAL_SLICE",
+                "LOGRES-RECONSTRUCTION",
+            },
             changed,
         )
 
