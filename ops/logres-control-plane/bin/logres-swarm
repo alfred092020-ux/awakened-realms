@@ -20,6 +20,7 @@ from logres_optimizer import record_swarm_observations
 from logres_resource_broker import infer_task_workload, plan_workload
 from logres_swarm import (
     acquire_task,
+    active_structural_repair,
     available_devin_worker_ids,
     available_patch_worker_ids,
     available_worker_ids,
@@ -28,6 +29,7 @@ from logres_swarm import (
     isolation_certificate_gate,
     isolation_surface_hashes,
     privileged_network_preflight_ready,
+    record_structural_preflight_failure,
     load_config,
     mark_job_running,
     prior_failures,
@@ -434,6 +436,13 @@ def dispatch_devin(
         result["blocked"] = "unsupported_permission_mode"
         return result
 
+    structural_repair = active_structural_repair(conn)
+    if structural_repair:
+        result["blocked"] = "structural_repair_pending"
+        result["repair_task_id"] = structural_repair["repair_task_id"]
+        result["failure_fingerprint"] = structural_repair["fingerprint"]
+        return result
+
     certificate = load_json(DEVIN_CERTIFICATE)
     current_surface = isolation_surface_hashes(INTEGRATION_CHECKOUT, certificate)
     runtime_deployment = load_json(DEVIN_RUNTIME_DEPLOYMENT)
@@ -529,6 +538,30 @@ def dispatch_devin(
                 "Devin OS isolation preflight failed closed "
                 f"({preflight_blocker or 'unknown'}); task returned READY. " + detail[-1400:]
             )
+            structural = record_structural_preflight_failure(
+                conn,
+                task_id,
+                preflight_report,
+                preflight_blocker or "isolation_preflight_failed",
+            )
+            if structural.get("repair_task_id"):
+                repair_task_id = str(structural["repair_task_id"])
+                post_once(
+                    f"Swarm structural repair routed: {repair_task_id}",
+                    (
+                        "Repeated identical Devin isolation preflight failure "
+                        f"fingerprint={structural['fingerprint']} "
+                        f"checks={','.join(structural['required_failures'])}. "
+                        "Fresh Devin dispatch is gated until the repair is terminal."
+                    ),
+                    f"swarm-structural-repair:{structural['fingerprint']}:"
+                    f"{structural['generation']}",
+                    repair_task_id,
+                )
+                result["blocked"] = "structural_repair_pending"
+                result["repair_task_id"] = repair_task_id
+                result["failure_fingerprint"] = structural["fingerprint"]
+                break
             continue
         unit = str(preflight_report.get("unit") or "").strip()
 
