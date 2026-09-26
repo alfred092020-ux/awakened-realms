@@ -58,6 +58,7 @@ RESEARCH = str(ROOT / "bin/logres-research-agent")
 PATCH_AGENT = str(ROOT / "bin/logres-patch-agent")
 DEVIN_AGENT = str(ROOT / "bin/logres-devin-agent")
 DEVIN_ISOLATE = str(ROOT / "bin/logres-devin-isolate")
+NEXUS = str(ROOT / "bin/logres-nexus")
 DEVIN_WORKER_CONFIG = Path(
     os.environ.get(
         "LOGRES_DEVIN_WORKER_CONFIG",
@@ -112,6 +113,23 @@ def run(argv, *, timeout: int | None = None):
     )
 
 
+def nexus_tool(name: str, payload: dict, *, timeout: int = 60):
+    return run(
+        [NEXUS, "tool", name, json.dumps(payload, separators=(",", ":"))],
+        timeout=timeout,
+    )
+
+
+def cleanup_devin_isolation(worker: str, task_id: str, branch: str) -> dict:
+    identity = {"chatId": worker, "taskId": task_id, "branch": branch}
+    stop = nexus_tool("nexus_logres_devin_transient_stop", identity, timeout=30)
+    network = nexus_tool("nexus_logres_devin_network_teardown", identity, timeout=60)
+    return {
+        "service_stopped": stop.returncode == 0,
+        "network_torn_down": network.returncode == 0,
+    }
+
+
 def worktree_for_branch(branch: str) -> Path | None:
     if not branch:
         return None
@@ -142,11 +160,18 @@ def release_stale(conn: sqlite3.Connection, stale_ids: list[int]) -> list[dict]:
     released = []
     for job_id in stale_ids:
         row = conn.execute(
-            "select task_id,worker_id,engine from swarm_jobs where id=?",
+            "select task_id,worker_id,engine,branch,session_id from swarm_jobs where id=?",
             (job_id,),
         ).fetchone()
         if not row:
             continue
+        if str(row["engine"] or "") == "devin":
+            branch = str(row["branch"] or "").strip()
+            session_id = str(row["session_id"] or "").strip()
+            if branch and session_id.startswith("systemd:"):
+                cleanup_devin_isolation(
+                    str(row["worker_id"]), str(row["task_id"]), branch
+                )
         lease = conn.execute(
             "select 1 from brain_task_leases where task_id=? and chat_id=?",
             (row["task_id"], row["worker_id"]),
@@ -366,7 +391,7 @@ def dispatch_devin(
     result: dict = {"dispatched": 0, "jobs": []}
     if limit <= 0:
         return result
-    if not Path(DEVIN_AGENT).is_file() or not Path(DEVIN_ISOLATE).is_file():
+    if not Path(DEVIN_AGENT).is_file() or not Path(DEVIN_ISOLATE).is_file() or not Path(NEXUS).is_file():
         result["blocked"] = "devin_runtime_missing"
         return result
     if not DEVIN_WORKER_CONFIG.is_file():
@@ -380,6 +405,10 @@ def dispatch_devin(
         return result
     if bool(router.get("allow_paid", False)):
         result["blocked"] = "automatic_paid_devin_forbidden"
+        return result
+    permission_mode = str(router.get("permission_mode") or "smart")
+    if permission_mode != "smart":
+        result["blocked"] = "unsupported_permission_mode"
         return result
 
     certificate = load_json(DEVIN_CERTIFICATE)
@@ -431,29 +460,56 @@ def dispatch_devin(
             )
             continue
 
+        spec_argv = [
+            "--task", task_id,
+            "--worker", worker,
+            "--branch", branch,
+            "--worktree", str(worktree),
+        ]
+        prepared = run([DEVIN_ISOLATE, "prepare", *spec_argv], timeout=60)
+        if prepared.returncode:
+            detail = ((prepared.stderr or "") + "\n" + (prepared.stdout or "")).strip()
+            release_worker(
+                worker, task_id,
+                "Devin isolation prepare failed; task returned READY. " + detail[-1400:]
+            )
+            continue
+
+        identity = {"chatId": worker, "taskId": task_id, "branch": branch}
+        provision = nexus_tool(
+            "nexus_logres_devin_network_provision", identity, timeout=60
+        )
+        if provision.returncode:
+            cleanup_devin_isolation(worker, task_id, branch)
+            detail = ((provision.stderr or "") + "\n" + (provision.stdout or "")).strip()
+            release_worker(
+                worker, task_id,
+                "Devin network provision failed closed; task returned READY. " + detail[-1400:]
+            )
+            continue
+
         preflight = run(
-            [
-                DEVIN_ISOLATE,
-                "preflight",
-                "--task",
-                task_id,
-                "--worker",
-                worker,
-                "--branch",
-                branch,
-                "--worktree",
-                str(worktree),
-                "--json",
-            ],
+            [DEVIN_ISOLATE, "preflight", *spec_argv, "--json"],
             timeout=int(router.get("preflight_timeout_seconds", 120) or 120),
         )
-        if preflight.returncode:
+        try:
+            preflight_report = json.loads(preflight.stdout or "{}")
+        except json.JSONDecodeError:
+            preflight_report = {}
+        if preflight.returncode or not bool(preflight_report.get("production_ready", False)):
+            cleanup_devin_isolation(worker, task_id, branch)
             detail = ((preflight.stderr or "") + "\n" + (preflight.stdout or "")).strip()
             release_worker(
-                worker,
-                task_id,
-                "Devin OS isolation preflight failed closed; task returned READY. "
-                + detail[-1400:],
+                worker, task_id,
+                "Devin OS isolation preflight failed closed; task returned READY. " + detail[-1400:]
+            )
+            continue
+        unit = str(preflight_report.get("unit") or "").strip()
+        if not unit:
+            cleanup_devin_isolation(worker, task_id, branch)
+            release_worker(
+                worker, task_id,
+                "Devin OS isolation preflight omitted the systemd unit; task returned READY."
             )
             continue
 
@@ -468,6 +524,7 @@ def dispatch_devin(
                 verification="devin-agent-artifact",
             )
         except sqlite3.IntegrityError:
+            cleanup_devin_isolation(worker, task_id, branch)
             release_worker(
                 worker,
                 task_id,
@@ -475,148 +532,62 @@ def dispatch_devin(
             )
             continue
 
-        try:
-            preflight_report = json.loads(preflight.stdout or "{}")
-        except json.JSONDecodeError:
-            preflight_report = {}
-        unit = str(preflight_report.get("unit") or "").strip()
-        if not unit:
-            conn.execute(
-                """update swarm_jobs
-                      set state='FAILED',last_error=?,updated_at=datetime('now'),
-                          finished_at=datetime('now')
-                    where id=?""",
-                ("Devin isolation preflight did not report a unit", job_id),
-            )
-            conn.commit()
-            release_worker(
-                worker,
-                task_id,
-                "Devin OS isolation preflight omitted the systemd unit; task returned READY.",
-            )
-            continue
-        isolation_marker = f"systemd-run/system:{unit}"
-
-        argv = [
-            DEVIN_AGENT,
-            "--task",
-            task_id,
-            "--worker",
-            worker,
-            "--job-id",
-            str(job_id),
-            "--branch",
-            branch,
-            "--worktree",
-            str(worktree),
-            "--model",
-            model,
-            "--permission-mode",
-            str(router.get("permission_mode") or "smart"),
-            "--execution-mode",
-            "unattended",
-            "--sandbox",
-            "--isolation",
-            isolation_marker,
-        ]
-        launch = run(
-            [
-                DEVIN_ISOLATE,
-                "start",
-                "--task",
-                task_id,
-                "--worker",
-                worker,
-                "--branch",
-                branch,
-                "--worktree",
-                str(worktree),
-                "--",
-                *argv,
-            ],
+        launch_payload = {
+            "chatId": worker,
+            "taskId": task_id,
+            "branch": branch,
+            "jobId": job_id,
+            "model": model,
+            "permissionMode": permission_mode,
+        }
+        launch = nexus_tool(
+            "nexus_logres_devin_transient_start",
+            launch_payload,
             timeout=int(router.get("launch_timeout_seconds", 120) or 120),
         )
         if launch.returncode:
+            cleanup_devin_isolation(worker, task_id, branch)
             detail = ((launch.stderr or "") + "\n" + (launch.stdout or "")).strip()
             conn.execute(
                 """update swarm_jobs
                       set state='FAILED',last_error=?,updated_at=datetime('now'),
                           finished_at=datetime('now')
                     where id=?""",
-                (("Devin isolation launch failed: " + detail)[-1800:], job_id),
+                (("Devin governed transient launch failed: " + detail)[-1800:], job_id),
             )
             conn.commit()
             release_worker(
-                worker,
-                task_id,
-                "Devin isolated launch failed; task returned READY. " + detail[-1400:],
+                worker, task_id,
+                "Devin governed transient launch failed; task returned READY. " + detail[-1400:]
             )
             continue
 
         try:
-            launch_payload = json.loads(launch.stdout or "{}")
+            privileged = json.loads(launch.stdout or "{}")
         except json.JSONDecodeError:
-            launch_payload = {}
-        launched_unit = str(launch_payload.get("unit") or "").strip()
-        state_path = str(launch_payload.get("state") or "").strip()
-        if launched_unit != unit:
-            if launched_unit:
-                run([DEVIN_ISOLATE, "stop", "--unit", launched_unit], timeout=30)
-            conn.execute(
-                """update swarm_jobs
-                      set state='FAILED',last_error=?,updated_at=datetime('now'),
-                          finished_at=datetime('now')
-                    where id=?""",
-                ("Devin isolation launcher returned an unexpected unit", job_id),
-            )
-            conn.commit()
-            release_worker(
-                worker,
-                task_id,
-                "Devin isolation unit mismatch; task returned READY.",
-            )
-            continue
-
-        main_pid = 0
-        status_payload = {}
-        for _ in range(10):
-            status = run([DEVIN_ISOLATE, "status", "--unit", unit], timeout=20)
-            try:
-                status_payload = json.loads(status.stdout or "{}")
-            except json.JSONDecodeError:
-                status_payload = {}
-            properties = str(status_payload.get("properties") or "")
-            match = re.search(r"(?m)^MainPID=(\d+)$", properties)
-            if match and int(match.group(1)) > 0:
-                main_pid = int(match.group(1))
-                break
-            time.sleep(0.1)
-
+            privileged = {}
+        properties = str(privileged.get("stdout") or "")
+        match = re.search(r"(?m)^MainPID=(\d+)$", properties)
+        main_pid = int(match.group(1)) if match else 0
         if main_pid <= 0:
-            run([DEVIN_ISOLATE, "stop", "--unit", unit], timeout=30)
+            cleanup_devin_isolation(worker, task_id, branch)
             conn.execute(
                 """update swarm_jobs
                       set state='FAILED',last_error=?,updated_at=datetime('now'),
                           finished_at=datetime('now')
                     where id=?""",
-                ("Devin isolated unit did not expose a live MainPID", job_id),
+                ("Devin governed transient unit did not expose a live MainPID", job_id),
             )
             conn.commit()
             release_worker(
-                worker,
-                task_id,
-                "Devin isolated unit had no live MainPID; stopped and returned READY.",
+                worker, task_id,
+                "Devin governed transient unit had no live MainPID; cleaned up and returned READY."
             )
             continue
 
-        state_payload = load_json(Path(state_path)) if state_path else {}
-        log_path = str(state_payload.get("log_file") or "")
-        mark_job_running(
-            conn,
-            job_id,
-            main_pid,
-            session_id=f"systemd:{unit}",
-        )
+        isolation_name = re.sub(r"[^A-Za-z0-9._-]+", "-", worktree.name).strip("-.")[:48] or "worker"
+        log_path = str(ROOT / "logs/devin-workers" / isolation_name / "devin.log")
+        mark_job_running(conn, job_id, main_pid, session_id=f"systemd:{unit}")
         result["jobs"].append(
             {
                 "task_id": task_id,
@@ -629,14 +600,12 @@ def dispatch_devin(
                 "worktree": str(worktree),
                 "model": model,
                 "log": log_path,
-                "state": state_path,
                 "isolation_certificate": str(DEVIN_CERTIFICATE),
             }
         )
 
     result["dispatched"] = len(result["jobs"])
     return result
-
 
 def dispatch_patch(
     conn: sqlite3.Connection,
