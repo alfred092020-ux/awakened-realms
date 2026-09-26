@@ -1,4 +1,5 @@
 import importlib.machinery
+import shlex
 import types
 import unittest
 from pathlib import Path
@@ -205,6 +206,20 @@ class HardwareQaTests(unittest.TestCase):
         self.assertIn(qa.ACTIVITY, command)
         self.assertIn("/system/bin/input tap", command)
         self.assertIn("PATH=/system/bin:/system_ext/bin:/product/bin:/vendor/bin", command)
+
+    def test_tap_phone_side_python_payload_compiles(self):
+        calls = []
+
+        def record_phone(command, *, check=True, timeout=30):
+            calls.append(command)
+            return '{"logical": [360.0, 1110.0], "physical": [540, 1920]}'
+
+        with patch.object(qa, "phone", side_effect=record_phone):
+            qa.tap(360, 1110)
+
+        argv = shlex.split(calls[0])
+        self.assertEqual(["python", "-c"], argv[:2])
+        compile(argv[2], "<phone-atomic-tap>", "exec")
 
     def test_runner_targets_panel_not_enemy(self):
         text = SCRIPT.read_text()

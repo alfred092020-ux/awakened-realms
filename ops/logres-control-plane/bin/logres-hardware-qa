@@ -106,21 +106,22 @@ def wait_scene(scene, timeout=25):
 
 def tap(x,y):
     x=float(x); y=float(y)
-    remote_code=f"""
-import json, os, subprocess
-x={x!r}; y={y!r}
-expr=f'''(() => {{
+    expr=f'''(() => {{
  const c=document.querySelector("canvas");
  if(!c) return null;
  const r=c.getBoundingClientRect();
  return {{
-   x:(r.x+({{x}}/c.width)*r.width)*devicePixelRatio,
-   y:(r.y+({{y}}/c.height)*r.height)*devicePixelRatio,
+   x:(r.x+({x}/c.width)*r.width)*devicePixelRatio,
+   y:(r.y+({y}/c.height)*r.height)*devicePixelRatio,
    dpr:devicePixelRatio,
    rect:{{x:r.x,y:r.y,width:r.width,height:r.height}},
    canvas:{{width:c.width,height:c.height}}
  }};
 }})()'''
+    remote_code=f"""
+import json, os, subprocess
+x={x!r}; y={y!r}
+expr={expr!r}
 raw=subprocess.check_output([os.path.expanduser("~/bin/logres-cdp"),"eval",expr],text=True)
 pt=json.loads(raw)
 if not pt:
