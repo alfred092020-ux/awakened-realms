@@ -66,6 +66,7 @@ PRODUCTION_FILES = (
     "bin/logres-goal-executor",
     "bin/logres-goal-certify",
     "bin/logres-hardware-qa",
+    "bin/logres-phone-qa",
     "bin/logres-finish-loop",
     "bin/logres-impact",
     "bin/logres-integration",
