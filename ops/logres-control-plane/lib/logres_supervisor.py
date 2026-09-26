@@ -47,7 +47,7 @@ def default_jobs(root: Path) -> tuple[ScheduledJob, ...]:
         ScheduledJob(
             "autonomy",
             _locked(
-                "/tmp/logres-autonomy.cron.lock",
+                str(root / "control/autonomy-cron.lock"),
                 str(b / "logres-autonomy"),
                 "cycle",
             ),
@@ -59,7 +59,7 @@ def default_jobs(root: Path) -> tuple[ScheduledJob, ...]:
         ScheduledJob(
             "swarm",
             _locked(
-                "/tmp/logres-swarm.cron.lock",
+                str(root / "control/swarm-cron.lock"),
                 str(b / "logres-swarm"),
                 "tick",
             ),
@@ -69,7 +69,7 @@ def default_jobs(root: Path) -> tuple[ScheduledJob, ...]:
         ScheduledJob(
             "autopilot",
             _locked(
-                "/tmp/logres-autopilot-watch.lock",
+                str(root / "control/autopilot-watch.lock"),
                 str(b / "logres-autopilot-watch"),
             ),
             300,
@@ -100,7 +100,7 @@ def default_jobs(root: Path) -> tuple[ScheduledJob, ...]:
         ScheduledJob(
             "preview_reaper",
             _locked(
-                "/tmp/logres-preview-reaper.lock",
+                str(root / "control/preview-reaper.lock"),
                 str(b / "logres-preview-reaper"),
                 "--apply",
                 "--age-hours",
@@ -112,7 +112,7 @@ def default_jobs(root: Path) -> tuple[ScheduledJob, ...]:
         ScheduledJob(
             "governor_propose",
             _locked(
-                "/tmp/logres-governor-propose.lock",
+                str(root / "control/governor-propose.lock"),
                 str(b / "logres-governor"),
                 "propose",
                 "--apply",
@@ -126,7 +126,7 @@ def default_jobs(root: Path) -> tuple[ScheduledJob, ...]:
         ScheduledJob(
             "shadow_experiment",
             _locked(
-                "/tmp/logres-shadow-experiment.lock",
+                str(root / "control/shadow-experiment.lock"),
                 str(b / "logres-experiment-executor"),
                 "next",
             ),
@@ -138,7 +138,7 @@ def default_jobs(root: Path) -> tuple[ScheduledJob, ...]:
         ScheduledJob(
             "chaos_cert",
             _locked(
-                "/tmp/logres-chaos-cert.lock",
+                str(root / "control/chaos-cert.lock"),
                 str(b / "logres-chaos-cert"),
                 "run",
                 "--shadow",

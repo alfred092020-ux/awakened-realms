@@ -52,6 +52,11 @@ class AutonomyCronTests(unittest.TestCase):
         ):
             self.assertIn(expected, line)
 
+    def test_managed_cron_locks_use_shared_control_filesystem(self):
+        for line in (AUTONOMY_CRON_LINE, SWARM_CRON_LINE, PREVIEW_REAPER_CRON_LINE):
+            self.assertIn("/home/ubuntu/logres/control/", line)
+            self.assertNotIn("/tmp/logres-", line)
+
     def test_install_replaces_legacy_preflight_cron_and_is_idempotent(self):
         before = """*/5 * * * * /home/ubuntu/logres/bin/logres-autopilot-watch
 * * * * * flock -n /tmp/logres-merge-preflight.cron.lock /home/ubuntu/logres/bin/logres-merge-preflight run --max 4 --min-age 45 --min-count 2
