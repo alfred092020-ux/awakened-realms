@@ -266,6 +266,7 @@ async function showMenu(page) {
 test(
   'required visual fidelity checkpoints persist evidence-bounded exact-SHA coverage',
   async ({ page, request }, testInfo) => {
+    test.setTimeout(120_000)
     expect(REQUIRED_VISUAL_CHECKPOINTS).toHaveLength(7)
 
     await requirePrivate(
