@@ -130,13 +130,20 @@ def emit_experiment(conn: sqlite3.Connection, policy: Mapping[str, Any], decisio
     return {**row, "experiment_id": int(row["id"])}
 
 
-def _attestation_pass(raw: str) -> bool:
-    fields = {}
+def _attestation_fields(raw: str) -> dict[str, str]:
+    fields: dict[str, str] = {}
     for part in str(raw or "").split(";"):
         key, _, value = part.partition("=")
         if key.strip() and value.strip():
             fields[key.strip().lower()] = value.strip()
-    return bool(fields.get("reviewer")) and fields.get("verdict", "").upper() == "PASS"
+    return fields
+
+
+def _attestation_pass(policy: Mapping[str, Any], raw: str) -> bool:
+    fields = _attestation_fields(raw)
+    reviewer = fields.get("reviewer", "").strip()
+    forbidden = {str(x).strip().casefold() for x in policy.get("forbidden_attestation_reviewers", [])}
+    return bool(reviewer) and reviewer.casefold() not in forbidden and fields.get("verdict", "").upper() == "PASS"
 
 
 def _assert_candidate_safe(policy: Mapping[str, Any], candidate: Mapping[str, Any]) -> None:
@@ -171,7 +178,7 @@ def promote_policy(conn: sqlite3.Connection, policy: Mapping[str, Any], candidat
     _require_keep_experiment(conn, source_experiment_id)
     if not shadow_pass:
         raise ValueError("shadow evaluation must pass before canonical promotion")
-    if not _attestation_pass(independent_attestation):
+    if not _attestation_pass(policy, independent_attestation):
         raise ValueError("independent verification PASS attestation is required")
     row = conn.execute("select coalesce(max(version),0) from devin_lead_policy_versions").fetchone()
     version = int(row[0] if row else 0) + 1

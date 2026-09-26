@@ -84,6 +84,14 @@ class LeadEvolutionBridgeTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "independent"):
             bridge.promote_policy(self.conn, self.policy, candidate, source_experiment_id=exp, shadow_pass=True, independent_attestation="")
 
+    def test_self_attestation_and_non_keep_experiments_are_rejected(self):
+        proposed = bridge.emit_experiment(self.conn, self.policy, self.decision())["experiment_id"]
+        with self.assertRaisesRegex(ValueError, r"EVALUATED\+KEEP"):
+            bridge.promote_policy(self.conn, self.policy, {"routing": {"max_assignments": 2}}, source_experiment_id=proposed, shadow_pass=True, independent_attestation="reviewer=independent-test;verdict=PASS")
+        exp = self.seed_keep()
+        with self.assertRaisesRegex(ValueError, "independent"):
+            bridge.promote_policy(self.conn, self.policy, {"routing": {"max_assignments": 2}}, source_experiment_id=exp, shadow_pass=True, independent_attestation="reviewer=devin-lead;verdict=PASS")
+
     def test_protected_constraints_cannot_be_changed(self):
         exp = self.seed_keep()
         for candidate in ({"models": {"allow_paid_default": True}}, {"protected_branch": "main"}, {"independent_verification_required": False}, {"privileged_exec": "allow"}):
