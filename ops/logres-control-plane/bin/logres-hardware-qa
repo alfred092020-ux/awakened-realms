@@ -104,7 +104,11 @@ def wait_scene(scene, timeout=25):
               timeout=int(timeout)+10)
     return json.loads(raw.splitlines()[-1])
 
+def ensure_app_foreground():
+    adb_shell(f"am start -W -n {ACTIVITY}")
+
 def tap(x,y):
+    ensure_app_foreground()
     raw=phone(f'$HOME/bin/logres-tap-logical {float(x)} {float(y)}')
     return json.loads(raw.splitlines()[-1])
 
