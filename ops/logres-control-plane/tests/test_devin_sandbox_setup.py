@@ -136,6 +136,7 @@ class ProfileContentTests(unittest.TestCase):
         self.assertFalse(headers[0]["flags"])
         self.assertNotIn("flags=(unconfined)", self.text)
         self.assertEqual([], self.module.validate_profile_text(self.text))
+        self.assertNotIn("include <abstractions/base>", self.text)
 
     def test_profile_grants_userns_and_namespace_ops_only(self):
         self.assertRegex(self.text, r"(?m)^\s*userns,\s*$")

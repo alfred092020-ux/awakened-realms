@@ -38,8 +38,6 @@ include <tunables/global>
 
 profile logres-devin-bwrap /usr/bin/bwrap {
 
-  include <abstractions/base>
-
   # The single privilege this profile exists to grant: user-namespace
   # creation under kernel.apparmor_restrict_unprivileged_userns=1.
   userns,
