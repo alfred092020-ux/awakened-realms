@@ -1,95 +1,85 @@
-# Logres Devin bubblewrap prerequisite profile (DEVIN-BWRAP-APPARMOR-001).
-#
-# Ubuntu ships kernel.apparmor_restrict_unprivileged_userns=1: unprivileged
-# user-namespace creation is only allowed for processes running under an
-# AppArmor profile that explicitly grants it. Devin's native --sandbox
-# builds every Exec sandbox through bubblewrap, so /usr/bin/bwrap needs a
-# named profile that grants exactly that capability and nothing more. The
-# global restriction stays enabled for every other unprivileged binary;
-# this file is the narrow carve-out for the single tool that needs it.
-#
-# This profile is deliberately confined (no unconfined flag):
-#   * userns is the only namespace privilege granted;
-#   * the mount rules below can only act inside namespaces bwrap itself
-#     creates and owns — /usr/bin/bwrap is not setuid, so an unprivileged
-#     launch holds no host-level capability for the profile to widen;
-#   * the capability list is likewise userns-scoped: the kernel grants
-#     these only against objects owned by a user namespace bwrap created;
-#   * the sandboxed payload is executed unconfined (Ux). It stays inside
-#     the bubblewrap+seccomp boundary — which is the actual Devin sandbox
-#     isolation contract — and, being unconfined, is itself blocked from
-#     creating further user namespaces while the Ubuntu restriction holds.
-#     Inheriting this profile (ix) would wrongly extend the userns and
-#     mount grants into the payload, so Ux is the narrower choice.
-#
-# File rules look broad because bwrap must open, read, and create
-# mountpoints for arbitrary host paths: the sandbox layout (bind sources,
-# workspace bind, denied-path overlays) is decided per invocation, so the
-# paths inside bwrap's owned tmpfs root are not enumerable. This does not
-# widen the pre-profile baseline: bubblewrap is unprivileged, AppArmor can
-# only restrict DAC access, and an unconfined bwrap could already read or
-# write every file its uid owns. What the profile still denies it, even at
-# this breadth, is the meaningful part: host-visible capabilities, ptrace,
-# and unmediated signal/network reach outside the granted rules.
+# This profile allows almost everything and only exists to allow bwrap
+# to work on a system with user namespace restrictions being enforced.
+# bwrap is allowed access to user namespaces and capabilities within
+# the user namespace, but its children do not have capabilities,
+# blocking bwrap from being able to be used to arbitrarily by-pass the
+# user namespace restrictions.
+
+# Note: the bwrap child is stacked against the bwrap profile due to
+# bwraps use of no-new-privs.
 
 abi <abi/4.0>,
 
 include <tunables/global>
 
-profile logres-devin-bwrap /usr/bin/bwrap {
+profile bwrap /usr/bin/bwrap flags=(attach_disconnected,mediate_deleted) {
+  allow capability,
+  # not allow all, to allow for pix stack on systems that don't support
+  # rule priority.
+  #
+  # sadly we have to allow 'm' every where to allow children to work under
+  # profile stacking atm.
+  allow file rwlkm /{**,},
+  allow network,
+  allow unix,
+  allow ptrace,
+  allow signal,
+  allow mqueue,
+  allow io_uring,
+  allow userns,
+  allow mount,
+  allow umount,
+  allow pivot_root,
+  allow dbus,
 
-  include <abstractions/base>
+  # stacked like this due to no-new-privs restriction
+  # this will stack a target profile against bwrap and unpriv_bwrap
+  # Ideally
+  # - there would be a transition at userns creation first. This would allow
+  #   for the bwrap profile to be tighter, and looser within the user
+  #   ns. bwrap will still have to fairly loose until a transition at
+  #   namespacing in general (not just user ns) is available.
+  # - there would be an independent second target as fallback
+  #   This would allow for select target profiles to be used, and not
+  #   necessarily stack the unpriv_bwrap in cases where this is desired
+  #
+  # the ix works here because stack will apply to ix fallback
+  # Ideally we would sanitize the environment across a privilege boundry
+  # (leaving bwarp into application) but flatpak etc use environment glibc
+  # sanitized environment variables as part of the sandbox setup.
+  allow pix /** -> &bwrap//&unpriv_bwrap,
 
-  # The single privilege this profile exists to grant: user-namespace
-  # creation under kernel.apparmor_restrict_unprivileged_userns=1.
-  userns,
+  # the local include should not be used without understanding the userns
+  # restriction.
+  # Site-specific additions and overrides. See local/README for details.
+  include if exists <local/bwrap-userns-restrict>
+}
 
-  # bwrap assembles the sandbox rootfs inside the mount namespace owned by
-  # the userns it just created: tmpfs/proc/devpts mounts, recursive bind
-  # mounts, remount-ro of bind sources, pivot_root into the new rootfs,
-  # then detaches the old root. None of this can touch the host mount
-  # namespace, which bwrap does not own.
-  mount,
-  remount,
-  umount,
-  pivot_root,
+# The unpriv_bwrap profile is used to strip capabilities within the userns
+profile unpriv_bwrap flags=(attach_disconnected,mediate_deleted) {
+  # not allow all, to allow for pix stack
+  allow file rwlkm /{**,},
+  allow network,
+  allow unix,
+  allow ptrace,
+  allow signal,
+  allow mqueue,
+  allow io_uring,
+  allow userns,
+  allow mount,
+  allow umount,
+  allow pivot_root,
+  allow dbus,
 
-  # Exercised only inside namespaces bwrap created and owns; an
-  # unprivileged bwrap holds no matching host capability, so these cannot
-  # act on host objects. net_admin covers the loopback setup that surfaced
-  # as "bwrap: loopback: Failed RTM_NEWADDR" when the userns grant was
-  # missing; sys_admin covers mount/namespace setup; the id-map and
-  # device-node grants cover payload identity and minimal /dev.
-  capability sys_admin,
-  capability setuid,
-  capability setgid,
-  capability setpcap,
-  capability mknod,
-  capability chown,
-  capability fowner,
-  capability net_admin,
+  # bwrap profile does stacking against itself this will keep the target
+  # profile from having elevated privileges in the container.
+  # If done recursively the stack will remove any duplicate
+  allow pix /** -> &unpriv_bwrap,
 
-  # Netlink loopback configuration inside the owned network namespace.
-  network,
+  audit deny capability,
 
-  # Sandbox rootfs assembly: bwrap creates directories, symlinks, and
-  # device nodes inside its owned tmpfs, and opens the host paths it
-  # bind-mounts. Paths are arbitrary because the layout is per-invocation;
-  # host objects stay protected by DAC and by the mounts being private to
-  # the sandbox namespace.
-  /** rw,
-
-  # uid/gid mapping writes for the new user namespace.
-  owner @{PROC}/[0-9]*/{uid_map,gid_map,setgroups} rw,
-
-  # bwrap babysits the payload: the unconfined launcher may signal bwrap,
-  # and bwrap forwards termination signals to the unconfined payload.
-  signal (receive) peer=unconfined,
-  signal (send) peer=unconfined,
-
-  # Hand the payload to the bubblewrap+seccomp boundary — the Devin
-  # sandbox — unconfined, so it does not inherit this profile's userns or
-  # mount privileges. Unconfined payloads cannot create further user
-  # namespaces while the Ubuntu restriction stays enabled.
-  /** Ux,
+  # the local include should not be used without understanding the userns
+  # restriction.
+  # Site-specific additions and overrides. See local/README for details.
+  include if exists <local/unpriv_bwrap>
 }

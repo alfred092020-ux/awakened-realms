@@ -23,7 +23,8 @@ except Exception:  # keep the host tool usable if lib is not co-deployed
         return str(text or "")
 
 
-PROFILE_NAME = "logres-devin-bwrap"
+PROFILE_NAME = "bwrap"
+HELPER_PROFILE_NAME = "unpriv_bwrap"
 BWRAP_PATH = "/usr/bin/bwrap"
 PROFILE_SOURCE = CONTROL_ROOT / "apparmor" / "usr.bin.bwrap.logres"
 PROFILE_DIR = Path(os.environ.get("LOGRES_APPARMOR_PROFILE_DIR", "/etc/apparmor.d"))
@@ -122,8 +123,14 @@ def validate_profile_text(text: str) -> list[str]:
             errors.append("flags=(unconfined) is forbidden: profile must be confined")
         if "complain" in flags:
             errors.append("flags=(complain) is forbidden: profile must enforce")
-    if not re.search(r"(?m)^\s*userns,\s*$", text):
-        errors.append("profile is missing the required 'userns,' grant")
+    if not re.search(r"(?m)^\s*(?:allow\s+)?userns,\s*$", text):
+        errors.append("profile is missing the required userns grant")
+    if not re.search(r"(?m)^\s*profile\s+unpriv_bwrap\b", text):
+        errors.append("profile is missing required unpriv_bwrap helper")
+    if "&bwrap//&unpriv_bwrap" not in text:
+        errors.append("profile is missing no_new_privs-safe bwrap/unpriv_bwrap stack")
+    if not re.search(r"(?m)^\s*audit\s+deny\s+capability,\s*$", text):
+        errors.append("unpriv_bwrap must audit-deny capabilities")
     return errors
 
 
@@ -216,15 +223,21 @@ def collect_status(runner, *, probe_bwrap: bool = False) -> dict:
     modes = kernel_profile_modes(runner)
     if modes is None:
         kernel_mode = "unknown"
+        helper_kernel_mode = "unknown"
     else:
         kernel_mode = modes.get(PROFILE_NAME, "absent")
+        helper_kernel_mode = modes.get(HELPER_PROFILE_NAME, "absent")
 
     restrict = read_restrict_userns()
     functional = functional_bwrap_ok(runner) if probe_bwrap else None
     conflicts = find_conflicting_profile_files(PROFILE_DIR)
 
-    enforce_confirmed = kernel_mode == "enforce" or (
-        kernel_mode == "unknown" and functional is True
+    enforce_confirmed = (
+        kernel_mode == "enforce" and helper_kernel_mode == "enforce"
+    ) or (
+        kernel_mode == "unknown"
+        and helper_kernel_mode == "unknown"
+        and functional is True
     )
     ok = (
         not source_errors
@@ -242,6 +255,7 @@ def collect_status(runner, *, probe_bwrap: bool = False) -> dict:
         "installed": installed_text is not None,
         "installed_match": bool(installed_match),
         "kernel_mode": kernel_mode,
+        "helper_kernel_mode": helper_kernel_mode,
         "enforce_confirmed": enforce_confirmed,
         "functional_bwrap": functional,
         "restrict_unprivileged_userns": restrict,
@@ -321,6 +335,7 @@ def install_profile(runner, *, dry_run: bool = False) -> dict:
         and installed_mode == PROFILE_TARGET_MODE
         and modes is not None
         and modes.get(PROFILE_NAME) == "enforce"
+        and modes.get(HELPER_PROFILE_NAME) == "enforce"
     )
     report["plan"] = [
         f"write {PROFILE_TARGET} (mode {PROFILE_TARGET_MODE:04o})",
@@ -380,12 +395,17 @@ def install_profile(runner, *, dry_run: bool = False) -> dict:
         raise
 
     modes = kernel_profile_modes(runner)
-    if modes is None or modes.get(PROFILE_NAME) != "enforce":
+    if (
+        modes is None
+        or modes.get(PROFILE_NAME) != "enforce"
+        or modes.get(HELPER_PROFILE_NAME) != "enforce"
+    ):
         report["rolled_back"] = True
         _cleanup_installed(runner, report)
         raise SetupError(
             f"profile did not reach enforce mode (kernel_mode="
-            f"{modes.get(PROFILE_NAME) if modes is not None else 'unknown'}); "
+            f"primary={modes.get(PROFILE_NAME) if modes is not None else 'unknown'}, "
+            f"helper={modes.get(HELPER_PROFILE_NAME) if modes is not None else 'unknown'}); "
             "rolled back install",
             report,
         )
@@ -433,11 +453,17 @@ def remove_profile(runner, *, dry_run: bool = False) -> dict:
         )
 
     modes = kernel_profile_modes(runner)
-    if modes is not None and PROFILE_NAME in modes:
-        raise SetupError(
-            f"profile {PROFILE_NAME} still loaded ({modes[PROFILE_NAME]}) after remove",
-            report,
-        )
+    if modes is not None:
+        remaining = {
+            name: modes[name]
+            for name in (PROFILE_NAME, HELPER_PROFILE_NAME)
+            if name in modes
+        }
+        if remaining:
+            raise SetupError(
+                f"profiles still loaded after remove: {remaining}",
+                report,
+            )
     report["ok"] = True
     report["kernel_mode"] = (
         "unknown" if modes is None else modes.get(PROFILE_NAME, "absent")

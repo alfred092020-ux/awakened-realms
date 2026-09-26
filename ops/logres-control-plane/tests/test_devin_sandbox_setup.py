@@ -111,7 +111,7 @@ class ModuleFixture(unittest.TestCase):
             setattr(self.module, key, value)
 
     def enforce(self, mode="enforce"):
-        self.sys_profiles.write_text(f"logres-devin-bwrap ({mode})\n")
+        self.sys_profiles.write_text(f"bwrap ({mode})\nunpriv_bwrap ({mode})\n")
 
     def install_good_state(self):
         self.module.PROFILE_TARGET.write_text(self.source.read_text())
@@ -132,21 +132,21 @@ class ProfileContentTests(unittest.TestCase):
             if h["attachment"] == "/usr/bin/bwrap"
         ]
         self.assertEqual(1, len(headers))
-        self.assertEqual("logres-devin-bwrap", headers[0]["name"])
-        self.assertFalse(headers[0]["flags"])
+        self.assertEqual("bwrap", headers[0]["name"])
+        self.assertEqual({"attach_disconnected", "mediate_deleted"}, headers[0]["flags"])
         self.assertNotIn("flags=(unconfined)", self.text)
         self.assertEqual([], self.module.validate_profile_text(self.text))
 
     def test_profile_grants_userns_and_namespace_ops_only(self):
-        self.assertRegex(self.text, r"(?m)^\s*userns,\s*$")
-        for rule in ("mount,", "remount,", "umount,", "pivot_root,"):
+        self.assertRegex(self.text, r"(?m)^\s*allow\s+userns,\s*$")
+        for rule in ("allow mount,", "allow umount,", "allow pivot_root,"):
             self.assertIn(rule, self.text)
 
-    def test_profile_does_not_pass_userns_to_payload(self):
-        # The payload must exec unconfined (Ux): inheriting the profile (ix)
-        # would extend the userns/mount grant into sandboxed commands.
-        self.assertRegex(self.text, r"(?m)^\s*/\*\*\s+Ux,\s*$")
-        self.assertNotRegex(self.text, r"(?m)^\s*/\*\*\s+(i|p|c)(x|ux),")
+    def test_profile_stacks_unprivileged_payload_under_no_new_privs(self):
+        self.assertIn("allow pix /** -> &bwrap//&unpriv_bwrap,", self.text)
+        self.assertRegex(self.text, r"(?m)^profile unpriv_bwrap\b")
+        self.assertIn("audit deny capability,", self.text)
+        self.assertNotIn("/** Ux,", self.text)
 
     def test_profile_carries_no_credential_material(self):
         lowered = self.text.lower()
@@ -160,22 +160,22 @@ class ProfileContentTests(unittest.TestCase):
 
     def test_validate_rejects_unconfined_flag(self):
         bad = self.text.replace(
-            "profile logres-devin-bwrap /usr/bin/bwrap {",
-            "profile logres-devin-bwrap /usr/bin/bwrap flags=(unconfined) {",
+            "profile bwrap /usr/bin/bwrap flags=(attach_disconnected,mediate_deleted) {",
+            "profile bwrap /usr/bin/bwrap flags=(attach_disconnected,mediate_deleted,unconfined) {",
         )
         errors = self.module.validate_profile_text(bad)
         self.assertTrue(any("unconfined" in e for e in errors))
 
     def test_validate_rejects_complain_flag(self):
         bad = self.text.replace(
-            "profile logres-devin-bwrap /usr/bin/bwrap {",
-            "profile logres-devin-bwrap /usr/bin/bwrap flags=(complain) {",
+            "profile bwrap /usr/bin/bwrap flags=(attach_disconnected,mediate_deleted) {",
+            "profile bwrap /usr/bin/bwrap flags=(attach_disconnected,mediate_deleted,complain) {",
         )
         errors = self.module.validate_profile_text(bad)
         self.assertTrue(any("complain" in e for e in errors))
 
     def test_validate_rejects_missing_userns(self):
-        bad = self.text.replace("  userns,\n", "")
+        bad = self.text.replace("  allow userns,\n", "")
         errors = self.module.validate_profile_text(bad)
         self.assertTrue(any("userns" in e for e in errors))
 
