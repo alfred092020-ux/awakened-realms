@@ -9,7 +9,7 @@ from pathlib import Path
 
 CONTROL_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(CONTROL_ROOT / "lib"))
-from logres_devin_lead import lead_tick, run_forever, status_payload
+from logres_devin_lead import lead_tick, pause_lead, resume_lead, run_forever, status_payload
 
 ROOT = Path(os.environ.get("LOGRES_ROOT", "/home/ubuntu/logres"))
 
@@ -38,14 +38,10 @@ def main() -> int:
             print(f"DEVIN_LEAD {'HEALTHY' if result.get('healthy') else 'UNKNOWN'} instance={heartbeat.get('instance_id','-')} paused={result.get('pause',{}).get('paused',False)}")
         return 0 if result.get("heartbeat") else 1
     if args.command == "pause":
-        path = ROOT / "control" / "devin-lead.pause"
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(args.reason.strip() + "\n", encoding="utf-8")
-        os.chmod(path, 0o600)
-        print(f"PAUSED {args.reason.strip()}")
+        result = pause_lead(ROOT, args.reason)
+        print(f"PAUSED {result['reason']}")
         return 0
-    path = ROOT / "control" / "devin-lead.pause"
-    path.unlink(missing_ok=True)
+    resume_lead(ROOT)
     print("RESUMED")
     return 0
 

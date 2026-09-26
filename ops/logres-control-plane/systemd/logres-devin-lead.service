@@ -14,7 +14,7 @@ RestartSec=5
 NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=strict
-ReadWritePaths=/home/ubuntu/logres/control /home/ubuntu/logres/logs /home/ubuntu/logres/work /home/ubuntu/logres/recovery
+ReadWritePaths=/home/ubuntu/logres/control /home/ubuntu/logres/logs /home/ubuntu/logres/work /home/ubuntu/logres/recovery /home/ubuntu/logres/scratch /home/ubuntu/logres/src/awakened-realms/.git
 
 [Install]
 WantedBy=multi-user.target

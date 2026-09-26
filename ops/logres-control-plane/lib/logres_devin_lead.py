@@ -29,6 +29,9 @@ def load_lead_policy(path: Path) -> dict:
     models = data.get("models", {})
     if bool(models.get("allow_paid_default", False)):
         raise ValueError("paid models may not be enabled by default")
+    preferred = str(models.get("preferred") or "swe-2-max")
+    if preferred not in {"swe-2-max", "swe-2-medium", "swe-2-high"}:
+        raise ValueError("preferred model must be a free SWE-2 variant")
     return data
 
 
@@ -137,6 +140,8 @@ def collect_planning_snapshot(conn, root: Path, policy: dict) -> dict:
         "metadata": _table_rows(conn, "task_metadata"),
         "integration_queue": _table_rows(conn, "integration_queue"),
         "regressions": _table_rows(conn, "regressions"),
+        "milestones": _table_rows(conn, "milestones"),
+        "goal_snapshots": _table_rows(conn, "goal_snapshots"),
         "capacity": _load_json_file(root / "control" / "capacity-state.json"),
         "swarm": _load_json_file(root / "control" / "swarm-state.json"),
         "policy": policy,
@@ -148,13 +153,21 @@ def score_ready_task(task: dict, snapshot: dict, policy: dict) -> tuple:
     lane = str(task.get("lane") or "").lower()
     title = str(task.get("title") or "").lower()
     note = str(task.get("note") or "").lower()
-    visible_game = lane in {"game", "release", "android", "presentation"} or any(
-        token in title for token in ("battle", "field", "onboarding", "android", "playable", "visual", "game")
+    infra = lane in {"control-plane", "infra", "devops", "security"}
+    visible_game = (not infra) and (
+        lane in {"game", "release", "android", "presentation"}
+        or any(token in title for token in ("battle", "field", "onboarding", "android", "playable", "visual", "game", "quest"))
     )
     critical = "critical" in note or "critical" in title
-    infra = lane in {"control-plane", "infra", "devops", "security"}
-    explicit_unblock = "unblock" in title or "unblock" in note or "blocker" in note
-    class_rank = 0 if (visible_game or critical) else (1 if (infra and explicit_unblock) else 2 if not infra else 3)
+    explicit_unblock = "unblock" in title or "unblock" in note or "blocker" in note or critical
+    if visible_game:
+        class_rank = 0
+    elif infra and explicit_unblock:
+        class_rank = 1
+    elif not infra:
+        class_rank = 2
+    else:
+        class_rank = 3
     return (class_rank, priority, str(task.get("id") or ""))
 
 
@@ -177,7 +190,27 @@ def select_frontier(snapshot: dict, policy: dict) -> list[dict]:
         limit = min(limit, 1)
     elif pressure in {"medium", "elevated"} or backlog >= 4:
         limit = min(limit, 2)
-    return candidates[: max(0, limit)]
+    limit = max(0, limit)
+    if not limit:
+        return []
+    infra_lanes = {"control-plane", "infra", "devops", "security"}
+    noninfra_exists = any(str(item.get("lane") or "").lower() not in infra_lanes for item in candidates)
+    ratio = max(0.0, min(1.0, float(policy.get("infrastructure_work_ratio_max", 0.35) or 0.0)))
+    infra_limit = int(limit * ratio)
+    if not noninfra_exists and any(score_ready_task(item, snapshot, policy)[0] == 1 for item in candidates):
+        infra_limit = max(1, infra_limit)
+    selected: list[dict] = []
+    infra_count = 0
+    for item in candidates:
+        is_infra = str(item.get("lane") or "").lower() in infra_lanes
+        if is_infra:
+            if score_ready_task(item, snapshot, policy)[0] != 1 or infra_count >= infra_limit:
+                continue
+            infra_count += 1
+        selected.append(item)
+        if len(selected) >= limit:
+            break
+    return selected
 
 
 def proposal_fingerprint(proposal: dict) -> str:
@@ -246,6 +279,28 @@ def validate_proposal(conn, proposal: dict, snapshot: dict, policy: dict, *, now
     if row:
         return False, f"duplicate semantic proposal already mapped to {row[0]}"
     try:
+        key = str(proposal.get("concurrency_key") or "").strip()
+        if key:
+            existing = conn.execute(
+                """select t.id from tasks t join task_metadata m on m.task_id=t.id
+                     where m.concurrency_key=? and t.id<>?
+                       and upper(coalesce(t.status,'')) not in ('DONE','RESOLVED','SUPERSEDED','CANCELLED')
+                     limit 1""",
+                (key, task_id),
+            ).fetchone()
+            if existing:
+                return False, f"existing unresolved task owns concurrency key: {existing[0]}"
+        title = str(proposal.get("title") or "").strip().lower()
+        lane = str(proposal.get("lane") or "").strip().lower()
+        if title and lane:
+            existing = conn.execute(
+                """select id from tasks where lower(title)=? and lower(lane)=? and id<>?
+                       and upper(coalesce(status,'')) not in ('DONE','RESOLVED','SUPERSEDED','CANCELLED')
+                     limit 1""",
+                (title, lane, task_id),
+            ).fetchone()
+            if existing:
+                return False, f"existing semantically equivalent task: {existing[0]}"
         if conn.execute("select 1 from tasks where id=?", (task_id,)).fetchone():
             return False, "duplicate task id"
     except Exception:
@@ -272,6 +327,16 @@ def create_bounded_task(conn, proposal: dict, *, policy: dict | None = None, now
         )
         for dep in proposal.get("dependencies", []):
             conn.execute("insert into task_dependencies(task_id,depends_on,kind,rationale) values(?,?,?,?)", (task_id, str(dep), "hard", "Lead decomposition"))
+        try:
+            for ordinal, criterion in enumerate(proposal.get("acceptance", []), start=1):
+                conn.execute("insert into task_acceptance(task_id,ordinal,criterion) values(?,?,?)", (task_id, ordinal, str(criterion)))
+        except Exception:
+            pass
+        try:
+            for scope in proposal.get("scopes", []):
+                conn.execute("insert into task_scopes(task_id,path_prefix) values(?,?)", (task_id, str(scope)))
+        except Exception:
+            pass
         try:
             conn.execute(
                 "insert or replace into task_metadata(task_id,milestone,work_type,concurrency_key,expected_minutes,evidence_policy,created_at,updated_at) values(?,?,?,?,?,?,datetime('now'),datetime('now'))",
@@ -305,14 +370,20 @@ def route_task(task: dict, snapshot: dict, policy: dict) -> dict:
     return {"task_id": task.get("id"), "action": "defer", "reason": "no free implementation capacity", "paid": False}
 
 
-def dispatch_plan(root: Path, routes: list[dict], *, execute: bool) -> dict:
+def dispatch_plan(root: Path, routes: list[dict], *, execute: bool, runner=subprocess.run) -> dict:
     actionable = [r for r in routes if r.get("action") == "dispatch"]
     if not execute:
         return {"executed": False, "routes": routes, "dispatchable": len(actionable)}
     if not actionable:
         return {"executed": True, "routes": routes, "dispatchable": 0, "returncode": 0}
-    proc = subprocess.run([str(Path(root) / "bin" / "logres-capacity"), "tick", "--execute"], text=True, capture_output=True, check=False)
-    return {"executed": True, "routes": routes, "dispatchable": len(actionable), "returncode": proc.returncode, "stdout": proc.stdout[-4000:], "stderr": proc.stderr[-4000:]}
+    argv = [str(Path(root) / "bin" / "logres-capacity"), "tick", "--execute"]
+    try:
+        proc = runner(argv, text=True, capture_output=True, check=False, timeout=180)
+        return {"executed": True, "routes": routes, "dispatchable": len(actionable), "returncode": int(proc.returncode), "stdout": (proc.stdout or "")[-4000:], "stderr": (proc.stderr or "")[-4000:]}
+    except subprocess.TimeoutExpired:
+        return {"executed": True, "routes": routes, "dispatchable": len(actionable), "returncode": 124, "stdout": "", "stderr": "capacity/swarm tick timed out"}
+    except OSError as exc:
+        return {"executed": True, "routes": routes, "dispatchable": len(actionable), "returncode": 127, "stdout": "", "stderr": f"{type(exc).__name__}: {exc}"}
 
 
 def inspect_owned_work(conn, snapshot: dict, policy: dict) -> list[dict]:
@@ -477,25 +548,147 @@ def _policy_for_root(root: Path) -> dict:
 
 def _metrics_input(conn, snapshot: dict) -> dict:
     ready = [t for t in snapshot.get("tasks", []) if str(t.get("status")) == "READY"]
-    active = [t for t in snapshot.get("tasks", []) if str(t.get("status")) == "ACTIVE"]
+    active_tasks = [t for t in snapshot.get("tasks", []) if str(t.get("status")) == "ACTIVE"]
     capacity = snapshot.get("capacity", {}) if isinstance(snapshot.get("capacity"), dict) else {}
     plan = capacity.get("plan", {}) if isinstance(capacity.get("plan"), dict) else {}
     signals = capacity.get("signals", {}) if isinstance(capacity.get("signals"), dict) else {}
     verifier = signals.get("verifier", {}) if isinstance(signals.get("verifier"), dict) else {}
     host = signals.get("host", {}) if isinstance(signals.get("host"), dict) else {}
+
+    latencies: list[float] = []
+    try:
+        rows = conn.execute("select task_id,ts_epoch,status from task_state_history order by task_id,ts_epoch").fetchall()
+        starts: dict[str, float] = {}
+        finishes: dict[str, float] = {}
+        for row in rows:
+            task_id = str(row[0]); ts = float(row[1]); status = str(row[2] or "").upper()
+            if status in {"READY", "ACTIVE"}:
+                starts.setdefault(task_id, ts)
+            if status == "DONE":
+                finishes[task_id] = max(ts, finishes.get(task_id, ts))
+        latencies = [max(0.0, finishes[t] - starts[t]) for t in finishes if t in starts and finishes[t] >= starts[t]]
+    except Exception:
+        latencies = []
+
+    verification_passed = int(verifier.get("passed", 0) or 0)
+    verification_failed = int(verifier.get("failed", verifier.get("backlog", 0)) or 0)
+    try:
+        statuses = [str(row[0] or "").upper() for row in conn.execute("select status from verification order by ran_at desc limit 50").fetchall()]
+        if statuses:
+            verification_passed = sum(1 for status in statuses if status == "PASS")
+            verification_failed = sum(1 for status in statuses if status not in {"PASS", "SKIP", "CACHED"})
+    except Exception:
+        pass
+
+    active_workers = len(active_tasks)
+    try:
+        active_workers = int(conn.execute("select count(*) from swarm_jobs where upper(state) in ('RUNNING','STARTING','QUEUED','ACTIVE')").fetchone()[0])
+    except Exception:
+        pass
+
+    open_regressions = [
+        row for row in snapshot.get("regressions", [])
+        if str(row.get("status") or row.get("state") or "OPEN").upper() not in {"DONE", "RESOLVED", "SUPERSEDED", "CLOSED"}
+    ]
     return {
-        "completed_latencies_seconds": [],
-        "rework_count": len(snapshot.get("regressions", [])),
-        "completed_count": 0,
+        "completed_latencies_seconds": latencies,
+        "rework_count": len(open_regressions),
+        "completed_count": len(latencies),
         "ready_queue_age_seconds": float(signals.get("queue", {}).get("oldest_ready_age_seconds", 0.0) or 0.0) if isinstance(signals.get("queue"), dict) else 0.0,
-        "verification_passed": int(verifier.get("passed", 0) or 0),
-        "verification_failed": int(verifier.get("failed", verifier.get("backlog", 0)) or 0),
-        "active_workers": len(active),
-        "logical_capacity": int(plan.get("logical_workers", max(1, len(active))) or max(1, len(active))),
+        "verification_passed": verification_passed,
+        "verification_failed": verification_failed,
+        "active_workers": active_workers,
+        "logical_capacity": int(plan.get("logical_workers", max(1, active_workers)) or max(1, active_workers)),
         "resource_contention": max(float(host.get("cpu_psi_avg10", 0) or 0), float(host.get("memory_psi_avg10", 0) or 0), float(host.get("io_psi_avg10", 0) or 0)),
         "ready_count": len(ready),
     }
 
+
+
+def decompose_unmet_milestones(
+    root: Path,
+    snapshot: dict,
+    policy: dict,
+    *,
+    execute: bool,
+    runner=subprocess.run,
+) -> list[dict]:
+    root = Path(root)
+    active = [
+        dict(row)
+        for row in snapshot.get("milestones", [])
+        if str(row.get("status") or "").upper() not in {"DONE", "CERTIFIED", "CANCELLED"}
+    ]
+    active.sort(key=lambda row: (int(row.get("sort_order") or 100), str(row.get("id") or "")))
+    limit = max(0, int(policy.get("task_generation_cap_per_cycle", 3) or 3))
+    selected = active[:limit]
+    binary = root / "bin" / "logres-goal-executor"
+    results: list[dict] = []
+    for milestone in selected:
+        milestone_id = str(milestone.get("id") or "").strip()
+        if not milestone_id:
+            continue
+        argv = [str(binary), milestone_id, "--json"]
+        if execute:
+            argv.insert(2, "--apply")
+        if not execute:
+            results.append({"milestone_id": milestone_id, "status": "planned", "argv": argv})
+            continue
+        if not binary.is_file():
+            results.append({"milestone_id": milestone_id, "status": "blocked", "reason": "goal_executor_missing"})
+            continue
+        try:
+            proc = runner(argv, text=True, capture_output=True, check=False, timeout=90)
+        except (OSError, subprocess.TimeoutExpired) as exc:
+            results.append({"milestone_id": milestone_id, "status": "blocked", "reason": f"{type(exc).__name__}: {exc}"})
+            continue
+        try:
+            payload = json.loads(proc.stdout or "{}")
+        except json.JSONDecodeError:
+            payload = {}
+        results.append({
+            "milestone_id": milestone_id,
+            "status": str(payload.get("status") or ("error" if proc.returncode else "noop")).lower(),
+            "task_id": payload.get("task_id"),
+            "returncode": int(proc.returncode),
+            "stderr": (proc.stderr or "")[-1200:],
+        })
+    return results
+
+
+def pause_lead(root: Path, reason: str, *, now_fn=time.time) -> dict:
+    root = Path(root)
+    path = root / "control" / "devin-lead.pause"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    reason = reason.strip() or "operator pause"
+    path.write_text(reason + "\n", encoding="utf-8")
+    os.chmod(path, 0o600)
+    event_id = None
+    try:
+        conn = _connect_root(root)
+        try:
+            event_id = record_lead_event(conn, event_type="DECISION", subject="Devin Lead paused", body=reason, task_id=None, dedupe_key=f"devin-lead:pause:{int(float(now_fn())*1000)}")
+        finally:
+            conn.close()
+    except Exception:
+        event_id = None
+    return {"paused": True, "reason": reason, "event_id": event_id}
+
+
+def resume_lead(root: Path, *, now_fn=time.time) -> dict:
+    root = Path(root)
+    path = root / "control" / "devin-lead.pause"
+    path.unlink(missing_ok=True)
+    event_id = None
+    try:
+        conn = _connect_root(root)
+        try:
+            event_id = record_lead_event(conn, event_type="DECISION", subject="Devin Lead resumed", body="operator resumed autonomous planning", task_id=None, dedupe_key=f"devin-lead:resume:{int(float(now_fn())*1000)}")
+        finally:
+            conn.close()
+    except Exception:
+        event_id = None
+    return {"paused": False, "event_id": event_id}
 
 def status_payload(root: Path) -> dict:
     root = Path(root)
@@ -522,39 +715,40 @@ def lead_tick(
     try:
         leader_acquired = True
         if execute:
-            leader_acquired = acquire_leader(
-                conn,
-                instance_id=instance_id,
-                now=now,
-                ttl_seconds=int(policy.get("leader_ttl_seconds", 180) or 180),
-            )
+            leader_acquired = acquire_leader(conn, instance_id=instance_id, now=now, ttl_seconds=int(policy.get("leader_ttl_seconds", 180) or 180))
             if not leader_acquired:
-                return {
-                    "instance_id": instance_id,
-                    "leader": False,
-                    "executed": False,
-                    "blocked": "leader_busy",
-                }
+                return {"instance_id": instance_id, "leader": False, "executed": False, "blocked": "leader_busy"}
+
         snapshot = collect_planning_snapshot(conn, root, policy)
+        pause = read_pause(root)
+        if pause.get("paused"):
+            frontier = select_frontier(snapshot, policy)
+            snapshot["metrics_input"] = _metrics_input(conn, snapshot)
+            metrics = compute_lead_metrics(conn, snapshot)
+            payload = {
+                "instance_id": instance_id, "leader": leader_acquired, "paused": True,
+                "pause_reason": pause.get("reason", ""), "frontier": frontier,
+                "metrics": metrics, "decomposition": [], "executed": False,
+                "routes": [], "last_decision": "paused: observe only", "ts_epoch": now,
+            }
+            if execute:
+                write_heartbeat(root, payload)
+            return payload
+
+        decomposition = decompose_unmet_milestones(root, snapshot, policy, execute=execute)
+        if execute and any(item.get("task_id") for item in decomposition):
+            snapshot = collect_planning_snapshot(conn, root, policy)
         frontier = select_frontier(snapshot, policy)
         snapshot["metrics_input"] = _metrics_input(conn, snapshot)
         metrics = compute_lead_metrics(conn, snapshot)
-        pause = read_pause(root)
+        routes = [route_task(task, snapshot, policy) for task in frontier]
         base = {
-            "instance_id": instance_id,
-            "leader": leader_acquired,
-            "paused": bool(pause.get("paused")),
-            "pause_reason": pause.get("reason", ""),
-            "frontier": frontier,
-            "metrics": metrics,
-            "executed": False,
+            "instance_id": instance_id, "leader": leader_acquired, "paused": False,
+            "pause_reason": "", "frontier": frontier, "metrics": metrics,
+            "decomposition": decomposition, "executed": False,
         }
         if not execute:
-            return {**base, "routes": [route_task(task, snapshot, policy) for task in frontier]}
-        if pause.get("paused"):
-            payload = {**base, "last_decision": "paused: observe only", "ts_epoch": now}
-            write_heartbeat(root, payload)
-            return payload
+            return {**base, "routes": routes}
 
         observations = inspect_owned_work(conn, snapshot, policy)
         recoveries = plan_recoveries(conn, observations, policy)
@@ -563,30 +757,25 @@ def lead_tick(
                 conn,
                 event_type="TASK_RECLAIMED" if item.get("action") == "recover" else "REGRESSION",
                 subject=f"Lead {item.get('action')}: {item.get('task_id')}",
-                body=json.dumps(item, sort_keys=True),
-                task_id=item.get("task_id"),
+                body=json.dumps(item, sort_keys=True), task_id=item.get("task_id"),
                 dedupe_key=f"devin-lead:{item.get('action')}:{item.get('task_id')}:{item.get('failed_candidate_sha','')}",
             )
-        routes = [route_task(task, snapshot, policy) for task in frontier]
+
         dispatch = dispatch_plan(root, routes, execute=True)
+        if int(dispatch.get("returncode", 0) or 0) != 0:
+            error = f"dispatch failed rc={dispatch.get('returncode')}: {dispatch.get('stderr','')[-800:]}"
+            record_lead_event(conn, event_type="BLOCKER", subject="Devin Lead dispatch failed", body=error, task_id=None, dedupe_key=f"devin-lead:dispatch-fail:{int(now // max(1, int(policy.get('cycle_seconds',60) or 60)))}")
+            payload = {**base, "routes": routes, "dispatch": dispatch, "recoveries": recoveries, "dispatch_failed": True, "error": error, "last_decision": "fail-closed dispatch failure", "ts_epoch": now}
+            write_heartbeat(root, payload)
+            return payload
+
         decision = "game-first frontier dispatched" if dispatch.get("dispatchable", 0) else "observed; no safe dispatchable frontier"
         record_lead_event(
-            conn,
-            event_type="DECISION",
-            subject="Devin Lead planning cycle",
-            body=json.dumps({"frontier": [x.get("id") for x in frontier], "routes": routes, "metrics": metrics}, sort_keys=True),
-            task_id=None,
-            dedupe_key=f"devin-lead:cycle:{int(now // max(1, int(policy.get('cycle_seconds', 60) or 60)))}",
+            conn, event_type="DECISION", subject="Devin Lead planning cycle",
+            body=json.dumps({"frontier": [x.get("id") for x in frontier], "routes": routes, "metrics": metrics, "decomposition": decomposition}, sort_keys=True),
+            task_id=None, dedupe_key=f"devin-lead:cycle:{int(now // max(1, int(policy.get('cycle_seconds', 60) or 60)))}",
         )
-        payload = {
-            **base,
-            "executed": True,
-            "routes": routes,
-            "dispatch": dispatch,
-            "recoveries": recoveries,
-            "last_decision": decision,
-            "ts_epoch": now,
-        }
+        payload = {**base, "executed": True, "routes": routes, "dispatch": dispatch, "recoveries": recoveries, "last_decision": decision, "ts_epoch": now}
         write_heartbeat(root, payload)
         return payload
     finally:

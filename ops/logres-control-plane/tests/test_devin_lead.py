@@ -106,6 +106,8 @@ class DevinLeadLifecycleTests(unittest.TestCase):
         conn=self.planning_connection()
         conn.executescript("""
         create table brain_events(id integer primary key autoincrement, ts_epoch real, ts text, sender text, recipient text, event_type text, priority integer, task_id text, subject text, body text, artifact_path text, artifact_sha256 text, dedupe_key text unique, meta_json text);
+        create table task_scopes(task_id text, path_prefix text, primary key(task_id,path_prefix));
+        create table task_acceptance(task_id text, ordinal integer, criterion text, primary key(task_id,ordinal));
         """)
         return conn
 
@@ -251,6 +253,147 @@ class DevinLeadLifecycleTests(unittest.TestCase):
             finally:
                 lead.dispatch_plan=original
             self.assertTrue(result['paused']); self.assertFalse(result['executed']); self.assertTrue((root/'control'/'devin-lead-heartbeat.json').is_file())
+
+    def test_unmet_milestone_decomposition_uses_goal_executor_and_generation_cap(self):
+        with tempfile.TemporaryDirectory() as td:
+            root=Path(td); (root/'bin').mkdir(parents=True)
+            (root/'bin'/'logres-goal-executor').write_text('placeholder')
+            snapshot={'milestones':[
+                {'id':'M1','status':'ACTIVE','title':'One'},
+                {'id':'M2','status':'ACTIVE','title':'Two'},
+                {'id':'M3','status':'ACTIVE','title':'Three'},
+                {'id':'DONE','status':'DONE','title':'Done'}]}
+            policy=lead.default_policy(); policy['task_generation_cap_per_cycle']=2
+            seen=[]
+            class Result:
+                returncode=0; stdout='{"status":"CREATED","task_id":"X"}'; stderr=''
+            def runner(argv,**kwargs):
+                seen.append(list(argv)); return Result()
+            out=lead.decompose_unmet_milestones(root,snapshot,policy,execute=True,runner=runner)
+            self.assertEqual(2,len(out)); self.assertEqual(2,len(seen))
+            self.assertTrue(all('--apply' in argv and '--json' in argv for argv in seen))
+            self.assertEqual(['M1','M2'],[item['milestone_id'] for item in out])
+
+    def test_dry_run_decomposition_has_no_subprocess_side_effects(self):
+        with tempfile.TemporaryDirectory() as td:
+            root=Path(td)
+            snapshot={'milestones':[{'id':'M1','status':'ACTIVE','title':'One'}]}
+            called=[]
+            out=lead.decompose_unmet_milestones(root,snapshot,lead.default_policy(),execute=False,runner=lambda *a,**k: called.append(a))
+            self.assertEqual([],called); self.assertEqual('planned',out[0]['status'])
+
+    def test_service_allows_governed_swarm_git_metadata_and_scratch(self):
+        text=(CONTROL_ROOT/'systemd'/'logres-devin-lead.service').read_text()
+        self.assertIn('/home/ubuntu/logres/src/awakened-realms',text)
+        self.assertIn('/home/ubuntu/logres/scratch',text)
+
+    def test_lead_tick_reports_milestone_decomposition_before_dispatch(self):
+        with tempfile.TemporaryDirectory() as td:
+            root=self.runtime_root(td)
+            conn=sqlite3.connect(root/'control'/'control.sqlite')
+            conn.execute("create table milestones(id text primary key,title text,sort_order integer,status text,definition_of_done text,created_at text,updated_at text)")
+            conn.execute("insert into milestones values('M1','Game milestone',1,'ACTIVE','done','now','now')")
+            conn.commit(); conn.close()
+            original_decompose=lead.decompose_unmet_milestones
+            original_dispatch=lead.dispatch_plan
+            lead.decompose_unmet_milestones=lambda *a,**k:[{'milestone_id':'M1','status':'created','task_id':'NEW'}]
+            lead.dispatch_plan=lambda *a,**k:{'executed':True,'dispatchable':0,'returncode':0}
+            try:
+                result=lead.lead_tick(root,execute=True,instance_id='lead-one')
+            finally:
+                lead.decompose_unmet_milestones=original_decompose; lead.dispatch_plan=original_dispatch
+            self.assertEqual('M1',result['decomposition'][0]['milestone_id'])
+
+    def test_existing_active_concurrency_key_suppresses_proposal(self):
+        conn=self.proposal_connection()
+        conn.execute("insert into tasks values('EXISTING',0,'game','Existing victory','ACTIVE','worker/existing','worker','','now')")
+        conn.execute("insert into task_metadata values('EXISTING','DEMO','implementation','game:victory',30,'evidence-first','now','now')")
+        ok,reason=lead.validate_proposal(conn,self.proposal(id='NEW'),{'tasks':[]},lead.default_policy())
+        self.assertFalse(ok); self.assertIn('existing',reason)
+
+    def test_create_bounded_task_persists_acceptance_scopes_and_dependencies(self):
+        conn=self.proposal_connection()
+        conn.execute("insert into tasks values('BASE',0,'game','Base','DONE',null,null,'','now')")
+        proposal=self.proposal(dependencies=['BASE'],acceptance=['first','second'],scopes=['src/game/a','src/game/b'])
+        self.assertEqual('GEN-GAME-1',lead.create_bounded_task(conn,proposal))
+        self.assertEqual(['BASE'],[r[0] for r in conn.execute("select depends_on from task_dependencies where task_id='GEN-GAME-1'")])
+        self.assertEqual(['first','second'],[r[0] for r in conn.execute("select criterion from task_acceptance where task_id='GEN-GAME-1' order by ordinal")])
+        self.assertEqual(['src/game/a','src/game/b'],[r[0] for r in conn.execute("select path_prefix from task_scopes where task_id='GEN-GAME-1' order by path_prefix")])
+
+    def test_policy_rejects_nonfree_preferred_model(self):
+        with tempfile.TemporaryDirectory() as td:
+            path=Path(td)/'devin_lead.json'
+            path.write_text(json.dumps({'models':{'preferred':'paid-model','allow_paid_default':False}}))
+            with self.assertRaisesRegex(ValueError,'free SWE-2'):
+                lead.load_lead_policy(path)
+
+    def test_frontier_enforces_infrastructure_budget_when_game_work_exists(self):
+        policy=lead.default_policy(); policy['assignment_cap_per_cycle']=4; policy['infrastructure_work_ratio_max']=0.25
+        tasks=[
+            {'id':'G1','priority':0,'lane':'game','title':'Battle one','status':'READY','owner':None},
+            {'id':'G2','priority':0,'lane':'game','title':'Field two','status':'READY','owner':None},
+            {'id':'G3','priority':1,'lane':'game','title':'Quest three','status':'READY','owner':None},
+            {'id':'I1','priority':0,'lane':'control-plane','title':'Unblock build','status':'READY','owner':None,'note':'critical blocker'},
+            {'id':'I2','priority':0,'lane':'control-plane','title':'Unblock metrics','status':'READY','owner':None,'note':'critical blocker'}]
+        snap={'tasks':tasks,'capacity':{'plan':{'pressure':'normal','logical_workers':12},'signals':{'verifier':{'backlog':0}}}}
+        front=lead.select_frontier(snap,policy)
+        infra=[x for x in front if x['lane']=='control-plane']
+        games=[x for x in front if x['lane']=='game']
+        self.assertLessEqual(len(infra),1); self.assertGreaterEqual(len(games),3)
+
+    def test_live_metrics_input_reads_history_verification_and_swarm(self):
+        conn=self.proposal_connection()
+        conn.executescript("""
+        create table task_state_history(id integer primary key autoincrement,task_id text,ts_epoch real,ts text,status text,owner text,branch text,source text,note text);
+        create table verification(ref text primary key,sha text,mode text,status text,duration_sec real,ran_at text,details text);
+        create table swarm_jobs(id integer primary key,task_id text,worker_id text,engine text,state text,pid integer,artifact_path text,last_error text,started_at text,updated_at text,finished_at text,branch text,model text,session_id text,verification text);
+        """)
+        conn.execute("insert into task_state_history(task_id,ts_epoch,ts,status,source,note) values('T',100,'x','ACTIVE','t','')")
+        conn.execute("insert into task_state_history(task_id,ts_epoch,ts,status,source,note) values('T',160,'x','DONE','t','')")
+        conn.execute("insert into verification values('a','a','full-e2e','PASS',1,'x','')")
+        conn.execute("insert into verification values('b','b','full-e2e','FAIL',1,'x','')")
+        conn.execute("insert into swarm_jobs(id,task_id,worker_id,engine,state,started_at,updated_at) values(1,'A','w1','devin','RUNNING','x','x')")
+        conn.execute("insert into swarm_jobs(id,task_id,worker_id,engine,state,started_at,updated_at) values(2,'B','w2','research','RUNNING','x','x')")
+        snap={'tasks':[],'regressions':[{'status':'OPEN'}],'capacity':{'plan':{'logical_workers':4},'signals':{'queue':{'oldest_ready_age_seconds':300},'host':{'cpu_psi_avg10':0.2,'memory_psi_avg10':0.1,'io_psi_avg10':0.0}}}}
+        src=lead._metrics_input(conn,snap)
+        self.assertEqual([60.0],src['completed_latencies_seconds']); self.assertEqual(1,src['completed_count'])
+        self.assertEqual(1,src['verification_passed']); self.assertEqual(1,src['verification_failed']); self.assertEqual(2,src['active_workers'])
+
+    def test_paused_cycle_blocks_decomposition_and_dispatch_but_keeps_heartbeat(self):
+        with tempfile.TemporaryDirectory() as td:
+            root=self.runtime_root(td); (root/'control'/'devin-lead.pause').write_text('stop')
+            original_decompose=lead.decompose_unmet_milestones; original_dispatch=lead.dispatch_plan
+            lead.decompose_unmet_milestones=lambda *a,**k: (_ for _ in ()).throw(AssertionError('decompose while paused'))
+            lead.dispatch_plan=lambda *a,**k: (_ for _ in ()).throw(AssertionError('dispatch while paused'))
+            try:
+                result=lead.lead_tick(root,execute=True,instance_id='paused-two')
+            finally:
+                lead.decompose_unmet_milestones=original_decompose; lead.dispatch_plan=original_dispatch
+            self.assertTrue(result['paused']); self.assertTrue((root/'control'/'devin-lead-heartbeat.json').is_file())
+
+    def test_pause_resume_cli_records_brain_provenance(self):
+        with tempfile.TemporaryDirectory() as td:
+            root=self.runtime_root(td); cli=CONTROL_ROOT/'bin'/'logres-devin-lead'; env={**os.environ,'LOGRES_ROOT':str(root)}
+            self.assertEqual(0,subprocess.run([str(cli),'pause','--reason','audit'],env=env,capture_output=True,text=True).returncode)
+            self.assertEqual(0,subprocess.run([str(cli),'resume'],env=env,capture_output=True,text=True).returncode)
+            conn=sqlite3.connect(root/'control'/'control.sqlite')
+            rows=conn.execute("select subject from brain_events order by id").fetchall()
+            self.assertEqual([('Devin Lead paused',),('Devin Lead resumed',)],rows)
+
+    def test_dispatch_failure_is_fail_closed_and_audited(self):
+        with tempfile.TemporaryDirectory() as td:
+            root=self.runtime_root(td); conn=sqlite3.connect(root/'control'/'control.sqlite')
+            conn.execute("insert into tasks values('G',0,'game','Battle','READY',null,null,'','now')"); conn.commit(); conn.close()
+            od=lead.decompose_unmet_milestones; op=lead.dispatch_plan
+            lead.decompose_unmet_milestones=lambda *a,**k:[]
+            lead.dispatch_plan=lambda *a,**k:{'executed':True,'dispatchable':1,'returncode':7,'stderr':'boom'}
+            try:
+                result=lead.lead_tick(root,execute=True,instance_id='lead-fail')
+            finally:
+                lead.decompose_unmet_milestones=od; lead.dispatch_plan=op
+            self.assertTrue(result['dispatch_failed']); self.assertIn('dispatch failed',result['error'])
+            heartbeat=json.loads((root/'control'/'devin-lead-heartbeat.json').read_text()); self.assertIn('error',heartbeat)
+            conn=sqlite3.connect(root/'control'/'control.sqlite'); self.assertEqual(1,conn.execute("select count(*) from brain_events where event_type='BLOCKER'").fetchone()[0])
 
 
 if __name__ == "__main__":
