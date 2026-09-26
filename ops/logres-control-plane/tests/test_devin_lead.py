@@ -152,6 +152,41 @@ class DevinLeadLifecycleTests(unittest.TestCase):
         route=lead.route_task(task,{'capacity':{'plan':{'lane_caps':{'devin_cloud':1}}}},policy)
         self.assertFalse(route['paid'])
 
+    def test_stale_worker_recovery_preserves_evidence(self):
+        policy=lead.default_policy(); policy['stale_worker_seconds']=60
+        observations=[{'task_id':'T1','state':'stale','age_seconds':120,'branch':'worker/t1','recovery_path':'/tmp/recovery/T1.json'}]
+        plans=lead.plan_recoveries(self.proposal_connection(),observations,policy)
+        self.assertEqual('recover',plans[0]['action'])
+        self.assertEqual('/tmp/recovery/T1.json',plans[0]['recovery_path'])
+        self.assertTrue(plans[0]['preserve_evidence'])
+
+    def test_failed_verification_creates_bounded_repair_not_auto_approval(self):
+        observations=[{'task_id':'T2','state':'verification_failed','candidate_sha':'deadbeef','failure_class':'test'}]
+        plans=lead.plan_recoveries(self.proposal_connection(),observations,lead.default_policy())
+        self.assertEqual('repair',plans[0]['action'])
+        self.assertNotIn('approve',plans[0])
+        self.assertEqual('deadbeef',plans[0]['failed_candidate_sha'])
+
+    def test_every_assignment_recovery_and_escalation_records_brain_event(self):
+        conn=self.proposal_connection()
+        for kind in ('ASSIGNMENT','TASK_RECLAIMED','BLOCKER'):
+            event_id=lead.record_lead_event(conn,event_type=kind,subject=kind,body='evidence',task_id='T1',dedupe_key='lead:'+kind)
+            self.assertGreater(event_id,0)
+        rows=conn.execute("select event_type,task_id from brain_events order by id").fetchall()
+        self.assertEqual(['ASSIGNMENT','TASK_RECLAIMED','BLOCKER'],[r['event_type'] for r in rows])
+        self.assertTrue(all(r['task_id']=='T1' for r in rows))
+
+    def test_metrics_report_latency_rework_queue_pass_rate_utilization_and_contention(self):
+        conn=self.proposal_connection()
+        snap={'metrics_input':{'completed_latencies_seconds':[30,90,60],'rework_count':2,'completed_count':8,'ready_queue_age_seconds':600,'verification_passed':9,'verification_failed':1,'active_workers':6,'logical_capacity':12,'resource_contention':0.25}}
+        metrics=lead.compute_lead_metrics(conn,snap)
+        self.assertEqual(60.0,metrics['median_task_latency_seconds'])
+        self.assertEqual(0.2,metrics['rework_rate'])
+        self.assertEqual(600.0,metrics['queue_age_seconds'])
+        self.assertEqual(0.9,metrics['verification_pass_rate'])
+        self.assertEqual(0.5,metrics['worker_utilization'])
+        self.assertEqual(0.25,metrics['resource_contention'])
+
 
 if __name__ == "__main__":
     unittest.main()

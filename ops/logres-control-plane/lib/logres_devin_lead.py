@@ -3,9 +3,11 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import statistics
 import subprocess
 import tempfile
 import time
+from datetime import datetime, timezone
 from pathlib import Path
 
 
@@ -311,3 +313,140 @@ def dispatch_plan(root: Path, routes: list[dict], *, execute: bool) -> dict:
         return {"executed": True, "routes": routes, "dispatchable": 0, "returncode": 0}
     proc = subprocess.run([str(Path(root) / "bin" / "logres-capacity"), "tick", "--execute"], text=True, capture_output=True, check=False)
     return {"executed": True, "routes": routes, "dispatchable": len(actionable), "returncode": proc.returncode, "stdout": proc.stdout[-4000:], "stderr": proc.stderr[-4000:]}
+
+
+def inspect_owned_work(conn, snapshot: dict, policy: dict) -> list[dict]:
+    now = time.time()
+    stale_after = int(policy.get("stale_worker_seconds", 900) or 900)
+    observations: list[dict] = []
+    leases = snapshot.get("leases") or _table_rows(conn, "brain_task_leases")
+    recovery_by_task = {
+        str(row.get("task_id")): row for row in _table_rows(conn, "task_recovery")
+    }
+    for lease in leases:
+        task_id = str(lease.get("task_id") or "")
+        until = float(lease.get("lease_until_epoch") or 0)
+        renewed = lease.get("renewed_at_epoch")
+        age = max(0.0, now - float(renewed)) if renewed not in (None, "") else max(0.0, now - until + stale_after)
+        state = "stale" if until and until <= now else "active"
+        recovery = recovery_by_task.get(task_id, {})
+        observations.append(
+            {
+                "task_id": task_id,
+                "state": state,
+                "age_seconds": age,
+                "owner": lease.get("chat_id"),
+                "branch": lease.get("branch"),
+                "recovery_path": recovery.get("manifest_path") or recovery.get("recovery_path"),
+            }
+        )
+    for row in snapshot.get("regressions", []):
+        state = str(row.get("state") or row.get("status") or "").lower()
+        if "fail" in state or "quarant" in state:
+            observations.append(
+                {
+                    "task_id": row.get("task_id"),
+                    "state": "verification_failed",
+                    "candidate_sha": row.get("candidate_sha") or row.get("sha"),
+                    "failure_class": row.get("failure_class") or state,
+                }
+            )
+    return observations
+
+
+def plan_recoveries(conn, observations: list[dict], policy: dict) -> list[dict]:
+    plans: list[dict] = []
+    stale_after = int(policy.get("stale_worker_seconds", 900) or 900)
+    for obs in observations:
+        state = str(obs.get("state") or "")
+        if state == "stale" and float(obs.get("age_seconds") or 0) >= stale_after:
+            plans.append(
+                {
+                    "task_id": obs.get("task_id"),
+                    "action": "recover",
+                    "branch": obs.get("branch"),
+                    "recovery_path": obs.get("recovery_path"),
+                    "preserve_evidence": True,
+                    "target_status": "READY",
+                }
+            )
+        elif state == "verification_failed":
+            task_id = str(obs.get("task_id") or "UNKNOWN")
+            sha = str(obs.get("candidate_sha") or "")
+            plans.append(
+                {
+                    "task_id": task_id,
+                    "action": "repair",
+                    "failed_candidate_sha": sha,
+                    "repair_task_id": f"REG-{task_id}-{(sha[:8] or 'FAILED').upper()}",
+                    "requires_distinct_candidate_sha": True,
+                    "preserve_evidence": True,
+                }
+            )
+    return plans
+
+
+def record_lead_event(
+    conn,
+    *,
+    event_type: str,
+    subject: str,
+    body: str,
+    task_id: str | None,
+    dedupe_key: str,
+) -> int:
+    now = time.time()
+    ts = datetime.fromtimestamp(now, timezone.utc).isoformat(timespec="seconds")
+    priority = 0 if event_type == "BLOCKER" else 1 if event_type in {"ASSIGNMENT", "TASK_RECLAIMED", "REGRESSION"} else 5
+    payload = (
+        now,
+        ts,
+        "devin-lead",
+        "ALL",
+        event_type,
+        priority,
+        task_id,
+        subject[:240],
+        body[:8000],
+        None,
+        None,
+        dedupe_key,
+        "{}",
+    )
+    try:
+        cur = conn.execute(
+            """insert into brain_events
+               (ts_epoch,ts,sender,recipient,event_type,priority,task_id,subject,body,
+                artifact_path,artifact_sha256,dedupe_key,meta_json)
+               values(?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+            payload,
+        )
+        conn.commit()
+        return int(cur.lastrowid)
+    except Exception as exc:
+        if "unique" in str(exc).lower() or "dedupe" in str(exc).lower():
+            row = conn.execute("select id from brain_events where dedupe_key=?", (dedupe_key,)).fetchone()
+            if row:
+                return int(row[0])
+        raise
+
+
+def compute_lead_metrics(conn, snapshot: dict) -> dict:
+    src = snapshot.get("metrics_input", {}) if isinstance(snapshot, dict) else {}
+    latencies = [float(x) for x in src.get("completed_latencies_seconds", []) if x is not None]
+    completed = max(0, int(src.get("completed_count", len(latencies)) or 0))
+    rework = max(0, int(src.get("rework_count", 0) or 0))
+    passed = max(0, int(src.get("verification_passed", 0) or 0))
+    failed = max(0, int(src.get("verification_failed", 0) or 0))
+    active = max(0, int(src.get("active_workers", 0) or 0))
+    logical = max(0, int(src.get("logical_capacity", 0) or 0))
+    verification_total = passed + failed
+    return {
+        "median_task_latency_seconds": float(statistics.median(latencies)) if latencies else 0.0,
+        "rework_rate": round(rework / max(1, completed + rework), 6),
+        "queue_age_seconds": float(src.get("ready_queue_age_seconds", 0.0) or 0.0),
+        "verification_pass_rate": round(passed / max(1, verification_total), 6),
+        "worker_utilization": round(active / max(1, logical), 6) if logical else 0.0,
+        "resource_contention": float(src.get("resource_contention", 0.0) or 0.0),
+        "critical_path_completions": int(src.get("critical_path_completions", 0) or 0),
+    }
