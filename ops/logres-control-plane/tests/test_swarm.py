@@ -14,6 +14,7 @@ sys.path.insert(0, str(LIB_DIR))
 
 from fixtures import make_test_db, seed_task
 from logres_route_store import ensure_route_schema
+import logres_swarm
 from logres_swarm import (
     ACTIVE_COPILOT_STATES,
     available_devin_worker_ids,
@@ -464,6 +465,40 @@ class SwarmTests(unittest.TestCase):
         self.assertEqual("devin-agent-artifact", row["verification"])
         self.assertEqual("RUNNING", row["state"])
         self.assertEqual(os.getpid(), row["pid"])
+
+    def test_isolation_certificate_gate_requires_current_head_and_runtime_sha(self):
+        gate = getattr(logres_swarm, "isolation_certificate_gate", None)
+        self.assertTrue(callable(gate), "missing isolation_certificate_gate")
+        head = "a" * 40
+        certificate = {"production_ready": True, "integration_sha": head}
+        runtime = {"integration_sha": head}
+        self.assertEqual((True, None), gate(certificate, head, runtime))
+        self.assertEqual(
+            (False, "isolation_certificate_stale"),
+            gate({**certificate, "integration_sha": "b" * 40}, head, runtime),
+        )
+        self.assertEqual(
+            (False, "isolation_runtime_stale"),
+            gate(certificate, head, {"integration_sha": "c" * 40}),
+        )
+        self.assertEqual(
+            (False, "isolation_certificate_stale"),
+            gate({"production_ready": True}, head, runtime),
+        )
+        self.assertEqual(
+            (False, "isolation_not_certified"),
+            gate({"production_ready": False, "integration_sha": head}, head, runtime),
+        )
+
+    def test_swarm_script_enforces_certificate_sha_freshness(self):
+        script = (CONTROL_ROOT / "bin" / "logres-swarm").read_text()
+        for needle in (
+            "isolation_certificate_gate",
+            "runtime-deployment.json",
+            '"rev-parse", "HEAD"',
+            'result["blocked"] = certificate_blocker',
+        ):
+            self.assertIn(needle, script)
 
     def test_swarm_script_has_fail_closed_devin_lane(self):
         script = (CONTROL_ROOT / "bin" / "logres-swarm").read_text()

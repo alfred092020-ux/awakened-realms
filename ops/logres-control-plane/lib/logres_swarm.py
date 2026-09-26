@@ -29,6 +29,21 @@ class SwarmCapacity:
     free_slots: int
 
 
+def isolation_certificate_gate(
+    certificate: dict, integration_sha: str, runtime_deployment: dict
+) -> tuple[bool, str | None]:
+    if not bool((certificate or {}).get("production_ready", False)):
+        return False, "isolation_not_certified"
+    current_sha = str(integration_sha or "").strip()
+    certificate_sha = str((certificate or {}).get("integration_sha") or "").strip()
+    if not current_sha or not certificate_sha or certificate_sha != current_sha:
+        return False, "isolation_certificate_stale"
+    runtime_sha = str((runtime_deployment or {}).get("integration_sha") or "").strip()
+    if not runtime_sha or runtime_sha != current_sha:
+        return False, "isolation_runtime_stale"
+    return True, None
+
+
 def ensure_schema(conn: sqlite3.Connection) -> None:
     conn.execute(
         """create table if not exists swarm_jobs(
