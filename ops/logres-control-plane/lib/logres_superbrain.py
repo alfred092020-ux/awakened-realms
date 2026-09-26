@@ -396,7 +396,51 @@ def export_context(
     from logres_context_pack import build_pack, canonical_json
 
     ensure_schema(conn)
-    pack = build_pack(conn, task_id, integration_branch=integration_branch)
+    integration_sha = None
+    if _table_exists(conn, "meta"):
+        row = conn.execute(
+            "select value from meta where key='integration_sha'"
+        ).fetchone()
+        if row:
+            integration_sha = row[0]
+
+    evidence = []
+    if _table_exists(conn, "brain_discoveries"):
+        rows = conn.execute(
+            """select id,author,confidence,subject,summary,artifact_path,
+                      artifact_sha256,status
+               from brain_discoveries
+               where task_id=?
+               order by id desc
+               limit 24""",
+            (task_id,),
+        ).fetchall()
+        for row in rows:
+            evidence.append(
+                {
+                    "id": f"brain-discovery-{row['id']}",
+                    "source": f"brain:{row['author']}",
+                    "path": row["artifact_path"] or "",
+                    "sha256": row["artifact_sha256"],
+                    "snippet": row["summary"] or row["subject"] or "",
+                    "confidence": row["confidence"],
+                    "authority": (
+                        "IMPLEMENTATION_VERIFIED"
+                        if row["artifact_sha256"]
+                        else "CONFIRMED"
+                    ),
+                    "status": row["status"],
+                    "relevance": 1.0,
+                }
+            )
+
+    pack = build_pack(
+        conn,
+        task_id,
+        integration_sha=integration_sha,
+        integration_branch=integration_branch,
+        evidence=evidence,
+    )
     payload = canonical_json(pack)
     digest = hashlib.sha256(payload.encode()).hexdigest()
 
