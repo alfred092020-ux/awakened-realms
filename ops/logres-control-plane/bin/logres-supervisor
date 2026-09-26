@@ -15,10 +15,15 @@ sys.path.insert(0, str(CONTROL_ROOT / "lib"))
 
 from logres_supervisor import (
     ensure_running,
+    evaluate_failover,
+    failover_tick,
+    load_state,
+    baton_path,
     reload_if_idle,
     run_forever,
     supervisor_health,
     tick,
+    write_baton,
 )
 
 ROOT = Path(os.environ.get("LOGRES_ROOT", "/home/ubuntu/logres"))
@@ -122,6 +127,14 @@ def main() -> int:
     reload_wait_parser.add_argument("--expected-pid", type=int, required=True)
     status = sub.add_parser("status")
     status.add_argument("--json", action="store_true")
+    baton = sub.add_parser("baton")
+    baton.add_argument("--state", required=True)
+    baton.add_argument("--objective")
+    baton.add_argument("--task")
+    baton.add_argument("--note", default="")
+    baton.add_argument("--new-generation", action="store_true")
+    sub.add_parser("baton-status")
+    sub.add_parser("failover")
     args = ap.parse_args()
 
     if args.command == "run":
@@ -163,6 +176,36 @@ def main() -> int:
         result = reload_wait(args.expected_pid)
         print(json.dumps(result, indent=2, sort_keys=True))
         return 0 if result.get("healthy") else 1
+
+    if args.command == "baton":
+        record = write_baton(
+            ROOT,
+            run_state=args.state,
+            objective=args.objective,
+            task=args.task,
+            note=args.note,
+            new_generation=args.new_generation,
+        )
+        print(json.dumps(record, indent=2, sort_keys=True))
+        return 0
+
+    if args.command == "baton-status":
+        print(
+            json.dumps(
+                {
+                    "baton": load_state(baton_path(ROOT)),
+                    "failover": evaluate_failover(ROOT),
+                },
+                indent=2,
+                sort_keys=True,
+            )
+        )
+        return 0
+
+    if args.command == "failover":
+        result = failover_tick(ROOT)
+        print(json.dumps(result, indent=2, sort_keys=True))
+        return 0 if result.get("action") != "error" else 1
 
     result = supervisor_health(HEARTBEAT)
     if args.json:

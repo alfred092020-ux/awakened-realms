@@ -289,6 +289,494 @@ def actionable_worker_backlog(root: Path) -> int:
         return 0
 
 
+BATON_PATH_ENV = "LOGRES_CHATGPT_BATON_PATH"
+BATON_STALE_ENV = "LOGRES_CHATGPT_BATON_STALE_SECONDS"
+FAILOVER_STATE_ENV = "LOGRES_DEVIN_FAILOVER_STATE"
+FAILOVER_COOLDOWN_ENV = "LOGRES_DEVIN_FAILOVER_COOLDOWN_SECONDS"
+BATON_RUN_STATES = frozenset({"RUNNING", "CONTINUE_REQUESTED"})
+BATON_SUPPRESS_STATES = frozenset({"PAUSED", "WAITING_USER", "DONE"})
+BATON_STATES = BATON_RUN_STATES | BATON_SUPPRESS_STATES
+DEFAULT_BATON_STALE_SECONDS = 120.0
+DEFAULT_FAILOVER_COOLDOWN_SECONDS = 600.0
+STAGE2_REQUIRED_TASKS = (
+    "DEVIN-OS-ISOLATION-001",
+    "DEVIN-SWARM-ROUTER-001",
+)
+
+
+def _env_float(name: str, default: float) -> float:
+    try:
+        return float(os.environ.get(name, "") or default)
+    except ValueError:
+        return float(default)
+
+
+def baton_path(root: Path) -> Path:
+    return Path(
+        os.environ.get(
+            BATON_PATH_ENV,
+            str(Path(root) / "control" / "chatgpt-coordinator-baton.json"),
+        )
+    )
+
+
+def failover_state_path(root: Path) -> Path:
+    return Path(
+        os.environ.get(
+            FAILOVER_STATE_ENV,
+            str(Path(root) / "control" / "chatgpt-devin-failover.json"),
+        )
+    )
+
+
+def handback_path(root: Path) -> Path:
+    return Path(root) / "control" / "chatgpt-devin-handback.json"
+
+
+def write_baton(
+    root: Path,
+    *,
+    run_state: str,
+    objective: str | None = None,
+    task: str | None = None,
+    note: str = "",
+    generation: int | None = None,
+    new_generation: bool = False,
+    now_epoch: float | None = None,
+) -> dict:
+    """Durable atomic coordinator-baton write under control/.
+
+    The baton carries a fencing generation, the coordinator run state, a
+    timestamp, and the current objective/task/note. A heartbeat is the same
+    write without a generation bump; a fresh heartbeat or a bumped
+    generation is what tells the Devin failover to hand coordination back.
+    """
+    state = str(run_state or "").strip().upper()
+    if state not in BATON_STATES:
+        raise ValueError(f"invalid baton run_state: {run_state!r}")
+    now_epoch = time.time() if now_epoch is None else float(now_epoch)
+    path = baton_path(root)
+    previous = load_state(path)
+    if generation is not None:
+        gen = int(generation)
+    elif new_generation:
+        gen = int(previous.get("generation") or 0) + 1
+    else:
+        gen = int(previous.get("generation") or 0) or 1
+    baton = {
+        "generation": gen,
+        "run_state": state,
+        "updated_epoch": now_epoch,
+        "updated_at": utc_now(),
+        "objective": str(objective if objective is not None else previous.get("objective") or ""),
+        "task": str(task if task is not None else previous.get("task") or ""),
+        "note": str(note or ""),
+    }
+    atomic_json(path, baton)
+    return baton
+
+
+def live_brain_leases(root: Path, now_epoch: float) -> list[dict]:
+    """Read-only snapshot of live Brain leases.
+
+    Failover must never steal or duplicate live leases, so this is strictly
+    a read-only observer: it never writes to brain_task_leases.
+    """
+    db = Path(root) / "control" / "control.sqlite"
+    if not db.exists():
+        return []
+    try:
+        conn = sqlite3.connect(f"file:{db}?mode=ro", uri=True, timeout=1)
+        try:
+            rows = conn.execute(
+                "select chat_id,task_id,branch,lease_until_epoch "
+                "from brain_task_leases where lease_until_epoch>? "
+                "order by chat_id,task_id",
+                (float(now_epoch),),
+            ).fetchall()
+        finally:
+            conn.close()
+    except (sqlite3.Error, OSError, ValueError):
+        return []
+    return [
+        {
+            "chat_id": str(row[0]),
+            "task_id": str(row[1]),
+            "branch": str(row[2] or ""),
+            "lease_until_epoch": float(row[3] or 0.0),
+        }
+        for row in rows
+    ]
+
+
+def failover_stage2_status(root: Path) -> dict:
+    """Report whether stage-2 Devin swarm delegation is unlocked.
+
+    Stage 2 may only delegate new implementation work through the guarded
+    Devin swarm engine once BOTH DEVIN-OS-ISOLATION-001 and
+    DEVIN-SWARM-ROUTER-001 are integrated. Until then the failover must not
+    launch unrestricted unattended implementation.
+    """
+    db = Path(root) / "control" / "control.sqlite"
+    satisfied: set[str] = set()
+    if db.exists():
+        try:
+            conn = sqlite3.connect(f"file:{db}?mode=ro", uri=True, timeout=1)
+            try:
+                for task_id in STAGE2_REQUIRED_TASKS:
+                    row = conn.execute(
+                        "select 1 from integration_queue "
+                        "where task_id=? and status='INTEGRATED' limit 1",
+                        (task_id,),
+                    ).fetchone()
+                    if row:
+                        satisfied.add(task_id)
+            finally:
+                conn.close()
+        except (sqlite3.Error, OSError, ValueError):
+            satisfied = set()
+    missing = [t for t in STAGE2_REQUIRED_TASKS if t not in satisfied]
+    return {
+        "unlocked": not missing,
+        "satisfied": sorted(satisfied),
+        "missing": missing,
+        "required": list(STAGE2_REQUIRED_TASKS),
+    }
+
+
+def evaluate_failover(
+    root: Path,
+    *,
+    now_epoch: float | None = None,
+    stale_seconds: float | None = None,
+    cooldown_seconds: float | None = None,
+) -> dict:
+    """Decide the deterministic failover action for the current baton.
+
+    Actions: no-baton, suppressed, fresh, dedupe, cooldown, handback,
+    launch. Only a stale RUNNING/CONTINUE_REQUESTED baton may launch, and a
+    fenced generation may launch at most one continuation pass.
+    """
+    now_epoch = time.time() if now_epoch is None else float(now_epoch)
+    if stale_seconds is None:
+        stale_seconds = _env_float(BATON_STALE_ENV, DEFAULT_BATON_STALE_SECONDS)
+    if cooldown_seconds is None:
+        cooldown_seconds = _env_float(
+            FAILOVER_COOLDOWN_ENV, DEFAULT_FAILOVER_COOLDOWN_SECONDS
+        )
+    stale_seconds = max(1.0, float(stale_seconds))
+    cooldown_seconds = max(0.0, float(cooldown_seconds))
+
+    baton = load_state(baton_path(root))
+    failover = load_state(failover_state_path(root))
+    run_state = str(baton.get("run_state") or "").upper()
+    generation = int(baton.get("generation") or 0)
+    updated = float(baton.get("updated_epoch") or 0.0)
+    age = (
+        max(0.0, now_epoch - updated)
+        if updated > 0
+        else float("inf")
+    )
+    fresh = age < stale_seconds
+    active = failover.get("active") or {}
+    last_launch = failover.get("last_launch") or {}
+    result = {
+        "run_state": run_state or None,
+        "generation": generation or None,
+        "age_seconds": round(age, 3) if age < 1e17 else None,
+        "stale_seconds": stale_seconds,
+        "cooldown_seconds": cooldown_seconds,
+        "fresh": fresh,
+        "active_generation": active.get("generation"),
+    }
+    if not baton:
+        return {**result, "action": "no-baton"}
+
+    chatgpt_back = (
+        fresh
+        or generation != int(active.get("generation") or 0)
+        or run_state in BATON_SUPPRESS_STATES
+    )
+    if active and chatgpt_back:
+        return {**result, "action": "handback"}
+    if run_state in BATON_SUPPRESS_STATES:
+        return {**result, "action": "suppressed"}
+    if run_state not in BATON_RUN_STATES:
+        return {**result, "action": "unknown-state"}
+    if not fresh:
+        if last_launch and int(last_launch.get("generation") or 0) == generation:
+            return {**result, "action": "dedupe"}
+        launched_epoch = float(last_launch.get("epoch") or 0.0)
+        cooldown_age = now_epoch - launched_epoch
+        if launched_epoch > 0 and cooldown_age < cooldown_seconds:
+            return {
+                **result,
+                "action": "cooldown",
+                "cooldown_remaining_seconds": round(
+                    cooldown_seconds - cooldown_age, 3
+                ),
+            }
+        return {**result, "action": "launch"}
+    return {**result, "action": "fresh"}
+
+
+def failover_snapshot(
+    root: Path,
+    baton: dict,
+    *,
+    now_epoch: float | None = None,
+) -> dict:
+    """Fresh local status/Brain snapshot for the co-lead review.
+
+    Read-only: captures backlog, live leases, and stage gating so the
+    bounded Devin review reasons over current control state without any
+    repository mutation.
+    """
+    now_epoch = time.time() if now_epoch is None else float(now_epoch)
+    return {
+        "captured_at": utc_now(),
+        "baton": dict(baton),
+        "backlog": {
+            "integration_ready_for_preflight": actionable_integration_backlog(
+                Path(root)
+            ),
+            "worker_ready_tasks": actionable_worker_backlog(Path(root)),
+        },
+        "live_brain_leases": live_brain_leases(Path(root), now_epoch),
+        "stage2": failover_stage2_status(Path(root)),
+        "lanes": {
+            "autonomy": "eligible",
+            "swarm": "eligible",
+            "merge_preflight": "eligible",
+        },
+    }
+
+
+def build_failover_prompt(
+    *,
+    baton: dict,
+    snapshot: dict,
+    stage: str,
+    export_path: Path,
+) -> str:
+    return f"""You are the bounded Logres Devin co-lead running a STAGE-1
+failover continuation review while the ChatGPT coordinator baton is stale.
+
+BATON (generation {baton.get('generation')}, run_state={baton.get('run_state')}):
+- objective: {baton.get('objective') or '(none)'}
+- task: {baton.get('task') or '(none)'}
+- note: {baton.get('note') or '(none)'}
+
+FRESH STATUS/BRAIN SNAPSHOT (read-only, captured at failover time):
+{json.dumps(snapshot, indent=2, sort_keys=True)}
+
+HARD RULES:
+- This is a reasoning-only continuation review ({stage}). Do NOT mutate the
+  repository, do NOT commit, do NOT acquire or release Brain leases, and do
+  NOT launch workers.
+- Stage 1 keeps existing supervisor autonomy, swarm, and eligible
+  merge-preflight lanes moving; it must not launch unrestricted unattended
+  implementation work.
+- Stage 2 implementation delegation is allowed only through the guarded
+  Devin swarm engine after DEVIN-OS-ISOLATION-001 and
+  DEVIN-SWARM-ROUTER-001 are both integrated.
+- Review the snapshot and write a concise continuation assessment —
+  current state, what is still safe to keep moving, what must wait for the
+  ChatGPT coordinator, and recommended next actions — as your final
+  answer. The harness exports it to {export_path}.
+"""
+
+
+def launch_failover_continuation(
+    root: Path,
+    baton: dict,
+    *,
+    now_epoch: float | None = None,
+    popen=subprocess.Popen,
+    runner=subprocess.run,
+    devin_bin: str | None = None,
+) -> dict:
+    """Launch one bounded, fenced Devin co-lead continuation pass.
+
+    Stage 1 launches a single reasoning-only Devin review from a fresh
+    local status/Brain snapshot. It acquires no Brain leases and mutates no
+    repository state. When stage 2 is unlocked the same pass may also
+    delegate new implementation work through the guarded swarm engine.
+    """
+    root = Path(root)
+    now_epoch = time.time() if now_epoch is None else float(now_epoch)
+    generation = int(baton.get("generation") or 0)
+    stage2 = failover_stage2_status(root)
+    stage = "stage2" if stage2["unlocked"] else "stage1"
+    snapshot = failover_snapshot(root, baton, now_epoch=now_epoch)
+
+    control = root / "control"
+    prompt_path = control / f"devin-failover-review-gen{generation}.md"
+    export_path = control / f"devin-failover-review-gen{generation}.json"
+    snapshot_path = control / f"devin-failover-snapshot-gen{generation}.json"
+    atomic_json(snapshot_path, snapshot)
+    prompt_path.parent.mkdir(parents=True, exist_ok=True)
+    prompt_path.write_text(
+        build_failover_prompt(
+            baton=baton,
+            snapshot=snapshot,
+            stage=stage,
+            export_path=export_path,
+        ),
+        encoding="utf-8",
+    )
+
+    devin = str(
+        devin_bin or os.environ.get("LOGRES_DEVIN_BIN", "devin")
+    )
+    argv = [
+        devin,
+        "-p",
+        "--model",
+        str(os.environ.get("LOGRES_DEVIN_FAILOVER_MODEL", "swe-2-max")),
+        "--permission-mode",
+        "smart",
+        "--prompt-file",
+        str(prompt_path),
+        "--export",
+        str(export_path),
+    ]
+    log_path = root / "logs" / "supervisor" / "devin-failover.log"
+    log_path.parent.mkdir(parents=True, exist_ok=True)
+    with log_path.open("ab", buffering=0) as handle:
+        handle.write(
+            (
+                f"=== {utc_now()} failover launch generation={generation} "
+                f"stage={stage} ===\n"
+            ).encode()
+        )
+        proc = popen(
+            argv,
+            stdout=handle,
+            stderr=subprocess.STDOUT,
+            start_new_session=True,
+            close_fds=True,
+        )
+
+    record = {
+        "generation": generation,
+        "stage": stage,
+        "stage2": stage2,
+        "pid": int(proc.pid),
+        "argv": argv,
+        "prompt_path": str(prompt_path),
+        "export_path": str(export_path),
+        "snapshot_path": str(snapshot_path),
+        "log_path": str(log_path),
+        "launched_epoch": now_epoch,
+        "launched_at": utc_now(),
+    }
+
+    if stage2["unlocked"]:
+        swarm_bin = root / "bin" / "logres-swarm"
+        if swarm_bin.is_file():
+            swarm_argv = [str(swarm_bin), "tick"]
+            try:
+                proc_run = runner(
+                    swarm_argv,
+                    text=True,
+                    capture_output=True,
+                    check=False,
+                    timeout=300,
+                    env=os.environ.copy(),
+                )
+                record["delegation"] = {
+                    "argv": swarm_argv,
+                    "rc": int(proc_run.returncode),
+                    "engine": "guarded-devin-swarm",
+                }
+            except (OSError, subprocess.TimeoutExpired) as exc:
+                record["delegation"] = {
+                    "argv": swarm_argv,
+                    "error": f"{type(exc).__name__}: {exc}",
+                    "engine": "guarded-devin-swarm",
+                }
+        else:
+            record["delegation"] = {
+                "skipped": "guarded swarm engine binary unavailable",
+                "engine": "guarded-devin-swarm",
+            }
+    return record
+
+
+def failover_tick(
+    root: Path,
+    *,
+    now_epoch: float | None = None,
+    stale_seconds: float | None = None,
+    cooldown_seconds: float | None = None,
+    popen=subprocess.Popen,
+    runner=subprocess.run,
+    devin_bin: str | None = None,
+) -> dict:
+    """Apply the deterministic ChatGPT-stale Devin failover policy once."""
+    root = Path(root)
+    now_epoch = time.time() if now_epoch is None else float(now_epoch)
+    decision = evaluate_failover(
+        root,
+        now_epoch=now_epoch,
+        stale_seconds=stale_seconds,
+        cooldown_seconds=cooldown_seconds,
+    )
+    action = decision["action"]
+    state_file = failover_state_path(root)
+    failover = load_state(state_file)
+
+    if action == "launch":
+        baton = load_state(baton_path(root))
+        launch = launch_failover_continuation(
+            root,
+            baton,
+            now_epoch=now_epoch,
+            popen=popen,
+            runner=runner,
+            devin_bin=devin_bin,
+        )
+        failover["last_launch"] = {
+            "generation": launch["generation"],
+            "epoch": now_epoch,
+            "stage": launch["stage"],
+            "pid": launch["pid"],
+        }
+        failover["active"] = {
+            "generation": launch["generation"],
+            "epoch": now_epoch,
+            "stage": launch["stage"],
+            "pid": launch["pid"],
+        }
+        history = list(failover.get("history") or [])
+        history.append(launch)
+        failover["history"] = history[-20:]
+        atomic_json(state_file, failover)
+        return {**decision, "launch": launch}
+
+    if action == "handback":
+        active = failover.get("active") or {}
+        summary = {
+            "handed_back_at": utc_now(),
+            "handed_back_epoch": now_epoch,
+            "generation": active.get("generation"),
+            "baton": load_state(baton_path(root)),
+            "note": (
+                "ChatGPT coordinator baton is fresh again; no new Devin "
+                "failover actions will be launched. Valid failover workers "
+                "already running may finish."
+            ),
+        }
+        atomic_json(handback_path(root), summary)
+        failover["active"] = None
+        failover["last_handback"] = summary
+        atomic_json(state_file, failover)
+        return {**decision, "handback": summary}
+
+    return decision
+
+
 def should_run_job(
     job: ScheduledJob,
     state: dict,
@@ -595,6 +1083,9 @@ def tick(
     now_epoch: float | None = None,
     integration_backlog: int | None = None,
     worker_backlog: int | None = None,
+    baton_stale_seconds: float | None = None,
+    failover_cooldown_seconds: float | None = None,
+    failover_enabled: bool = True,
 ) -> dict:
     jobs = default_jobs(root) if jobs is None else jobs
     now_epoch = time.time() if now_epoch is None else float(now_epoch)
@@ -652,6 +1143,24 @@ def tick(
         state["updated_at"] = utc_now()
         atomic_json(heartbeat_path, state)
         ran.append(job.name)
+
+    if failover_enabled:
+        try:
+            failover = failover_tick(
+                root,
+                now_epoch=now_epoch,
+                stale_seconds=baton_stale_seconds,
+                cooldown_seconds=failover_cooldown_seconds,
+                popen=popen,
+                runner=runner,
+            )
+        except Exception as exc:
+            failover = {
+                "action": "error",
+                "error": f"{type(exc).__name__}: {exc}",
+            }
+        state["devin_failover"] = failover
+        atomic_json(heartbeat_path, state)
     return {"ran": ran, "state": state}
 
 
