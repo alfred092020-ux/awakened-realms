@@ -505,20 +505,31 @@ class SwarmTests(unittest.TestCase):
         for needle in (
             'DEVIN_AGENT = str(ROOT / "bin/logres-devin-agent")',
             'DEVIN_ISOLATE = str(ROOT / "bin/logres-devin-isolate")',
+            'NEXUS = str(ROOT / "bin/logres-nexus")',
             "production-certified.json",
             '"isolation_not_certified"',
             "devin_models_report",
             "select_model(report, requested_model, allow_paid=False)",
+            '"prepare"',
             '"preflight"',
-            '"unattended"',
-            '"--sandbox"',
-            '"start"',
-            'systemd-run/system:',
+            'nexus_logres_devin_network_provision',
+            'nexus_logres_devin_network_teardown',
+            'nexus_logres_devin_transient_start',
+            'nexus_logres_devin_transient_stop',
+            '"permissionMode": permission_mode',
+            'session_id=f"systemd:{unit}"',
         ):
             self.assertIn(needle, script)
         self.assertNotIn('"--allow-paid"', script)
-        self.assertIn('DEVIN_ISOLATE,\n                "start"', script)
-        self.assertIn('session_id=f"systemd:{unit}"', script)
+        self.assertNotIn('DEVIN_ISOLATE,\n                "start"', script)
+        self.assertNotIn('sudo -n', script)
+
+    def test_swarm_stale_devin_cleanup_uses_typed_stop_then_network_teardown(self):
+        script = (CONTROL_ROOT / "bin" / "logres-swarm").read_text()
+        stop = script.index('nexus_logres_devin_transient_stop')
+        teardown = script.index('nexus_logres_devin_network_teardown')
+        self.assertLess(stop, teardown)
+        self.assertIn('cleanup_devin_isolation', script)
 
     def test_devin_worker_config_is_conservative(self):
         cfg = json.loads(
