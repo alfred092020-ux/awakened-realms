@@ -175,12 +175,14 @@ def main(argv=None) -> int:
     p.add_argument("--claimant", default="superbrain-dispatcher")
     p.add_argument("--allow-paid", action="store_true")
     p.add_argument("--paid-priority-ceiling", type=int, default=1)
+    p.add_argument("--max-attempts", type=int, default=3)
 
     p = sub.add_parser("maintain")
     p.add_argument("--stale-seconds", type=int, default=3600)
     p.add_argument("--dispatch-max", type=int, default=8)
     p.add_argument("--allow-paid", action="store_true")
     p.add_argument("--paid-priority-ceiling", type=int, default=1)
+    p.add_argument("--max-attempts", type=int, default=3)
 
     p = sub.add_parser("context-export")
     p.add_argument("task_id")
@@ -297,6 +299,7 @@ def main(argv=None) -> int:
                 limit=args.max,
                 allow_paid=args.allow_paid,
                 paid_priority_ceiling=args.paid_priority_ceiling,
+                max_attempts=args.max_attempts,
             )
         elif args.command == "maintain":
             healed = apply_member_self_heal(
@@ -314,6 +317,7 @@ def main(argv=None) -> int:
                 limit=args.dispatch_max,
                 allow_paid=args.allow_paid,
                 paid_priority_ceiling=args.paid_priority_ceiling,
+                max_attempts=args.max_attempts,
             )
             result = {
                 "self_heal": healed,

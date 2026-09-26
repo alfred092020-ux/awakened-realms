@@ -211,3 +211,157 @@ def test_failed_dispatch_requeues_with_backoff():
     assert wake["attempts"] == 1
     assert wake["available_epoch"] > now
     assert "boom" in wake["last_error"]
+
+
+
+def test_subscription_metadata_cannot_bypass_paid_policy():
+    conn = db()
+    register_session(
+        conn,
+        session_key="devin:metadata-bypass",
+        member_id="devin-metadata-bypass",
+        provider="devin-mcp",
+        external_session_id="session-bypass",
+        state="SUSPENDED",
+        cost_class="paid",
+    )
+    subscribe(
+        conn,
+        subscriber="devin-metadata-bypass",
+        event_type="HANDOFF",
+        priority_ceiling=3,
+        wake_method="devin_mcp",
+        metadata={"allow_paid_auto": True},
+    )
+    post_event(conn, priority=2)
+
+    called = []
+    now = time.time()
+    result = dispatch_wakes(
+        conn,
+        dispatchers={"devin_mcp": lambda payload: called.append(payload)},
+        now_epoch=now,
+        paid_priority_ceiling=1,
+    )
+    assert result["claimed"] == 0
+    assert len(result["deferred"]) == 1
+    assert called == []
+    wake = conn.execute(
+        "select state,last_error from brain_wake_queue"
+    ).fetchone()
+    assert tuple(wake) == ("PENDING", "deferred by paid wake policy")
+
+
+def test_failed_wake_becomes_terminal_after_max_attempts():
+    conn = db()
+    register_session(
+        conn,
+        session_key="devin:bounded-failure",
+        member_id="devin-bounded-failure",
+        provider="devin-mcp",
+        external_session_id="session-failure",
+        state="SUSPENDED",
+        cost_class="paid",
+    )
+    subscribe(
+        conn,
+        subscriber="devin-bounded-failure",
+        event_type="BLOCKER",
+        priority_ceiling=1,
+        wake_method="devin_mcp",
+    )
+    post_event(conn, event_type="BLOCKER", priority=1, task_id="T-FAIL")
+
+    def fail(_payload):
+        raise RuntimeError("dead session")
+
+    now = time.time()
+    result = dispatch_wakes(
+        conn,
+        dispatchers={"devin_mcp": fail},
+        now_epoch=now,
+        max_attempts=1,
+        paid_priority_ceiling=1,
+    )
+    assert result["claimed"] == 1
+    assert result["results"][0]["state"] == "FAILED"
+
+    wake = conn.execute(
+        "select state,attempts,last_error from brain_wake_queue"
+    ).fetchone()
+    assert wake["state"] == "FAILED"
+    assert wake["attempts"] == 1
+    assert "dead session" in wake["last_error"]
+
+    receipt = conn.execute(
+        """select status,attempt,transport,cost_class
+             from brain_wake_dispatch_receipts
+            order by id desc limit 1"""
+    ).fetchone()
+    assert tuple(receipt) == ("FAILED", 1, "devin_mcp", "paid")
+
+    events = conn.execute(
+        """select event_type,priority,task_id,subject
+             from brain_events
+            where event_type='WAKE_FAILED'"""
+    ).fetchall()
+    assert len(events) == 1
+    assert tuple(events[0]) == (
+        "WAKE_FAILED",
+        1,
+        "T-FAIL",
+        "Wake delivery exhausted: 1",
+    )
+
+    second = dispatch_wakes(
+        conn,
+        dispatchers={"devin_mcp": fail},
+        now_epoch=now + 1000,
+        max_attempts=1,
+        paid_priority_ceiling=1,
+    )
+    assert second["claimed"] == 0
+    assert conn.execute(
+        "select count(*) from brain_wake_dispatch_receipts"
+    ).fetchone()[0] == 1
+    assert conn.execute(
+        "select count(*) from brain_events where event_type='WAKE_FAILED'"
+    ).fetchone()[0] == 1
+
+
+def test_stale_claim_recovery_uses_epoch_comparison():
+    from logres_superbrain import requeue_stale_claimed_wakes, utc_now
+
+    conn = db()
+    subscribe(
+        conn,
+        subscriber="local-worker",
+        event_type="BLOCKER",
+        priority_ceiling=1,
+        wake_method="brain_event",
+    )
+    post_event(conn, event_type="BLOCKER", priority=1)
+    conn.execute(
+        """update brain_wake_queue
+              set state='CLAIMED',
+                  claimed_by='dead-dispatcher',
+                  claimed_at=?,
+                  available_epoch=?
+            where id=1""",
+        (utc_now(1_000_000.0), 1_000_000.0),
+    )
+    conn.commit()
+
+    reclaimed = requeue_stale_claimed_wakes(
+        conn,
+        now_epoch=2_000_000.0,
+        claim_timeout_seconds=600,
+    )
+    assert reclaimed == 1
+    wake = conn.execute(
+        "select state,claimed_by,claimed_at,last_error from brain_wake_queue where id=1"
+    ).fetchone()
+    assert wake["state"] == "PENDING"
+    assert wake["claimed_by"] is None
+    assert wake["claimed_at"] is None
+    assert wake["last_error"] == "stale dispatch claim reclaimed"
