@@ -25,6 +25,7 @@ import hashlib
 import json
 import sqlite3
 import subprocess
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -1183,25 +1184,42 @@ def record_receipt(conn: sqlite3.Connection, receipt: dict) -> int:
         timespec="seconds"
     )
     epoch = datetime.fromisoformat(stamp.replace("Z", "+00:00")).timestamp()
-    cur = conn.execute(
-        """insert into correctness_receipts(
-             sha,ref,run_id,verdict,tier,receipt_json,receipt_sha256,
-             created_at,created_epoch
-           ) values(?,?,?,?,?,?,?,?,?)""",
-        (
-            sha,
-            str(receipt.get("ref") or ""),
-            receipt.get("run_id"),
-            verdict,
-            tier,
-            json.dumps(receipt, sort_keys=True),
-            str(receipt.get("receipt_sha256") or ""),
-            stamp,
-            epoch,
-        ),
+    values = (
+        sha,
+        str(receipt.get("ref") or ""),
+        receipt.get("run_id"),
+        verdict,
+        tier,
+        json.dumps(receipt, sort_keys=True),
+        str(receipt.get("receipt_sha256") or ""),
+        stamp,
+        epoch,
     )
-    conn.commit()
-    return int(cur.lastrowid)
+    delay = 0.02
+    for attempt in range(4):
+        try:
+            cur = conn.execute(
+                """insert into correctness_receipts(
+                     sha,ref,run_id,verdict,tier,receipt_json,receipt_sha256,
+                     created_at,created_epoch
+                   ) values(?,?,?,?,?,?,?,?,?)""",
+                values,
+            )
+            conn.commit()
+            return int(cur.lastrowid)
+        except sqlite3.OperationalError as exc:
+            detail = str(exc).lower()
+            transient = (
+                "database is locked" in detail
+                or "database is busy" in detail
+                or "database table is locked" in detail
+            )
+            if not transient or attempt == 3:
+                raise
+            if conn.in_transaction:
+                conn.rollback()
+            time.sleep(delay)
+            delay = min(0.16, delay * 2.0)
 
 
 def latest_receipt(conn: sqlite3.Connection, sha: str | None = None):

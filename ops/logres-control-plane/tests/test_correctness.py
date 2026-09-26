@@ -4,6 +4,7 @@ import sqlite3
 import subprocess
 import sys
 import tempfile
+import threading
 import unittest
 from pathlib import Path
 
@@ -458,6 +459,39 @@ class ReceiptPersistenceTests(unittest.TestCase):
         conn = sqlite3.connect(":memory:")
         with self.assertRaises(lc.CorrectnessError):
             lc.record_receipt(conn, {"sha": "abc123", "verdict": "PASS"})
+
+    def test_receipt_persistence_retries_transient_writer_lock(self):
+        with tempfile.TemporaryDirectory() as td:
+            db = Path(td) / "control.sqlite"
+            setup = sqlite3.connect(db)
+            lc.ensure_schema(setup)
+            setup.close()
+
+            holder = sqlite3.connect(db, timeout=0.01, check_same_thread=False)
+            holder.execute("begin immediate")
+            timer = threading.Timer(0.08, holder.rollback)
+            timer.start()
+            try:
+                conn = sqlite3.connect(db, timeout=0.005)
+                conn.execute("pragma busy_timeout=5")
+                try:
+                    row_id = lc.record_receipt(
+                        conn,
+                        {
+                            "sha": SHA,
+                            "ref": "worker/test",
+                            "verdict": "PASS",
+                            "tier": "L1",
+                            "receipt_sha256": "f" * 64,
+                            "created_at": "2026-09-26T04:00:00+00:00",
+                        },
+                    )
+                    self.assertGreater(row_id, 0)
+                finally:
+                    conn.close()
+            finally:
+                timer.join()
+                holder.close()
 
 
 class GateFarmIntegrationTests(unittest.TestCase):
