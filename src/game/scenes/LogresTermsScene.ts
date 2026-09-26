@@ -32,6 +32,9 @@ export class LogresTermsScene
   private agreeing =
     false
 
+  private termsSceneInputEpoch =
+    0
+
   constructor() {
     super(
       'LogresTermsScene',
@@ -47,6 +50,34 @@ export class LogresTermsScene
   create() {
     this.agreeing =
       false
+
+    this.termsSceneInputEpoch =
+      this.input.activePointer
+        .downTime
+
+    this.registry.set(
+      'logres.qa.termsTransitionTrace',
+      {
+        rendered:
+          true,
+        scene:
+          'LogresTermsScene',
+        activationPointerDownTime:
+          this.termsSceneInputEpoch,
+        titleStartInput:
+          this.registry.get(
+            'logres.qa.titleStartInputTrace',
+          ) ?? null,
+        accepted:
+          false,
+        freshPointerEdge:
+          false,
+        agreePointerDownTime:
+          null,
+        stalePointerRejections:
+          0,
+      },
+    )
 
     /*
      * CONFIRMED ORIGINAL Global 3.0.24 boundary:
@@ -289,15 +320,77 @@ export class LogresTermsScene
 
     agree.on(
       'pointerdown',
-      () => {
+      (
+        pointer:
+          Phaser.Input.Pointer,
+      ) => {
         if (
           this.agreeing
         ) {
           return
         }
 
+        const previousTrace =
+          this.registry.get(
+            'logres.qa.termsTransitionTrace',
+          ) as
+            Record<string, unknown> |
+            undefined
+
+        const freshPointerEdge =
+          Number.isFinite(
+            pointer.downTime,
+          ) &&
+          pointer.downTime >
+            this.termsSceneInputEpoch
+
+        if (
+          !freshPointerEdge
+        ) {
+          const previousRejections =
+            typeof previousTrace
+              ?.stalePointerRejections ===
+              'number'
+              ? previousTrace
+                  .stalePointerRejections
+              : 0
+
+          this.registry.set(
+            'logres.qa.termsTransitionTrace',
+            {
+              ...previousTrace,
+              accepted:
+                false,
+              freshPointerEdge:
+                false,
+              rejectedPointerDownTime:
+                pointer.downTime,
+              stalePointerRejections:
+                previousRejections +
+                1,
+            },
+          )
+
+          return
+        }
+
         this.agreeing =
           true
+
+        this.registry.set(
+          'logres.qa.termsTransitionTrace',
+          {
+            ...previousTrace,
+            accepted:
+              true,
+            freshPointerEdge:
+              true,
+            agreePointerDownTime:
+              pointer.downTime,
+            acceptedAt:
+              this.time.now,
+          },
+        )
 
         agree
           .disableInteractive()
