@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "logical_workers": {"min": 6, "target": 12, "max": 16},
+  "heavy_local_workers": {"min": 1, "target": 4, "max": 4},
+  "lane_caps": {"local": 4, "devin_cloud": 6, "chatgpt": 4, "copilot": 2, "research": 4, "verifier": 4},
+  "pressure": {
+    "cpu_psi_warn": 3.0, "cpu_psi_high": 8.0,
+    "memory_psi_warn": 1.0, "memory_psi_high": 4.0,
+    "io_psi_warn": 3.0, "io_psi_high": 8.0,
+    "mem_available_warn": 0.20, "mem_available_high": 0.12,
+    "load_per_cpu_warn": 0.90, "load_per_cpu_high": 1.20
+  },
+  "verifier": {"backlog_warn": 4, "backlog_high": 8, "latency_warn_seconds": 300, "latency_high_seconds": 900},
+  "quota": {
+    "unknown_devin_cap": 2,
+    "low_remaining_ratio": 0.15,
+    "critical_remaining_ratio": 0.05,
+    "low_quota_cap": 1,
+    "allow_on_demand_default": false
+  },
+  "tuning": {
+    "queue_age_scale_up_seconds": 900,
+    "failure_ratio_scale_down": 0.25,
+    "failure_min_samples": 4,
+    "scale_up_step": 2,
+    "scale_down_step": 2
+  },
+  "departments": {
+    "Engineering": 0.30, "Design": 0.10, "Research": 0.14, "QA": 0.14,
+    "Security": 0.10, "Art": 0.10, "Release": 0.12
+  }
+}

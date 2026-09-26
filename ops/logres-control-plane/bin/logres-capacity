@@ -1,0 +1,89 @@
+#!/home/ubuntu/logres/envs/research/bin/python
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import sqlite3
+import sys
+import tempfile
+import time
+from pathlib import Path
+
+CONTROL_ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(CONTROL_ROOT / "lib"))
+
+from logres_capacity import collect_signals, execute_swarm_tick, load_policy, plan_capacity
+
+ROOT = Path(os.environ.get("LOGRES_ROOT", "/home/ubuntu/logres"))
+DB = Path(os.environ.get("LOGRES_CONTROL_DB", str(ROOT / "control/control.sqlite")))
+POLICY = Path(os.environ.get("LOGRES_CAPACITY_POLICY", str(CONTROL_ROOT / "config/capacity_policy.json")))
+STATE = Path(os.environ.get("LOGRES_CAPACITY_STATE", str(ROOT / "control/capacity-state.json")))
+
+
+def connect_readonly() -> sqlite3.Connection:
+    conn = sqlite3.connect(f"file:{DB}?mode=ro", uri=True, timeout=30)
+    conn.row_factory = sqlite3.Row
+    conn.execute("pragma busy_timeout=30000")
+    return conn
+
+
+def write_state(payload: dict) -> None:
+    STATE.parent.mkdir(parents=True, exist_ok=True)
+    fd, raw = tempfile.mkstemp(prefix=STATE.name + ".", dir=STATE.parent)
+    tmp = Path(raw)
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as handle:
+            json.dump(payload, handle, indent=2, sort_keys=True)
+            handle.write("\n")
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.chmod(tmp, 0o600)
+        os.replace(tmp, STATE)
+    finally:
+        try:
+            tmp.unlink(missing_ok=True)
+        except OSError:
+            pass
+
+
+def compute() -> dict:
+    policy = load_policy(POLICY)
+    conn = connect_readonly()
+    try:
+        signals = collect_signals(conn)
+    finally:
+        conn.close()
+    plan = plan_capacity(signals, policy)
+    return {"ts": time.time(), "signals": signals, "plan": plan}
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser(prog="logres-capacity")
+    sub = ap.add_subparsers(dest="command", required=True)
+    sub.add_parser("plan")
+    sub.add_parser("status")
+    tick = sub.add_parser("tick")
+    tick.add_argument("--execute", action="store_true")
+    args = ap.parse_args()
+
+    if args.command == "status" and STATE.is_file():
+        try:
+            print(json.dumps(json.loads(STATE.read_text()), indent=2, sort_keys=True))
+            return 0
+        except (OSError, json.JSONDecodeError):
+            pass
+
+    payload = compute()
+    if args.command == "tick":
+        if args.execute:
+            payload["swarm"] = execute_swarm_tick(ROOT, payload["plan"])
+        else:
+            payload["swarm"] = {"executed": False}
+        write_state(payload)
+    print(json.dumps(payload, indent=2, sort_keys=True))
+    return int(payload.get("swarm", {}).get("returncode", 0) or 0)
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
