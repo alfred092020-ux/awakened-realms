@@ -173,6 +173,8 @@ PRODUCTION_FILES = (
     "bin/logres-brain",
     "bin/logres-context-pack",
     "bin/logres-correctness",
+    "bin/logres-capacity",
+    "bin/logres-devin-lead",
     "bin/logres-devin-agent",
     "bin/logres-devin-isolate",
     "bin/logres-devin-sandbox-setup",
@@ -183,12 +185,16 @@ PRODUCTION_FILES = (
     "bin/logres-superbrain-maintain",
     "config/context_pack.json",
     "config/correctness_policy.json",
+    "config/capacity_policy.json",
+    "config/devin_lead.json",
     "config/devin_isolation.json",
     "config/devin_workers.json",
     "config/factory_metrics.json",
     "config/peer_consultation.json",
     "lib/logres_context_pack.py",
     "lib/logres_correctness.py",
+    "lib/logres_capacity.py",
+    "lib/logres_devin_lead.py",
     "lib/logres_devin.py",
     "lib/logres_devin_isolation.py",
     "lib/logres_factory_metrics.py",
@@ -198,6 +204,7 @@ PRODUCTION_FILES = (
     "migrations/20260926_001_superbrain_v2.sql",
     "migrations/20260926_002_superbrain_selfheal_dispatch.sql",
     "systemd/logres-devin-worker@.service",
+    "systemd/logres-devin-lead.service",
 )
 
 
