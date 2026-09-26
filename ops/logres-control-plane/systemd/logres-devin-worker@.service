@@ -1,0 +1,107 @@
+# Logres isolated Devin worker template (instance = worker worktree name).
+#
+# This unit mirrors the transient-unit contract rendered by
+# `logres-devin-isolate render|start`. Production launches are per-task
+# transient units via `systemd-run --system`; this template is the
+# versioned reference for the same hardening contract.
+#
+# Verified boundary facts for this host:
+# - The systemd SYSTEM manager is the authoritative boundary. The user
+#   manager is not: ProtectHome is ineffective/ignored there.
+# - ProtectHome=tmpfs hides all of /home; BindPaths/BindReadOnlyPaths then
+#   re-expose only the exact worker worktree, scratch, and log dirs.
+#   ReadWritePaths cannot re-expose a path under ProtectHome, and bind
+#   sources must exist before launch (logres-devin-isolate prepare).
+# - systemd here is built -BPF_FRAMEWORK, so IPAddressAllow/Deny and
+#   SocketBindDeny below are defense-in-depth only. The AUTHORITATIVE
+#   network boundary is the pre-created per-worker network namespace
+#   (NetworkNamespacePath) plus the host nftables policy rendered by
+#   `logres-devin-isolate netns-plan`, which denies OCI metadata
+#   (169.254.169.254, fd00:ec2::254), link-local, and host loopback.
+# - The native Devin --sandbox (bubblewrap+seccomp on Exec subprocesses)
+#   is the required inner boundary: without it, arbitrary Exec inside this
+#   namespace could read the bound Devin credentials. Known issue: bwrap
+#   fails 'loopback: Failed RTM_NEWADDR' when
+#   kernel.apparmor_restrict_unprivileged_userns=1; a narrow versioned
+#   AppArmor profile (apparmor/usr.bin.bwrap.logres, DEVIN-BWRAP-APPARMOR-001)
+#   restores it without weakening the global restriction. Preflight fails
+#   closed until that profile plus bwrap/socat are proven.
+# - Prerequisites created by root helpers, never by this unit: the netns
+#   (/run/netns/logres-devin-%i), the scratch/log layout, and the env file.
+
+[Unit]
+Description=Logres isolated Devin worker %i
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=exec
+User=ubuntu
+EnvironmentFile=-/home/ubuntu/logres/control/devin-isolation/%i.env
+Environment=LOGRES_DEVIN_EXECUTION_ISOLATION=systemd/logres-devin-worker@.service
+Environment=HOME=/home/ubuntu/logres/scratch/devin-workers/%i/home
+Environment=TMPDIR=/tmp
+Environment=GIT_CONFIG_NOSYSTEM=1
+WorkingDirectory=/home/ubuntu/logres/work/%i
+ExecStart=/home/ubuntu/logres/bin/logres-devin-isolate exec-child
+
+NoNewPrivileges=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectSystem=strict
+ProtectHome=tmpfs
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+ProtectClock=yes
+ProtectHostname=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
+RestrictRealtime=yes
+RemoveIPC=yes
+KeyringMode=private
+DevicePolicy=closed
+# user/mnt/net namespaces stay allowed: the inner bwrap Exec sandbox
+# needs them; cgroup namespace creation stays denied.
+RestrictNamespaces=~cgroup
+CapabilityBoundingSet=
+AmbientCapabilities=
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6 AF_NETLINK
+SystemCallArchitectures=native
+SocketBindDeny=any
+UMask=0077
+
+# Writable: only this worker's worktree, scratch, and log dirs.
+BindPaths=/home/ubuntu/logres/work/%i
+BindPaths=/home/ubuntu/logres/scratch/devin-workers/%i
+BindPaths=/home/ubuntu/logres/logs/devin-workers/%i
+# Devin auth: writable binds so the control process can authenticate and
+# write session state; arbitrary Exec is kept away from these paths only
+# by the native bwrap sandbox (deny Read on credential paths) — which is
+# why preflight fails closed without it. Everything else under /home
+# stays masked by ProtectHome=tmpfs.
+BindPaths=/home/ubuntu/.config/devin
+BindPaths=/home/ubuntu/.local/share/devin
+InaccessiblePaths=/root /etc/ssh /etc/cloud /var/lib/cloud /run/secrets /home/ubuntu/.ssh /home/ubuntu/.aws /home/ubuntu/.azure /home/ubuntu/.config/gh /home/ubuntu/.docker /home/ubuntu/.gnupg /home/ubuntu/.kube /home/ubuntu/.oci /home/ubuntu/.gitconfig /home/ubuntu/logres/control /home/ubuntu/logres/private /home/ubuntu/logres/src/awakened-realms
+
+# Authoritative network boundary: join the pre-created worker netns.
+NetworkNamespacePath=/run/netns/logres-devin-%i
+# Defense-in-depth only (systemd is built -BPF_FRAMEWORK): the nftables
+# policy in `logres-devin-isolate netns-plan` is the real egress control.
+IPAddressDeny=169.254.169.254/32 fd00:ec2::254/128 169.254.0.0/16 127.0.0.0/8 ::1/128 fe80::/10
+
+MemoryMax=4G
+MemoryHigh=3G
+CPUQuota=300%
+TasksMax=512
+RuntimeMaxSec=7200
+TimeoutStopSec=30
+KillMode=control-group
+KillSignal=SIGTERM
+FinalKillSignal=SIGKILL
+SendSIGKILL=yes
+
+StandardOutput=append:/home/ubuntu/logres/logs/devin-workers/%i/devin.log
+StandardError=append:/home/ubuntu/logres/logs/devin-workers/%i/devin.log
+SyslogIdentifier=logres-devin-%i
