@@ -10,7 +10,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-SCHEMA_VERSION = "2026-09-26.superbrain-v2.2"
+SCHEMA_VERSION = "2026-09-26.superbrain-v2.3"
 ACTIVE_SESSION_STATES = {"ACTIVE", "RUNNING", "WORKING", "NEW"}
 TERMINAL_TASK_STATES = {"DONE", "INTEGRATED", "SUPERSEDED", "CANCELLED", "BLOCKED_EVIDENCE"}
 DEFAULT_PROTECTED_MEMBERS = {"lead", "nexus"}
@@ -145,9 +145,11 @@ def ensure_schema(conn: sqlite3.Connection) -> None:
             new.ts,new.ts
           from brain_event_subscriptions s
           where s.enabled=1
+            and new.event_type not in ('WAKE_FAILED','RECONCILIATION')
             and (s.event_type='*' or s.event_type=new.event_type)
             and new.priority <= s.priority_ceiling
             and (s.task_id is null or s.task_id=new.task_id)
+            and (new.recipient='ALL' or new.recipient=s.subscriber)
             and s.subscriber <> new.sender;
         end;
         """
@@ -1058,7 +1060,7 @@ def requeue_stale_claimed_wakes(
                   updated_at=?
             where state='CLAIMED'
               and claimed_at is not null
-              and coalesce(unixepoch(claimed_at),0)<=?""",
+              and coalesce(cast(strftime('%s', claimed_at) as integer),0)<=?""",
         (now_epoch, utc_now(now_epoch), cutoff_epoch),
     )
     conn.commit()
@@ -1305,7 +1307,7 @@ def finish_wake_dispatch(
                     now_epoch,
                     stamp,
                     dispatcher,
-                    "ALL",
+                    "lead",
                     "WAKE_FAILED",
                     1,
                     task_id,
