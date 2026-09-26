@@ -234,7 +234,10 @@ export class LogresTitleScene
 
     start.on(
       'pointerdown',
-      () => {
+      (
+        pointer:
+          Phaser.Input.Pointer,
+      ) => {
         if (
           this.transitioning
         ) {
@@ -243,6 +246,18 @@ export class LogresTitleScene
 
         this.transitioning =
           true
+
+        this.registry.set(
+          'logres.qa.titleStartInputTrace',
+          {
+            scene:
+              'LogresTitleScene',
+            pointerDownTime:
+              pointer.downTime,
+            recordedAt:
+              this.time.now,
+          },
+        )
 
         start
           .disableInteractive()

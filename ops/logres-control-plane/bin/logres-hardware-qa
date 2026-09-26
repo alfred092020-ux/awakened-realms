@@ -100,6 +100,41 @@ def tap(x,y):
     raw=phone(f'$HOME/bin/logres-tap-logical {float(x)} {float(y)}')
     return json.loads(raw.splitlines()[-1])
 
+def terms_transition_trace(snapshot):
+    registry=snapshot.get("registry") or {}
+    trace=registry.get("logres.qa.termsTransitionTrace")
+    return trace if isinstance(trace,dict) else None
+
+def require_terms_rendered(snapshot):
+    trace=terms_transition_trace(snapshot)
+    if not trace or trace.get("rendered") is not True:
+        raise QAError(
+            "Terms checkpoint lacks a rendered transition trace"
+        )
+    if trace.get("accepted") is True:
+        raise QAError(
+            "Terms accepted before the dedicated QA Agree input"
+        )
+    return trace
+
+def require_fresh_terms_acceptance(snapshot):
+    trace=terms_transition_trace(snapshot)
+    if not trace or trace.get("rendered") is not True:
+        raise QAError(
+            "post-Agreement state lacks the Terms render trace"
+        )
+    activation=trace.get("activationPointerDownTime")
+    agree=trace.get("agreePointerDownTime")
+    if trace.get("accepted") is not True or trace.get("freshPointerEdge") is not True:
+        raise QAError(
+            "Terms acceptance was not proven to use a fresh input edge"
+        )
+    if not isinstance(activation,(int,float)) or not isinstance(agree,(int,float)) or agree <= activation:
+        raise QAError(
+            "Terms Agree pointer edge is not newer than the scene activation edge"
+        )
+    return trace
+
 def screenshot(out: Path):
     run([str(PHONE_QA),"screenshot",str(out)],timeout=30)
     if not out.exists() or out.stat().st_size < 2048:
@@ -356,14 +391,33 @@ adb -s "$DEV" shell dumpsys thermalservice | grep -m1 "Thermal Status:"''')
 
         tap(360,1080)
         states["agreement"]=wait_scene("LogresTermsScene",30)
+        agreement_trace=require_terms_rendered(states["agreement"])
         save_state(proof/"agreement.state.json",states["agreement"])
+        save_state(
+            proof/"terms-transition-trace.json",
+            {
+              "phase":"TERMS_RENDERED_WAITING_FOR_AGREE",
+              "agreement":agreement_trace,
+            },
+        )
         screenshot(proof/"agreement.png")
         checks["agreement_render"]="PASS"
+        checks["agreement_requires_fresh_input"]="PASS"
 
         tap(360,1110)
         states["gender"]=wait_scene("LogresCharacterCreateScene",30)
+        accepted_trace=require_fresh_terms_acceptance(states["gender"])
         save_state(proof/"gender.state.json",states["gender"])
+        save_state(
+            proof/"terms-transition-trace.json",
+            {
+              "phase":"TERMS_ACCEPTED_BY_DISTINCT_AGREE_EDGE",
+              "agreement":agreement_trace,
+              "post_agreement":accepted_trace,
+            },
+        )
         screenshot(proof/"gender.png")
+        checks["agreement_distinct_agree_action"]="PASS"
         checks["gender_select_render"]="PASS"
 
         # Wait through the original fade-in before pressing the native OK control.
