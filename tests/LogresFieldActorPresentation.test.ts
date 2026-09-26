@@ -162,6 +162,48 @@ describe(
     )
 
     it(
+      'uses recovered Global footer art without inventing unresolved field layout',
+      () => {
+        const here =
+          path.dirname(
+            fileURLToPath(
+              import.meta.url,
+            ),
+          )
+
+        const source =
+          fs.readFileSync(
+            path.resolve(
+              here,
+              '../src/game/logres/field/controllers/LogresFieldHudController.ts',
+            ),
+            'utf8',
+          )
+
+        expect(source)
+          .toContain(
+            'LOGRES_ASSETS\n            .fieldUnderbar',
+          )
+        expect(source)
+          .toContain(
+            'LOGRES_ASSETS\n            .fieldMenu',
+          )
+        expect(source)
+          .toContain(
+            "'logres.fieldHud.menuRequested'",
+          )
+        expect(source)
+          .toContain(
+            "'UNRESOLVED'",
+          )
+        expect(source)
+          .toContain(
+            "'RECONSTRUCTED_BOTTOM_EDGE_FROM_RECOVERED_DIMENSIONS'",
+          )
+      },
+    )
+
+    it(
       'passes the hydrator synthetic self-test without proprietary files',
       () => {
         const output =

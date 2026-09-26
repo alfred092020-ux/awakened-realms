@@ -163,6 +163,26 @@ export const LOGRES_ASSETS = {
       ),
   },
 
+  fieldUnderbar: {
+    key:
+      'logres-global-field-underbar',
+
+    url:
+      logresRuntimeUrl(
+        '/__logres_ref/global/tutorial-hud/hud/field_underbar.png',
+      ),
+  },
+
+  fieldMenu: {
+    key:
+      'logres-global-field-menu',
+
+    url:
+      logresRuntimeUrl(
+        '/__logres_ref/global/tutorial-hud/hud/field_menu.png',
+      ),
+  },
+
   tutorialParameterBar: {
     key:
       'logres-global-tutorial-parameter-bar',
