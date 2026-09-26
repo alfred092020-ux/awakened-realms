@@ -1,0 +1,55 @@
+#!/home/ubuntu/logres/envs/research/bin/python
+import argparse
+import json
+import os
+import sqlite3
+import sys
+from pathlib import Path
+
+CONTROL = Path(__file__).resolve().parents[1]
+LIB = CONTROL / "lib"
+if str(LIB) not in sys.path:
+    sys.path.insert(0, str(LIB))
+
+from logres_devin_evolution import (
+    load_policy,
+    reconcile_runs,
+    status_report,
+    tick,
+)
+
+DB = Path(os.environ.get(
+    "LOGRES_CONTROL_DB", "/home/ubuntu/logres/control/control.sqlite"
+))
+POLICY = Path(os.environ.get(
+    "LOGRES_DEVIN_EVOLUTION_POLICY",
+    "/home/ubuntu/logres/config/devin_evolution.json",
+))
+
+
+def connect() -> sqlite3.Connection:
+    conn = sqlite3.connect(DB, timeout=30)
+    conn.row_factory = sqlite3.Row
+    conn.execute("pragma busy_timeout=30000")
+    return conn
+def main() -> int:
+    parser = argparse.ArgumentParser(prog="logres-devin-evolve")
+    parser.add_argument("command", choices=("status", "tick", "reconcile"))
+    args = parser.parse_args()
+    policy = load_policy(POLICY)
+    conn = connect()
+    try:
+        if args.command == "status":
+            report = status_report(conn)
+        elif args.command == "tick":
+            report = tick(conn, policy)
+        else:
+            report = reconcile_runs(conn, policy)
+        print(json.dumps(report, indent=2, sort_keys=True))
+        return 0
+    finally:
+        conn.close()
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

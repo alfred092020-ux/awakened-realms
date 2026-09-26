@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "enabled": true,
+  "task_prefix": "DEVIN-EVOLUTION",
+  "allowed_scope_prefixes": [
+    "ops/logres-control-plane/",
+    "scripts/logres/",
+    "docs/superpowers/"
+  ],
+  "allowed_lanes": [
+    "control-plane",
+    "verification",
+    "integrations"
+  ],
+  "max_scopes": 6,
+  "max_acceptance": 8,
+  "max_generated_per_tick": 1,
+  "max_open_generated": 2,
+  "cooldown_seconds": 21600,
+  "coordinator_bin": "/home/ubuntu/logres/bin/logres-coordinator",
+  "swarm_bin": "/home/ubuntu/logres/bin/logres-swarm"
+}
