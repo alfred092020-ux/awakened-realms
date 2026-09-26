@@ -536,7 +536,7 @@ def build_devin_argv(
     if config_path is not None:
         argv += ["--config", str(config_path)]
     if sandbox:
-        argv.append("--sandbox")
+        argv += ["--sandbox", "--prefer-exec-tool"]
     if export_path is not None:
         argv += ["--export", str(export_path)]
     argv += [str(item) for item in extra]

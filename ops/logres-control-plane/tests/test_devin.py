@@ -1065,6 +1065,24 @@ class PermissionManifestTests(unittest.TestCase):
         )
         self.assertNotIn("dangerous", argv)
 
+    def test_sandboxed_argv_prefers_exec_without_broad_permission_mode(self):
+        argv = build_devin_argv(
+            prompt_file=Path("/p"),
+            config_path=Path("/control/task-permission.json"),
+            sandbox=True,
+            execution_mode="unattended",
+        )
+        self.assertIn("--sandbox", argv)
+        self.assertIn("--prefer-exec-tool", argv)
+        self.assertEqual(
+            DEFAULT_PERMISSION_MODE, argv[argv.index("--permission-mode") + 1]
+        )
+        self.assertNotIn("dangerous", argv)
+        self.assertNotIn("bypass", argv)
+
+        interactive = build_devin_argv(prompt_file=Path("/p"))
+        self.assertNotIn("--prefer-exec-tool", interactive)
+
 class BinContractTests(unittest.TestCase):
     def test_bin_preserves_swarm_agent_argument_contract(self):
         script = (CONTROL_ROOT / "bin" / "logres-devin-agent").read_text()
