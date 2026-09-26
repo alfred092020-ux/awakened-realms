@@ -5,6 +5,10 @@ import {
 } from '../../ui/LogresRuntimeAssets'
 
 import {
+  LOGRES_TUTORIAL_HUD_ASSET_EVIDENCE,
+} from '../../tutorial/LogresTutorialHudEvidence'
+
+import {
   LOGRES_TUTORIAL_HUD_RUNTIME_SELECTION,
   LOGRES_TUTORIAL_PARAMETER_BAR_PLACEMENT,
   LOGRES_TUTORIAL_QUEST_START_HIDE_EVENT,
@@ -33,6 +37,14 @@ export class LogresFieldHudController {
   private readonly scene:
     Phaser.Scene
 
+  private fieldFooterLayer:
+    Phaser.GameObjects.Container | null =
+      null
+
+  private fieldMenuButton:
+    Phaser.GameObjects.Image | null =
+      null
+
   private tutorialParameterBar:
     Phaser.GameObjects.Image | null =
       null
@@ -55,6 +67,7 @@ export class LogresFieldHudController {
 
   create() {
     this.createSkillBar()
+    this.createFieldFooter()
     this.createTutorialHud()
   }
 
@@ -153,6 +166,95 @@ export class LogresFieldHudController {
             .key,
         )
     }
+  }
+
+  private createFieldFooter() {
+    const footerEvidence =
+      LOGRES_TUTORIAL_HUD_ASSET_EVIDENCE
+        .fieldUnderbar
+
+    const menuEvidence =
+      LOGRES_TUTORIAL_HUD_ASSET_EVIDENCE
+        .fieldMenu
+
+    const underbar =
+      this.scene.add
+        .image(
+          0,
+          0,
+          LOGRES_ASSETS
+            .fieldUnderbar
+            .key,
+        )
+
+    this.fieldMenuButton =
+      this.scene.add
+        .image(
+          footerEvidence.width / 2 -
+            menuEvidence.width / 2,
+          0,
+          LOGRES_ASSETS
+            .fieldMenu
+            .key,
+        )
+        .setInteractive()
+
+    if (
+      this.fieldMenuButton.input
+    ) {
+      this.fieldMenuButton
+        .input
+        .cursor =
+          'pointer'
+    }
+
+    this.fieldMenuButton.on(
+      'pointerdown',
+      () => {
+        this.scene.registry.set(
+          'logres.fieldHud.menuRequested',
+          true,
+        )
+
+        this.scene.events.emit(
+          'logres.fieldHud.menuRequested',
+        )
+      },
+    )
+
+    this.fieldFooterLayer =
+      this.scene.add
+        .container(
+          0,
+          0,
+          [
+            underbar,
+            this.fieldMenuButton,
+          ],
+        )
+        .setDepth(
+          1005,
+        )
+
+    this.scene.registry.set(
+      'logres.fieldHud.footer.sourceSha256',
+      footerEvidence.sourceSha256,
+    )
+
+    this.scene.registry.set(
+      'logres.fieldHud.menu.sourceSha256',
+      menuEvidence.sourceSha256,
+    )
+
+    this.scene.registry.set(
+      'logres.fieldHud.footer.layoutVariant',
+      'UNRESOLVED',
+    )
+
+    this.scene.registry.set(
+      'logres.fieldHud.footer.placement',
+      'RECONSTRUCTED_BOTTOM_EDGE_FROM_RECOVERED_DIMENSIONS',
+    )
   }
 
   private createTutorialHud() {
@@ -312,6 +414,41 @@ export class LogresFieldHudController {
       zoom <= 0
     ) {
       return
+    }
+
+    if (
+      this.fieldFooterLayer
+    ) {
+      const footerEvidence =
+        LOGRES_TUTORIAL_HUD_ASSET_EVIDENCE
+          .fieldUnderbar
+
+      const footerScale =
+        Math.min(
+          1,
+          this.scene.scale.width /
+            footerEvidence.width,
+        )
+
+      const worldPoint =
+        camera.getWorldPoint(
+          this.scene.scale.width / 2,
+          this.scene.scale.height -
+            (
+              footerEvidence.height *
+              footerScale
+            ) / 2,
+        )
+
+      this.fieldFooterLayer
+        .setPosition(
+          worldPoint.x,
+          worldPoint.y,
+        )
+        .setScale(
+          footerScale /
+            zoom,
+        )
     }
 
     if (

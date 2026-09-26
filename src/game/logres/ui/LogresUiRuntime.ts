@@ -26,6 +26,8 @@ export interface LogresUiWindowState {
 
 export const LOGRES_UI_RUNTIME_EVIDENCE = Object.freeze({
   designSize: LOGRES_TUTORIAL_HUD_DESIGN_SIZE,
+  fieldUnderbarAsset:
+    LOGRES_TUTORIAL_HUD_ASSET_EVIDENCE.fieldUnderbar,
   fieldMenuAsset:
     LOGRES_TUTORIAL_HUD_ASSET_EVIDENCE.fieldMenu,
   windowManagerOperations:
@@ -185,7 +187,39 @@ export function mountLogresUiRuntime(
       runtime.current.surface ===
       'FIELD_HUD'
     ) {
-      panel.style.bottom = '24px'
+      panel.style.bottom = '0'
+      panel.style.width =
+        'min(100vw, 720px)'
+      panel.style.gap = '0'
+      root.dataset.logresFooterVariant =
+        'UNRESOLVED'
+      root.dataset.logresFooterPlacement =
+        'RECONSTRUCTED'
+
+      const footer =
+        document.createElement('div')
+      footer.style.position = 'relative'
+      footer.style.width = '100%'
+
+      const recoveredUnderbar =
+        document.createElement('img')
+      recoveredUnderbar.alt =
+        'Recovered Logres field underbar'
+      recoveredUnderbar.src =
+        LOGRES_UI_RUNTIME_EVIDENCE
+          .fieldUnderbarAsset.runtimeUrl
+      recoveredUnderbar.dataset.logresEvidence =
+        LOGRES_UI_RUNTIME_EVIDENCE
+          .fieldUnderbarAsset.sourceLabel
+      recoveredUnderbar.width =
+        LOGRES_UI_RUNTIME_EVIDENCE
+          .fieldUnderbarAsset.width
+      recoveredUnderbar.height =
+        LOGRES_UI_RUNTIME_EVIDENCE
+          .fieldUnderbarAsset.height
+      recoveredUnderbar.style.display = 'block'
+      recoveredUnderbar.style.width = '100%'
+      recoveredUnderbar.style.height = 'auto'
 
       const recoveredMenu =
         document.createElement('img')
@@ -203,12 +237,35 @@ export function mountLogresUiRuntime(
       recoveredMenu.height =
         LOGRES_UI_RUNTIME_EVIDENCE
           .fieldMenuAsset.height
+      recoveredMenu.style.display = 'block'
+      recoveredMenu.style.width = '100%'
+      recoveredMenu.style.height = 'auto'
 
       const open =
-        createButton(
-          'Menu',
-          'open-field-menu',
-        )
+        document.createElement('button')
+      open.type = 'button'
+      open.dataset.logresAction =
+        'open-field-menu'
+      open.setAttribute(
+        'aria-label',
+        'Open field menu',
+      )
+      open.style.position = 'absolute'
+      open.style.right = '0'
+      open.style.bottom = '0'
+      open.style.width =
+        (
+          LOGRES_UI_RUNTIME_EVIDENCE
+            .fieldMenuAsset.width /
+          LOGRES_UI_RUNTIME_EVIDENCE
+            .fieldUnderbarAsset.width *
+          100
+        ).toFixed(3) + '%'
+      open.style.padding = '0'
+      open.style.border = '0'
+      open.style.background = 'transparent'
+      open.style.cursor = 'pointer'
+      open.append(recoveredMenu)
       open.addEventListener(
         'click',
         () => {
@@ -217,10 +274,11 @@ export function mountLogresUiRuntime(
         },
       )
 
-      panel.append(
-        recoveredMenu,
+      footer.append(
+        recoveredUnderbar,
         open,
       )
+      panel.append(footer)
     } else {
       panel.style.top = '20%'
       panel.style.width = '80%'
