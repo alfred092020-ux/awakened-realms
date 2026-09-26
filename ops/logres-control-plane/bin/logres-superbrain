@@ -5,6 +5,7 @@ import argparse
 import json
 import os
 import sqlite3
+import subprocess
 import sys
 from pathlib import Path
 
@@ -14,10 +15,14 @@ sys.path.insert(0, str(CONTROL_ROOT / "lib"))
 from logres_migrations import apply as apply_migrations
 from logres_superbrain import (
     ack_wake,
+    apply_member_self_heal,
     assert_evidence,
+    build_wake_message,
+    dispatch_wakes,
     ensure_schema,
     export_context,
     pending_wakes,
+    plan_member_self_heal,
     reconcile,
     register_session,
     retract_evidence,
@@ -54,6 +59,45 @@ def connect(path: str) -> sqlite3.Connection:
     conn.row_factory = sqlite3.Row
     conn.execute("pragma busy_timeout=30000")
     return conn
+
+
+def devin_mcp_dispatch(payload: dict) -> None:
+    session = payload.get("session") or {}
+    session_id = session.get("wake_target") or session.get("external_session_id")
+    if not session_id:
+        raise RuntimeError("Devin wake has no external session id")
+    binary = os.environ.get(
+        "LOGRES_DEVIN_MCP_BIN", "/home/ubuntu/.local/bin/logres-devin-mcp"
+    )
+    args = {
+        "action": "message",
+        "session_id": session_id,
+        "message": build_wake_message(payload),
+        "notify_on_response": True,
+    }
+    proc = subprocess.run(
+        [binary, "call", "devin_session_interact", json.dumps(args)],
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        timeout=60,
+        check=False,
+    )
+    if proc.returncode != 0:
+        raise RuntimeError((proc.stderr or proc.stdout or "Devin MCP failed")[-1000:])
+    try:
+        result = json.loads(proc.stdout)
+    except json.JSONDecodeError as exc:
+        raise RuntimeError("Devin MCP returned invalid JSON") from exc
+    if not result.get("ok"):
+        raise RuntimeError("Devin MCP returned not-ok")
+
+
+def dispatchers() -> dict:
+    return {
+        "brain_event": lambda _payload: None,
+        "devin_mcp": devin_mcp_dispatch,
+    }
 
 
 def main(argv=None) -> int:
@@ -121,6 +165,23 @@ def main(argv=None) -> int:
     p = sub.add_parser("reconcile")
     p.add_argument("--stale-seconds", type=int, default=1800)
 
+    p = sub.add_parser("self-heal")
+    p.add_argument("--stale-seconds", type=int, default=3600)
+    p.add_argument("--apply", action="store_true")
+    p.add_argument("--protected-member", action="append", default=[])
+
+    p = sub.add_parser("dispatch-wakes")
+    p.add_argument("--max", type=int, default=8)
+    p.add_argument("--claimant", default="superbrain-dispatcher")
+    p.add_argument("--allow-paid", action="store_true")
+    p.add_argument("--paid-priority-ceiling", type=int, default=1)
+
+    p = sub.add_parser("maintain")
+    p.add_argument("--stale-seconds", type=int, default=3600)
+    p.add_argument("--dispatch-max", type=int, default=8)
+    p.add_argument("--allow-paid", action="store_true")
+    p.add_argument("--paid-priority-ceiling", type=int, default=1)
+
     p = sub.add_parser("context-export")
     p.add_argument("task_id")
     p.add_argument("recipient")
@@ -147,8 +208,9 @@ def main(argv=None) -> int:
     conn = connect(args.db)
     try:
         if args.command == "init":
-            ensure_schema(conn)
-            result = {"ok": True}
+            result = apply_migrations(
+                conn, str(DEFAULT_MIGRATIONS), dry_run=False
+            )
         elif args.command == "migrate":
             result = apply_migrations(
                 conn, args.migration_dir, dry_run=not args.apply
@@ -208,6 +270,61 @@ def main(argv=None) -> int:
             result = {"ok": True, "wake_id": args.wake_id, "state": args.state.upper()}
         elif args.command == "reconcile":
             result = reconcile(conn, stale_seconds=args.stale_seconds)
+        elif args.command == "self-heal":
+            protected = set(args.protected_member)
+            if args.apply:
+                result = apply_member_self_heal(
+                    conn,
+                    stale_seconds=args.stale_seconds,
+                    protected_members=protected,
+                )
+            else:
+                actions = plan_member_self_heal(
+                    conn,
+                    stale_seconds=args.stale_seconds,
+                    protected_members=protected,
+                )
+                result = {
+                    "apply": False,
+                    "planned": len(actions),
+                    "actions": actions,
+                }
+        elif args.command == "dispatch-wakes":
+            result = dispatch_wakes(
+                conn,
+                dispatchers=dispatchers(),
+                claimant=args.claimant,
+                limit=args.max,
+                allow_paid=args.allow_paid,
+                paid_priority_ceiling=args.paid_priority_ceiling,
+            )
+        elif args.command == "maintain":
+            healed = apply_member_self_heal(
+                conn,
+                stale_seconds=args.stale_seconds,
+            )
+            reconciled = reconcile(
+                conn,
+                stale_seconds=args.stale_seconds,
+            )
+            dispatched = dispatch_wakes(
+                conn,
+                dispatchers=dispatchers(),
+                claimant="superbrain-maintain",
+                limit=args.dispatch_max,
+                allow_paid=args.allow_paid,
+                paid_priority_ceiling=args.paid_priority_ceiling,
+            )
+            result = {
+                "self_heal": healed,
+                "reconcile": {
+                    "run_id": reconciled["run_id"],
+                    "checked_count": reconciled["checked_count"],
+                    "finding_count": reconciled["finding_count"],
+                    "findings": reconciled["findings"],
+                },
+                "dispatch": dispatched,
+            }
         elif args.command == "context-export":
             result = export_context(
                 conn,

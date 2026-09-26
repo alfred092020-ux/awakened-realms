@@ -10,9 +10,12 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-SCHEMA_VERSION = "2026-09-26.superbrain-v2.1"
+SCHEMA_VERSION = "2026-09-26.superbrain-v2.2"
 ACTIVE_SESSION_STATES = {"ACTIVE", "RUNNING", "WORKING", "NEW"}
 TERMINAL_TASK_STATES = {"DONE", "INTEGRATED", "SUPERSEDED", "CANCELLED", "BLOCKED_EVIDENCE"}
+DEFAULT_PROTECTED_MEMBERS = {"lead", "nexus"}
+PAID_COST_CLASSES = {"paid", "metered", "usage"}
+WAKE_TERMINAL_STATES = {"DELIVERED", "FAILED", "IGNORED"}
 
 
 def utc_now(ts: float | None = None) -> str:
@@ -189,6 +192,42 @@ def ensure_schema(conn: sqlite3.Connection) -> None:
           on evidence_assertions(subject,predicate,status,confidence);
         create index if not exists evidence_assertions_task_idx
           on evidence_assertions(source_task_id,status);
+        """
+    )
+    conn.executescript(
+        """
+        create table if not exists brain_reconciliation_actions(
+          id integer primary key autoincrement,
+          run_id text,
+          entity_kind text not null,
+          entity_id text not null,
+          action text not null,
+          before_state text,
+          after_state text,
+          reason text not null,
+          created_at text not null,
+          metadata_json text not null default '{}'
+        );
+        create index if not exists brain_reconciliation_actions_entity_idx
+          on brain_reconciliation_actions(entity_kind,entity_id,id);
+
+        create table if not exists brain_wake_dispatch_receipts(
+          id integer primary key autoincrement,
+          wake_id integer not null,
+          attempt integer not null,
+          dispatcher text not null,
+          transport text not null,
+          cost_class text not null default 'unknown',
+          status text not null,
+          started_at text not null,
+          finished_at text,
+          error text,
+          metadata_json text not null default '{}'
+        );
+        create index if not exists brain_wake_dispatch_receipts_wake_idx
+          on brain_wake_dispatch_receipts(wake_id,attempt,id);
+        create index if not exists brain_wake_queue_claim_idx
+          on brain_wake_queue(state,claimed_at,id);
         """
     )
     if _table_exists(conn, "meta"):
@@ -800,6 +839,514 @@ def reconcile(
     }
 
 
+def _live_claim_owners(conn: sqlite3.Connection) -> set[str]:
+    if not (_table_exists(conn, "claims") and _table_exists(conn, "tasks")):
+        return set()
+    placeholders = ",".join("?" for _ in TERMINAL_TASK_STATES)
+    rows = conn.execute(
+        f"""select distinct c.owner
+              from claims c
+              join tasks t on t.id=c.task_id
+             where c.owner is not null
+               and upper(t.status) not in ({placeholders})""",
+        tuple(sorted(TERMINAL_TASK_STATES)),
+    ).fetchall()
+    return {str(row[0]) for row in rows if row[0]}
+
+
+def plan_member_self_heal(
+    conn: sqlite3.Connection,
+    *,
+    now_epoch: float | None = None,
+    stale_seconds: int = 3600,
+    protected_members: set[str] | None = None,
+) -> list[dict]:
+    """Return conservative ACTIVE->STALE actions without mutating state."""
+    ensure_schema(conn)
+    now_epoch = time.time() if now_epoch is None else float(now_epoch)
+    stale_seconds = max(300, int(stale_seconds))
+    cutoff = now_epoch - stale_seconds
+    protected = set(DEFAULT_PROTECTED_MEMBERS)
+    protected.update(protected_members or set())
+
+    live_leases: set[str] = set()
+    if _table_exists(conn, "brain_task_leases"):
+        live_leases = {
+            str(row[0])
+            for row in conn.execute(
+                """select distinct chat_id from brain_task_leases
+                   where lease_until_epoch>?""",
+                (now_epoch,),
+            )
+            if row[0]
+        }
+
+    fresh_sessions = {
+        str(row[0])
+        for row in conn.execute(
+            """select distinct member_id
+                 from brain_agent_sessions
+                where upper(state) in ('ACTIVE','RUNNING','WORKING','NEW')
+                  and last_seen_epoch>=?""",
+            (cutoff,),
+        )
+        if row[0]
+    }
+    claim_owners = _live_claim_owners(conn)
+
+    actions: list[dict] = []
+    if not _table_exists(conn, "brain_members"):
+        return actions
+    rows = conn.execute(
+        """select chat_id,status,last_seen_epoch,display_name
+             from brain_members
+            where upper(status)='ACTIVE'
+              and last_seen_epoch>0
+              and last_seen_epoch<?
+            order by last_seen_epoch,chat_id""",
+        (cutoff,),
+    ).fetchall()
+    for row in rows:
+        member_id = str(row["chat_id"])
+        if (
+            member_id in protected
+            or member_id in live_leases
+            or member_id in fresh_sessions
+            or member_id in claim_owners
+        ):
+            continue
+        age = max(0, int(now_epoch - float(row["last_seen_epoch"] or 0)))
+        actions.append(
+            {
+                "member_id": member_id,
+                "display_name": row["display_name"] or member_id,
+                "from_state": "ACTIVE",
+                "to_state": "STALE",
+                "age_seconds": age,
+                "reason": "stale heartbeat with no live lease, fresh agent session, or live claim",
+            }
+        )
+    return actions
+
+
+def apply_member_self_heal(
+    conn: sqlite3.Connection,
+    *,
+    now_epoch: float | None = None,
+    stale_seconds: int = 3600,
+    protected_members: set[str] | None = None,
+    actor: str = "superbrain-maintain",
+) -> dict:
+    """Safely demote stale member presence while preserving work ownership."""
+    ensure_schema(conn)
+    now_epoch = time.time() if now_epoch is None else float(now_epoch)
+    actions = plan_member_self_heal(
+        conn,
+        now_epoch=now_epoch,
+        stale_seconds=stale_seconds,
+        protected_members=protected_members,
+    )
+    if not actions:
+        return {"planned": 0, "applied": 0, "actions": []}
+
+    run_id = "member-heal-" + uuid.uuid4().hex
+    stamp = utc_now(now_epoch)
+    applied: list[dict] = []
+    conn.execute("begin immediate")
+    try:
+        for action in actions:
+            member_id = action["member_id"]
+            cur = conn.execute(
+                """update brain_members
+                      set status='STALE'
+                    where chat_id=?
+                      and upper(status)='ACTIVE'
+                      and last_seen_epoch<?""",
+                (member_id, now_epoch - max(300, int(stale_seconds))),
+            )
+            if cur.rowcount != 1:
+                continue
+            conn.execute(
+                """insert into brain_reconciliation_actions(
+                     run_id,entity_kind,entity_id,action,before_state,after_state,
+                     reason,created_at,metadata_json
+                   ) values(?,?,?,?,?,?,?,?,?)""",
+                (
+                    run_id,
+                    "brain_member",
+                    member_id,
+                    "MARK_STALE",
+                    "ACTIVE",
+                    "STALE",
+                    action["reason"],
+                    stamp,
+                    _json(
+                        {
+                            "actor": actor,
+                            "age_seconds": action["age_seconds"],
+                            "stale_seconds": int(stale_seconds),
+                        }
+                    ),
+                ),
+            )
+            conn.execute(
+                """update brain_reconciliation_findings
+                      set resolved_at=coalesce(resolved_at,?)
+                    where entity_kind='brain_member'
+                      and entity_id=?
+                      and code='stale_member'
+                      and resolved_at is null""",
+                (stamp, member_id),
+            )
+            applied.append(action)
+
+        if applied and _table_exists(conn, "brain_events"):
+            sample = ",".join(x["member_id"] for x in applied[:12])
+            conn.execute(
+                """insert into brain_events(
+                     ts_epoch,ts,sender,recipient,event_type,priority,subject,body,
+                     dedupe_key,meta_json
+                   ) values(?,?,?,?,?,?,?,?,?,?)""",
+                (
+                    now_epoch,
+                    stamp,
+                    actor,
+                    "ALL",
+                    "RECONCILIATION",
+                    3,
+                    f"Super Brain marked {len(applied)} stale members",
+                    f"members={sample}" + ("..." if len(applied) > 12 else ""),
+                    f"superbrain-member-heal:{run_id}",
+                    _json(
+                        {
+                            "run_id": run_id,
+                            "count": len(applied),
+                            "stale_seconds": int(stale_seconds),
+                        }
+                    ),
+                ),
+            )
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+
+    return {
+        "run_id": run_id,
+        "planned": len(actions),
+        "applied": len(applied),
+        "actions": applied,
+    }
+
+
+def requeue_stale_claimed_wakes(
+    conn: sqlite3.Connection,
+    *,
+    now_epoch: float | None = None,
+    claim_timeout_seconds: int = 600,
+) -> int:
+    ensure_schema(conn)
+    now_epoch = time.time() if now_epoch is None else float(now_epoch)
+    cutoff_text = utc_now(now_epoch - max(60, int(claim_timeout_seconds)))
+    cur = conn.execute(
+        """update brain_wake_queue
+              set state='PENDING',
+                  claimed_by=null,
+                  claimed_at=null,
+                  available_epoch=?,
+                  last_error=coalesce(last_error,'stale dispatch claim reclaimed'),
+                  updated_at=?
+            where state='CLAIMED'
+              and claimed_at is not null
+              and claimed_at<?""",
+        (now_epoch, utc_now(now_epoch), cutoff_text),
+    )
+    conn.commit()
+    return int(cur.rowcount or 0)
+
+
+def _session_for_subscriber(
+    conn: sqlite3.Connection, subscriber: str
+) -> sqlite3.Row | None:
+    return conn.execute(
+        """select * from brain_agent_sessions
+            where member_id=?
+            order by last_synced_at desc,session_key
+            limit 1""",
+        (subscriber,),
+    ).fetchone()
+
+
+def _wake_payload(conn: sqlite3.Connection, row: sqlite3.Row) -> dict:
+    event = conn.execute(
+        """select id,event_type,priority,task_id,subject,body,
+                  artifact_path,artifact_sha256,sender,recipient
+             from brain_events where id=?""",
+        (row["event_id"],),
+    ).fetchone()
+    sub = conn.execute(
+        """select subscriber,wake_method,metadata_json
+             from brain_event_subscriptions
+            where subscription_id=?""",
+        (row["subscription_id"],),
+    ).fetchone()
+    if event is None or sub is None:
+        raise ValueError("wake references missing event or subscription")
+    session = _session_for_subscriber(conn, str(row["subscriber"]))
+    try:
+        sub_meta = json.loads(sub["metadata_json"] or "{}")
+    except json.JSONDecodeError:
+        sub_meta = {}
+    return {
+        "wake_id": int(row["id"]),
+        "attempt": int(row["attempts"] or 0) + 1,
+        "subscriber": str(row["subscriber"]),
+        "subscription_id": str(row["subscription_id"]),
+        "wake_method": str(sub["wake_method"] or "brain_event"),
+        "subscription_metadata": sub_meta,
+        "event": dict(event),
+        "session": dict(session) if session is not None else None,
+        "cost_class": str(session["cost_class"] if session is not None else "unknown"),
+    }
+
+
+def claim_pending_wakes(
+    conn: sqlite3.Connection,
+    *,
+    claimant: str,
+    limit: int = 8,
+    now_epoch: float | None = None,
+    allow_paid: bool = False,
+    paid_priority_ceiling: int = 1,
+    defer_seconds: int = 300,
+) -> dict:
+    """Atomically claim eligible wake intents, deferring nonurgent paid calls."""
+    ensure_schema(conn)
+    now_epoch = time.time() if now_epoch is None else float(now_epoch)
+    limit = max(1, min(int(limit), 64))
+    paid_priority_ceiling = int(paid_priority_ceiling)
+    claimed: list[dict] = []
+    deferred: list[dict] = []
+    conn.execute("begin immediate")
+    try:
+        rows = conn.execute(
+            """select * from brain_wake_queue
+                where state='PENDING' and available_epoch<=?
+                order by id
+                limit ?""",
+            (now_epoch, limit * 4),
+        ).fetchall()
+        for row in rows:
+            if len(claimed) >= limit:
+                break
+            payload = _wake_payload(conn, row)
+            sub_meta = payload["subscription_metadata"]
+            priority = int(payload["event"].get("priority") or 9)
+            is_paid = payload["cost_class"].lower() in PAID_COST_CLASSES
+            paid_override = bool(sub_meta.get("allow_paid_auto"))
+            if is_paid and not allow_paid and not paid_override and priority > paid_priority_ceiling:
+                conn.execute(
+                    """update brain_wake_queue
+                          set available_epoch=?,last_error=?,updated_at=?
+                        where id=? and state='PENDING'""",
+                    (
+                        now_epoch + max(60, int(defer_seconds)),
+                        "deferred by paid wake policy",
+                        utc_now(now_epoch),
+                        int(row["id"]),
+                    ),
+                )
+                deferred.append(
+                    {
+                        "wake_id": int(row["id"]),
+                        "subscriber": payload["subscriber"],
+                        "priority": priority,
+                        "cost_class": payload["cost_class"],
+                    }
+                )
+                continue
+            cur = conn.execute(
+                """update brain_wake_queue
+                      set state='CLAIMED',
+                          attempts=attempts+1,
+                          claimed_by=?,
+                          claimed_at=?,
+                          last_error=null,
+                          updated_at=?
+                    where id=? and state='PENDING'""",
+                (
+                    claimant,
+                    utc_now(now_epoch),
+                    utc_now(now_epoch),
+                    int(row["id"]),
+                ),
+            )
+            if cur.rowcount == 1:
+                payload["attempt"] = int(row["attempts"] or 0) + 1
+                claimed.append(payload)
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+    return {"claimed": claimed, "deferred": deferred}
+
+
+def build_wake_message(
+    payload: dict,
+    *,
+    max_context_bytes: int = 24_000,
+) -> str:
+    event = payload["event"]
+    lines = [
+        "LOGRES SUPER BRAIN WAKE",
+        f"wake_id={payload['wake_id']} event_id={event['id']} attempt={payload['attempt']}",
+        f"event_type={event['event_type']} priority={event['priority']} task={event.get('task_id') or '-'}",
+        f"subject={event.get('subject') or ''}",
+    ]
+    if event.get("body"):
+        lines.append("body=" + str(event["body"])[:4000])
+    if event.get("artifact_path"):
+        lines.append("artifact_path=" + str(event["artifact_path"]))
+    if event.get("artifact_sha256"):
+        lines.append("artifact_sha256=" + str(event["artifact_sha256"]))
+
+    artifact = str(event.get("artifact_path") or "")
+    context_root = "/home/ubuntu/logres/control/superbrain-context/"
+    if artifact.startswith(context_root):
+        path = Path(artifact)
+        try:
+            if path.is_file() and path.stat().st_size <= max_context_bytes:
+                lines.extend(["", "CONTEXT_PACK", path.read_text()])
+        except OSError:
+            pass
+    return "\n".join(lines)
+
+
+def finish_wake_dispatch(
+    conn: sqlite3.Connection,
+    *,
+    wake_id: int,
+    attempt: int,
+    dispatcher: str,
+    transport: str,
+    cost_class: str,
+    ok: bool,
+    started_at: str,
+    error: str | None = None,
+    now_epoch: float | None = None,
+    retry_base_seconds: int = 30,
+) -> dict:
+    ensure_schema(conn)
+    now_epoch = time.time() if now_epoch is None else float(now_epoch)
+    stamp = utc_now(now_epoch)
+    state = "DELIVERED" if ok else "PENDING"
+    if ok:
+        available_epoch = now_epoch
+        last_error = None
+    else:
+        backoff = min(900, max(30, int(retry_base_seconds)) * (2 ** max(0, attempt - 1)))
+        available_epoch = now_epoch + backoff
+        last_error = (error or "dispatch failed")[:1000]
+
+    conn.execute("begin immediate")
+    try:
+        conn.execute(
+            """insert into brain_wake_dispatch_receipts(
+                 wake_id,attempt,dispatcher,transport,cost_class,status,
+                 started_at,finished_at,error,metadata_json
+               ) values(?,?,?,?,?,?,?,?,?,?)""",
+            (
+                int(wake_id),
+                int(attempt),
+                dispatcher,
+                transport,
+                cost_class,
+                "DELIVERED" if ok else "RETRY",
+                started_at,
+                stamp,
+                error,
+                "{}",
+            ),
+        )
+        conn.execute(
+            """update brain_wake_queue
+                  set state=?,available_epoch=?,claimed_by=null,claimed_at=null,
+                      last_error=?,updated_at=?
+                where id=? and state='CLAIMED'""",
+            (
+                state,
+                available_epoch,
+                last_error,
+                stamp,
+                int(wake_id),
+            ),
+        )
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+    return {"wake_id": int(wake_id), "state": state, "ok": bool(ok)}
+
+
+def dispatch_wakes(
+    conn: sqlite3.Connection,
+    *,
+    dispatchers: dict[str, Any],
+    claimant: str = "superbrain-dispatcher",
+    limit: int = 8,
+    allow_paid: bool = False,
+    paid_priority_ceiling: int = 1,
+    now_epoch: float | None = None,
+) -> dict:
+    """Dispatch durable wake intents with bounded retry and cost-aware gating."""
+    ensure_schema(conn)
+    now_epoch = time.time() if now_epoch is None else float(now_epoch)
+    reclaimed = requeue_stale_claimed_wakes(conn, now_epoch=now_epoch)
+    batch = claim_pending_wakes(
+        conn,
+        claimant=claimant,
+        limit=limit,
+        now_epoch=now_epoch,
+        allow_paid=allow_paid,
+        paid_priority_ceiling=paid_priority_ceiling,
+    )
+    results: list[dict] = []
+    for payload in batch["claimed"]:
+        method = payload["wake_method"]
+        dispatcher = dispatchers.get(method)
+        started = utc_now()
+        ok = False
+        error = None
+        if dispatcher is None:
+            error = f"no dispatcher registered for wake method {method}"
+        else:
+            try:
+                dispatcher(payload)
+                ok = True
+            except Exception as exc:
+                error = f"{type(exc).__name__}: {exc}"[:1000]
+        result = finish_wake_dispatch(
+            conn,
+            wake_id=payload["wake_id"],
+            attempt=payload["attempt"],
+            dispatcher=claimant,
+            transport=method,
+            cost_class=payload["cost_class"],
+            ok=ok,
+            started_at=started,
+            error=error,
+        )
+        result["subscriber"] = payload["subscriber"]
+        result["transport"] = method
+        results.append(result)
+    return {
+        "reclaimed_claims": reclaimed,
+        "claimed": len(batch["claimed"]),
+        "deferred": batch["deferred"],
+        "results": results,
+    }
+
+
 def status(conn: sqlite3.Connection, *, fresh_seconds: int = 900) -> dict:
     ensure_schema(conn)
     now_epoch = time.time()
@@ -824,6 +1371,12 @@ def status(conn: sqlite3.Connection, *, fresh_seconds: int = 900) -> dict:
     out["context_deliveries"] = conn.execute(
         "select count(*) from brain_context_deliveries"
     ).fetchone()[0]
+    out["wake_dispatch_receipts"] = conn.execute(
+        "select count(*) from brain_wake_dispatch_receipts"
+    ).fetchone()[0]
+    out["member_reconciliation_actions"] = conn.execute(
+        "select count(*) from brain_reconciliation_actions"
+    ).fetchone()[0]
     out["capability_profiles"] = conn.execute(
         "select count(*) from brain_capabilities"
     ).fetchone()[0]
@@ -846,6 +1399,9 @@ def status(conn: sqlite3.Connection, *, fresh_seconds: int = 900) -> dict:
             """select count(*) from brain_members
                where upper(status)='ACTIVE' and last_seen_epoch>0 and last_seen_epoch<?""",
             (now_epoch - fresh_seconds,),
+        ).fetchone()[0]
+        out["members_stale"] = conn.execute(
+            "select count(*) from brain_members where upper(status)='STALE'"
         ).fetchone()[0]
     if _table_exists(conn, "brain_events"):
         row = conn.execute("select count(*),coalesce(max(id),0) from brain_events").fetchone()
