@@ -424,6 +424,16 @@ class RenderTests(unittest.TestCase):
             argv2 = build_devin_child_argv(cfg, ["devin", "-p", "--sandbox"])
             self.assertEqual(1, argv2.count("--sandbox"))
 
+    def test_network_names_are_distinct_for_same_prefix_workers(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            cfg = make_cfg(tmp)
+            left = {"name": "worker_auto-devin-2-devin-chatgpt-delegation-001"}
+            right = {"name": "worker_auto-devin-2-devin-governed-evolution-001"}
+            self.assertNotEqual(netns_name(cfg, left), netns_name(cfg, right))
+            self.assertNotEqual(nft_table_name(cfg, left), nft_table_name(cfg, right))
+            self.assertLessEqual(len(netns_name(cfg, left)), 48)
+            self.assertRegex(nft_table_name(cfg, left), r"^[A-Za-z0-9_]+$")
+
     def test_unit_names_are_safe_and_derived(self):
         with tempfile.TemporaryDirectory() as tmp:
             cfg = make_cfg(tmp)
