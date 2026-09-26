@@ -1,0 +1,14 @@
+{
+  "cycle_seconds": 60,
+  "leader_ttl_seconds": 180,
+  "heartbeat_seconds": 30,
+  "task_generation_cap_per_cycle": 3,
+  "assignment_cap_per_cycle": 4,
+  "predicate_cooldown_seconds": 900,
+  "infrastructure_work_ratio_max": 0.35,
+  "stale_worker_seconds": 900,
+  "models": {
+    "preferred": "swe-2-max",
+    "allow_paid_default": false
+  }
+}
