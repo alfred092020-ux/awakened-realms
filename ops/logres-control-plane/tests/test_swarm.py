@@ -548,6 +548,57 @@ class SwarmTests(unittest.TestCase):
             }
             self.assertEqual({}, surface(root, bad))
 
+    def test_privileged_network_preflight_waives_only_root_verified_policy_probe(self):
+        ready = getattr(logres_swarm, "privileged_network_preflight_ready", None)
+        self.assertTrue(callable(ready), "missing privileged_network_preflight_ready")
+        required_names = [
+            "system_manager", "launcher_binaries", "worktree_layout",
+            "branch_contract", "writable_layout", "bind_contract",
+            "hardening_render", "no_broad_privileges", "network_netns",
+            "network_policy", "metadata_loopback_deny", "egress_mode",
+            "sandbox_binaries", "sandbox_apparmor_profile",
+            "sandbox_exec_probe", "auth_credential_guard",
+        ]
+        report = {
+            "unit": "logres-devin-worker.service",
+            "production_ready": False,
+            "blockers": ["network_policy"],
+            "checks": [
+                {"name": name, "required": True, "ok": name != "network_policy"}
+                for name in required_names
+            ] + [
+                {"name": "sandbox_apparmor_enforced", "required": False, "ok": False}
+            ],
+        }
+        self.assertEqual((True, None), ready(report, True))
+        self.assertEqual(
+            (False, "network_provision_failed"), ready(report, False)
+        )
+        extra = json.loads(json.dumps(report))
+        extra["blockers"].append("sandbox_exec_probe")
+        next(item for item in extra["checks"] if item["name"] == "sandbox_exec_probe")["ok"] = False
+        self.assertEqual(
+            (False, "isolation_preflight_failed"), ready(extra, True)
+        )
+        inconsistent = json.loads(json.dumps(report))
+        next(item for item in inconsistent["checks"] if item["name"] == "network_netns")["ok"] = False
+        self.assertEqual(
+            (False, "isolation_preflight_failed"), ready(inconsistent, True)
+        )
+        missing_unit = json.loads(json.dumps(report))
+        missing_unit["unit"] = ""
+        self.assertEqual(
+            (False, "isolation_preflight_missing_unit"), ready(missing_unit, True)
+        )
+        self.assertEqual(
+            (False, "isolation_preflight_failed"), ready({}, True)
+        )
+        green = json.loads(json.dumps(report))
+        green["production_ready"] = True
+        green["blockers"] = []
+        next(item for item in green["checks"] if item["name"] == "network_policy")["ok"] = True
+        self.assertEqual((True, None), ready(green, True))
+
     def test_swarm_script_enforces_certificate_surface_freshness(self):
         script = (CONTROL_ROOT / "bin" / "logres-swarm").read_text()
         for needle in (
@@ -571,6 +622,7 @@ class SwarmTests(unittest.TestCase):
             "select_model(report, requested_model, allow_paid=False)",
             '"prepare"',
             '"preflight"',
+            'privileged_network_preflight_ready',
             'nexus_logres_devin_network_provision',
             'nexus_logres_devin_network_teardown',
             'nexus_logres_devin_transient_start',

@@ -97,6 +97,63 @@ def isolation_certificate_gate(
     return True, None
 
 
+REQUIRED_PREFLIGHT_CHECKS = frozenset(
+    {
+        "system_manager",
+        "launcher_binaries",
+        "worktree_layout",
+        "branch_contract",
+        "writable_layout",
+        "bind_contract",
+        "hardening_render",
+        "no_broad_privileges",
+        "network_netns",
+        "network_policy",
+        "metadata_loopback_deny",
+        "egress_mode",
+        "sandbox_binaries",
+        "sandbox_apparmor_profile",
+        "sandbox_exec_probe",
+        "auth_credential_guard",
+    }
+)
+
+
+def privileged_network_preflight_ready(
+    preflight_report: dict, provision_ok: bool
+) -> tuple[bool, str | None]:
+    if not provision_ok:
+        return False, "network_provision_failed"
+    if not isinstance(preflight_report, dict):
+        return False, "isolation_preflight_failed"
+    checks = preflight_report.get("checks")
+    blockers = preflight_report.get("blockers")
+    if not isinstance(checks, list) or not checks or not isinstance(blockers, list):
+        return False, "isolation_preflight_failed"
+    if not str(preflight_report.get("unit") or "").strip():
+        return False, "isolation_preflight_missing_unit"
+    by_name = {
+        str(item.get("name") or ""): item
+        for item in checks
+        if isinstance(item, dict) and item.get("name")
+    }
+    if not REQUIRED_PREFLIGHT_CHECKS.issubset(by_name):
+        return False, "isolation_preflight_failed"
+    required_failures = sorted(
+        name
+        for name, item in by_name.items()
+        if bool(item.get("required")) and not bool(item.get("ok"))
+    )
+    blocker_names = sorted(str(item) for item in blockers)
+    if bool(preflight_report.get("production_ready", False)):
+        if required_failures or blocker_names:
+            return False, "isolation_preflight_failed"
+        return True, None
+    if required_failures == ["network_policy"] and blocker_names == ["network_policy"]:
+        return True, None
+    return False, "isolation_preflight_failed"
+
+
 def ensure_schema(conn: sqlite3.Connection) -> None:
     conn.execute(
         """create table if not exists swarm_jobs(

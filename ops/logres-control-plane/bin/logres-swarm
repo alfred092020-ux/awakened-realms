@@ -26,6 +26,7 @@ from logres_swarm import (
     ensure_schema,
     isolation_certificate_gate,
     isolation_surface_hashes,
+    privileged_network_preflight_ready,
     load_config,
     mark_job_running,
     prior_failures,
@@ -496,22 +497,19 @@ def dispatch_devin(
             preflight_report = json.loads(preflight.stdout or "{}")
         except json.JSONDecodeError:
             preflight_report = {}
-        if preflight.returncode or not bool(preflight_report.get("production_ready", False)):
+        preflight_ok, preflight_blocker = privileged_network_preflight_ready(
+            preflight_report, provision.returncode == 0
+        )
+        if not preflight_ok:
             cleanup_devin_isolation(worker, task_id, branch)
             detail = ((preflight.stderr or "") + "\n" + (preflight.stdout or "")).strip()
             release_worker(
                 worker, task_id,
-                "Devin OS isolation preflight failed closed; task returned READY. " + detail[-1400:]
+                "Devin OS isolation preflight failed closed "
+                f"({preflight_blocker or 'unknown'}); task returned READY. " + detail[-1400:]
             )
             continue
         unit = str(preflight_report.get("unit") or "").strip()
-        if not unit:
-            cleanup_devin_isolation(worker, task_id, branch)
-            release_worker(
-                worker, task_id,
-                "Devin OS isolation preflight omitted the systemd unit; task returned READY."
-            )
-            continue
 
         try:
             job_id = create_job(
