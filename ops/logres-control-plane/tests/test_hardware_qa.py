@@ -185,6 +185,24 @@ class HardwareQaTests(unittest.TestCase):
         with self.assertRaisesRegex(qa.QAError, "LogresFieldScene"):
             qa.require_field_return(bad, inventory)
 
+    def test_tap_reasserts_logres_foreground_before_physical_input(self):
+        events = []
+
+        def record_foreground(command, *, check=True):
+            events.append(("foreground", command))
+            return "Status: ok"
+
+        def record_tap(command, *, check=True, timeout=30):
+            events.append(("tap", command))
+            return '{"ok": true}'
+
+        with patch.object(qa, "adb_shell", side_effect=record_foreground):
+            with patch.object(qa, "phone", side_effect=record_tap):
+                self.assertEqual({"ok": True}, qa.tap(360, 1110))
+
+        self.assertEqual(["foreground", "tap"], [kind for kind, _ in events])
+        self.assertEqual(f"am start -W -n {qa.ACTIVITY}", events[0][1])
+
     def test_runner_targets_panel_not_enemy(self):
         text = SCRIPT.read_text()
         self.assertNotIn('stage=registry.get("logres.battle.stagePresentation")', text)
