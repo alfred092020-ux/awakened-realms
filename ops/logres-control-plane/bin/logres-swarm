@@ -25,6 +25,7 @@ from logres_swarm import (
     create_job,
     ensure_schema,
     isolation_certificate_gate,
+    isolation_surface_hashes,
     load_config,
     mark_job_running,
     prior_failures,
@@ -412,11 +413,10 @@ def dispatch_devin(
         return result
 
     certificate = load_json(DEVIN_CERTIFICATE)
-    head = run(["git", "-C", INTEGRATION_CHECKOUT, "rev-parse", "HEAD"], timeout=30)
-    integration_sha = (head.stdout or "").strip() if head.returncode == 0 else ""
+    current_surface = isolation_surface_hashes(INTEGRATION_CHECKOUT, certificate)
     runtime_deployment = load_json(DEVIN_RUNTIME_DEPLOYMENT)
     certificate_ok, certificate_blocker = isolation_certificate_gate(
-        certificate, integration_sha, runtime_deployment
+        certificate, current_surface, runtime_deployment
     )
     if not certificate_ok:
         result["blocked"] = certificate_blocker or "isolation_not_certified"

@@ -466,36 +466,95 @@ class SwarmTests(unittest.TestCase):
         self.assertEqual("RUNNING", row["state"])
         self.assertEqual(os.getpid(), row["pid"])
 
-    def test_isolation_certificate_gate_requires_current_head_and_runtime_sha(self):
+    def test_isolation_certificate_gate_tracks_security_surface_not_game_head(self):
         gate = getattr(logres_swarm, "isolation_certificate_gate", None)
         self.assertTrue(callable(gate), "missing isolation_certificate_gate")
-        head = "a" * 40
-        certificate = {"production_ready": True, "integration_sha": head}
-        runtime = {"integration_sha": head}
-        self.assertEqual((True, None), gate(certificate, head, runtime))
+        expected = {
+            "ops/logres-control-plane/bin/logres-swarm": "a" * 64,
+            "ops/logres-control-plane/lib/logres_swarm.py": "b" * 64,
+            "ops/logres-control-plane/bin/logres-devin-agent": "c" * 64,
+            "ops/logres-control-plane/bin/logres-devin-isolate": "d" * 64,
+            "ops/logres-control-plane/lib/logres_devin_isolation.py": "e" * 64,
+            "ops/logres-control-plane/config/devin_isolation.json": "f" * 64,
+            "ops/logres-control-plane/config/devin_workers.json": "1" * 64,
+            "ops/logres-control-plane/apparmor/usr.bin.bwrap.logres": "2" * 64,
+        }
+        certificate = {
+            "production_ready": True,
+            "integration_sha": "old-game-head",
+            "recertification": {"isolation_surface_sha256": expected},
+        }
+        runtime = {
+            "integration_sha": "new-game-head",
+            "files": {
+                key.removeprefix("ops/logres-control-plane/"): value
+                for key, value in expected.items()
+            },
+        }
+        self.assertEqual((True, None), gate(certificate, expected, runtime))
+        changed = dict(expected)
+        changed["ops/logres-control-plane/bin/logres-devin-agent"] = "9" * 64
         self.assertEqual(
             (False, "isolation_certificate_stale"),
-            gate({**certificate, "integration_sha": "b" * 40}, head, runtime),
+            gate(certificate, changed, runtime),
         )
+        runtime_changed = json.loads(json.dumps(runtime))
+        runtime_changed["files"]["bin/logres-devin-isolate"] = "8" * 64
         self.assertEqual(
             (False, "isolation_runtime_stale"),
-            gate(certificate, head, {"integration_sha": "c" * 40}),
+            gate(certificate, expected, runtime_changed),
         )
         self.assertEqual(
-            (False, "isolation_certificate_stale"),
-            gate({"production_ready": True}, head, runtime),
+            (False, "isolation_certificate_surface_missing"),
+            gate({"production_ready": True}, {}, runtime),
+        )
+        partial = {
+            "production_ready": True,
+            "recertification": {
+                "isolation_surface_sha256": {
+                    "ops/logres-control-plane/bin/logres-devin-agent": "c" * 64
+                }
+            },
+        }
+        self.assertEqual(
+            (False, "isolation_certificate_surface_missing"),
+            gate(partial, partial["recertification"]["isolation_surface_sha256"], runtime),
         )
         self.assertEqual(
             (False, "isolation_not_certified"),
-            gate({"production_ready": False, "integration_sha": head}, head, runtime),
+            gate({**certificate, "production_ready": False}, expected, runtime),
         )
 
-    def test_swarm_script_enforces_certificate_sha_freshness(self):
+    def test_isolation_surface_hashes_reads_only_certified_control_plane_files(self):
+        surface = getattr(logres_swarm, "isolation_surface_hashes", None)
+        self.assertTrue(callable(surface), "missing isolation_surface_hashes")
+        import tempfile
+        import hashlib
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            rel = "ops/logres-control-plane/bin/logres-swarm"
+            target = root / rel
+            target.parent.mkdir(parents=True)
+            target.write_bytes(b"swarm-security-gate")
+            digest = hashlib.sha256(target.read_bytes()).hexdigest()
+            cert = {
+                "recertification": {"isolation_surface_sha256": {rel: digest}}
+            }
+            self.assertEqual({rel: digest}, surface(root, cert))
+            bad = {
+                "recertification": {
+                    "isolation_surface_sha256": {"../outside": "0" * 64}
+                }
+            }
+            self.assertEqual({}, surface(root, bad))
+
+    def test_swarm_script_enforces_certificate_surface_freshness(self):
         script = (CONTROL_ROOT / "bin" / "logres-swarm").read_text()
         for needle in (
             "isolation_certificate_gate",
+            "isolation_surface_hashes",
             "runtime-deployment.json",
-            '"rev-parse", "HEAD"',
+            "current_surface",
             'result["blocked"] = certificate_blocker',
         ):
             self.assertIn(needle, script)

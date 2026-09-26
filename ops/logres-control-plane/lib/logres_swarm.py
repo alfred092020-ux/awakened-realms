@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import re
@@ -16,6 +17,53 @@ from logres_optimizer import rank_task_ids
 TERMINAL_JOB_STATES = {"DONE", "BLOCKED", "FAILED", "SUPERSEDED"}
 RESEARCH_WORK_TYPES = {"research", "evidence", "analysis"}
 IMPLEMENTATION_WORK_TYPES = {"implementation", "regression", "code"}
+CONTROL_PLANE_PREFIX = "ops/logres-control-plane/"
+REQUIRED_ISOLATION_SURFACE = frozenset(
+    {
+        CONTROL_PLANE_PREFIX + "apparmor/usr.bin.bwrap.logres",
+        CONTROL_PLANE_PREFIX + "bin/logres-devin-agent",
+        CONTROL_PLANE_PREFIX + "bin/logres-devin-isolate",
+        CONTROL_PLANE_PREFIX + "bin/logres-swarm",
+        CONTROL_PLANE_PREFIX + "config/devin_isolation.json",
+        CONTROL_PLANE_PREFIX + "config/devin_workers.json",
+        CONTROL_PLANE_PREFIX + "lib/logres_devin_isolation.py",
+        CONTROL_PLANE_PREFIX + "lib/logres_swarm.py",
+    }
+)
+
+
+def _certified_isolation_surface(certificate: dict) -> dict[str, str]:
+    recert = (certificate or {}).get("recertification")
+    surface = recert.get("isolation_surface_sha256") if isinstance(recert, dict) else None
+    if not isinstance(surface, dict) or not surface:
+        return {}
+    normalized: dict[str, str] = {}
+    for raw_path, raw_digest in surface.items():
+        rel = str(raw_path or "").strip().replace("\\", "/")
+        digest = str(raw_digest or "").strip().lower()
+        if (
+            not rel.startswith(CONTROL_PLANE_PREFIX)
+            or rel.startswith("/")
+            or ".." in Path(rel).parts
+            or not re.fullmatch(r"[0-9a-f]{64}", digest)
+        ):
+            return {}
+        normalized[rel] = digest
+    return normalized
+
+
+def isolation_surface_hashes(checkout: Path, certificate: dict) -> dict[str, str]:
+    expected = _certified_isolation_surface(certificate)
+    if not expected:
+        return {}
+    root = Path(checkout).resolve()
+    current: dict[str, str] = {}
+    for rel in sorted(expected):
+        target = (root / rel).resolve()
+        if root not in target.parents or not target.is_file():
+            return {}
+        current[rel] = hashlib.sha256(target.read_bytes()).hexdigest()
+    return current
 
 
 @dataclass(frozen=True)
@@ -30,17 +78,22 @@ class SwarmCapacity:
 
 
 def isolation_certificate_gate(
-    certificate: dict, integration_sha: str, runtime_deployment: dict
+    certificate: dict, current_surface: dict, runtime_deployment: dict
 ) -> tuple[bool, str | None]:
     if not bool((certificate or {}).get("production_ready", False)):
         return False, "isolation_not_certified"
-    current_sha = str(integration_sha or "").strip()
-    certificate_sha = str((certificate or {}).get("integration_sha") or "").strip()
-    if not current_sha or not certificate_sha or certificate_sha != current_sha:
+    expected = _certified_isolation_surface(certificate)
+    if not expected or not REQUIRED_ISOLATION_SURFACE.issubset(expected):
+        return False, "isolation_certificate_surface_missing"
+    if dict(current_surface or {}) != expected:
         return False, "isolation_certificate_stale"
-    runtime_sha = str((runtime_deployment or {}).get("integration_sha") or "").strip()
-    if not runtime_sha or runtime_sha != current_sha:
+    deployed = (runtime_deployment or {}).get("files")
+    if not isinstance(deployed, dict):
         return False, "isolation_runtime_stale"
+    for rel, digest in expected.items():
+        runtime_rel = rel.removeprefix(CONTROL_PLANE_PREFIX)
+        if str(deployed.get(runtime_rel) or "").strip().lower() != digest:
+            return False, "isolation_runtime_stale"
     return True, None
 
 
