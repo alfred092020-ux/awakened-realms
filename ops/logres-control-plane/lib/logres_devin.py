@@ -58,6 +58,15 @@ LEASE_LOST = "lost"
 LEASE_DEADLINE = "deadline"
 REDACTED = "[REDACTED]"
 PERMISSION_POLICY_VERSION = "2026-09-25-v2"
+REQUIRED_ABSOLUTE_DENY_RULES = frozenset(
+    {
+        "Read(/home/ubuntu/.config/devin/**)",
+        "Read(/home/ubuntu/.local/share/devin/**)",
+        "Read(/home/ubuntu/logres/src/awakened-realms/**)",
+        "Read(/home/ubuntu/logres/control/**)",
+        "Read(/home/ubuntu/logres/private/**)",
+    }
+)
 
 def load_permission_policy(path: Path) -> dict:
     path = Path(path)
@@ -79,6 +88,8 @@ def load_permission_policy(path: Path) -> dict:
         )
     if not all(isinstance(x, str) and x.strip() for x in [*allow, *deny]):
         raise DevinAgentError("malformed Devin permission rules")
+    if not REQUIRED_ABSOLUTE_DENY_RULES.issubset(set(deny)):
+        raise DevinAgentError("Devin permission policy missing mandatory absolute deny rules")
     return {"version": version, "allow": list(allow), "deny": list(deny)}
 
 def _permission_scope(value: str) -> str:

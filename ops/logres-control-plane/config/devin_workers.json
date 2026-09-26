@@ -13,7 +13,12 @@
       "Read(**/*token*)",
       "Write(.git/**)",
       "Write(.env*)",
-      "Write(**/.env*)"
+      "Write(**/.env*)",
+      "Read(/home/ubuntu/.config/devin/**)",
+      "Read(/home/ubuntu/.local/share/devin/**)",
+      "Read(/home/ubuntu/logres/src/awakened-realms/**)",
+      "Read(/home/ubuntu/logres/control/**)",
+      "Read(/home/ubuntu/logres/private/**)"
     ],
     "version": "2026-09-25-v2"
   },

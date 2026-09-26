@@ -1004,6 +1004,28 @@ class PermissionManifestTests(unittest.TestCase):
             "Write(ops/logres-control-plane/lib/example.py)", allow
         )
 
+    def test_policy_requires_absolute_denies_for_auth_and_protected_paths(self):
+        required = {
+            "Read(/home/ubuntu/.config/devin/**)",
+            "Read(/home/ubuntu/.local/share/devin/**)",
+            "Read(/home/ubuntu/logres/src/awakened-realms/**)",
+            "Read(/home/ubuntu/logres/control/**)",
+            "Read(/home/ubuntu/logres/private/**)",
+        }
+        policy = load_permission_policy(self.policy_path())
+        self.assertTrue(required.issubset(set(policy["deny"])))
+
+        with tempfile.TemporaryDirectory() as tmp:
+            p = Path(tmp) / "policy.json"
+            raw = json.loads(self.policy_path().read_text())
+            raw["permission_policy"]["deny"] = [
+                rule for rule in raw["permission_policy"]["deny"]
+                if rule != "Read(/home/ubuntu/.config/devin/**)"
+            ]
+            p.write_text(json.dumps(raw))
+            with self.assertRaises(DevinAgentError):
+                load_permission_policy(p)
+
     def test_policy_version_mismatch_fails_closed(self):
         with tempfile.TemporaryDirectory() as tmp:
             p = Path(tmp) / "policy.json"
