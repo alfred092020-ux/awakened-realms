@@ -185,23 +185,26 @@ class HardwareQaTests(unittest.TestCase):
         with self.assertRaisesRegex(qa.QAError, "LogresFieldScene"):
             qa.require_field_return(bad, inventory)
 
-    def test_tap_reasserts_logres_foreground_before_physical_input(self):
-        events = []
+    def test_tap_restores_foreground_and_injects_input_atomically_on_phone(self):
+        calls = []
 
-        def record_foreground(command, *, check=True):
-            events.append(("foreground", command))
-            return "Status: ok"
+        def record_phone(command, *, check=True, timeout=30):
+            calls.append(command)
+            return '{"logical": [360.0, 1110.0], "physical": [540, 1920]}'
 
-        def record_tap(command, *, check=True, timeout=30):
-            events.append(("tap", command))
-            return '{"ok": true}'
+        with patch.object(qa, "adb_shell") as foreground:
+            with patch.object(qa, "phone", side_effect=record_phone):
+                result = qa.tap(360, 1110)
 
-        with patch.object(qa, "adb_shell", side_effect=record_foreground):
-            with patch.object(qa, "phone", side_effect=record_tap):
-                self.assertEqual({"ok": True}, qa.tap(360, 1110))
-
-        self.assertEqual(["foreground", "tap"], [kind for kind, _ in events])
-        self.assertEqual(f"am start -W -n {qa.ACTIVITY}", events[0][1])
+        self.assertEqual([360.0, 1110.0], result["logical"])
+        foreground.assert_not_called()
+        self.assertEqual(1, len(calls))
+        command = calls[0]
+        self.assertIn("python -c", command)
+        self.assertIn("/system/bin/am start -W -n", command)
+        self.assertIn(qa.ACTIVITY, command)
+        self.assertIn("/system/bin/input tap", command)
+        self.assertIn("PATH=/system/bin:/system_ext/bin:/product/bin:/vendor/bin", command)
 
     def test_runner_targets_panel_not_enemy(self):
         text = SCRIPT.read_text()

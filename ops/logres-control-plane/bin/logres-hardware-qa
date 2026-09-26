@@ -104,12 +104,45 @@ def wait_scene(scene, timeout=25):
               timeout=int(timeout)+10)
     return json.loads(raw.splitlines()[-1])
 
-def ensure_app_foreground():
-    adb_shell(f"am start -W -n {ACTIVITY}")
-
 def tap(x,y):
-    ensure_app_foreground()
-    raw=phone(f'$HOME/bin/logres-tap-logical {float(x)} {float(y)}')
+    x=float(x); y=float(y)
+    remote_code=f"""
+import json, os, subprocess
+x={x!r}; y={y!r}
+expr=f'''(() => {{
+ const c=document.querySelector("canvas");
+ if(!c) return null;
+ const r=c.getBoundingClientRect();
+ return {{
+   x:(r.x+({{x}}/c.width)*r.width)*devicePixelRatio,
+   y:(r.y+({{y}}/c.height)*r.height)*devicePixelRatio,
+   dpr:devicePixelRatio,
+   rect:{{x:r.x,y:r.y,width:r.width,height:r.height}},
+   canvas:{{width:c.width,height:c.height}}
+ }};
+}})()'''
+raw=subprocess.check_output([os.path.expanduser("~/bin/logres-cdp"),"eval",expr],text=True)
+pt=json.loads(raw)
+if not pt:
+    raise SystemExit("canvas unavailable")
+subprocess.run([os.path.expanduser("~/bin/logres-adb-connect")],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,check=False)
+target=""
+for line in subprocess.check_output(["adb","devices"],text=True).splitlines()[1:]:
+    parts=line.split()
+    if len(parts)>=2 and parts[1]=="device":
+        target=parts[0]; break
+if not target:
+    raise SystemExit("ADB unavailable")
+px=round(pt["x"]); py=round(pt["y"])
+android_path="PATH=/system/bin:/system_ext/bin:/product/bin:/vendor/bin"
+android_command=(
+    f"{{android_path}} /system/bin/am start -W -n {ACTIVITY} >/dev/null 2>&1; "
+    f"{{android_path}} /system/bin/input tap {{px}} {{py}}"
+)
+subprocess.check_call(["adb","-s",target,"shell",android_command])
+print(json.dumps({{"logical":[x,y],"physical":[px,py],"mapping":pt}},sort_keys=True))
+"""
+    raw=phone("python -c "+shlex.quote(remote_code))
     return json.loads(raw.splitlines()[-1])
 
 def terms_transition_trace(snapshot):
