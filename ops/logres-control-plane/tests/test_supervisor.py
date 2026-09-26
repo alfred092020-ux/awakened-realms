@@ -96,6 +96,27 @@ class SupervisorTests(unittest.TestCase):
         ):
             self.assertFalse(jobs[name].background, name)
 
+    def test_default_jobs_use_shared_control_filesystem_locks(self):
+        root = Path("/srv/logres")
+        jobs = default_jobs(root)
+        lock_args = [
+            arg
+            for job in jobs
+            for arg in job.argv
+            if str(arg).endswith(".lock")
+        ]
+        self.assertTrue(lock_args)
+        for lock in lock_args:
+            self.assertTrue(str(lock).startswith("/srv/logres/control/"), lock)
+            self.assertNotIn("/tmp/", str(lock), lock)
+
+    def test_supervisor_entrypoint_defaults_locks_to_shared_control_filesystem(self):
+        script = (TEST_DIR.parent / "bin" / "logres-supervisor").read_text()
+        self.assertIn('str(ROOT / "control/supervisor.lock")', script)
+        self.assertIn('str(ROOT / "control/supervisor-reload.lock")', script)
+        self.assertNotIn('/tmp/logres-supervisor.lock', script)
+        self.assertNotIn('/tmp/logres-supervisor-reload.lock', script)
+
     def test_default_jobs_supervise_persistent_devin_lead(self):
         jobs = {job.name: job for job in default_jobs(Path("/home/ubuntu/logres"))}
         lead = jobs["devin_lead"]

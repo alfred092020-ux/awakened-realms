@@ -28,11 +28,16 @@ from logres_supervisor import (
 
 ROOT = Path(os.environ.get("LOGRES_ROOT", "/home/ubuntu/logres"))
 HEARTBEAT = Path(os.environ.get("LOGRES_SUPERVISOR_HEARTBEAT", str(ROOT / "control/supervisor-heartbeat.json")))
-LOCK = Path(os.environ.get("LOGRES_SUPERVISOR_LOCK", "/tmp/logres-supervisor.lock"))
+LOCK = Path(
+    os.environ.get(
+        "LOGRES_SUPERVISOR_LOCK",
+        str(ROOT / "control/supervisor.lock"),
+    )
+)
 RELOAD_LOCK = Path(
     os.environ.get(
         "LOGRES_SUPERVISOR_RELOAD_LOCK",
-        "/tmp/logres-supervisor-reload.lock",
+        str(ROOT / "control/supervisor-reload.lock"),
     )
 )
 
