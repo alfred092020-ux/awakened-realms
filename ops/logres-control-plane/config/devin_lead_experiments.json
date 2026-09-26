@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "domains": {
+    "task_decomposition": {"metric": "median_task_latency_seconds", "direction": "lower", "scopes": ["ops/logres-control-plane/lib/logres_devin_lead.py", "ops/logres-control-plane/tests/test_devin_lead.py"]},
+    "routing": {"metric": "verification_pass_rate", "direction": "higher", "scopes": ["ops/logres-control-plane/lib/logres_devin_lead.py", "ops/logres-control-plane/tests/test_devin_lead.py"]},
+    "concurrency": {"metric": "resource_contention", "direction": "lower", "scopes": ["ops/logres-control-plane/lib/logres_capacity.py", "ops/logres-control-plane/tests/test_capacity.py"]},
+    "retry_policy": {"metric": "rework_rate", "direction": "lower", "scopes": ["ops/logres-control-plane/lib/logres_swarm.py", "ops/logres-control-plane/tests/test_swarm.py"]},
+    "verification_scheduling": {"metric": "queue_age_seconds", "direction": "lower", "scopes": ["ops/logres-control-plane/bin/logres-verify-farm", "ops/logres-control-plane/tests/test_verify_policy.py"]},
+    "context_packing": {"metric": "median_task_latency_seconds", "direction": "lower", "scopes": ["ops/logres-control-plane/bin/logres-context-pack", "ops/logres-control-plane/tests/test_context_pack.py"]},
+    "worker_specialization": {"metric": "critical_path_completions", "direction": "higher", "scopes": ["ops/logres-control-plane/lib/logres_devin_lead.py", "ops/logres-control-plane/tests/test_devin_lead.py"]}
+  },
+  "rollback": {"verification_pass_rate_min": 0.75, "rework_rate_max": 0.35},
+  "protected_key_fragments": ["safety", "spending", "paid", "budget", "protected_branch", "independent_verification", "credential", "secret", "privileg", "merge_authority"]
+}
