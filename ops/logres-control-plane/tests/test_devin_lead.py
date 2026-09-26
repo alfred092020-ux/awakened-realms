@@ -100,6 +100,58 @@ class DevinLeadLifecycleTests(unittest.TestCase):
         high={'tasks':tasks,'capacity':{'plan':{'pressure':'high','logical_workers':4},'signals':{'verifier':{'backlog':10}}}}
         self.assertGreater(len(lead.select_frontier(normal,lead.default_policy())), len(lead.select_frontier(high,lead.default_policy())))
 
+    def proposal_connection(self):
+        conn=self.planning_connection()
+        conn.executescript("""
+        create table brain_events(id integer primary key autoincrement, ts_epoch real, ts text, sender text, recipient text, event_type text, priority integer, task_id text, subject text, body text, artifact_path text, artifact_sha256 text, dedupe_key text unique, meta_json text);
+        """)
+        return conn
+
+    def proposal(self, **overrides):
+        base={'id':'GEN-GAME-1','priority':0,'lane':'game','title':'Implement victory reward','work_type':'implementation','concurrency_key':'game:victory','expected_minutes':45,'evidence_policy':'evidence-first','acceptance':['reward visible'],'dependencies':[],'scopes':['src/game/victory']}
+        base.update(overrides); return base
+
+    def test_duplicate_fingerprint_is_suppressed(self):
+        conn=self.proposal_connection(); snap={'tasks':[]}
+        first=self.proposal()
+        self.assertEqual('GEN-GAME-1', lead.create_bounded_task(conn, first))
+        duplicate=dict(first); duplicate['id']='GEN-GAME-2'
+        ok,reason=lead.validate_proposal(conn, duplicate, snap, lead.default_policy())
+        self.assertFalse(ok); self.assertIn('duplicate',reason)
+
+    def test_dependency_cycle_is_rejected(self):
+        conn=self.proposal_connection(); conn.execute("insert into tasks values('A',0,'game','A','READY',null,null,'','now')")
+        conn.execute("insert into task_dependencies values('A','B','hard','')")
+        proposal=self.proposal(id='B',dependencies=['A'])
+        ok,reason=lead.validate_proposal(conn,proposal,{'tasks':[]},lead.default_policy())
+        self.assertFalse(ok); self.assertIn('cycle',reason)
+
+    def test_generation_cap_and_cooldown_hold(self):
+        conn=self.proposal_connection(); policy=lead.default_policy(); policy['task_generation_cap_per_cycle']=1; policy['predicate_cooldown_seconds']=9999
+        self.assertEqual('GEN-GAME-1',lead.create_bounded_task(conn,self.proposal(),policy=policy,now=100.0,cycle_id='c1'))
+        self.assertIsNone(lead.create_bounded_task(conn,self.proposal(id='GEN-GAME-2',concurrency_key='game:other'),policy=policy,now=101.0,cycle_id='c1'))
+        ok,reason=lead.validate_proposal(conn,self.proposal(id='GEN-GAME-3'),{'tasks':[]},policy,now=102.0)
+        self.assertFalse(ok); self.assertIn('cooldown',reason)
+
+    def test_infrastructure_budget_preserves_game_slots(self):
+        policy=lead.default_policy(); policy['assignment_cap_per_cycle']=4; policy['infrastructure_work_ratio_max']=0.25
+        snap={'active_assignments':[],'capacity':{'plan':{'pressure':'normal'}}}
+        infra={'id':'I','priority':0,'lane':'control-plane','title':'Internal tooling','status':'READY'}
+        game={'id':'G','priority':0,'lane':'game','title':'Battle field','status':'READY'}
+        self.assertEqual('defer',lead.route_task(infra,snap,policy)['action'])
+        self.assertEqual('dispatch',lead.route_task(game,snap,policy)['action'])
+
+    def test_free_devin_is_preferred_for_safe_implementation(self):
+        task={'id':'G','priority':0,'lane':'game','title':'Battle flow','status':'READY','work_type':'implementation'}
+        route=lead.route_task(task,{'capacity':{'plan':{'lane_caps':{'devin_cloud':2}}}},lead.default_policy())
+        self.assertEqual('devin',route['engine']); self.assertEqual('swe-2-max',route['model']); self.assertFalse(route['paid'])
+
+    def test_paid_route_is_never_enabled_by_lead(self):
+        policy=lead.default_policy(); policy['models']['allow_paid_default']=True
+        task={'id':'G','priority':0,'lane':'game','title':'Battle flow','status':'READY','work_type':'implementation'}
+        route=lead.route_task(task,{'capacity':{'plan':{'lane_caps':{'devin_cloud':1}}}},policy)
+        self.assertFalse(route['paid'])
+
 
 if __name__ == "__main__":
     unittest.main()
