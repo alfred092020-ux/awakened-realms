@@ -1,7 +1,87 @@
 {
-  "mission_id": "LOGRES_COMPLETE",
-  "title": "Faithful Logres Reconstruction",
+  "mission_id": "LOGRES-RECONSTRUCTION",
+  "title": "Persistent Logres Reconstruction",
   "objectives": [
+    {
+      "id": "LOGRES_COMPLETE",
+      "parent_id": "LOGRES-RECONSTRUCTION",
+      "title": "Faithful Logres Reconstruction",
+      "weight": 1,
+      "sort_order": 900,
+      "definition_of_done": "All required broad reconstruction child objectives are complete."
+    },
+    {
+      "id": "VERTICAL_SLICE",
+      "parent_id": "LOGRES-RECONSTRUCTION",
+      "title": "Playable vertical slice",
+      "weight": 100,
+      "sort_order": -90,
+      "definition_of_done": "Title -> World Select -> Character Creation/onboarding -> Field -> Movement/Collision -> NPC -> Encounter -> Battle -> Victory -> Reward/Inventory is verified end to end."
+    },
+    {
+      "id": "SLICE_ENTRY",
+      "parent_id": "VERTICAL_SLICE",
+      "title": "Authentic entry and onboarding",
+      "weight": 10,
+      "sort_order": 10,
+      "definition_of_done": "Evidence-backed title, world select, character creation, and onboarding flow are integrated and verified."
+    },
+    {
+      "id": "SLICE_FIELD",
+      "parent_id": "VERTICAL_SLICE",
+      "title": "Authentic field and movement",
+      "weight": 18,
+      "sort_order": 20,
+      "definition_of_done": "Evidence-backed field presentation, movement, collision, HUD and player actor runtime are integrated and verified."
+    },
+    {
+      "id": "SLICE_NPC",
+      "parent_id": "VERTICAL_SLICE",
+      "title": "NPC interaction",
+      "weight": 10,
+      "sort_order": 30,
+      "definition_of_done": "NPC interaction and dialogue path on the playable slice are integrated and verified."
+    },
+    {
+      "id": "SLICE_ENCOUNTER",
+      "parent_id": "VERTICAL_SLICE",
+      "title": "Encounter transition",
+      "weight": 10,
+      "sort_order": 40,
+      "definition_of_done": "Field encounter initiation and battle-entry boundary are integrated and verified."
+    },
+    {
+      "id": "SLICE_BATTLE",
+      "parent_id": "VERTICAL_SLICE",
+      "title": "Battle",
+      "weight": 18,
+      "sort_order": 50,
+      "definition_of_done": "Playable battle authority and evidence-bounded presentation are integrated and verified."
+    },
+    {
+      "id": "SLICE_REWARD",
+      "parent_id": "VERTICAL_SLICE",
+      "title": "Victory, reward and inventory",
+      "weight": 14,
+      "sort_order": 60,
+      "definition_of_done": "Victory, reward/inventory authority, and field-return path are integrated and verified."
+    },
+    {
+      "id": "SLICE_CERTIFICATION",
+      "parent_id": "VERTICAL_SLICE",
+      "title": "Exact-head certification",
+      "weight": 15,
+      "sort_order": 70,
+      "definition_of_done": "Current integration HEAD passes required automated gates and fresh physical Samsung vertical-slice proof; verification regressions are resolved or explicitly blocked."
+    },
+    {
+      "id": "SLICE_HISTORICAL_TRUTH",
+      "parent_id": "VERTICAL_SLICE",
+      "title": "Historical truth ceilings",
+      "weight": 5,
+      "sort_order": 80,
+      "definition_of_done": "Global-first provenance is preserved; unresolved tutorial-map identity remains explicit until stronger evidence exists."
+    },
     {
       "id": "GAME_CLIENT",
       "parent_id": "LOGRES_COMPLETE",
@@ -373,6 +453,111 @@
       "objective_id": "AUTOMATED_VERIFICATION",
       "milestone_id": "RELEASE-1.0",
       "gate_type": "required"
+    },
+    {
+      "objective_id": "SLICE_ENTRY",
+      "task_id": "ONBOARDING-FLOW-001",
+      "gate_type": "required"
+    },
+    {
+      "objective_id": "SLICE_ENTRY",
+      "task_id": "G17-APK-ONBOARDING-001",
+      "gate_type": "supporting"
+    },
+    {
+      "objective_id": "SLICE_FIELD",
+      "task_id": "FIELD-NAV",
+      "gate_type": "required"
+    },
+    {
+      "objective_id": "SLICE_FIELD",
+      "task_id": "FIELD-PLAYER-ACTOR-001",
+      "gate_type": "required"
+    },
+    {
+      "objective_id": "SLICE_FIELD",
+      "task_id": "VIDEO-FIELD-HUD-FIDELITY-CARRY-002",
+      "gate_type": "supporting"
+    },
+    {
+      "objective_id": "SLICE_NPC",
+      "task_id": "MISSION-NPC-DIALOGUE-001",
+      "gate_type": "required"
+    },
+    {
+      "objective_id": "SLICE_NPC",
+      "task_id": "NPC-ENCOUNTER",
+      "gate_type": "required"
+    },
+    {
+      "objective_id": "SLICE_ENCOUNTER",
+      "task_id": "NPC-ENCOUNTER",
+      "gate_type": "required"
+    },
+    {
+      "objective_id": "SLICE_ENCOUNTER",
+      "task_id": "DIFF-FIX-BATTLE-ENTRY-BOUNDARY",
+      "gate_type": "required"
+    },
+    {
+      "objective_id": "SLICE_BATTLE",
+      "task_id": "PLAYABLE-BATTLE-RESOLUTION-001",
+      "gate_type": "required"
+    },
+    {
+      "objective_id": "SLICE_BATTLE",
+      "task_id": "BATTLE-PRESENTATION-001",
+      "gate_type": "required"
+    },
+    {
+      "objective_id": "SLICE_BATTLE",
+      "task_id": "BATTLE-FIELD-BACKGROUND-CARRIER-002",
+      "gate_type": "supporting"
+    },
+    {
+      "objective_id": "SLICE_REWARD",
+      "task_id": "INVENTORY-AUTH",
+      "gate_type": "required"
+    },
+    {
+      "objective_id": "SLICE_REWARD",
+      "task_id": "MISSION-ITEM-SYSTEMS-001",
+      "gate_type": "required"
+    },
+    {
+      "objective_id": "SLICE_REWARD",
+      "task_id": "PLAYABLE-BATTLE-RESOLUTION-001",
+      "gate_type": "required"
+    },
+    {
+      "objective_id": "SLICE_CERTIFICATION",
+      "task_id": "LOGRES-VERTICAL-SLICE-DEVICE-CERT-001",
+      "gate_type": "required"
+    },
+    {
+      "objective_id": "SLICE_CERTIFICATION",
+      "task_id": "VISUAL-CHECKPOINT-JITTER-001",
+      "gate_type": "required"
+    },
+    {
+      "objective_id": "SLICE_HISTORICAL_TRUTH",
+      "task_id": "G17-APK-ONBOARDING-001",
+      "gate_type": "required"
+    },
+    {
+      "objective_id": "SLICE_HISTORICAL_TRUTH",
+      "task_id": "G17-APK-NATIVE-FIELD-001",
+      "gate_type": "required"
+    },
+    {
+      "objective_id": "SLICE_HISTORICAL_TRUTH",
+      "task_id": "G17-APK-BATTLE-001",
+      "gate_type": "required"
+    },
+    {
+      "objective_id": "SLICE_HISTORICAL_TRUTH",
+      "task_id": "G17-TUT-001",
+      "gate_type": "supporting"
     }
   ],
   "milestones": [
