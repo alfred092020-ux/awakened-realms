@@ -262,6 +262,37 @@ class SwarmTests(unittest.TestCase):
 
         self.assertEqual(1, prior_failures(self.conn, "R1"))
 
+    def test_terminal_devin_cleanup_candidates_are_bounded_and_idempotent(self):
+        helper = getattr(logres_swarm, "terminal_devin_cleanup_candidates", None)
+        self.assertTrue(callable(helper), "missing terminal_devin_cleanup_candidates")
+        seed_task(self.conn, task_id="DFAIL", status="READY", work_type="implementation")
+        seed_task(self.conn, task_id="DRUN", status="ACTIVE", work_type="implementation")
+        failed_id = create_job(
+            self.conn, "DFAIL", "auto-devin-1", "devin",
+            branch="worker/auto-devin-1-dfail", model="swe-2-max"
+        )
+        running_id = create_job(
+            self.conn, "DRUN", "auto-devin-2", "devin",
+            branch="worker/auto-devin-2-drun", model="swe-2-max"
+        )
+        self.conn.execute(
+            "update swarm_jobs set state='FAILED',session_id='systemd:failed.service' where id=?",
+            (failed_id,),
+        )
+        self.conn.execute(
+            "update swarm_jobs set state='RUNNING',pid=?,session_id='systemd:running.service' where id=?",
+            (os.getpid(), running_id),
+        )
+        self.conn.commit()
+        rows = helper(self.conn)
+        self.assertEqual([failed_id], [row["id"] for row in rows])
+        self.conn.execute(
+            "update swarm_jobs set session_id='cleaned:systemd:failed.service' where id=?",
+            (failed_id,),
+        )
+        self.conn.commit()
+        self.assertEqual([], helper(self.conn))
+
     def test_dead_swarm_process_is_marked_failed(self):
         seed_task(
             self.conn,

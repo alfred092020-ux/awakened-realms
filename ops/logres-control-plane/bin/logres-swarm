@@ -38,6 +38,7 @@ from logres_swarm import (
     select_research_tasks,
     status_dict,
     swarm_capacity,
+    terminal_devin_cleanup_candidates,
 )
 
 
@@ -131,6 +132,25 @@ def cleanup_devin_isolation(worker: str, task_id: str, branch: str) -> dict:
         "service_stopped": stop.returncode == 0,
         "network_torn_down": network.returncode == 0,
     }
+
+
+def cleanup_terminal_devin_jobs(conn: sqlite3.Connection) -> list[dict]:
+    cleaned: list[dict] = []
+    for row in terminal_devin_cleanup_candidates(conn):
+        outcome = cleanup_devin_isolation(
+            str(row["worker_id"]), str(row["task_id"]), str(row["branch"])
+        )
+        if not outcome.get("network_torn_down"):
+            continue
+        conn.execute(
+            "update swarm_jobs set session_id=?,updated_at=datetime('now') where id=?",
+            ("cleaned:" + str(row["session_id"]), int(row["id"])),
+        )
+        cleaned.append(
+            {"job_id": int(row["id"]), "task_id": str(row["task_id"]), "worker_id": str(row["worker_id"])}
+        )
+    conn.commit()
+    return cleaned
 
 
 def worktree_for_branch(branch: str) -> Path | None:
@@ -833,6 +853,7 @@ def tick(dry_run: bool = False) -> dict:
     conn = connect()
     stale = reconcile_jobs(conn)
     recovered = release_stale(conn, stale)
+    terminal_devin_cleaned = cleanup_terminal_devin_jobs(conn)
 
     knowledge_refresh = refresh_graph(conn)
     observations = record_swarm_observations(conn)
@@ -847,6 +868,7 @@ def tick(dry_run: bool = False) -> dict:
         "enabled": bool(swarm_cfg.get("enabled", False)),
         "before": before.__dict__,
         "stale_recovered": recovered,
+        "terminal_devin_cleaned": terminal_devin_cleaned,
         "devin": {"dispatched": 0, "jobs": []},
         "copilot": {"dispatched": 0, "jobs": []},
         "implementation": [],
