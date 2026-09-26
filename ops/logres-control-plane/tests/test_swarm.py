@@ -610,6 +610,12 @@ class SwarmTests(unittest.TestCase):
         ):
             self.assertIn(needle, script)
 
+    def test_swarm_script_imports_regex_for_transient_mainpid_parsing(self):
+        script = (CONTROL_ROOT / "bin" / "logres-swarm").read_text()
+        self.assertIn("import re", script.splitlines())
+        self.assertIn("re.search", script)
+        self.assertIn("re.sub", script)
+
     def test_swarm_script_has_fail_closed_devin_lane(self):
         script = (CONTROL_ROOT / "bin" / "logres-swarm").read_text()
         for needle in (
