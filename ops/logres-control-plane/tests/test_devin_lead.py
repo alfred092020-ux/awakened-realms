@@ -1,6 +1,8 @@
 import importlib.util
 import json
+import os
 import sqlite3
+import subprocess
 import tempfile
 import unittest
 from pathlib import Path
@@ -186,6 +188,69 @@ class DevinLeadLifecycleTests(unittest.TestCase):
         self.assertEqual(0.9,metrics['verification_pass_rate'])
         self.assertEqual(0.5,metrics['worker_utilization'])
         self.assertEqual(0.25,metrics['resource_contention'])
+
+    def runtime_root(self, td):
+        root=Path(td); (root/'control').mkdir(parents=True); (root/'config').mkdir(); (root/'bin').mkdir()
+        conn=sqlite3.connect(root/'control'/'control.sqlite')
+        conn.executescript("""
+        create table tasks(id text primary key, priority integer, lane text, title text, status text, branch text, owner text, note text, updated_at text);
+        create table task_dependencies(task_id text, depends_on text, kind text, rationale text);
+        create table task_scopes(task_id text, path_prefix text);
+        create table brain_task_leases(task_id text primary key, chat_id text, branch text, lease_until_epoch real, acquired_at text, renewed_at text, progress integer, note text);
+        create table task_metadata(task_id text primary key, milestone text, work_type text, concurrency_key text, expected_minutes integer, evidence_policy text, created_at text, updated_at text);
+        create table integration_queue(task_id text, status text, candidate_sha text);
+        create table regressions(task_id text, state text, candidate_sha text);
+        create table brain_events(id integer primary key autoincrement, ts_epoch real, ts text, sender text, recipient text, event_type text, priority integer, task_id text, subject text, body text, artifact_path text, artifact_sha256 text, dedupe_key text unique, meta_json text);
+        """); conn.commit(); conn.close()
+        (root/'config'/'devin_lead.json').write_text(json.dumps(lead.default_policy()))
+        (root/'control'/'capacity-state.json').write_text(json.dumps({'plan':{'pressure':'normal','logical_workers':4,'lane_caps':{'devin_cloud':1}},'signals':{'verifier':{'backlog':0}}}))
+        return root
+
+    def test_tick_dry_run_has_no_side_effects(self):
+        with tempfile.TemporaryDirectory() as td:
+            root=self.runtime_root(td)
+            conn=sqlite3.connect(root/'control'/'control.sqlite'); conn.execute("insert into tasks values('G',0,'game','Battle victory','READY',null,null,'','now')"); conn.commit(); conn.close()
+            result=lead.lead_tick(root,execute=False,instance_id='dry-run')
+            self.assertFalse(result['executed'])
+            conn=sqlite3.connect(root/'control'/'control.sqlite')
+            self.assertEqual(1,conn.execute("select count(*) from tasks").fetchone()[0])
+            self.assertEqual(0,conn.execute("select count(*) from brain_events").fetchone()[0])
+
+    def test_run_refuses_second_leader(self):
+        with tempfile.TemporaryDirectory() as td:
+            root=self.runtime_root(td); conn=sqlite3.connect(root/'control'/'control.sqlite')
+            self.assertTrue(lead.acquire_leader(conn,instance_id='other',now=100.0,ttl_seconds=1000)); conn.close()
+            self.assertEqual(2,lead.run_forever(root,interval_seconds=0,instance_id='second',max_cycles=1,now_fn=lambda:101.0))
+
+    def test_pause_resume_cli(self):
+        with tempfile.TemporaryDirectory() as td:
+            root=self.runtime_root(td); cli=CONTROL_ROOT/'bin'/'logres-devin-lead'; env={**os.environ,'LOGRES_ROOT':str(root)}
+            paused=subprocess.run([str(cli),'pause','--reason','operator test'],env=env,text=True,capture_output=True)
+            self.assertEqual(0,paused.returncode); self.assertTrue((root/'control'/'devin-lead.pause').is_file())
+            resumed=subprocess.run([str(cli),'resume'],env=env,text=True,capture_output=True)
+            self.assertEqual(0,resumed.returncode); self.assertFalse((root/'control'/'devin-lead.pause').exists())
+
+    def test_status_reports_heartbeat_frontier_metrics_and_last_decision(self):
+        with tempfile.TemporaryDirectory() as td:
+            root=self.runtime_root(td)
+            lead.write_heartbeat(root,{'instance_id':'lead-a','frontier':[{'id':'G'}],'metrics':{'worker_utilization':0.5},'last_decision':'game-first'})
+            status=lead.status_payload(root)
+            self.assertEqual('lead-a',status['heartbeat']['instance_id']); self.assertEqual('G',status['heartbeat']['frontier'][0]['id']); self.assertEqual(0.5,status['heartbeat']['metrics']['worker_utilization']); self.assertEqual('game-first',status['heartbeat']['last_decision'])
+
+    def test_service_restarts_and_runs_unprivileged(self):
+        text=(CONTROL_ROOT/'systemd'/'logres-devin-lead.service').read_text()
+        self.assertIn('Restart=always',text); self.assertIn('User=ubuntu',text); self.assertIn('/home/ubuntu/logres/bin/logres-devin-lead run',text); self.assertNotIn('User=root',text)
+
+    def test_paused_run_loop_does_not_dispatch(self):
+        with tempfile.TemporaryDirectory() as td:
+            root=self.runtime_root(td); (root/'control'/'devin-lead.pause').write_text('hold')
+            original=lead.dispatch_plan
+            lead.dispatch_plan=lambda *a,**k: (_ for _ in ()).throw(AssertionError('dispatch while paused'))
+            try:
+                result=lead.lead_tick(root,execute=True,instance_id='paused')
+            finally:
+                lead.dispatch_plan=original
+            self.assertTrue(result['paused']); self.assertFalse(result['executed']); self.assertTrue((root/'control'/'devin-lead-heartbeat.json').is_file())
 
 
 if __name__ == "__main__":

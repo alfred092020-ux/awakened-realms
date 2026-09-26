@@ -450,3 +450,190 @@ def compute_lead_metrics(conn, snapshot: dict) -> dict:
         "resource_contention": float(src.get("resource_contention", 0.0) or 0.0),
         "critical_path_completions": int(src.get("critical_path_completions", 0) or 0),
     }
+
+
+def _connect_root(root: Path):
+    import sqlite3
+    db = Path(root) / "control" / "control.sqlite"
+    conn = sqlite3.connect(db, timeout=30)
+    conn.row_factory = sqlite3.Row
+    conn.execute("pragma busy_timeout=30000")
+    return conn
+
+
+def _policy_for_root(root: Path) -> dict:
+    path = Path(root) / "config" / "devin_lead.json"
+    if not path.is_file():
+        return default_policy()
+    loaded = load_lead_policy(path)
+    merged = default_policy()
+    for key, value in loaded.items():
+        if isinstance(value, dict) and isinstance(merged.get(key), dict):
+            merged[key] = {**merged[key], **value}
+        else:
+            merged[key] = value
+    return merged
+
+
+def _metrics_input(conn, snapshot: dict) -> dict:
+    ready = [t for t in snapshot.get("tasks", []) if str(t.get("status")) == "READY"]
+    active = [t for t in snapshot.get("tasks", []) if str(t.get("status")) == "ACTIVE"]
+    capacity = snapshot.get("capacity", {}) if isinstance(snapshot.get("capacity"), dict) else {}
+    plan = capacity.get("plan", {}) if isinstance(capacity.get("plan"), dict) else {}
+    signals = capacity.get("signals", {}) if isinstance(capacity.get("signals"), dict) else {}
+    verifier = signals.get("verifier", {}) if isinstance(signals.get("verifier"), dict) else {}
+    host = signals.get("host", {}) if isinstance(signals.get("host"), dict) else {}
+    return {
+        "completed_latencies_seconds": [],
+        "rework_count": len(snapshot.get("regressions", [])),
+        "completed_count": 0,
+        "ready_queue_age_seconds": float(signals.get("queue", {}).get("oldest_ready_age_seconds", 0.0) or 0.0) if isinstance(signals.get("queue"), dict) else 0.0,
+        "verification_passed": int(verifier.get("passed", 0) or 0),
+        "verification_failed": int(verifier.get("failed", verifier.get("backlog", 0)) or 0),
+        "active_workers": len(active),
+        "logical_capacity": int(plan.get("logical_workers", max(1, len(active))) or max(1, len(active))),
+        "resource_contention": max(float(host.get("cpu_psi_avg10", 0) or 0), float(host.get("memory_psi_avg10", 0) or 0), float(host.get("io_psi_avg10", 0) or 0)),
+        "ready_count": len(ready),
+    }
+
+
+def status_payload(root: Path) -> dict:
+    root = Path(root)
+    heartbeat = _load_json_file(root / "control" / "devin-lead-heartbeat.json")
+    return {
+        "heartbeat": heartbeat,
+        "pause": read_pause(root),
+        "healthy": bool(heartbeat) and not bool(heartbeat.get("error")),
+    }
+
+
+def lead_tick(
+    root: Path,
+    *,
+    execute: bool = True,
+    instance_id: str | None = None,
+    now_fn=time.time,
+) -> dict:
+    root = Path(root)
+    policy = _policy_for_root(root)
+    instance_id = instance_id or f"{os.uname().nodename}:{os.getpid()}"
+    conn = _connect_root(root)
+    now = float(now_fn())
+    try:
+        leader_acquired = True
+        if execute:
+            leader_acquired = acquire_leader(
+                conn,
+                instance_id=instance_id,
+                now=now,
+                ttl_seconds=int(policy.get("leader_ttl_seconds", 180) or 180),
+            )
+            if not leader_acquired:
+                return {
+                    "instance_id": instance_id,
+                    "leader": False,
+                    "executed": False,
+                    "blocked": "leader_busy",
+                }
+        snapshot = collect_planning_snapshot(conn, root, policy)
+        frontier = select_frontier(snapshot, policy)
+        snapshot["metrics_input"] = _metrics_input(conn, snapshot)
+        metrics = compute_lead_metrics(conn, snapshot)
+        pause = read_pause(root)
+        base = {
+            "instance_id": instance_id,
+            "leader": leader_acquired,
+            "paused": bool(pause.get("paused")),
+            "pause_reason": pause.get("reason", ""),
+            "frontier": frontier,
+            "metrics": metrics,
+            "executed": False,
+        }
+        if not execute:
+            return {**base, "routes": [route_task(task, snapshot, policy) for task in frontier]}
+        if pause.get("paused"):
+            payload = {**base, "last_decision": "paused: observe only", "ts_epoch": now}
+            write_heartbeat(root, payload)
+            return payload
+
+        observations = inspect_owned_work(conn, snapshot, policy)
+        recoveries = plan_recoveries(conn, observations, policy)
+        for item in recoveries:
+            record_lead_event(
+                conn,
+                event_type="TASK_RECLAIMED" if item.get("action") == "recover" else "REGRESSION",
+                subject=f"Lead {item.get('action')}: {item.get('task_id')}",
+                body=json.dumps(item, sort_keys=True),
+                task_id=item.get("task_id"),
+                dedupe_key=f"devin-lead:{item.get('action')}:{item.get('task_id')}:{item.get('failed_candidate_sha','')}",
+            )
+        routes = [route_task(task, snapshot, policy) for task in frontier]
+        dispatch = dispatch_plan(root, routes, execute=True)
+        decision = "game-first frontier dispatched" if dispatch.get("dispatchable", 0) else "observed; no safe dispatchable frontier"
+        record_lead_event(
+            conn,
+            event_type="DECISION",
+            subject="Devin Lead planning cycle",
+            body=json.dumps({"frontier": [x.get("id") for x in frontier], "routes": routes, "metrics": metrics}, sort_keys=True),
+            task_id=None,
+            dedupe_key=f"devin-lead:cycle:{int(now // max(1, int(policy.get('cycle_seconds', 60) or 60)))}",
+        )
+        payload = {
+            **base,
+            "executed": True,
+            "routes": routes,
+            "dispatch": dispatch,
+            "recoveries": recoveries,
+            "last_decision": decision,
+            "ts_epoch": now,
+        }
+        write_heartbeat(root, payload)
+        return payload
+    finally:
+        conn.close()
+
+
+def run_forever(
+    root: Path,
+    *,
+    interval_seconds: int,
+    instance_id: str | None = None,
+    max_cycles: int | None = None,
+    now_fn=time.time,
+    sleep_fn=time.sleep,
+) -> int:
+    root = Path(root)
+    policy = _policy_for_root(root)
+    instance_id = instance_id or f"{os.uname().nodename}:{os.getpid()}"
+    conn = _connect_root(root)
+    try:
+        if not acquire_leader(
+            conn,
+            instance_id=instance_id,
+            now=float(now_fn()),
+            ttl_seconds=int(policy.get("leader_ttl_seconds", 180) or 180),
+        ):
+            return 2
+    finally:
+        conn.close()
+    cycles = 0
+    while max_cycles is None or cycles < max_cycles:
+        try:
+            result = lead_tick(root, execute=True, instance_id=instance_id, now_fn=now_fn)
+            if result.get("blocked") == "leader_busy":
+                return 2
+        except Exception as exc:
+            write_heartbeat(
+                root,
+                {
+                    "instance_id": instance_id,
+                    "healthy": False,
+                    "error": f"{type(exc).__name__}: {exc}",
+                    "ts_epoch": float(now_fn()),
+                },
+            )
+        cycles += 1
+        if max_cycles is not None and cycles >= max_cycles:
+            break
+        sleep_fn(max(0, interval_seconds))
+    return 0

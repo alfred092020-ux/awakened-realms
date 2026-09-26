@@ -1,0 +1,54 @@
+#!/home/ubuntu/logres/envs/research/bin/python
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import sys
+from pathlib import Path
+
+CONTROL_ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(CONTROL_ROOT / "lib"))
+from logres_devin_lead import lead_tick, run_forever, status_payload
+
+ROOT = Path(os.environ.get("LOGRES_ROOT", "/home/ubuntu/logres"))
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser(prog="logres-devin-lead")
+    sub = ap.add_subparsers(dest="command", required=True)
+    tick = sub.add_parser("tick"); tick.add_argument("--dry-run", action="store_true")
+    sub.add_parser("run")
+    status = sub.add_parser("status"); status.add_argument("--json", action="store_true")
+    pause = sub.add_parser("pause"); pause.add_argument("--reason", required=True)
+    sub.add_parser("resume")
+    args = ap.parse_args()
+    if args.command == "tick":
+        result = lead_tick(ROOT, execute=not args.dry_run)
+        print(json.dumps(result, indent=2, sort_keys=True))
+        return 0 if not result.get("blocked") else 2
+    if args.command == "run":
+        return run_forever(ROOT, interval_seconds=60)
+    if args.command == "status":
+        result = status_payload(ROOT)
+        if args.json:
+            print(json.dumps(result, indent=2, sort_keys=True))
+        else:
+            heartbeat = result.get("heartbeat", {})
+            print(f"DEVIN_LEAD {'HEALTHY' if result.get('healthy') else 'UNKNOWN'} instance={heartbeat.get('instance_id','-')} paused={result.get('pause',{}).get('paused',False)}")
+        return 0 if result.get("heartbeat") else 1
+    if args.command == "pause":
+        path = ROOT / "control" / "devin-lead.pause"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(args.reason.strip() + "\n", encoding="utf-8")
+        os.chmod(path, 0o600)
+        print(f"PAUSED {args.reason.strip()}")
+        return 0
+    path = ROOT / "control" / "devin-lead.pause"
+    path.unlink(missing_ok=True)
+    print("RESUMED")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

@@ -1,0 +1,20 @@
+[Unit]
+Description=Logres persistent autonomous Devin Executive Lead
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=ubuntu
+Group=ubuntu
+Environment=LOGRES_ROOT=/home/ubuntu/logres
+ExecStart=/home/ubuntu/logres/bin/logres-devin-lead run
+Restart=always
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ReadWritePaths=/home/ubuntu/logres/control /home/ubuntu/logres/logs /home/ubuntu/logres/work /home/ubuntu/logres/recovery
+
+[Install]
+WantedBy=multi-user.target
