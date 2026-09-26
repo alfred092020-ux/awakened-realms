@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+set -euo pipefail
+ROOT="${LOGRES_ROOT:-/home/ubuntu/logres}"
+exec "$ROOT/bin/logres-superbrain" maintain "$@"

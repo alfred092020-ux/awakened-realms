@@ -12,6 +12,7 @@ from pathlib import Path
 MANIFEST: dict[str, tuple[str, int]] = {
     "bin/logres-brain": ("bin/logres-brain", 0o755),
     "bin/logres-superbrain": ("bin/logres-superbrain", 0o755),
+    "bin/logres-superbrain-maintain": ("bin/logres-superbrain-maintain", 0o755),
     "bin/logres-ai": ("bin/logres-ai", 0o700),
     "bin/logres-ai-router": ("bin/logres-ai-router", 0o755),
     "bin/logres-autonomy": ("bin/logres-autonomy", 0o755),
@@ -166,6 +167,7 @@ MANIFEST: dict[str, tuple[str, int]] = {
     "lib/logres_supervisor.py": ("lib/logres_supervisor.py", 0o600),
     "lib/logres_throughput.py": ("lib/logres_throughput.py", 0o600),
     "migrations/20260926_001_superbrain_v2.sql": ("migrations/20260926_001_superbrain_v2.sql", 0o600),
+    "migrations/20260926_002_superbrain_selfheal_dispatch.sql": ("migrations/20260926_002_superbrain_selfheal_dispatch.sql", 0o600),
     "config/autoflow.default.json": ("config/autoflow.default.json", 0o600),
     "config/chat_bridge.default.json": ("config/chat_bridge.default.json", 0o600),
     "config/chat_watchdog.default.json": ("config/chat_watchdog.default.json", 0o600),
