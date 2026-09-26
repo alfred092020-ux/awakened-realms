@@ -1047,7 +1047,7 @@ def requeue_stale_claimed_wakes(
 ) -> int:
     ensure_schema(conn)
     now_epoch = time.time() if now_epoch is None else float(now_epoch)
-    cutoff_text = utc_now(now_epoch - max(60, int(claim_timeout_seconds)))
+    cutoff_epoch = int(now_epoch - max(60, int(claim_timeout_seconds)))
     cur = conn.execute(
         """update brain_wake_queue
               set state='PENDING',
@@ -1058,8 +1058,8 @@ def requeue_stale_claimed_wakes(
                   updated_at=?
             where state='CLAIMED'
               and claimed_at is not null
-              and claimed_at<?""",
-        (now_epoch, utc_now(now_epoch), cutoff_text),
+              and coalesce(unixepoch(claimed_at),0)<=?""",
+        (now_epoch, utc_now(now_epoch), cutoff_epoch),
     )
     conn.commit()
     return int(cur.rowcount or 0)
@@ -1140,11 +1140,12 @@ def claim_pending_wakes(
             if len(claimed) >= limit:
                 break
             payload = _wake_payload(conn, row)
-            sub_meta = payload["subscription_metadata"]
             priority = int(payload["event"].get("priority") or 9)
             is_paid = payload["cost_class"].lower() in PAID_COST_CLASSES
-            paid_override = bool(sub_meta.get("allow_paid_auto"))
-            if is_paid and not allow_paid and not paid_override and priority > paid_priority_ceiling:
+            # Subscription rows are untrusted policy inputs: they may describe
+            # delivery metadata but can never authorize spend. Only the
+            # operator-level allow_paid argument may override this gate.
+            if is_paid and not allow_paid and priority > paid_priority_ceiling:
                 conn.execute(
                     """update brain_wake_queue
                           set available_epoch=?,last_error=?,updated_at=?
@@ -1235,14 +1236,18 @@ def finish_wake_dispatch(
     error: str | None = None,
     now_epoch: float | None = None,
     retry_base_seconds: int = 30,
+    max_attempts: int = 3,
 ) -> dict:
     ensure_schema(conn)
     now_epoch = time.time() if now_epoch is None else float(now_epoch)
     stamp = utc_now(now_epoch)
-    state = "DELIVERED" if ok else "PENDING"
-    if ok:
+    max_attempts = max(1, int(max_attempts))
+    terminal_failure = (not ok) and int(attempt) >= max_attempts
+    state = "DELIVERED" if ok else ("FAILED" if terminal_failure else "PENDING")
+    receipt_status = "DELIVERED" if ok else ("FAILED" if terminal_failure else "RETRY")
+    if ok or terminal_failure:
         available_epoch = now_epoch
-        last_error = None
+        last_error = None if ok else (error or "dispatch failed")[:1000]
     else:
         backoff = min(900, max(30, int(retry_base_seconds)) * (2 ** max(0, attempt - 1)))
         available_epoch = now_epoch + backoff
@@ -1261,14 +1266,14 @@ def finish_wake_dispatch(
                 dispatcher,
                 transport,
                 cost_class,
-                "DELIVERED" if ok else "RETRY",
+                receipt_status,
                 started_at,
                 stamp,
                 error,
                 "{}",
             ),
         )
-        conn.execute(
+        cur = conn.execute(
             """update brain_wake_queue
                   set state=?,available_epoch=?,claimed_by=null,claimed_at=null,
                       last_error=?,updated_at=?
@@ -1281,6 +1286,45 @@ def finish_wake_dispatch(
                 int(wake_id),
             ),
         )
+        if terminal_failure and cur.rowcount == 1 and _table_exists(conn, "brain_events"):
+            source = conn.execute(
+                """select q.event_id,e.task_id,e.subject
+                     from brain_wake_queue q
+                     left join brain_events e on e.id=q.event_id
+                    where q.id=?""",
+                (int(wake_id),),
+            ).fetchone()
+            task_id = source["task_id"] if source is not None else None
+            subject = source["subject"] if source is not None else ""
+            conn.execute(
+                """insert into brain_events(
+                     ts_epoch,ts,sender,recipient,event_type,priority,task_id,
+                     subject,body,dedupe_key,meta_json
+                   ) values(?,?,?,?,?,?,?,?,?,?,?)""",
+                (
+                    now_epoch,
+                    stamp,
+                    dispatcher,
+                    "ALL",
+                    "WAKE_FAILED",
+                    1,
+                    task_id,
+                    f"Wake delivery exhausted: {wake_id}",
+                    f"attempts={attempt}/{max_attempts} transport={transport} "
+                    f"cost_class={cost_class} source={subject or '-'} "
+                    f"error={last_error or '-'}",
+                    f"superbrain-wake-failed:{int(wake_id)}",
+                    _json(
+                        {
+                            "wake_id": int(wake_id),
+                            "attempt": int(attempt),
+                            "max_attempts": max_attempts,
+                            "transport": transport,
+                            "cost_class": cost_class,
+                        }
+                    ),
+                ),
+            )
         conn.commit()
     except Exception:
         conn.rollback()
@@ -1296,6 +1340,7 @@ def dispatch_wakes(
     limit: int = 8,
     allow_paid: bool = False,
     paid_priority_ceiling: int = 1,
+    max_attempts: int = 3,
     now_epoch: float | None = None,
 ) -> dict:
     """Dispatch durable wake intents with bounded retry and cost-aware gating."""
@@ -1314,7 +1359,7 @@ def dispatch_wakes(
     for payload in batch["claimed"]:
         method = payload["wake_method"]
         dispatcher = dispatchers.get(method)
-        started = utc_now()
+        started = utc_now(now_epoch)
         ok = False
         error = None
         if dispatcher is None:
@@ -1335,6 +1380,8 @@ def dispatch_wakes(
             ok=ok,
             started_at=started,
             error=error,
+            now_epoch=now_epoch,
+            max_attempts=max_attempts,
         )
         result["subscriber"] = payload["subscriber"]
         result["transport"] = method
