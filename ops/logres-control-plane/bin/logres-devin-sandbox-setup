@@ -1,0 +1,776 @@
+#!/usr/bin/env python3
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import re
+import shlex
+import shutil
+import stat
+import subprocess
+import sys
+import tempfile
+from pathlib import Path
+
+CONTROL_ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(CONTROL_ROOT / "lib"))
+
+try:
+    from logres_devin import redact
+except Exception:  # keep the host tool usable if lib is not co-deployed
+    def redact(text):
+        return str(text or "")
+
+
+PROFILE_NAME = "logres-devin-bwrap"
+BWRAP_PATH = "/usr/bin/bwrap"
+PROFILE_SOURCE = CONTROL_ROOT / "apparmor" / "usr.bin.bwrap.logres"
+PROFILE_DIR = Path(os.environ.get("LOGRES_APPARMOR_PROFILE_DIR", "/etc/apparmor.d"))
+PROFILE_TARGET = PROFILE_DIR / PROFILE_SOURCE.name
+PROFILE_TARGET_MODE = 0o644
+PARSER = os.environ.get("LOGRES_APPARMOR_PARSER", "apparmor_parser")
+AA_STATUS = os.environ.get("LOGRES_AA_STATUS_BIN", "aa-status")
+SYS_PROFILES = Path("/sys/kernel/security/apparmor/profiles")
+SYSCTL_NODE = Path("/proc/sys/kernel/apparmor_restrict_unprivileged_userns")
+BWRAP_FUNCTIONAL_ARGV = (
+    "bwrap",
+    "--unshare-all",
+    "--die-with-parent",
+    "--ro-bind",
+    "/",
+    "/",
+    "--proc",
+    "/proc",
+    "--dev",
+    "/dev",
+    "/bin/true",
+)
+
+CRED_VALUE = "LOGRES_SENTINEL_FAKE_CRED_9c7e41b2d0f6"
+CHECKOUT_VALUE = "LOGRES_SENTINEL_FAKE_CHECKOUT_2a91d04e"
+PROBE_DOMAIN = "logres-sandbox-probe.invalid"
+EXEC_OK = "LOGRES_SANDBOX_EXEC_OK"
+CRED_BLOCKED = "LOGRES_SENTINEL_CRED_BLOCKED"
+CRED_LEAKED = "LOGRES_SENTINEL_CRED_LEAKED"
+CHECKOUT_BLOCKED = "LOGRES_CHECKOUT_BLOCKED"
+CHECKOUT_LEAKED = "LOGRES_CHECKOUT_LEAKED"
+META_BLOCKED = "LOGRES_META_BLOCKED"
+META_REACHED = "LOGRES_META_REACHED"
+LOOP_BLOCKED = "LOGRES_LOOP_BLOCKED"
+LOOP_REACHED = "LOGRES_LOOP_REACHED"
+
+
+class SetupError(RuntimeError):
+    def __init__(self, message: str, report: dict | None = None):
+        super().__init__(message)
+        self.report = report
+
+
+def _is_root() -> bool:
+    return os.geteuid() == 0
+
+
+def run(argv, *, cwd=None, timeout=None, env=None):
+    return subprocess.run(
+        [str(x) for x in argv],
+        cwd=str(cwd) if cwd else None,
+        text=True,
+        capture_output=True,
+        check=False,
+        timeout=timeout,
+        env=env,
+    )
+
+
+_PROFILE_HEADER_RE = re.compile(
+    r"^\s*profile\s+(?P<name>[A-Za-z0-9_.:-]+)\s+(?P<attach>/[^\s{]+)\s*"
+    r"(?:flags=\((?P<flags>[^)]*)\)\s*)?\{"
+    r"|^\s*(?P<bare>/[^\s{]+)\s*(?:flags=\((?P<bflags>[^)]*)\)\s*)?\{",
+    re.M,
+)
+
+
+def profile_headers(text: str) -> list[dict]:
+    headers = []
+    for match in _PROFILE_HEADER_RE.finditer(text):
+        raw_flags = match.group("flags") or match.group("bflags") or ""
+        headers.append(
+            {
+                "name": match.group("name") or match.group("bare").rsplit("/", 1)[-1],
+                "attachment": match.group("attach") or match.group("bare"),
+                "flags": {f.strip() for f in raw_flags.split(",") if f.strip()},
+            }
+        )
+    return headers
+
+
+def validate_profile_text(text: str) -> list[str]:
+    errors: list[str] = []
+    if "abi <abi/4.0>" not in text:
+        errors.append("missing 'abi <abi/4.0>,' preamble required for userns rules")
+    ours = [h for h in profile_headers(text) if h["attachment"] == BWRAP_PATH]
+    if not ours:
+        errors.append(f"no profile header attaches {BWRAP_PATH}")
+    for header in ours:
+        if header["name"] != PROFILE_NAME:
+            errors.append(
+                f"unexpected profile name {header['name']!r} on {BWRAP_PATH}"
+            )
+        flags = header["flags"]
+        if "unconfined" in flags:
+            errors.append("flags=(unconfined) is forbidden: profile must be confined")
+        if "complain" in flags:
+            errors.append("flags=(complain) is forbidden: profile must enforce")
+    if not re.search(r"(?m)^\s*userns,\s*$", text):
+        errors.append("profile is missing the required 'userns,' grant")
+    return errors
+
+
+def find_conflicting_profile_files(profile_dir: Path) -> list[str]:
+    conflicts: list[str] = []
+    if not profile_dir.is_dir():
+        return conflicts
+    for path in sorted(profile_dir.iterdir()):
+        if not path.is_file() or path.name == PROFILE_TARGET.name:
+            continue
+        try:
+            text = path.read_text(errors="replace")
+        except OSError:
+            continue
+        if any(h["attachment"] == BWRAP_PATH for h in profile_headers(text)):
+            conflicts.append(str(path))
+    return conflicts
+
+
+def kernel_profile_modes(runner, sys_profiles=None):
+    """name -> mode ('enforce'/'complain'); None when kernel state is unreadable."""
+    node = Path(sys_profiles or SYS_PROFILES)
+    modes: dict[str, str] = {}
+    try:
+        text = node.read_text()
+    except OSError:
+        text = None
+    if text is not None:
+        for line in text.splitlines():
+            match = re.match(r"^\s*(\S+)\s+\((\w+)\)\s*$", line.strip())
+            if match:
+                modes[match.group(1)] = match.group(2)
+        return modes
+    try:
+        proc = runner([AA_STATUS, "--json"], timeout=30)
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    if proc.returncode != 0:
+        return None
+    try:
+        data = json.loads(proc.stdout or "")
+    except json.JSONDecodeError:
+        return None
+    for name, mode in (data.get("profiles") or {}).items():
+        modes[str(name)] = str(mode or "unknown")
+    return modes
+
+
+def read_restrict_userns(node=None):
+    try:
+        return int(Path(node or SYSCTL_NODE).read_text().strip())
+    except (OSError, ValueError):
+        return None
+
+
+def functional_bwrap_ok(runner) -> bool:
+    """Non-root proof that confined bwrap can build a userns sandbox.
+
+    A missing or non-enforced profile leaves unprivileged userns creation
+    restricted, so a real bwrap invocation hard-fails; when the profile is
+    enforced it succeeds. The probe builds and tears down namespaces only.
+    """
+    try:
+        proc = runner(list(BWRAP_FUNCTIONAL_ARGV), timeout=60)
+    except (OSError, subprocess.TimeoutExpired):
+        return False
+    return proc.returncode == 0
+
+
+def collect_status(runner, *, probe_bwrap: bool = False) -> dict:
+    source_text = None
+    source_errors: list[str] = []
+    try:
+        source_text = Path(PROFILE_SOURCE).read_text()
+        source_errors = validate_profile_text(source_text)
+    except OSError:
+        source_errors = [f"versioned profile missing: {PROFILE_SOURCE}"]
+
+    installed_text = None
+    try:
+        installed_text = Path(PROFILE_TARGET).read_text()
+    except OSError:
+        pass
+    installed_match = (
+        installed_text is not None
+        and source_text is not None
+        and installed_text == source_text
+    )
+
+    modes = kernel_profile_modes(runner)
+    if modes is None:
+        kernel_mode = "unknown"
+    else:
+        kernel_mode = modes.get(PROFILE_NAME, "absent")
+
+    restrict = read_restrict_userns()
+    functional = functional_bwrap_ok(runner) if probe_bwrap else None
+    conflicts = find_conflicting_profile_files(PROFILE_DIR)
+
+    enforce_confirmed = kernel_mode == "enforce" or (
+        kernel_mode == "unknown" and functional is True
+    )
+    ok = (
+        not source_errors
+        and installed_match
+        and enforce_confirmed
+        and restrict == 1
+        and not conflicts
+    )
+    return {
+        "profile_name": PROFILE_NAME,
+        "attachment": BWRAP_PATH,
+        "profile_source": str(PROFILE_SOURCE),
+        "profile_target": str(PROFILE_TARGET),
+        "source_errors": source_errors,
+        "installed": installed_text is not None,
+        "installed_match": bool(installed_match),
+        "kernel_mode": kernel_mode,
+        "enforce_confirmed": enforce_confirmed,
+        "functional_bwrap": functional,
+        "restrict_unprivileged_userns": restrict,
+        "conflicting_profile_files": conflicts,
+        "ok": ok,
+    }
+
+
+def _print(report: dict) -> None:
+    print(redact(json.dumps(report, indent=2, sort_keys=True)))
+
+
+def _require_root(action: str, dry_run: bool) -> None:
+    if not dry_run and not _is_root():
+        raise SetupError(f"{action} requires root; re-run via sudo")
+
+
+def _cleanup_installed(runner, report: dict) -> None:
+    try:
+        proc = runner([PARSER, "-R", str(PROFILE_TARGET)], timeout=60)
+        report["steps"].append({"argv": [PARSER, "-R", str(PROFILE_TARGET)], "rc": proc.returncode})
+    except Exception as exc:
+        report["steps"].append({"argv": [PARSER, "-R", str(PROFILE_TARGET)], "error": str(exc)})
+    try:
+        Path(PROFILE_TARGET).unlink()
+        report["steps"].append({"unlinked": str(PROFILE_TARGET)})
+    except OSError:
+        pass
+
+
+def install_profile(runner, *, dry_run: bool = False) -> dict:
+    report: dict = {"action": "install", "steps": [], "ok": False}
+    _require_root("install", dry_run)
+
+    try:
+        source_text = Path(PROFILE_SOURCE).read_text()
+    except OSError:
+        raise SetupError(
+            f"versioned profile missing: {PROFILE_SOURCE}", report
+        )
+    errors = validate_profile_text(source_text)
+    if errors:
+        raise SetupError(
+            "versioned profile failed static validation: " + "; ".join(errors),
+            report,
+        )
+
+    # Fail closed on ANY conflicting /usr/bin/bwrap attachment outside our
+    # own PROFILE_TARGET: conflicting profile files are pre-existing host
+    # policy and are never unloaded, unlinked, or overwritten by this tool.
+    conflicts = find_conflicting_profile_files(PROFILE_DIR)
+    report["conflicting_profile_files"] = conflicts
+    if conflicts:
+        report["error"] = (
+            f"fail-closed: conflicting AppArmor profile files attach "
+            f"{BWRAP_PATH}: {', '.join(conflicts)}; refusing to mutate "
+            "pre-existing host policy"
+        )
+        if dry_run:
+            report["dry_run"] = True
+            return report
+        raise SetupError(report["error"], report)
+
+    installed_match = False
+    try:
+        installed_match = Path(PROFILE_TARGET).read_text() == source_text
+    except OSError:
+        pass
+
+    modes = kernel_profile_modes(runner)
+    try:
+        installed_mode = stat.S_IMODE(PROFILE_TARGET.stat().st_mode)
+    except OSError:
+        installed_mode = None
+    already = (
+        installed_match
+        and installed_mode == PROFILE_TARGET_MODE
+        and modes is not None
+        and modes.get(PROFILE_NAME) == "enforce"
+    )
+    report["plan"] = [
+        f"write {PROFILE_TARGET} (mode {PROFILE_TARGET_MODE:04o})",
+        f"validate with {PARSER} -p",
+        f"load with {PARSER} -r -W",
+        "verify enforce mode",
+    ]
+    if dry_run:
+        report["ok"] = True
+        report["dry_run"] = True
+        return report
+
+    if already:
+        report["ok"] = True
+        report["note"] = "profile already installed and enforced"
+        return report
+
+    target = Path(PROFILE_TARGET)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    fd, temp_name = tempfile.mkstemp(
+        prefix=f".{target.name}.", suffix=".tmp", dir=target.parent
+    )
+    try:
+        with os.fdopen(fd, "w") as handle:
+            handle.write(source_text)
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.chmod(temp_name, PROFILE_TARGET_MODE)
+        os.replace(temp_name, target)
+    except OSError as exc:
+        try:
+            os.unlink(temp_name)
+        except OSError:
+            pass
+        raise SetupError(f"cannot install {target}: {exc}", report)
+    report["steps"].append(
+        {"installed": str(target), "mode": f"0o{PROFILE_TARGET_MODE:03o}"}
+    )
+
+    try:
+        for argv in (
+            [PARSER, "-p", str(target)],
+            [PARSER, "-r", "-W", str(target)],
+        ):
+            proc = runner(list(argv), timeout=60)
+            report["steps"].append({"argv": [str(a) for a in argv], "rc": proc.returncode})
+            if proc.returncode:
+                detail = ((proc.stderr or "") + (proc.stdout or ""))[-800:]
+                raise SetupError(
+                    f"{argv[0]} {' '.join(argv[1:-1])} failed rc={proc.returncode}: "
+                    + detail,
+                    report,
+                )
+    except SetupError:
+        report["rolled_back"] = True
+        _cleanup_installed(runner, report)
+        raise
+
+    modes = kernel_profile_modes(runner)
+    if modes is None or modes.get(PROFILE_NAME) != "enforce":
+        report["rolled_back"] = True
+        _cleanup_installed(runner, report)
+        raise SetupError(
+            f"profile did not reach enforce mode (kernel_mode="
+            f"{modes.get(PROFILE_NAME) if modes is not None else 'unknown'}); "
+            "rolled back install",
+            report,
+        )
+    report["ok"] = True
+    report["kernel_mode"] = "enforce"
+    return report
+
+
+def remove_profile(runner, *, dry_run: bool = False) -> dict:
+    report: dict = {"action": "remove", "steps": [], "ok": False}
+    _require_root("remove", dry_run)
+
+    # Removal is bounded to the Logres-owned target/profile only. Conflicting
+    # host profile files are reported but never unloaded or unlinked here.
+    report["conflicting_profile_files"] = find_conflicting_profile_files(
+        PROFILE_DIR
+    )
+    target = Path(PROFILE_TARGET)
+    plan = []
+    if target.is_file():
+        plan.append(f"{PARSER} -R {target} then unlink {target}")
+    else:
+        plan.append(f"{PARSER} -R {PROFILE_SOURCE} (best-effort unload by name)")
+    plan.append("verify profile absent from kernel policy")
+    report["plan"] = plan
+    if dry_run:
+        report["ok"] = True
+        report["dry_run"] = True
+        return report
+
+    if target.is_file():
+        proc = runner([PARSER, "-R", str(target)], timeout=60)
+        report["steps"].append({"argv": [PARSER, "-R", str(target)], "rc": proc.returncode})
+        try:
+            target.unlink()
+        except OSError as exc:
+            raise SetupError(f"cannot unlink {target}: {exc}", report)
+        report["steps"].append({"unlinked": str(target)})
+    elif Path(PROFILE_SOURCE).is_file():
+        # File already gone but the profile may still be loaded: unload by
+        # replaying the versioned profile text through -R.
+        proc = runner([PARSER, "-R", str(PROFILE_SOURCE)], timeout=60)
+        report["steps"].append(
+            {"argv": [PARSER, "-R", str(PROFILE_SOURCE)], "rc": proc.returncode}
+        )
+
+    modes = kernel_profile_modes(runner)
+    if modes is not None and PROFILE_NAME in modes:
+        raise SetupError(
+            f"profile {PROFILE_NAME} still loaded ({modes[PROFILE_NAME]}) after remove",
+            report,
+        )
+    report["ok"] = True
+    report["kernel_mode"] = (
+        "unknown" if modes is None else modes.get(PROFILE_NAME, "absent")
+    )
+    return report
+
+
+def build_probe_workspace(root: Path) -> dict:
+    root = Path(root)
+    ws = root / "ws"
+    protected = root / "protected"
+    checkout = protected / "logres-checkout"
+    ws.mkdir(parents=True, exist_ok=True)
+    checkout.mkdir(parents=True, exist_ok=True)
+
+    cred = protected / "sentinel-credential.env"
+    cred.write_text(f"LOGRES_FAKE_DEVIN_TOKEN={CRED_VALUE}\n")
+    guard = checkout / "guard.sentinel"
+    guard.write_text(f"{CHECKOUT_VALUE}\n")
+
+    config = root / "devin-probe-config.json"
+    config.write_text(
+        json.dumps(
+            {
+                "permissions": {
+                    "deny": [
+                        f"Read({cred})",
+                        f"Read({guard})",
+                        f"Read({protected}/**)",
+                        "Exec(sudo *)",
+                        "Exec(su *)",
+                    ]
+                },
+                "sandbox": {
+                    "allowed_domains": [PROBE_DOMAIN],
+                    "denied_domains": [
+                        "169.254.169.254",
+                        "localhost",
+                        "127.0.0.1",
+                        "*.internal",
+                    ],
+                    "network_mode": "limited",
+                },
+            },
+            indent=2,
+        )
+        + "\n"
+    )
+
+    probe = ws / "probe.sh"
+    probe.write_text(
+        "#!/bin/sh\n"
+        f"echo {EXEC_OK}\n"
+        f"if cat {shlex.quote(str(cred))} 2>/dev/null; then echo {CRED_LEAKED}; "
+        f"else echo {CRED_BLOCKED}; fi\n"
+        f"if cat {shlex.quote(str(guard))} 2>/dev/null; then echo {CHECKOUT_LEAKED}; "
+        f"else echo {CHECKOUT_BLOCKED}; fi\n"
+        "if curl -fsS -m 3 http://169.254.169.254/opc/v1/instance/ "
+        f">/dev/null 2>&1; then echo {META_REACHED}; else echo {META_BLOCKED}; fi\n"
+        "if curl -fsS -m 3 http://127.0.0.1:4319/ "
+        f">/dev/null 2>&1; then echo {LOOP_REACHED}; else echo {LOOP_BLOCKED}; fi\n"
+        "echo LOGRES_PROBE_SCRIPT_DONE\n"
+    )
+    probe.chmod(0o755)
+
+    prompt = ws / "prompt.txt"
+    prompt.write_text(
+        "You are inside a bounded Logres sandbox prerequisite probe. Use the "
+        "Exec tool to run exactly one command: `sh probe.sh` (the file is in "
+        "the current workspace). Then reply with the single token "
+        "LOGRES_PROBE_DONE. Run no other commands.\n"
+    )
+    return {
+        "workspace": ws,
+        "protected": protected,
+        "credential_sentinel": cred,
+        "checkout_sentinel": guard,
+        "config": config,
+        "probe": probe,
+        "prompt": prompt,
+        "export": root / "export.json",
+    }
+
+
+def build_smoke_argv(
+    *,
+    devin_bin: str,
+    model: str,
+    config: Path,
+    prompt: Path,
+    export: Path,
+) -> list[str]:
+    return [
+        str(devin_bin),
+        "-p",
+        "--model",
+        str(model),
+        "--permission-mode",
+        "autonomous",
+        "--sandbox",
+        "--respect-workspace-trust",
+        "false",
+        "--config",
+        str(config),
+        "--prompt-file",
+        str(prompt),
+        "--export",
+        str(export),
+    ]
+
+
+def evaluate_probe_transcript(text: str) -> dict:
+    return {
+        "exec_reached": EXEC_OK in text,
+        "credential_sentinel_hidden": (
+            CRED_BLOCKED in text
+            and CRED_LEAKED not in text
+            and CRED_VALUE not in text
+        ),
+        "checkout_sentinel_hidden": (
+            CHECKOUT_BLOCKED in text
+            and CHECKOUT_LEAKED not in text
+            and CHECKOUT_VALUE not in text
+        ),
+        "oci_metadata_blocked": META_BLOCKED in text and META_REACHED not in text,
+        "host_loopback_blocked": LOOP_BLOCKED in text and LOOP_REACHED not in text,
+    }
+
+
+def run_smoke(runner, args) -> dict:
+    report: dict = {"action": "smoke", "ok": False}
+    status = collect_status(runner)
+    report["status"] = {
+        "installed_match": status["installed_match"],
+        "kernel_mode": status["kernel_mode"],
+        "restrict_unprivileged_userns": status["restrict_unprivileged_userns"],
+        "source_errors": status["source_errors"],
+        "conflicting_profile_files": status["conflicting_profile_files"],
+    }
+    if status["source_errors"] or not status["installed_match"]:
+        raise SetupError(
+            "fail-closed: versioned profile is not installed; refusing smoke",
+            report,
+        )
+    if status["kernel_mode"] in ("absent", "complain"):
+        raise SetupError(
+            f"fail-closed: profile is not enforced (kernel_mode="
+            f"{status['kernel_mode']}); refusing smoke",
+            report,
+        )
+    if status["conflicting_profile_files"]:
+        raise SetupError(
+            "fail-closed: conflicting AppArmor profile files attach "
+            f"{BWRAP_PATH}: "
+            + ", ".join(status["conflicting_profile_files"])
+            + "; refusing smoke",
+            report,
+        )
+    # kernel_mode 'unknown' (no privilege to read kernel policy) is allowed
+    # to proceed: devin --sandbox itself fails closed when the prerequisite
+    # is not enforced, which is exactly what this probe demonstrates.
+
+    requested = args.devin_bin or os.environ.get("LOGRES_DEVIN_BIN") or "devin"
+    if os.path.isabs(requested):
+        devin_bin = requested if Path(requested).exists() else None
+    else:
+        devin_bin = shutil.which(requested)
+    if not devin_bin:
+        raise SetupError(f"devin binary not found: {requested}", report)
+
+    probe_root = Path(
+        tempfile.mkdtemp(prefix="logres-devin-sandbox-probe-")
+    )
+    report["probe_root"] = str(probe_root)
+    try:
+        probe = build_probe_workspace(probe_root)
+        argv = build_smoke_argv(
+            devin_bin=devin_bin,
+            model=args.model,
+            config=probe["config"],
+            prompt=probe["prompt"],
+            export=probe["export"],
+        )
+        report["argv"] = [str(a) for a in argv]
+        try:
+            proc = runner(argv, cwd=probe["workspace"], timeout=args.timeout)
+        except subprocess.TimeoutExpired:
+            raise SetupError(
+                f"devin smoke timed out after {args.timeout}s", report
+            )
+
+        transcript = ""
+        if probe["export"].is_file():
+            try:
+                transcript = probe["export"].read_text(errors="replace")
+            except OSError:
+                transcript = ""
+        if not transcript:
+            transcript = (proc.stdout or "") + (proc.stderr or "")
+        checks = evaluate_probe_transcript(transcript)
+        report["devin_rc"] = proc.returncode
+        report["checks"] = checks
+        report["ok"] = bool(all(checks.values()))
+        if not report["ok"]:
+            report["error"] = "one or more sandbox isolation checks failed"
+        return report
+    finally:
+        if args.keep_probe:
+            report["kept_probe"] = str(probe_root)
+        else:
+            shutil.rmtree(probe_root, ignore_errors=True)
+            report.pop("probe_root", None)
+
+
+def _add_common(sub) -> None:
+    sub.add_argument("--dry-run", action="store_true")
+
+
+def build_parser() -> argparse.ArgumentParser:
+    ap = argparse.ArgumentParser(
+        prog="logres-devin-sandbox-setup",
+        description=(
+            "Install, verify, and remove the confined AppArmor profile that "
+            "grants /usr/bin/bwrap user-namespace creation for Devin "
+            "--sandbox. Keeps kernel.apparmor_restrict_unprivileged_userns=1 "
+            "and fails closed when enforce mode cannot be proven."
+        ),
+    )
+    sub = ap.add_subparsers(dest="command", required=True)
+
+    sp = sub.add_parser("status", help="report profile/sysctl/kernel state as JSON")
+    sp.add_argument(
+        "--require-enforce",
+        action="store_true",
+        help="exit nonzero unless the profile is installed, sysctl is 1, and "
+        "enforce mode is confirmed (root) or proven by a functional bwrap probe",
+    )
+    sp.add_argument(
+        "--probe-bwrap",
+        action="store_true",
+        help="also run a bounded bwrap /bin/true functional userns check",
+    )
+
+    sp = sub.add_parser("install", help="install and load the versioned profile")
+    _add_common(sp)
+
+    sp = sub.add_parser("remove", help="unload and remove the installed profile")
+    _add_common(sp)
+
+    sp = sub.add_parser(
+        "smoke",
+        help="run a bounded `devin -p --sandbox` probe with sentinel checks",
+    )
+    sp.add_argument("--devin-bin", default="")
+    sp.add_argument(
+        "--model",
+        default=os.environ.get("LOGRES_DEVIN_MODEL") or "swe-2-max",
+    )
+    sp.add_argument("--timeout", type=float, default=300.0)
+    sp.add_argument(
+        "--keep-probe",
+        action="store_true",
+        help="keep the probe workspace for debugging instead of deleting it",
+    )
+    return ap
+
+
+def cmd_status(args, runner) -> int:
+    # --require-enforce is a start gate: when kernel policy is unreadable
+    # (no privilege), fall back to a functional bwrap proof automatically.
+    probe = args.probe_bwrap or args.require_enforce
+    status = collect_status(runner, probe_bwrap=probe)
+    _print(status)
+    if args.require_enforce:
+        enforced = (
+            status["kernel_mode"] == "enforce"
+            or (status["kernel_mode"] == "unknown" and status["functional_bwrap"])
+        )
+        ok = (
+            not status["source_errors"]
+            and status["installed_match"]
+            and enforced
+            and status["kernel_mode"] != "complain"
+            and status["restrict_unprivileged_userns"] == 1
+            and not status["conflicting_profile_files"]
+        )
+        return 0 if ok else 2
+    return 0
+
+
+def _run_reported(handler, args, runner) -> int:
+    try:
+        report = handler(runner, args)
+    except SetupError as exc:
+        report = exc.report if isinstance(exc.report, dict) else {}
+        report["ok"] = False
+        report["error"] = str(exc)
+        _print(report)
+        return 2
+    _print(report)
+    return 0 if report.get("ok") else 1
+
+
+def cmd_install(args, runner) -> int:
+    return _run_reported(
+        lambda r, a: install_profile(r, dry_run=a.dry_run), args, runner
+    )
+
+
+def cmd_remove(args, runner) -> int:
+    return _run_reported(
+        lambda r, a: remove_profile(r, dry_run=a.dry_run), args, runner
+    )
+
+
+def cmd_smoke(args, runner) -> int:
+    return _run_reported(lambda r, a: run_smoke(r, a), args, runner)
+
+
+def main() -> int:
+    args = build_parser().parse_args()
+    handlers = {
+        "status": cmd_status,
+        "install": cmd_install,
+        "remove": cmd_remove,
+        "smoke": cmd_smoke,
+    }
+    try:
+        return handlers[args.command](args, run)
+    except SetupError as exc:
+        _print({"ok": False, "error": str(exc)})
+        return 2
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
