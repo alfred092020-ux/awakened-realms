@@ -1,0 +1,15 @@
+{
+  "confidence_threshold": 0.6,
+  "material_confidence_floor": 0.6,
+  "high_cost_threshold": 0.7,
+  "verification_failure_threshold": 2,
+  "cooldown_seconds": 600,
+  "max_consultations_per_subject": 4,
+  "max_consultations_per_task": 8,
+  "exempt_kinds": ["low_risk_reversible", "docs_only", "mechanical_refactor"],
+  "allow_low_risk_proceed": true,
+  "peer_engine": {
+    "identity": "peer-1",
+    "engine": "deterministic-fallback"
+  }
+}
