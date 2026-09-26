@@ -25,6 +25,7 @@ MANIFEST: dict[str, tuple[str, int]] = {
     "bin/logres-device-proof": ("bin/logres-device-proof", 0o755),
     "bin/logres-devin-agent": ("bin/logres-devin-agent", 0o755),
     "bin/logres-devin-isolate": ("bin/logres-devin-isolate", 0o755),
+    "bin/logres-devin-sandbox-setup": ("bin/logres-devin-sandbox-setup", 0o755),
     "bin/logres-experiment-executor": ("bin/logres-experiment-executor", 0o755),
     "bin/logres-governor": ("bin/logres-governor", 0o755),
     "bin/logres-lifecycle-guard": ("bin/logres-lifecycle-guard", 0o755),

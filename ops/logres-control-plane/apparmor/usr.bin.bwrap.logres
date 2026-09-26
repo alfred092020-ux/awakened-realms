@@ -1,0 +1,95 @@
+# Logres Devin bubblewrap prerequisite profile (DEVIN-BWRAP-APPARMOR-001).
+#
+# Ubuntu ships kernel.apparmor_restrict_unprivileged_userns=1: unprivileged
+# user-namespace creation is only allowed for processes running under an
+# AppArmor profile that explicitly grants it. Devin's native --sandbox
+# builds every Exec sandbox through bubblewrap, so /usr/bin/bwrap needs a
+# named profile that grants exactly that capability and nothing more. The
+# global restriction stays enabled for every other unprivileged binary;
+# this file is the narrow carve-out for the single tool that needs it.
+#
+# This profile is deliberately confined (no unconfined flag):
+#   * userns is the only namespace privilege granted;
+#   * the mount rules below can only act inside namespaces bwrap itself
+#     creates and owns — /usr/bin/bwrap is not setuid, so an unprivileged
+#     launch holds no host-level capability for the profile to widen;
+#   * the capability list is likewise userns-scoped: the kernel grants
+#     these only against objects owned by a user namespace bwrap created;
+#   * the sandboxed payload is executed unconfined (Ux). It stays inside
+#     the bubblewrap+seccomp boundary — which is the actual Devin sandbox
+#     isolation contract — and, being unconfined, is itself blocked from
+#     creating further user namespaces while the Ubuntu restriction holds.
+#     Inheriting this profile (ix) would wrongly extend the userns and
+#     mount grants into the payload, so Ux is the narrower choice.
+#
+# File rules look broad because bwrap must open, read, and create
+# mountpoints for arbitrary host paths: the sandbox layout (bind sources,
+# workspace bind, denied-path overlays) is decided per invocation, so the
+# paths inside bwrap's owned tmpfs root are not enumerable. This does not
+# widen the pre-profile baseline: bubblewrap is unprivileged, AppArmor can
+# only restrict DAC access, and an unconfined bwrap could already read or
+# write every file its uid owns. What the profile still denies it, even at
+# this breadth, is the meaningful part: host-visible capabilities, ptrace,
+# and unmediated signal/network reach outside the granted rules.
+
+abi <abi/4.0>,
+
+include <tunables/global>
+
+profile logres-devin-bwrap /usr/bin/bwrap {
+
+  include <abstractions/base>
+
+  # The single privilege this profile exists to grant: user-namespace
+  # creation under kernel.apparmor_restrict_unprivileged_userns=1.
+  userns,
+
+  # bwrap assembles the sandbox rootfs inside the mount namespace owned by
+  # the userns it just created: tmpfs/proc/devpts mounts, recursive bind
+  # mounts, remount-ro of bind sources, pivot_root into the new rootfs,
+  # then detaches the old root. None of this can touch the host mount
+  # namespace, which bwrap does not own.
+  mount,
+  remount,
+  umount,
+  pivot_root,
+
+  # Exercised only inside namespaces bwrap created and owns; an
+  # unprivileged bwrap holds no matching host capability, so these cannot
+  # act on host objects. net_admin covers the loopback setup that surfaced
+  # as "bwrap: loopback: Failed RTM_NEWADDR" when the userns grant was
+  # missing; sys_admin covers mount/namespace setup; the id-map and
+  # device-node grants cover payload identity and minimal /dev.
+  capability sys_admin,
+  capability setuid,
+  capability setgid,
+  capability setpcap,
+  capability mknod,
+  capability chown,
+  capability fowner,
+  capability net_admin,
+
+  # Netlink loopback configuration inside the owned network namespace.
+  network,
+
+  # Sandbox rootfs assembly: bwrap creates directories, symlinks, and
+  # device nodes inside its owned tmpfs, and opens the host paths it
+  # bind-mounts. Paths are arbitrary because the layout is per-invocation;
+  # host objects stay protected by DAC and by the mounts being private to
+  # the sandbox namespace.
+  /** rw,
+
+  # uid/gid mapping writes for the new user namespace.
+  owner @{PROC}/[0-9]*/{uid_map,gid_map,setgroups} rw,
+
+  # bwrap babysits the payload: the unconfined launcher may signal bwrap,
+  # and bwrap forwards termination signals to the unconfined payload.
+  signal (receive) peer=unconfined,
+  signal (send) peer=unconfined,
+
+  # Hand the payload to the bubblewrap+seccomp boundary — the Devin
+  # sandbox — unconfined, so it does not inherit this profile's userns or
+  # mount privileges. Unconfined payloads cannot create further user
+  # namespaces while the Ubuntu restriction stays enabled.
+  /** Ux,
+}
