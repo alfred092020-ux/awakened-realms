@@ -179,6 +179,7 @@ DEFAULT_CONFIG: dict = {
         "address_pool": "10.210.0.0/16",
         "veth_index_modulo": 16384,
         "metadata_cidrs": [METADATA_IPV4, METADATA_IPV6],
+        "dns_resolvers": ["169.254.169.254"],
         "deny_cidrs": [
             METADATA_IPV4,
             METADATA_IPV6,
@@ -638,6 +639,16 @@ def netns_setup_plan(cfg: dict, spec: dict) -> list[list[str]]:
         except ValueError:
             raise IsolationError(f"invalid deny cidr: {cidr}")
         (deny_v6 if parsed.version == 6 else deny_v4).append(str(parsed))
+    dns_resolvers: list[str] = []
+    for resolver in net.get("dns_resolvers") or []:
+        try:
+            parsed = ipaddress.ip_address(str(resolver))
+        except ValueError:
+            raise IsolationError(f"invalid DNS resolver: {resolver}")
+        if parsed.version != 4:
+            raise IsolationError(f"unsupported non-IPv4 DNS resolver: {resolver}")
+        dns_resolvers.append(str(parsed))
+
     plan: list[list[str]] = [
         ["ip", "netns", "add", ns],
         ["ip", "link", "add", veth_h, "type", "veth", "peer", "name", veth_n],
@@ -663,6 +674,13 @@ def netns_setup_plan(cfg: dict, spec: dict) -> list[list[str]]:
         ],
     ]
     for chain in ("worker_in", "worker_fwd"):
+        for resolver in dns_resolvers:
+            for proto in ("udp", "tcp"):
+                plan.append(
+                    ["nft", "add", "rule", family, table, chain,
+                     "iifname", veth_h, "ip", "daddr", resolver,
+                     proto, "dport", "53", "accept"]
+                )
         for cidr in deny_v4:
             plan.append(
                 ["nft", "add", "rule", family, table, chain,

@@ -133,6 +133,9 @@
     "emit_ip_address_policy": true,
     "host_forward_sysctls": [
       "net.ipv4.ip_forward"
+    ],
+    "dns_resolvers": [
+      "169.254.169.254"
     ]
   },
   "sandbox": {

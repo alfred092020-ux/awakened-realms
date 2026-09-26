@@ -463,6 +463,18 @@ class NetworkPolicyTests(unittest.TestCase):
             for chain in ("worker_in", "worker_fwd"):
                 self.assertIn(chain, flat)
 
+    def test_netns_plan_allows_oracle_dns_only_before_metadata_drop(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            cfg = make_cfg(tmp)
+            spec = make_spec(tmp, cfg)
+            lines = [" ".join(argv) for argv in netns_setup_plan(cfg, spec)]
+            for chain in ("worker_in", "worker_fwd"):
+                udp = next(i for i, line in enumerate(lines) if chain in line and "ip daddr 169.254.169.254 udp dport 53 accept" in line)
+                tcp = next(i for i, line in enumerate(lines) if chain in line and "ip daddr 169.254.169.254 tcp dport 53 accept" in line)
+                drop = next(i for i, line in enumerate(lines) if chain in line and "ip daddr 169.254.169.254/32 drop" in line)
+                self.assertLess(udp, drop)
+                self.assertLess(tcp, drop)
+
     def test_allow_only_mode_fails_closed_without_allowlist(self):
         with tempfile.TemporaryDirectory() as tmp:
             cfg = make_cfg(tmp)
