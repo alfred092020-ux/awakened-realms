@@ -367,7 +367,15 @@ def execute_swarm_tick(root: Path, plan: dict, *, runner=subprocess.run) -> dict
         env["LOGRES_AUTOFLOW_CONFIG"] = str(auto_overlay)
         env["LOGRES_DEVIN_WORKER_CONFIG"] = str(devin_overlay)
         result = runner(
-            [str(swarm_bin), "tick"],
+            [
+                "/usr/bin/flock",
+                "-n",
+                "-E",
+                "0",
+                "/tmp/logres-swarm.cron.lock",
+                str(swarm_bin),
+                "tick",
+            ],
             text=True,
             capture_output=True,
             check=False,

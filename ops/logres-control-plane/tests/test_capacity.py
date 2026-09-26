@@ -177,7 +177,14 @@ class CapacityTests(unittest.TestCase):
                 return Result()
 
             result = capacity.execute_swarm_tick(root, plan, runner=runner)
-            self.assertEqual([str(bin_dir / "logres-swarm"), "tick"], seen["argv"])
+            self.assertEqual(
+                [
+                    "/usr/bin/flock", "-n", "-E", "0",
+                    "/tmp/logres-swarm.cron.lock",
+                    str(bin_dir / "logres-swarm"), "tick",
+                ],
+                seen["argv"],
+            )
             self.assertEqual(plan["logical_workers"], seen["autoflow"]["swarm"]["max_workers"])
             self.assertEqual(plan["lane_caps"]["devin_cloud"], seen["devin"]["router"]["max_active"])
             self.assertEqual(base_auto, json.loads((control / "autoflow.json").read_text()))
