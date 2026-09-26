@@ -1,0 +1,168 @@
+{
+  "schema": "logres-devin-isolation-v1",
+  "enabled": true,
+  "manager": "system",
+  "isolation_marker": "systemd/logres-devin-worker@.service",
+  "unit_prefix": "logres-devin-",
+  "run_as_user": "ubuntu",
+  "evidence_policy": "Outer boundary is systemd-run --system transient-unit hardening (verified on this host; the user manager is not authoritative because ProtectHome is ignored). Authoritative egress control is a pre-created per-worker network namespace plus host nftables because systemd here is built -BPF_FRAMEWORK, so IPAddressAllow/Deny are emitted only as defense-in-depth. The native Devin bwrap sandbox is the required inner boundary: it keeps authenticated Devin credentials hidden from arbitrary Exec subprocesses. Native bwrap previously failed 'loopback: Failed RTM_NEWADDR' under kernel.apparmor_restrict_unprivileged_userns=1; a narrow versioned AppArmor userns profile for /usr/bin/bwrap restores it. production_ready is false unless systemd hardening, netns policy, and the native sandbox all pass preflight.",
+  "paths": {
+    "work_root": "/home/ubuntu/logres/work",
+    "base_checkout": "/home/ubuntu/logres/src/awakened-realms",
+    "scratch_root": "/home/ubuntu/logres/scratch/devin-workers",
+    "log_root": "/home/ubuntu/logres/logs/devin-workers",
+    "state_root": "/home/ubuntu/logres/control/devin-isolation",
+    "auth_bind_paths": [
+      "/home/ubuntu/.config/devin",
+      "/home/ubuntu/.local/share/devin"
+    ],
+    "readonly_bind_paths": [],
+    "inaccessible_paths": [
+      "/root",
+      "/etc/ssh",
+      "/etc/cloud",
+      "/var/lib/cloud",
+      "/run/secrets",
+      "/home/ubuntu/.ssh",
+      "/home/ubuntu/.aws",
+      "/home/ubuntu/.azure",
+      "/home/ubuntu/.config/gh",
+      "/home/ubuntu/.docker",
+      "/home/ubuntu/.gnupg",
+      "/home/ubuntu/.kube",
+      "/home/ubuntu/.oci",
+      "/home/ubuntu/.gitconfig",
+      "/home/ubuntu/logres/control",
+      "/home/ubuntu/logres/private",
+      "/home/ubuntu/logres/src/awakened-realms"
+    ],
+    "protected_prefixes": [
+      "/home/ubuntu/logres/src/awakened-realms",
+      "/home/ubuntu/logres/control",
+      "/home/ubuntu/logres/private",
+      "/home/ubuntu/.ssh",
+      "/home/ubuntu/.aws",
+      "/home/ubuntu/.azure",
+      "/home/ubuntu/.config/gh",
+      "/home/ubuntu/.docker",
+      "/home/ubuntu/.gnupg",
+      "/home/ubuntu/.kube",
+      "/home/ubuntu/.oci",
+      "/home/ubuntu/.gitconfig"
+    ]
+  },
+  "systemd": {
+    "protect_system": "strict",
+    "protect_home": "tmpfs",
+    "private_tmp": true,
+    "private_devices": true,
+    "no_new_privileges": true,
+    "protect_kernel_tunables": true,
+    "protect_kernel_modules": true,
+    "protect_kernel_logs": true,
+    "protect_control_groups": true,
+    "protect_clock": true,
+    "protect_hostname": true,
+    "restrict_suid_sgid": true,
+    "lock_personality": true,
+    "restrict_realtime": true,
+    "remove_ipc": true,
+    "keyring_mode": "private",
+    "device_policy": "closed",
+    "restrict_namespaces": "~cgroup",
+    "capability_bounding_set": "",
+    "ambient_capabilities": "",
+    "restrict_address_families": [
+      "AF_UNIX",
+      "AF_INET",
+      "AF_INET6",
+      "AF_NETLINK"
+    ],
+    "system_call_architectures": "native",
+    "socket_bind_deny": "any",
+    "umask": "0077",
+    "kill_mode": "control-group",
+    "kill_signal": "SIGTERM",
+    "final_kill_signal": "SIGKILL",
+    "send_sigkill": true,
+    "timeout_stop_sec": 30
+  },
+  "limits": {
+    "memory_max": "4G",
+    "memory_high": "3G",
+    "cpu_quota": "300%",
+    "tasks_max": 512,
+    "runtime_max_sec": 7200
+  },
+  "watchdog": {
+    "wall_clock_seconds": 7200,
+    "no_progress_seconds": 900,
+    "poll_seconds": 15,
+    "term_grace_seconds": 15,
+    "kill_grace_seconds": 5
+  },
+  "network": {
+    "require_netns": true,
+    "netns_root": "/run/netns",
+    "netns_prefix": "logres-devin-",
+    "nft_table_family": "inet",
+    "nft_table_prefix": "logres_devin_",
+    "veth_prefix": "ldv",
+    "address_pool": "10.210.0.0/16",
+    "veth_index_modulo": 16384,
+    "metadata_cidrs": [
+      "169.254.169.254/32",
+      "fd00:ec2::254/128"
+    ],
+    "deny_cidrs": [
+      "169.254.169.254/32",
+      "fd00:ec2::254/128",
+      "169.254.0.0/16",
+      "127.0.0.0/8",
+      "::1/128",
+      "fe80::/10"
+    ],
+    "allowed_cidrs": [],
+    "egress_mode": "deny-listed",
+    "required_services": [
+      "devin",
+      "github",
+      "npm",
+      "pypi"
+    ],
+    "emit_ip_address_policy": true,
+    "host_forward_sysctls": [
+      "net.ipv4.ip_forward"
+    ]
+  },
+  "sandbox": {
+    "required_for_production": true,
+    "required_binaries": [
+      "bwrap",
+      "socat"
+    ],
+    "apparmor_profile": "/etc/apparmor.d/usr.bin.bwrap.logres",
+    "apparmor_profiles_sysfs": "/sys/kernel/security/apparmor/profiles",
+    "exec_probe": [
+      "bwrap",
+      "--unshare-all",
+      "--ro-bind",
+      "/",
+      "/",
+      "--dev",
+      "/dev",
+      "--proc",
+      "/proc",
+      "true"
+    ],
+    "credential_paths": [
+      "/home/ubuntu/.config/devin",
+      "/home/ubuntu/.local/share/devin"
+    ]
+  },
+  "environment": {
+    "NPM_CONFIG_CACHE": "./npm-cache",
+    "XDG_CACHE_HOME": "./home/.cache",
+    "GIT_CONFIG_NOSYSTEM": "1"
+  }
+}

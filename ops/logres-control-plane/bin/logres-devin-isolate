@@ -1,0 +1,388 @@
+#!/usr/bin/env python3
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import shlex
+import subprocess
+import sys
+import time
+from pathlib import Path
+
+CONTROL_ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(CONTROL_ROOT / "lib"))
+
+from logres_devin_isolation import (
+    IsolationError,
+    build_devin_child_argv,
+    build_systemd_run_argv,
+    check_unit_name,
+    evaluate_preflight,
+    isolation_marker,
+    load_config,
+    netns_name,
+    netns_setup_plan,
+    netns_teardown_plan,
+    normalize_spec,
+    prepare_layout,
+    resolve_paths,
+    terminate_unit,
+    unit_name,
+    watchdog_evaluate,
+    write_env_file,
+)
+from logres_patch_agent import atomic_json
+
+CONFIG_PATH = Path(
+    os.environ.get(
+        "LOGRES_DEVIN_ISOLATION_CONFIG",
+        str(CONTROL_ROOT / "config" / "devin_isolation.json"),
+    )
+)
+
+
+def run(argv, timeout=None):
+    return subprocess.run(
+        [str(a) for a in argv],
+        text=True,
+        capture_output=True,
+        check=False,
+        timeout=timeout,
+    )
+
+
+def spec_from_args(cfg, args) -> dict:
+    return normalize_spec(
+        cfg,
+        {
+            "task_id": args.task,
+            "worker_id": args.worker,
+            "branch": args.branch,
+            "worktree": args.worktree,
+        },
+    )
+
+
+def child_argv_from_args(cfg, args) -> list[str]:
+    child = [str(a) for a in (args.child or [])]
+    if child and child[0] == "--":
+        child = child[1:]
+    if not child:
+        raw = os.environ.get("DEVIN_ARGV_JSON", "").strip()
+        if raw:
+            child = [str(a) for a in json.loads(raw)]
+    if not child:
+        raise IsolationError(
+            "no child argv: pass the devin command after '--' or set DEVIN_ARGV_JSON"
+        )
+    return build_devin_child_argv(cfg, child)
+
+
+def cmd_preflight(args) -> int:
+    cfg = load_config(CONFIG_PATH)
+    spec = spec_from_args(cfg, args)
+    report = evaluate_preflight(cfg, spec)
+    ready = report["attended_ready"] if args.attended else report["production_ready"]
+    if args.json:
+        print(json.dumps(report, indent=2, sort_keys=True))
+    else:
+        mode = "attended" if args.attended else "production"
+        print(f"mode={mode} ready={str(ready).lower()} unit={report['unit']}")
+        for check in report["checks"]:
+            mark = "ok" if check["ok"] else ("FAIL" if check["required"] else "warn")
+            print(f"  {mark:4} {check['name']}: {check['detail']}")
+        if report["blockers"]:
+            print("blockers: " + ", ".join(report["blockers"]))
+    return 0 if ready else 2
+
+
+def cmd_render(args) -> int:
+    cfg = load_config(CONFIG_PATH)
+    spec = spec_from_args(cfg, args)
+    child = child_argv_from_args(cfg, args)
+    argv = build_systemd_run_argv(cfg, spec, child)
+    if args.json:
+        print(json.dumps({"argv": argv, "unit": unit_name(cfg, spec)}, indent=2))
+    else:
+        print(shlex.join(argv))
+    return 0
+
+
+def cmd_prepare(args) -> int:
+    cfg = load_config(CONFIG_PATH)
+    spec = spec_from_args(cfg, args)
+    made = prepare_layout(cfg, spec)
+    env_path = write_env_file(
+        cfg, spec, extra={"DEVIN_ARGV_JSON": os.environ.get("DEVIN_ARGV_JSON", "")}
+    )
+    print("prepared:")
+    for path in made:
+        print(f"  {path}")
+    print(f"  {env_path}")
+    return 0
+
+
+def cmd_netns_plan(args) -> int:
+    cfg = load_config(CONFIG_PATH)
+    spec = spec_from_args(cfg, args)
+    plan = netns_setup_plan(cfg, spec)
+    teardown = netns_teardown_plan(cfg, spec)
+    if args.json:
+        print(json.dumps({"setup": plan, "teardown": teardown}, indent=2))
+    else:
+        print("# requires root; authoritative egress boundary for " + spec["name"])
+        for argv in plan:
+            print(shlex.join(argv))
+        print("# teardown:")
+        for argv in teardown:
+            print(shlex.join(argv))
+    return 0
+
+
+def cmd_start(args) -> int:
+    cfg = load_config(CONFIG_PATH)
+    spec = spec_from_args(cfg, args)
+    report = evaluate_preflight(cfg, spec)
+    ready = report["attended_ready"] if args.attended else report["production_ready"]
+    if not ready:
+        for check in report["checks"]:
+            if check["required"] and not check["ok"]:
+                print(f"preflight FAIL {check['name']}: {check['detail']}", file=sys.stderr)
+        print(
+            "refusing to start unattended Devin worker: OS isolation boundary "
+            "cannot be proven (fail closed)",
+            file=sys.stderr,
+        )
+        return 2
+    child = child_argv_from_args(cfg, args)
+    argv = build_systemd_run_argv(cfg, spec, child)
+    if args.dry_run:
+        print(shlex.join(argv))
+        return 0
+    prepare_layout(cfg, spec)
+    write_env_file(cfg, spec)
+    proc = run(argv)
+    resolved = resolve_paths(cfg, spec)
+    payload = {
+        "unit": unit_name(cfg, spec),
+        "netns": netns_name(cfg, spec),
+        "task_id": spec["task_id"],
+        "worker_id": spec["worker_id"],
+        "branch": spec["branch"],
+        "worktree": str(resolved["worktree"]),
+        "progress_file": str(resolved["progress_file"]),
+        "export_file": str(resolved["export_file"]),
+        "log_file": str(resolved["log_file"]),
+        "isolation_marker": isolation_marker(cfg, spec),
+        "started_epoch": time.time(),
+        "systemd_run_rc": int(proc.returncode),
+        "stderr_tail": (proc.stderr or "")[-2000:],
+        "preflight": report["blockers"],
+    }
+    atomic_json(resolved["state"], payload)
+    if proc.returncode:
+        print(
+            f"systemd-run failed rc={proc.returncode}: {(proc.stderr or '').strip()[:400]}",
+            file=sys.stderr,
+        )
+        return proc.returncode if 0 < proc.returncode < 256 else 1
+    print(json.dumps({"unit": payload["unit"], "state": str(resolved["state"])}, sort_keys=True))
+    return 0
+
+
+def _load_state(cfg, unit: str) -> dict:
+    prefix = str(cfg.get("unit_prefix") or "logres-devin-")
+    name = unit[len(prefix):].removesuffix(".service")
+    state = Path(cfg["paths"]["state_root"]) / f"{name}.json"
+    try:
+        return json.loads(state.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+
+
+def _state_path(cfg, unit: str) -> Path:
+    prefix = str(cfg.get("unit_prefix") or "logres-devin-")
+    name = unit[len(prefix):].removesuffix(".service")
+    return Path(cfg["paths"]["state_root"]) / f"{name}.json"
+
+
+def cmd_stop(args) -> int:
+    cfg = load_config(CONFIG_PATH)
+    unit = check_unit_name(cfg, args.unit)
+    watch = cfg["watchdog"]
+    result = terminate_unit(
+        run,
+        unit,
+        grace_seconds=float(args.grace if args.grace is not None else watch["term_grace_seconds"]),
+        kill_grace_seconds=float(watch["kill_grace_seconds"]),
+    )
+    state = _state_path(cfg, unit)
+    try:
+        state.unlink(missing_ok=True)
+    except OSError:
+        pass
+    print(json.dumps(result, indent=2, sort_keys=True))
+    return 0 if result["terminated"] else 1
+
+
+def cmd_status(args) -> int:
+    cfg = load_config(CONFIG_PATH)
+    unit = check_unit_name(cfg, args.unit)
+    active = run(["systemctl", "--system", "is-active", unit])
+    show = run(
+        [
+            "systemctl", "--system", "show", unit,
+            "--property=ActiveState,SubState,MainPID,ExecMainStatus,ActiveEnterTimestamp",
+        ]
+    )
+    state = _load_state(cfg, unit)
+    payload = {
+        "unit": unit,
+        "is_active": (active.stdout or "").strip(),
+        "active_rc": int(active.returncode),
+        "properties": (show.stdout or "").strip(),
+        "state": state or None,
+    }
+    print(json.dumps(payload, indent=2, sort_keys=True))
+    return 0 if int(active.returncode) == 0 else 3
+
+
+def cmd_watchdog(args) -> int:
+    cfg = load_config(CONFIG_PATH)
+    unit = check_unit_name(cfg, args.unit)
+    watch = cfg["watchdog"]
+    state = _load_state(cfg, unit)
+    now = time.time()
+    started = float(state.get("started_epoch") or now)
+    progress_path = args.progress_file or state.get("progress_file")
+    last_progress = started
+    for candidate in (progress_path, state.get("export_file")):
+        if not candidate:
+            continue
+        try:
+            mtime = Path(candidate).stat().st_mtime
+        except OSError:
+            continue
+        last_progress = max(last_progress, mtime)
+    decision = watchdog_evaluate(
+        now=now,
+        started_epoch=started,
+        last_progress_epoch=last_progress,
+        wall_clock_seconds=float(watch["wall_clock_seconds"]),
+        no_progress_seconds=float(watch["no_progress_seconds"]),
+    )
+    payload = {"unit": unit, "decision": decision, "progress_source": progress_path}
+    if decision["action"] == "terminate":
+        payload["termination"] = terminate_unit(
+            run,
+            unit,
+            grace_seconds=float(watch["term_grace_seconds"]),
+            kill_grace_seconds=float(watch["kill_grace_seconds"]),
+        )
+    print(json.dumps(payload, indent=2, sort_keys=True))
+    return 0 if decision["action"] == "continue" else 4
+
+
+def cmd_exec_child(args) -> int:
+    cfg = load_config(CONFIG_PATH)
+    spec = normalize_spec(
+        cfg,
+        {
+            "task_id": os.environ.get("LOGRES_TASK_ID", ""),
+            "worker_id": os.environ.get("LOGRES_WORKER_ID", ""),
+            "branch": os.environ.get("LOGRES_BRANCH", ""),
+            "worktree": os.environ.get("LOGRES_WORKTREE", ""),
+        },
+    )
+    raw = os.environ.get("DEVIN_ARGV_JSON", "").strip()
+    if not raw:
+        raise IsolationError("DEVIN_ARGV_JSON is required inside the unit")
+    child = build_devin_child_argv(cfg, json.loads(raw))
+    env = os.environ.copy()
+    env.setdefault(
+        "LOGRES_DEVIN_EXECUTION_ISOLATION", isolation_marker(cfg, spec)
+    )
+    os.execvpe(child[0], child, env)
+    return 127
+
+
+def _add_spec_args(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument("--task", default=os.environ.get("LOGRES_TASK_ID", ""))
+    parser.add_argument("--worker", default=os.environ.get("LOGRES_WORKER_ID", ""))
+    parser.add_argument("--branch", default=os.environ.get("LOGRES_BRANCH", ""))
+    parser.add_argument("--worktree", default=os.environ.get("LOGRES_WORKTREE", ""))
+
+
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        prog="logres-devin-isolate",
+        description=(
+            "OS-level isolation launcher for unattended Logres Devin workers. "
+            "Outer boundary: systemd-run --system transient unit. Network "
+            "boundary: pre-created per-worker netns + host nftables. Inner "
+            "boundary: native Devin bwrap Exec sandbox (required for "
+            "production). Fails closed when the boundary cannot be proven."
+        ),
+    )
+    sub = parser.add_subparsers(dest="command", required=True)
+
+    preflight = sub.add_parser("preflight", help="report readiness without launching")
+    _add_spec_args(preflight)
+    preflight.add_argument("--json", action="store_true")
+    preflight.add_argument("--attended", action="store_true")
+    preflight.set_defaults(func=cmd_preflight)
+
+    render = sub.add_parser("render", help="print the deterministic systemd-run argv")
+    _add_spec_args(render)
+    render.add_argument("--json", action="store_true")
+    render.add_argument("child", nargs=argparse.REMAINDER)
+    render.set_defaults(func=cmd_render)
+
+    prepare = sub.add_parser("prepare", help="create scratch/log/home layout + env file")
+    _add_spec_args(prepare)
+    prepare.set_defaults(func=cmd_prepare)
+
+    plan = sub.add_parser("netns-plan", help="render privileged netns/nftables commands")
+    _add_spec_args(plan)
+    plan.add_argument("--json", action="store_true")
+    plan.set_defaults(func=cmd_netns_plan)
+
+    start = sub.add_parser("start", help="preflight then launch the isolated unit")
+    _add_spec_args(start)
+    start.add_argument("--attended", action="store_true")
+    start.add_argument("--dry-run", action="store_true")
+    start.add_argument("child", nargs=argparse.REMAINDER)
+    start.set_defaults(func=cmd_start)
+
+    stop = sub.add_parser("stop", help="SIGTERM then SIGKILL the worker unit and clean up")
+    stop.add_argument("--unit", required=True)
+    stop.add_argument("--grace", type=float, default=None)
+    stop.set_defaults(func=cmd_stop)
+
+    status = sub.add_parser("status", help="show unit + launcher state")
+    status.add_argument("--unit", required=True)
+    status.set_defaults(func=cmd_status)
+
+    watchdog = sub.add_parser("watchdog", help="wall-clock + no-progress watchdog check")
+    watchdog.add_argument("--unit", required=True)
+    watchdog.add_argument("--progress-file", default=None)
+    watchdog.set_defaults(func=cmd_watchdog)
+
+    child = sub.add_parser("exec-child", help="exec the devin argv inside the unit")
+    child.set_defaults(func=cmd_exec_child)
+
+    return parser
+
+
+def main() -> int:
+    args = build_parser().parse_args()
+    try:
+        return int(args.func(args))
+    except IsolationError as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return 2
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
