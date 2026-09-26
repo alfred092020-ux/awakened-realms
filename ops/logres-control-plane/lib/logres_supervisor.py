@@ -37,6 +37,14 @@ def default_jobs(root: Path) -> tuple[ScheduledJob, ...]:
     b = root / "bin"
     return (
         ScheduledJob(
+            "devin_lead",
+            (str(b / "logres-devin-lead"), "run"),
+            20,
+            31536000,
+            True,
+            "devin_lead",
+        ),
+        ScheduledJob(
             "autonomy",
             _locked(
                 "/tmp/logres-autonomy.cron.lock",

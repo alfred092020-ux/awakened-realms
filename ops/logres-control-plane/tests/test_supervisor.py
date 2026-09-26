@@ -96,6 +96,18 @@ class SupervisorTests(unittest.TestCase):
         ):
             self.assertFalse(jobs[name].background, name)
 
+    def test_default_jobs_supervise_persistent_devin_lead(self):
+        jobs = {job.name: job for job in default_jobs(Path("/home/ubuntu/logres"))}
+        lead = jobs["devin_lead"]
+        self.assertEqual(
+            ("/home/ubuntu/logres/bin/logres-devin-lead", "run"),
+            lead.argv,
+        )
+        self.assertTrue(lead.background)
+        self.assertEqual("devin_lead", lead.background_group)
+        self.assertLessEqual(lead.interval_seconds, 30)
+        self.assertGreaterEqual(lead.timeout_seconds, 604800)
+
     def test_due_respects_interval(self):
         job = ScheduledJob("x", ("true",), 60, 10)
         self.assertTrue(due(job, {}, 100.0))
