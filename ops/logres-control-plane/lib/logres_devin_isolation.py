@@ -374,12 +374,16 @@ def unit_name(cfg: dict, spec: dict) -> str:
 
 def netns_name(cfg: dict, spec: dict) -> str:
     prefix = str(cfg["network"].get("netns_prefix") or NETNS_PREFIX)
-    return f"{prefix}{safe_unit_component(spec['name'])[:24]}"
+    name = safe_unit_component(spec["name"])
+    digest = hashlib.sha256(name.encode("utf-8")).hexdigest()[:8]
+    return f"{prefix}{name[:15]}-{digest}"
 
 
 def nft_table_name(cfg: dict, spec: dict) -> str:
     prefix = str(cfg["network"].get("nft_table_prefix") or NFT_TABLE_PREFIX)
-    return f"{prefix}{safe_nft_component(spec['name'])[:32]}"
+    name = safe_unit_component(spec["name"])
+    digest = hashlib.sha256(name.encode("utf-8")).hexdigest()[:8]
+    return f"{prefix}{safe_nft_component(name)[:23]}_{digest}"
 
 
 def _veth_index(cfg: dict, spec: dict) -> int:
