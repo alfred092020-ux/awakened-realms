@@ -386,6 +386,30 @@ def dispatch_plan(root: Path, routes: list[dict], *, execute: bool, runner=subpr
         return {"executed": True, "routes": routes, "dispatchable": len(actionable), "returncode": 127, "stdout": "", "stderr": f"{type(exc).__name__}: {exc}"}
 
 
+def dispatch_chatgpt_workers(root: Path, *, execute: bool, runner=subprocess.run) -> dict:
+    """Run the bounded exact-chat ChatGPT delegation lane after normal dispatch."""
+    binary = Path(root) / "bin" / "logres-devin-chatgpt-dispatch"
+    if not execute:
+        return {"executed": False, "returncode": 0, "reason": "dry-run"}
+    if not binary.is_file():
+        return {"executed": False, "returncode": 0, "reason": "dispatcher_not_deployed"}
+    try:
+        proc = runner(
+            [str(binary), "tick"],
+            text=True, capture_output=True, check=False, timeout=150,
+        )
+        return {
+            "executed": True,
+            "returncode": int(proc.returncode),
+            "stdout": (proc.stdout or "")[-4000:],
+            "stderr": (proc.stderr or "")[-4000:],
+        }
+    except subprocess.TimeoutExpired:
+        return {"executed": True, "returncode": 124, "stdout": "", "stderr": "ChatGPT delegation tick timed out"}
+    except OSError as exc:
+        return {"executed": True, "returncode": 127, "stdout": "", "stderr": f"{type(exc).__name__}: {exc}"}
+
+
 def inspect_owned_work(conn, snapshot: dict, policy: dict) -> list[dict]:
     now = time.time()
     stale_after = int(policy.get("stale_worker_seconds", 900) or 900)
@@ -769,13 +793,25 @@ def lead_tick(
             write_heartbeat(root, payload)
             return payload
 
+        chatgpt_dispatch = dispatch_chatgpt_workers(root, execute=True)
+        chatgpt_dispatch_failed = int(chatgpt_dispatch.get("returncode", 0) or 0) != 0
+        if chatgpt_dispatch_failed:
+            error = f"ChatGPT delegation failed rc={chatgpt_dispatch.get('returncode')}: {chatgpt_dispatch.get('stderr','')[-800:]}"
+            record_lead_event(
+                conn, event_type="BLOCKER", subject="Devin Lead ChatGPT delegation failed",
+                body=error, task_id=None,
+                dedupe_key=f"devin-lead:chatgpt-dispatch-fail:{int(now // max(1, int(policy.get('cycle_seconds',60) or 60)))}",
+            )
+
         decision = "game-first frontier dispatched" if dispatch.get("dispatchable", 0) else "observed; no safe dispatchable frontier"
+        if chatgpt_dispatch.get("executed") and not chatgpt_dispatch_failed:
+            decision += "; bounded ChatGPT delegation checked"
         record_lead_event(
             conn, event_type="DECISION", subject="Devin Lead planning cycle",
             body=json.dumps({"frontier": [x.get("id") for x in frontier], "routes": routes, "metrics": metrics, "decomposition": decomposition}, sort_keys=True),
             task_id=None, dedupe_key=f"devin-lead:cycle:{int(now // max(1, int(policy.get('cycle_seconds', 60) or 60)))}",
         )
-        payload = {**base, "executed": True, "routes": routes, "dispatch": dispatch, "recoveries": recoveries, "last_decision": decision, "ts_epoch": now}
+        payload = {**base, "executed": True, "routes": routes, "dispatch": dispatch, "chatgpt_dispatch": chatgpt_dispatch, "chatgpt_dispatch_failed": chatgpt_dispatch_failed, "recoveries": recoveries, "last_decision": decision, "ts_epoch": now}
         write_heartbeat(root, payload)
         return payload
     finally:

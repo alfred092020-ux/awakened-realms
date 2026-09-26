@@ -380,6 +380,39 @@ class DevinLeadLifecycleTests(unittest.TestCase):
             rows=conn.execute("select subject from brain_events order by id").fetchall()
             self.assertEqual([('Devin Lead paused',),('Devin Lead resumed',)],rows)
 
+    def test_successful_lead_cycle_invokes_bounded_chatgpt_dispatcher_after_swarm(self):
+        with tempfile.TemporaryDirectory() as td:
+            root=self.runtime_root(td); conn=sqlite3.connect(root/'control'/'control.sqlite')
+            conn.execute("insert into tasks values('G',0,'game','Battle','READY',null,null,'','now')"); conn.commit(); conn.close()
+            od=lead.decompose_unmet_milestones; op=lead.dispatch_plan; oc=lead.dispatch_chatgpt_workers
+            calls=[]
+            lead.decompose_unmet_milestones=lambda *a,**k:[]
+            lead.dispatch_plan=lambda *a,**k:(calls.append('swarm') or {'executed':True,'dispatchable':1,'returncode':0})
+            lead.dispatch_chatgpt_workers=lambda *a,**k:(calls.append('chatgpt') or {'executed':True,'returncode':0,'stdout':'{}','stderr':''})
+            try:
+                result=lead.lead_tick(root,execute=True,instance_id='lead-chatgpt')
+            finally:
+                lead.decompose_unmet_milestones=od; lead.dispatch_plan=op; lead.dispatch_chatgpt_workers=oc
+            self.assertEqual(['swarm','chatgpt'],calls)
+            self.assertEqual(0,result['chatgpt_dispatch']['returncode'])
+
+    def test_chatgpt_dispatch_failure_is_lane_fail_closed_and_audited(self):
+        with tempfile.TemporaryDirectory() as td:
+            root=self.runtime_root(td); conn=sqlite3.connect(root/'control'/'control.sqlite')
+            conn.execute("insert into tasks values('G',0,'game','Battle','READY',null,null,'','now')"); conn.commit(); conn.close()
+            od=lead.decompose_unmet_milestones; op=lead.dispatch_plan; oc=lead.dispatch_chatgpt_workers
+            lead.decompose_unmet_milestones=lambda *a,**k:[]
+            lead.dispatch_plan=lambda *a,**k:{'executed':True,'dispatchable':1,'returncode':0}
+            lead.dispatch_chatgpt_workers=lambda *a,**k:{'executed':True,'returncode':9,'stdout':'','stderr':'bounded failure'}
+            try:
+                result=lead.lead_tick(root,execute=True,instance_id='lead-chatgpt-fail')
+            finally:
+                lead.decompose_unmet_milestones=od; lead.dispatch_plan=op; lead.dispatch_chatgpt_workers=oc
+            self.assertTrue(result['chatgpt_dispatch_failed'])
+            conn=sqlite3.connect(root/'control'/'control.sqlite')
+            row=conn.execute("select body from brain_events where event_type='BLOCKER' and subject='Devin Lead ChatGPT delegation failed'").fetchone()
+            self.assertIsNotNone(row); self.assertIn('bounded failure',row[0])
+
     def test_dispatch_failure_is_fail_closed_and_audited(self):
         with tempfile.TemporaryDirectory() as td:
             root=self.runtime_root(td); conn=sqlite3.connect(root/'control'/'control.sqlite')

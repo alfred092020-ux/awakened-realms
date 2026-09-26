@@ -1,0 +1,16 @@
+{
+  "enabled": true,
+  "lease_minutes": 120,
+  "ack_timeout_seconds": 120,
+  "poll_interval_seconds": 5,
+  "max_active_brain_workers": 6,
+  "max_verifier_backlog": 6,
+  "workers": [
+    {
+      "member_id": "logres-master",
+      "session_key": "chatgpt:logres-master",
+      "enabled": false,
+      "target_config_path": "/home/ubuntu/logres/control/android-device/chat-watchdog-targets/logres-master.json"
+    }
+  ]
+}
