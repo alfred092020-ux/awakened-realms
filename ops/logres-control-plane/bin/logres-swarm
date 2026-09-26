@@ -13,11 +13,13 @@ CONTROL_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(CONTROL_ROOT / "lib"))
 
 from logres_ai_runner import automatic_api_allowed, budget_state
+from logres_devin import DevinAgentError, devin_models_report, select_model
 from logres_knowledge import graph_stats, refresh_graph
 from logres_optimizer import record_swarm_observations
 from logres_resource_broker import infer_task_workload, plan_workload
 from logres_swarm import (
     acquire_task,
+    available_devin_worker_ids,
     available_patch_worker_ids,
     available_worker_ids,
     create_job,
@@ -53,8 +55,30 @@ BRAIN = str(ROOT / "bin/logres-brain")
 COPILOT = str(ROOT / "bin/logres-copilot-router")
 RESEARCH = str(ROOT / "bin/logres-research-agent")
 PATCH_AGENT = str(ROOT / "bin/logres-patch-agent")
+DEVIN_AGENT = str(ROOT / "bin/logres-devin-agent")
+DEVIN_ISOLATE = str(ROOT / "bin/logres-devin-isolate")
+DEVIN_WORKER_CONFIG = Path(
+    os.environ.get(
+        "LOGRES_DEVIN_WORKER_CONFIG",
+        str(ROOT / "config/devin_workers.json"),
+    )
+)
+DEVIN_CERTIFICATE = Path(
+    os.environ.get(
+        "LOGRES_DEVIN_ISOLATION_CERTIFICATE",
+        str(ROOT / "control/devin-isolation/production-certified.json"),
+    )
+)
 WORKER_START = str(ROOT / "bin/logres-worker-start")
 SUPERVISOR = str(ROOT / "bin/logres-supervisor")
+
+
+def load_json(path: Path) -> dict:
+    try:
+        data = json.loads(Path(path).read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    return data if isinstance(data, dict) else {}
 
 
 def connect() -> sqlite3.Connection:
@@ -320,6 +344,190 @@ def materialize_worker(
     return None, "worker-start did not report a valid worktree"
 
 
+def dispatch_devin(
+    conn: sqlite3.Connection,
+    cfg: dict,
+    *,
+    limit: int,
+) -> dict:
+    result: dict = {"dispatched": 0, "jobs": []}
+    if limit <= 0:
+        return result
+    if not Path(DEVIN_AGENT).is_file() or not Path(DEVIN_ISOLATE).is_file():
+        result["blocked"] = "devin_runtime_missing"
+        return result
+
+    worker_cfg = load_json(DEVIN_WORKER_CONFIG)
+    router = worker_cfg.get("router", {}) if isinstance(worker_cfg, dict) else {}
+    if not bool(router.get("enabled", False)):
+        result["blocked"] = "router_disabled"
+        return result
+    if bool(router.get("allow_paid", False)):
+        result["blocked"] = "automatic_paid_devin_forbidden"
+        return result
+
+    certificate = load_json(DEVIN_CERTIFICATE)
+    if not bool(certificate.get("production_ready", False)):
+        result["blocked"] = "isolation_not_certified"
+        return result
+
+    cap = swarm_capacity(conn, cfg)
+    max_active = int(router.get("max_active", 2) or 2)
+    remaining = max(0, max_active - cap.active_devin)
+    workers = available_devin_worker_ids(conn, worker_cfg)
+    limit = min(limit, remaining, len(workers))
+    if limit <= 0:
+        return result
+
+    devin_bin = str(router.get("devin_bin") or "devin")
+    requested_model = str(router.get("model") or "swe-2-max")
+    try:
+        report = devin_models_report(run, devin_bin)
+        model = select_model(report, requested_model, allow_paid=False)
+    except (DevinAgentError, OSError, subprocess.TimeoutExpired) as exc:
+        result["blocked"] = "free_model_unavailable"
+        result["error"] = f"{type(exc).__name__}: {exc}"[:1200]
+        return result
+
+    candidates = select_implementation_tasks(conn, max(1, limit) * 4)
+    for task in candidates:
+        if len(result["jobs"]) >= limit:
+            break
+        task_id = str(task["id"])
+        worker = workers[len(result["jobs"])]
+        register_worker(ROOT, worker)
+        branch = acquire_task(ROOT, worker, task_id)
+        if not branch:
+            continue
+
+        worktree, detail = materialize_worker(worker, task_id, branch)
+        if worktree is None:
+            release_worker(
+                worker,
+                task_id,
+                "Devin worker bootstrap failed; task returned READY. " + detail,
+            )
+            continue
+
+        preflight = run(
+            [
+                DEVIN_ISOLATE,
+                "preflight",
+                "--task",
+                task_id,
+                "--worker",
+                worker,
+                "--branch",
+                branch,
+                "--worktree",
+                str(worktree),
+                "--json",
+            ],
+            timeout=int(router.get("preflight_timeout_seconds", 120) or 120),
+        )
+        if preflight.returncode:
+            detail = ((preflight.stderr or "") + "\n" + (preflight.stdout or "")).strip()
+            release_worker(
+                worker,
+                task_id,
+                "Devin OS isolation preflight failed closed; task returned READY. "
+                + detail[-1400:],
+            )
+            continue
+
+        try:
+            job_id = create_job(
+                conn,
+                task_id,
+                worker,
+                "devin",
+                branch=branch,
+                model=model,
+                verification="devin-agent-artifact",
+            )
+        except sqlite3.IntegrityError:
+            release_worker(
+                worker,
+                task_id,
+                "Duplicate live Devin swarm job detected; released safely.",
+            )
+            continue
+
+        LOGS.mkdir(parents=True, exist_ok=True)
+        log_path = LOGS / f"{job_id}-{task_id}-devin-harness.log"
+        log_handle = open(log_path, "ab", buffering=0)
+        argv = [
+            DEVIN_AGENT,
+            "--task",
+            task_id,
+            "--worker",
+            worker,
+            "--job-id",
+            str(job_id),
+            "--branch",
+            branch,
+            "--worktree",
+            str(worktree),
+            "--model",
+            model,
+            "--permission-mode",
+            str(router.get("permission_mode") or "smart"),
+            "--execution-mode",
+            "unattended",
+            "--sandbox",
+            "--isolation",
+            "systemd/logres-devin-worker@.service",
+        ]
+        try:
+            proc = subprocess.Popen(
+                argv,
+                stdout=log_handle,
+                stderr=subprocess.STDOUT,
+                start_new_session=True,
+                close_fds=True,
+                env=os.environ.copy(),
+            )
+        except OSError as exc:
+            log_handle.close()
+            conn.execute(
+                """update swarm_jobs
+                      set state='FAILED',last_error=?,updated_at=datetime('now'),
+                          finished_at=datetime('now')
+                    where id=?""",
+                (f"Devin harness launch failed: {exc}", job_id),
+            )
+            conn.commit()
+            release_worker(
+                worker,
+                task_id,
+                f"Devin harness launch failed; task returned READY. {exc}",
+            )
+            continue
+        log_handle.close()
+        mark_job_running(
+            conn,
+            job_id,
+            proc.pid,
+            session_id=f"harness-pid:{proc.pid}",
+        )
+        result["jobs"].append(
+            {
+                "task_id": task_id,
+                "worker_id": worker,
+                "job_id": job_id,
+                "pid": proc.pid,
+                "branch": branch,
+                "worktree": str(worktree),
+                "model": model,
+                "log": str(log_path),
+                "isolation_certificate": str(DEVIN_CERTIFICATE),
+            }
+        )
+
+    result["dispatched"] = len(result["jobs"])
+    return result
+
+
 def dispatch_patch(
     conn: sqlite3.Connection,
     cfg: dict,
@@ -561,6 +769,7 @@ def tick(dry_run: bool = False) -> dict:
         "enabled": bool(swarm_cfg.get("enabled", False)),
         "before": before.__dict__,
         "stale_recovered": recovered,
+        "devin": {"dispatched": 0, "jobs": []},
         "copilot": {"dispatched": 0, "jobs": []},
         "implementation": [],
         "research": [],
@@ -594,11 +803,23 @@ def tick(dry_run: bool = False) -> dict:
         conn.close()
         return payload
 
-    # Code agents first: external Copilot retains its existing route when
-    # enabled. The bounded OpenAI patch lane fills remaining implementation
-    # capacity without granting the model shell or repository credentials.
-    impl_limit = min(
+    # Cloud Devin is the preferred autonomous implementation lane, but it
+    # remains fail-closed until an independent production isolation proof has
+    # written the certificate consumed by dispatch_devin. Paid Devin models
+    # are never selected by this automatic path.
+    worker_cfg = load_json(DEVIN_WORKER_CONFIG)
+    router_cfg = worker_cfg.get("router", {}) if isinstance(worker_cfg, dict) else {}
+    devin_limit = min(
         before.free_slots,
+        int(router_cfg.get("dispatch_per_tick", 2) or 2),
+    )
+    payload["devin"] = dispatch_devin(conn, cfg, limit=devin_limit)
+
+    # Existing engines remain first-class fallbacks after the Devin lane has
+    # consumed only its bounded capacity.
+    cap = swarm_capacity(conn, cfg)
+    impl_limit = min(
+        cap.free_slots,
         int(swarm_cfg.get("implementation_dispatch_per_tick", 2) or 2),
     )
     payload["copilot"] = dispatch_copilot(impl_limit)
