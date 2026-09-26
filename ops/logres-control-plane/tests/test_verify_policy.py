@@ -129,6 +129,10 @@ class VerifyFarmE2EPolicyTests(unittest.TestCase):
             'E2E_VERIFY_TAG="e2e-w${E2E_WORKERS}"',
             text,
         )
+        self.assertIn(
+            'CORRECTNESS_POLICY="${LOGRES_CORRECTNESS_POLICY:-/home/ubuntu/logres/config/correctness_policy.json}"',
+            text,
+        )
 
 
     def test_performance_gate_is_mandatory_and_isolated_from_parallel_e2e(self):
