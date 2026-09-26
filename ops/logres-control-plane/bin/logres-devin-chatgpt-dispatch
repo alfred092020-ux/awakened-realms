@@ -1,0 +1,64 @@
+#!/home/ubuntu/logres/envs/research/bin/python
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import sqlite3
+import sys
+from pathlib import Path
+
+CONTROL_ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(CONTROL_ROOT / "lib"))
+from logres_chat_contract import ChatContractStore
+from logres_devin_chatgpt import dispatch_once, eligible_workers, ensure_schema, load_policy, reconcile_assignments
+
+ROOT = Path(os.environ.get("LOGRES_ROOT", "/home/ubuntu/logres"))
+DB = Path(os.environ.get("LOGRES_CONTROL_DB", str(ROOT / "control/control.sqlite")))
+POLICY = Path(os.environ.get("LOGRES_DEVIN_CHATGPT_POLICY", str(CONTROL_ROOT / "config/devin_chatgpt_workers.json")))
+
+
+def connect() -> sqlite3.Connection:
+    conn = sqlite3.connect(DB, timeout=30)
+    conn.row_factory = sqlite3.Row
+    conn.execute("pragma journal_mode=WAL")
+    conn.execute("pragma busy_timeout=30000")
+    ensure_schema(conn)
+    return conn
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser(prog="logres-devin-chatgpt-dispatch")
+    sub = ap.add_subparsers(dest="command", required=True)
+    tick = sub.add_parser("tick")
+    tick.add_argument("--task")
+    tick.add_argument("--dry-run", action="store_true")
+    sub.add_parser("status")
+    sub.add_parser("reconcile")
+    args = ap.parse_args()
+    policy = load_policy(POLICY)
+    conn = connect()
+    try:
+        contracts = ChatContractStore(ROOT)
+        reconciled = reconcile_assignments(conn)
+        if args.command == "reconcile":
+            result = {"reconciled": reconciled}
+        elif args.command == "status" or (args.command == "tick" and args.dry_run):
+            workers = eligible_workers(conn, ROOT, policy, contracts)
+            result = {
+                "enabled": bool(policy.get("enabled", False)),
+                "eligible_workers": [w["member_id"] for w in workers],
+                "reconciled": reconciled,
+                "dry_run": bool(getattr(args, "dry_run", False)),
+            }
+        else:
+            result = dispatch_once(conn, ROOT, policy, contracts=contracts, task_id=args.task)
+            result["reconciled"] = reconciled
+        print(json.dumps(result, indent=2, sort_keys=True))
+        return 0
+    finally:
+        conn.close()
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
