@@ -107,6 +107,19 @@ class RuntimeDeployTests(unittest.TestCase):
             ):
                 runtime.validate_integration_source(repo, sha)
 
+    def test_runtime_deploy_lock_fails_closed_when_already_held(self):
+        with tempfile.TemporaryDirectory() as td:
+            lock_path = Path(td) / "runtime-deploy.lock"
+            first = runtime.acquire_runtime_deploy_lock(lock_path)
+            try:
+                with self.assertRaisesRegex(
+                    runtime.RuntimeDeployError,
+                    "another runtime deployment holds",
+                ):
+                    runtime.acquire_runtime_deploy_lock(lock_path)
+            finally:
+                first.close()
+
     def test_success_deploys_hashes_and_writes_stamp(self):
         with tempfile.TemporaryDirectory() as td:
             root = Path(td)
