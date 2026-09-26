@@ -353,6 +353,13 @@ class VerifyFarmE2EPolicyTests(unittest.TestCase):
             text,
         )
 
+    def test_behavior_trace_merge_uses_full_bounded_contention_budget(self):
+        text = SCRIPT.read_text()
+        self.assertIn(
+            'BEHAVIOR_TRACE_MERGE_TIMEOUT_MS="${LOGRES_BEHAVIOR_TRACE_MERGE_TIMEOUT_MS:-15000}"',
+            text,
+        )
+
     def test_behavior_trace_merge_failure_fails_verification_closed(self):
         text = SCRIPT.read_text()
         merge_start = text.index(
