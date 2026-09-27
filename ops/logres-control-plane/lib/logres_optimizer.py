@@ -100,6 +100,88 @@ def _critical_path(
     return memo[task_id]
 
 
+FREE_DEVIN_MODELS = ("swe-2-max", "swe-2-medium", "swe-2-high")
+
+
+def ensure_optimizer_observation_schema(conn: sqlite3.Connection) -> None:
+    ensure_knowledge_schema(conn)
+    columns = {row[1] for row in conn.execute("pragma table_info(optimizer_observations)")}
+    changed = False
+    if "source_job_id" not in columns:
+        conn.execute("alter table optimizer_observations add column source_job_id integer")
+        changed = True
+    if "model" not in columns:
+        conn.execute("alter table optimizer_observations add column model text")
+        changed = True
+    conn.execute(
+        "create unique index if not exists idx_optimizer_source_job "
+        "on optimizer_observations(source_job_id) where source_job_id is not null"
+    )
+    if changed:
+        conn.commit()
+
+
+def learned_model_choice(
+    conn: sqlite3.Connection,
+    *,
+    work_type: str,
+    candidates: list[str] | tuple[str, ...],
+    preferred: str = "swe-2-max",
+    min_samples: int = 3,
+    window: int = 30,
+) -> dict:
+    ensure_optimizer_observation_schema(conn)
+    eligible = [str(model) for model in candidates if str(model) in FREE_DEVIN_MODELS]
+    if preferred not in FREE_DEVIN_MODELS:
+        preferred = "swe-2-max"
+    if preferred not in eligible:
+        eligible.insert(0, preferred)
+    eligible = list(dict.fromkeys(eligible))
+    placeholders = ",".join("?" for _ in eligible)
+    rows = conn.execute(
+        f"""select model,outcome,duration_seconds,estimated_cost_usd
+              from optimizer_observations
+             where engine='devin' and work_type=? and model in ({placeholders})
+             order by id desc limit ?""",
+        (str(work_type), *eligible, max(1, int(window)) * max(1, len(eligible))),
+    ).fetchall()
+    weights = {"DONE": 1.0, "INTEGRATED": 1.0, "PASS": 1.0, "BLOCKED": 0.65, "FAILED": 0.0}
+    by_model = {model: [] for model in eligible}
+    for row in rows:
+        model = str(row[0] or "")
+        outcome = str(row[1] or "").upper()
+        if model in by_model and outcome in weights:
+            by_model[model].append((weights[outcome], row[2], row[3]))
+    scored = []
+    minimum = max(1, int(min_samples))
+    for model in eligible:
+        samples = by_model[model][: max(1, int(window))]
+        if len(samples) < minimum:
+            continue
+        success = sum(item[0] for item in samples) / len(samples)
+        durations = [float(item[1]) for item in samples if item[1] is not None and float(item[1]) >= 0]
+        costs = [float(item[2]) for item in samples if item[2] is not None and float(item[2]) >= 0]
+        latency = sum(durations) / len(durations) if durations else 0.0
+        cost = sum(costs) / len(costs) if costs else 0.0
+        confidence = min(1.0, len(samples) / float(minimum * 2))
+        utility = success * 100.0 - min(latency / 60.0, 20.0) * 1.5 - min(cost * 100.0, 10.0)
+        scored.append((utility, success, -latency, -cost, model, len(samples), confidence))
+    if not scored:
+        return {
+            "model": preferred, "learned": False, "reason": "cold_start",
+            "samples": 0, "confidence": 0.0, "eligible_models": eligible,
+        }
+    scored.sort(reverse=True)
+    utility, success, neg_latency, neg_cost, model, samples, confidence = scored[0]
+    return {
+        "model": model, "learned": True, "reason": "verified_outcomes",
+        "samples": samples, "confidence": round(confidence, 6),
+        "success_rate": round(success, 6), "avg_duration_seconds": round(-neg_latency, 3),
+        "avg_cost_usd": round(-neg_cost, 6), "utility": round(utility, 6),
+        "eligible_models": eligible,
+    }
+
+
 def engine_success_rate(
     conn: sqlite3.Connection,
     *,
@@ -137,30 +219,13 @@ def engine_success_rate(
 
 
 def record_swarm_observations(conn: sqlite3.Connection) -> int:
-    ensure_knowledge_schema(conn)
-
-    # Add immutable source-job identity lazily so observation ingestion remains
-    # idempotent across upgrades from the initial knowledge schema.
-    columns = {
-        row[1]
-        for row in conn.execute("pragma table_info(optimizer_observations)")
-    }
-    if "source_job_id" not in columns:
-        conn.execute(
-            "alter table optimizer_observations add column source_job_id integer"
-        )
-        conn.execute(
-            "create unique index if not exists idx_optimizer_source_job "
-            "on optimizer_observations(source_job_id) "
-            "where source_job_id is not null"
-        )
-        conn.commit()
+    ensure_optimizer_observation_schema(conn)
 
     try:
         rows = list(
             conn.execute(
                 """select s.id,s.task_id,s.engine,s.state,s.started_at,s.finished_at,
-                          m.work_type,
+                          m.work_type,s.model,
                           (select sum(coalesce(u.estimated_cost_usd,0))
                              from api_usage u where u.task_id=s.task_id) cost,
                           s.artifact_path,s.last_error
@@ -194,7 +259,7 @@ def record_swarm_observations(conn: sqlite3.Connection) -> int:
                 )
             except (TypeError, ValueError):
                 duration = None
-        if row[3] == "FAILED" and not row[8]:
+        if row[3] == "FAILED" and not row[9]:
             # Transport, credential, schema and process failures are control-
             # plane reliability signals, not evidence that the research/code
             # engine is bad at the task. Preserve them but exclude from the
@@ -209,9 +274,9 @@ def record_swarm_observations(conn: sqlite3.Connection) -> int:
         conn.execute(
             """insert into optimizer_observations(
                  task_id,engine,work_type,outcome,duration_seconds,
-                 estimated_cost_usd,source_job_id
-               ) values(?,?,?,?,?,?,?)""",
-            (row[1], row[2], row[6], outcome, duration, row[7], row[0]),
+                 estimated_cost_usd,source_job_id,model
+               ) values(?,?,?,?,?,?,?,?)""",
+            (row[1], row[2], row[6], outcome, duration, row[8], row[0], row[7]),
         )
         inserted += 1
     conn.commit()
