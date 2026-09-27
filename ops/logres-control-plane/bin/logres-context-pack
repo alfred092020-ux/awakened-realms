@@ -124,21 +124,28 @@ def main(argv=None) -> int:
             conn.row_factory = sqlite3.Row
             conn.execute("pragma busy_timeout=30000")
             ensure_memory_schema(conn)
-            row = conn.execute(
-                "select task_id from brain_task_leases where chat_id=? and lease_until_epoch>? order by rowid desc limit 1",
-                (args.chat, time.time()),
-            ).fetchone()
-            if not row:
-                print(f"context-pack: no active task lease for chat: {args.chat}", file=sys.stderr)
-                return 5
-            leased_task_id = row[0]
-            if args.task_id and args.task_id != leased_task_id:
-                print(
-                    f"context-pack: chat {args.chat} does not own task {args.task_id}",
-                    file=sys.stderr,
-                )
-                return 6
-            task_id = args.task_id or leased_task_id
+            now = time.time()
+            if args.task_id:
+                row = conn.execute(
+                    "select task_id from brain_task_leases where chat_id=? and task_id=? and lease_until_epoch>? limit 1",
+                    (args.chat, args.task_id, now),
+                ).fetchone()
+                if not row:
+                    print(
+                        f"context-pack: chat {args.chat} does not own task {args.task_id}",
+                        file=sys.stderr,
+                    )
+                    return 6
+                task_id = args.task_id
+            else:
+                row = conn.execute(
+                    "select task_id from brain_task_leases where chat_id=? and lease_until_epoch>? order by lease_until_epoch desc, task_id asc limit 1",
+                    (args.chat, now),
+                ).fetchone()
+                if not row:
+                    print(f"context-pack: no active task lease for chat: {args.chat}", file=sys.stderr)
+                    return 5
+                task_id = row[0]
             pack = build_memory_context_packet(
                 conn,
                 task_id,

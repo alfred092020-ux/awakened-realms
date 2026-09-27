@@ -288,6 +288,21 @@ class MemoryIntelligenceTests(unittest.TestCase):
             ("worker/battle", verified_sha, "full-e2e", "PASS", 1.0, "2026-09-27", "exact-sha test"),
         )
         self.c.commit()
+        verification_only_packet = build_context_packet(self.c, "BATTLE-RENDER-001")
+        self.assertEqual([], verification_only_packet["transcript_excerpts"])
+
+        self.c.execute(
+            "create table brain_events(id integer primary key, event_type text, task_id text, dedupe_key text)"
+        )
+        self.c.execute(
+            "insert into brain_events(event_type,task_id,dedupe_key) values(?,?,?)",
+            (
+                "EVIDENCE",
+                "BATTLE-RENDER-001",
+                f"memory-context:{supported_fact['fingerprint']}:{verified_sha}",
+            ),
+        )
+        self.c.commit()
         verified_packet = build_context_packet(self.c, "BATTLE-RENDER-001")
         self.assertEqual(1, len(verified_packet["transcript_excerpts"]))
         self.assertEqual(supported["id"], verified_packet["transcript_excerpts"][0]["message_id"])
@@ -299,6 +314,37 @@ class MemoryIntelligenceTests(unittest.TestCase):
         self.assertFalse(verified_fact["operational_truth"])
         self.assertTrue(verified_fact["context_evidence_eligible"])
         self.assertEqual("PASS", verified_fact["provenance"]["exact_sha_verification"])
+
+    def test_context_pack_chat_selects_newest_active_lease_deterministically(self):
+        self.c.execute(
+            "insert into tasks values(?,?,?,?,?,?,?)",
+            ("MAP-OTHER-001", "Map task", "ACTIVE", 0, "map", "", "memory"),
+        )
+        self.c.execute(
+            "create table brain_task_leases(task_id text primary key, chat_id text, lease_until_epoch real)"
+        )
+        self.c.executemany(
+            "insert into brain_task_leases values(?,?,?)",
+            [
+                ("BATTLE-RENDER-001", "battle", 9999999998.0),
+                ("MAP-OTHER-001", "battle", 9999999999.0),
+            ],
+        )
+        self.c.commit()
+        with tempfile.TemporaryDirectory() as td:
+            db = Path(td) / "control.sqlite"
+            disk = sqlite3.connect(db)
+            self.c.backup(disk)
+            disk.close()
+            env = os.environ.copy()
+            env["LOGRES_CONTROL_DB"] = str(db)
+            result = subprocess.run(
+                [sys.executable, str(CONTEXT_PACK), "--chat", "battle"],
+                env=env, text=True, capture_output=True, check=False,
+            )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        payload = json.loads(result.stdout)
+        self.assertEqual("MAP-OTHER-001", payload["task"]["id"])
 
     def test_context_pack_chat_rejects_expired_lease(self):
         self.c.execute(

@@ -327,6 +327,25 @@ def _has_exact_sha_verification(conn: sqlite3.Connection, source_sha: str | None
     ).fetchone())
 
 
+def _has_brain_context_authorization(conn: sqlite3.Connection, fact: dict) -> bool:
+    source_sha = fact.get("source_sha")
+    task_id = fact.get("task_id")
+    fingerprint = fact.get("fingerprint")
+    if not source_sha or not task_id or not fingerprint:
+        return False
+    if not _table_exists(conn, "brain_events"):
+        return False
+    dedupe_key = f"memory-context:{fingerprint}:{source_sha}"
+    return bool(conn.execute(
+        """
+        select 1 from brain_events
+         where event_type='EVIDENCE' and task_id=? and dedupe_key=?
+         limit 1
+        """,
+        (task_id, dedupe_key),
+    ).fetchone())
+
+
 def build_context_packet(conn: sqlite3.Connection, task_id: str, *,
                          transcript_limit: int = 12, fact_limit: int = 20,
                          knowledge_limit: int = 12) -> dict:
@@ -376,12 +395,16 @@ def build_context_packet(conn: sqlite3.Connection, task_id: str, *,
     facts = relevant_facts(conn, task_id, terms=terms, limit=fact_limit)
     for fact in facts:
         exact_sha_verified = _has_exact_sha_verification(conn, fact["source_sha"])
+        brain_authorized = _has_brain_context_authorization(conn, fact)
         fact["operational_truth"] = False
         fact["context_evidence_eligible"] = bool(
-            fact["truth_status"] == "VERIFIED" and exact_sha_verified
+            exact_sha_verified and brain_authorized
         )
         fact["provenance"]["exact_sha_verification"] = (
             "PASS" if exact_sha_verified else "UNVERIFIED"
+        )
+        fact["provenance"]["brain_context_authorization"] = (
+            "PASS" if brain_authorized else "UNAUTHORIZED"
         )
 
     knowledge = []
@@ -435,7 +458,7 @@ def build_context_packet(conn: sqlite3.Connection, task_id: str, *,
         "memory_policy": {
             "operational_truth_source": "Brain only",
             "memory_facts_are_context_only": True,
-            "context_transcript_requires": "VERIFIED + exact-SHA full-e2e PASS",
+            "context_transcript_requires": "Brain EVIDENCE authorization + exact-SHA full-e2e PASS",
             "exact_sha_verification_mode": "full-e2e",
         },
         "knowledge": knowledge,
