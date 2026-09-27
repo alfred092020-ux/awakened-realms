@@ -148,6 +148,30 @@ class MemoryIntelligenceTests(unittest.TestCase):
         self.assertEqual("CLAIM", fact["truth_status"])
         self.assertFalse(fact["operational_truth"])
 
+    def test_task_scope_requires_explicit_journal_metadata_and_binds_message_hash(self):
+        unscoped = self._message(
+            "assistant",
+            "BATTLE-RENDER-001 discovery from text only must remain unscoped.",
+            {},
+        )
+        unscoped_facts = distill_message(self.c, unscoped["id"])["facts"]
+        self.assertTrue(unscoped_facts)
+        self.assertTrue(all(fact["task_id"] is None for fact in unscoped_facts))
+
+        scoped = self._message(
+            "assistant",
+            "BATTLE-RENDER-001 discovery from explicitly scoped journal metadata.",
+            {"task_id": "BATTLE-RENDER-001"},
+        )
+        scoped_fact = distill_message(self.c, scoped["id"])["facts"][0]
+        message_sha = self.c.execute(
+            "select message_sha256 from chat_messages where id=?",
+            (scoped["id"],),
+        ).fetchone()[0]
+        self.assertEqual("BATTLE-RENDER-001", scoped_fact["task_id"])
+        self.assertEqual(message_sha, scoped_fact["provenance"]["message_sha256"])
+        self.assertEqual("journal-metadata", scoped_fact["provenance"]["task_binding"])
+
     def test_distillation_redacts_credential_shaped_memory(self):
         value = "redactme1234567890"
         msg = self._message(
@@ -256,6 +280,41 @@ class MemoryIntelligenceTests(unittest.TestCase):
             )
         )
 
+    def test_context_packet_redacts_knowledge_label_and_provenance(self):
+        value = "redactknowledge1234567890"
+        self.c.execute(
+            "insert into knowledge_nodes values(?,?,?,?,?,?,?,?,?)",
+            (
+                "evidence:redact",
+                "evidence",
+                f"token={value}",
+                f"password={value}",
+                0.9,
+                None,
+                None,
+                "{}",
+                "2026-09-27",
+            ),
+        )
+        self.c.execute(
+            "insert into knowledge_edges values(?,?,?,?,?,?,?)",
+            (
+                "evidence:redact",
+                "task:BATTLE-RENDER-001",
+                "supports",
+                0.9,
+                "BATTLE-RENDER-001",
+                "{}",
+                "2026-09-27",
+            ),
+        )
+        self.c.commit()
+        packet = build_context_packet(self.c, "BATTLE-RENDER-001")
+        encoded = json.dumps(packet, sort_keys=True)
+        self.assertNotIn(value, encoded)
+        self.assertIn("[REDACTED]", encoded)
+        self.assertGreaterEqual(packet["redactions"], 2)
+
     def test_context_packet_supports_legacy_knowledge_edges_without_task_id(self):
         self.c.execute("drop table knowledge_edges")
         self.c.execute(
@@ -325,7 +384,10 @@ class MemoryIntelligenceTests(unittest.TestCase):
         self.c.commit()
         mutated_packet = build_context_packet(self.c, "BATTLE-RENDER-001")
         self.assertEqual([], mutated_packet["transcript_excerpts"])
-        self.assertTrue(all(not fact["operational_truth"] for fact in mutated_packet["structured_memory"]))
+        mutated_ids = {claim_fact["id"], supported_fact["id"]}
+        self.assertTrue(
+            mutated_ids.isdisjoint({fact["id"] for fact in mutated_packet["structured_memory"]})
+        )
 
     def test_context_pack_chat_selects_newest_active_lease_deterministically(self):
         self.c.execute(
@@ -421,6 +483,36 @@ class MemoryIntelligenceTests(unittest.TestCase):
         self.assertEqual(0, rc)
         self.assertTrue(stdout.locked)
         self.assertIn('"BATTLE-RENDER-001"', stdout.getvalue())
+
+    def test_context_pack_output_file_is_atomic_and_durable_under_lease_lock(self):
+        self.c.execute(
+            "create table brain_task_leases(task_id text primary key, chat_id text, lease_until_epoch real)"
+        )
+        self.c.execute(
+            "insert into brain_task_leases values(?,?,?)",
+            ("BATTLE-RENDER-001", "battle", 9999999999.0),
+        )
+        self.c.commit()
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            db = root / "control.sqlite"
+            output = root / "context.json"
+            disk = sqlite3.connect(db)
+            self.c.backup(disk)
+            disk.close()
+            module = runpy.run_path(str(CONTEXT_PACK), run_name="logres_context_pack_file_test")
+            with mock.patch.object(module["os"], "replace", wraps=os.replace) as replace_mock:
+                with mock.patch.object(module["os"], "fsync", wraps=os.fsync) as fsync_mock:
+                    rc = module["main"]([
+                        "--chat", "battle", "--db", str(db), "--output-file", str(output)
+                    ])
+            payload = json.loads(output.read_text())
+            leftovers = list(root.glob(".context.json.*"))
+        self.assertEqual(0, rc)
+        self.assertEqual("BATTLE-RENDER-001", payload["task"]["id"])
+        self.assertGreaterEqual(replace_mock.call_count, 1)
+        self.assertGreaterEqual(fsync_mock.call_count, 2)
+        self.assertEqual([], leftovers)
 
     def test_context_pack_chat_rejects_expired_lease(self):
         self.c.execute(

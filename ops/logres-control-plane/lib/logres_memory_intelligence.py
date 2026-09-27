@@ -143,12 +143,15 @@ def _sentences(text: str) -> list[str]:
 
 
 def _task_candidates(text: str, metadata: dict) -> list[str]:
-    found = []
+    # Task scoping comes only from explicit journal metadata. Task-like text is
+    # advisory content and must not silently bind a fact to a Brain task.
+    del text
     direct = metadata.get("task_id")
-    if isinstance(direct, str) and direct.strip():
-        found.append(direct.strip())
-    found.extend(TASK_RE.findall(text))
-    return list(dict.fromkeys(found))
+    if isinstance(direct, str):
+        value = direct.strip()
+        if TASK_RE.fullmatch(value):
+            return [value]
+    return []
 
 
 def _source_sha(text: str, metadata: dict) -> str | None:
@@ -214,9 +217,12 @@ def distill_message(conn: sqlite3.Connection, message_id: int) -> dict:
             inserted += 1
         fact_row = conn.execute(
             """
-            select id,fingerprint,session_id,message_id,ordinal,chat_id,role,kind,
-                   statement,confidence,truth_status,task_id,source_sha
-              from memory_facts where fingerprint=?
+            select f.id,f.fingerprint,f.session_id,f.message_id,f.ordinal,f.chat_id,
+                   f.role,f.kind,f.statement,f.confidence,f.truth_status,f.task_id,
+                   f.source_sha,m.message_sha256
+              from memory_facts f
+              join chat_messages m on m.id=f.message_id and m.session_id=f.session_id
+             where f.fingerprint=?
             """,
             (fingerprint,),
         ).fetchone()
@@ -266,12 +272,14 @@ def relevant_facts(conn: sqlite3.Connection, task_id: str, *, terms: Iterable[st
     terms = [t.strip().lower() for t in terms if t and t.strip()]
     rows = conn.execute(
         """
-        select id,fingerprint,session_id,message_id,ordinal,chat_id,role,kind,
-               statement,confidence,truth_status,task_id,source_sha
-          from memory_facts
-         where truth_status not in ('REJECTED','SUPERSEDED')
-           and task_id=?
-         order by confidence desc,id desc
+        select f.id,f.fingerprint,f.session_id,f.message_id,f.ordinal,f.chat_id,
+               f.role,f.kind,f.statement,f.confidence,f.truth_status,f.task_id,
+               f.source_sha,m.message_sha256
+          from memory_facts f
+          join chat_messages m on m.id=f.message_id and m.session_id=f.session_id
+         where f.truth_status='CLAIM'
+           and f.task_id=?
+         order by f.confidence desc,f.id desc
          limit 500
         """,
         (task_id,),
@@ -387,7 +395,7 @@ def build_context_packet(conn: sqlite3.Connection, task_id: str, *,
     # distilled, provenance-labeled facts and never replays raw transcript text.
     excerpts: list[dict] = []
 
-    return {
+    packet = {
         "task": task_dict,
         "scopes": scopes,
         "dependencies": deps,
@@ -406,20 +414,28 @@ def build_context_packet(conn: sqlite3.Connection, task_id: str, *,
             "transcript_limit": transcript_limit,
         },
     }
+    redactions = [0]
+    packet = _redact_context_value(packet, redactions)
+    packet["redactions"] = redactions[0]
+    return packet
 
 
 def _fact_dict(row) -> dict:
     truth_status = row[10]
     source_sha = row[12]
+    message_sha256 = row[13] if len(row) > 13 else None
+    task_id = row[11]
     return {
         "id": row[0], "fingerprint": row[1], "session_id": row[2],
         "message_id": row[3], "ordinal": row[4], "chat_id": row[5],
         "role": row[6], "kind": row[7], "statement": row[8],
         "confidence": float(row[9]), "truth_status": truth_status,
-        "task_id": row[11], "source_sha": source_sha,
+        "task_id": task_id, "source_sha": source_sha,
         "operational_truth": False,
         "provenance": {
             "session_id": row[2], "message_id": row[3], "ordinal": row[4],
+            "message_sha256": message_sha256,
             "chat_id": row[5], "role": row[6], "source_sha": source_sha,
+            "task_binding": "journal-metadata" if task_id else None,
         },
     }

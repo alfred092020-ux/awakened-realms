@@ -13,6 +13,7 @@ import json
 import os
 import sqlite3
 import sys
+import tempfile
 import time
 from pathlib import Path
 
@@ -34,6 +35,26 @@ from logres_memory_intelligence import (
 ROOT = Path(os.environ.get("LOGRES_ROOT", "/home/ubuntu/logres"))
 DEFAULT_DB = ROOT / "control" / "control.sqlite"
 DEFAULT_CONFIG = CONTROL_ROOT / "config" / "context_pack.json"
+
+
+def _atomic_write_text(path: Path, text: str) -> None:
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fd, temp_name = tempfile.mkstemp(prefix=f".{path.name}.", dir=str(path.parent))
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as handle:
+            handle.write(text)
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(temp_name, path)
+        dir_fd = os.open(path.parent, os.O_RDONLY)
+        try:
+            os.fsync(dir_fd)
+        finally:
+            os.close(dir_fd)
+    finally:
+        if os.path.exists(temp_name):
+            os.unlink(temp_name)
 
 
 def load_config(path: Path) -> dict:
@@ -168,7 +189,7 @@ def main(argv=None) -> int:
                 )
                 return 5
             if args.output_file:
-                Path(args.output_file).write_text(out)
+                _atomic_write_text(Path(args.output_file), out)
             else:
                 sys.stdout.write(out)
                 sys.stdout.flush()
@@ -233,7 +254,7 @@ def main(argv=None) -> int:
     out = "\n".join(parts) + "\n"
 
     if args.output_file:
-        Path(args.output_file).write_text(out)
+        _atomic_write_text(Path(args.output_file), out)
     else:
         sys.stdout.write(out)
     return 0
