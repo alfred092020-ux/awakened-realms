@@ -176,7 +176,7 @@ class VerifyFarmE2EPolicyTests(unittest.TestCase):
     def test_performance_host_contention_defers_without_false_failure(self):
         text = SCRIPT.read_text()
         self.assertIn('performance_host_ready()', text)
-        self.assertIn('LOGRES_PERF_MAX_CPU_PSI_AVG10', text)
+        self.assertIn('PERF_MAX_CPU_PSI_AVG10="0.5"', text)
         self.assertIn('LOGRES_PERF_HOST_SETTLE_ATTEMPTS', text)
         self.assertIn('LOGRES_PERF_HOST_SETTLE_SLEEP_SEC', text)
         self.assertIn('LOGRES_PERF_HOST_READY_CONSECUTIVE', text)
@@ -232,19 +232,15 @@ class VerifyFarmE2EPolicyTests(unittest.TestCase):
         self.assertIn('psi_available=([01])', block)
         self.assertIn('malformed += 1', block)
         self.assertIn('psi_unavailable += 1', block)
-        self.assertIn('if malformed or psi_unavailable or inconsistent:', block)
+        self.assertIn('if malformed or psi_unavailable or inconsistent or limit_mismatch:', block)
         self.assertIn('raise SystemExit(2)', block)
 
     def test_performance_midrun_monitor_uses_same_dual_quiet_thresholds(self):
         text = SCRIPT.read_text()
-        self.assertIn(
-            'PERF_MAX_CPU_PSI_AVG10="${LOGRES_PERF_MAX_CPU_PSI_AVG10:-0.5}"',
-            text,
-        )
-        self.assertIn(
-            'PERF_MAX_LOAD_PER_CPU="${LOGRES_PERF_MAX_LOAD_PER_CPU:-0.2}"',
-            text,
-        )
+        self.assertIn('PERF_MAX_CPU_PSI_AVG10="0.5"', text)
+        self.assertIn('PERF_MAX_LOAD_PER_CPU="0.2"', text)
+        self.assertNotIn('LOGRES_PERF_MAX_CPU_PSI_AVG10', text)
+        self.assertNotIn('LOGRES_PERF_MAX_LOAD_PER_CPU', text)
 
     def test_performance_midrun_monitor_death_fails_closed(self):
         text = SCRIPT.read_text()
@@ -268,12 +264,18 @@ class VerifyFarmE2EPolicyTests(unittest.TestCase):
         start = text.index('performance_pressure_invalid()')
         end = text.index('remote_enabled()', start)
         block = text[start:end]
+        self.assertIn('configured_psi_max = float(sys.argv[3])', block)
+        self.assertIn('configured_load_max = float(sys.argv[4])', block)
+        self.assertIn('expected_over = int(', block)
+        self.assertIn('psi_value > configured_psi_max or', block)
+        self.assertIn('load_value > configured_load_max', block)
+        self.assertIn('limit_mismatch += int(psi_max != configured_psi_max)', block)
+        self.assertIn('limit_mismatch += int(load_max != configured_load_max)', block)
+        self.assertIn('inconsistent += int(flag != expected_over)', block)
         self.assertIn(
-            'expected_over = int(psi_value > psi_max or load_value > load_max)',
+            'if malformed or psi_unavailable or inconsistent or limit_mismatch:',
             block,
         )
-        self.assertIn('inconsistent += int(flag != expected_over)', block)
-        self.assertIn('if malformed or psi_unavailable or inconsistent:', block)
         self.assertIn('raise SystemExit(2)', block)
 
     def test_canonical_farm_exports_exact_sha_for_visual_truth(self):
