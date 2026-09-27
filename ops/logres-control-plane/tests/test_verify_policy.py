@@ -259,6 +259,56 @@ class VerifyFarmE2EPolicyTests(unittest.TestCase):
         self.assertIn('if monitor_rc != 0:', validator)
         self.assertIn('raise SystemExit(2)', validator)
 
+    def test_performance_monitor_requires_ready_sample_before_benchmark(self):
+        text = SCRIPT.read_text()
+        start = text.index('performance_host_monitor_start()')
+        end = text.index('performance_host_monitor_stop()', start)
+        block = text[start:end]
+        self.assertIn('PERF_PRESSURE_MONITOR_READY=0', block)
+        self.assertIn('kill -0 "$PERF_PRESSURE_PID"', block)
+        self.assertIn('-s "$PERF_PRESSURE_LOG"', block)
+        self.assertIn('PERF_PRESSURE_MONITOR_READY=1', block)
+        self.assertIn('return 2', block)
+
+    def test_performance_pressure_evidence_must_cover_benchmark_interval(self):
+        text = SCRIPT.read_text()
+        start = text.index('performance_pressure_invalid()')
+        end = text.index('remote_enabled()', start)
+        block = text[start:end]
+        self.assertIn('benchmark_start = float(sys.argv[5])', block)
+        self.assertIn('benchmark_end = float(sys.argv[6])', block)
+        self.assertIn('sample_sec = float(sys.argv[7])', block)
+        self.assertIn('sample_time = float(match.group(1))', block)
+        self.assertIn('coverage_gap', block)
+        self.assertIn('coverage_start_gap', block)
+        self.assertIn('coverage_end_gap', block)
+        self.assertIn('if coverage_invalid:', block)
+        self.assertIn('raise SystemExit(2)', block)
+
+    def test_performance_pressure_validator_rejects_partial_benchmark_coverage(self):
+        text = SCRIPT.read_text()
+        block_start = text.index('performance_pressure_invalid()')
+        code_start = text.index("<<'PY2'\n", block_start) + len("<<'PY2'\n")
+        code_end = text.index('\nPY2\n}', code_start)
+        validator = text[code_start:code_end]
+        with tempfile.TemporaryDirectory() as td:
+            pressure = Path(td) / 'pressure.log'
+            pressure.write_text(
+                '100.000 psi_avg10=0.100 psi_max=0.500 psi_available=1 '
+                'load_per_cpu=0.100 load_max=0.200 over=0\n'
+                '100.250 psi_avg10=0.100 psi_max=0.500 psi_available=1 '
+                'load_per_cpu=0.100 load_max=0.200 over=0\n'
+            )
+            proc = subprocess.run(
+                [
+                    'python3', '-c', validator, str(pressure), '0', '0.5', '0.2',
+                    '100.0', '110.0', '0.25',
+                ],
+                text=True, capture_output=True, check=False,
+            )
+        self.assertEqual(2, proc.returncode)
+        self.assertIn('coverage incomplete', proc.stdout)
+
     def test_performance_midrun_validator_recomputes_over_and_rejects_inconsistency(self):
         text = SCRIPT.read_text()
         start = text.index('performance_pressure_invalid()')

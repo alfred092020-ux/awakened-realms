@@ -21,6 +21,9 @@ PERF_PRESSURE_LOG="/home/ubuntu/logres/logs/verify-farm-$STAMP-performance-press
 PERF_CONTROL_WT="$ROOT/verify-farm-$STAMP-performance-control"
 PERF_PRESSURE_PID=""
 PERF_PRESSURE_MONITOR_RC=0
+PERF_PRESSURE_MONITOR_READY=0
+PERF_BENCHMARK_START="0"
+PERF_BENCHMARK_END="0"
 BEHAVIOR_LOG="/home/ubuntu/logres/logs/verify-farm-$STAMP-behavior.log"
 BEHAVIOR_TRACE_MERGE_LOG="/home/ubuntu/logres/logs/verify-farm-$STAMP-behavior-trace-merge.log"
 BEHAVIOR_TRACE_FAILURE_DIR="${LOGRES_BEHAVIOR_TRACE_FAILURE_DIR:-/home/ubuntu/logres/artifacts/behavior-trace-merge-failures}"
@@ -151,6 +154,7 @@ PY2
 
 performance_host_monitor_start() {
   PERF_PRESSURE_MONITOR_RC=0
+  PERF_PRESSURE_MONITOR_READY=0
   : >"$PERF_PRESSURE_LOG"
   python3 - \
     "$PERF_MAX_CPU_PSI_AVG10" \
@@ -186,9 +190,31 @@ while True:
             f"psi_available={int(psi_available)} load_per_cpu={load_value:.3f} "
             f"load_max={load_limit:.3f} over={over}\n"
         )
+        fh.flush()
     time.sleep(sample_sec)
 PY2
   PERF_PRESSURE_PID=$!
+
+  local attempt
+  for attempt in $(seq 1 20); do
+    if ! kill -0 "$PERF_PRESSURE_PID" >/dev/null 2>&1; then
+      wait "$PERF_PRESSURE_PID" 2>/dev/null || true
+      PERF_PRESSURE_MONITOR_RC=2
+      PERF_PRESSURE_PID=""
+      return 2
+    fi
+    if [[ -s "$PERF_PRESSURE_LOG" ]]; then
+      PERF_PRESSURE_MONITOR_READY=1
+      return 0
+    fi
+    sleep "$PERF_PRESSURE_SAMPLE_SEC"
+  done
+
+  kill "$PERF_PRESSURE_PID" >/dev/null 2>&1 || true
+  wait "$PERF_PRESSURE_PID" 2>/dev/null || true
+  PERF_PRESSURE_MONITOR_RC=2
+  PERF_PRESSURE_PID=""
+  return 2
 }
 
 performance_host_monitor_stop() {
@@ -228,8 +254,12 @@ performance_pressure_invalid() {
     "$PERF_PRESSURE_LOG" \
     "$PERF_PRESSURE_MONITOR_RC" \
     "$PERF_MAX_CPU_PSI_AVG10" \
-    "$PERF_MAX_LOAD_PER_CPU" <<'PY2'
+    "$PERF_MAX_LOAD_PER_CPU" \
+    "$PERF_BENCHMARK_START" \
+    "$PERF_BENCHMARK_END" \
+    "$PERF_PRESSURE_SAMPLE_SEC" <<'PY2'
 from pathlib import Path
+import math
 import re
 import sys
 
@@ -237,6 +267,9 @@ p = Path(sys.argv[1])
 monitor_rc = int(sys.argv[2])
 configured_psi_max = float(sys.argv[3])
 configured_load_max = float(sys.argv[4])
+benchmark_start = float(sys.argv[5])
+benchmark_end = float(sys.argv[6])
+sample_sec = float(sys.argv[7])
 if monitor_rc != 0:
     print(f"VERIFY_FARM performance pressure monitor exited unexpectedly rc={monitor_rc}")
     raise SystemExit(2)
@@ -251,17 +284,18 @@ inconsistent = 0
 limit_mismatch = 0
 for line in p.read_text().splitlines():
     match = re.search(
-        r"psi_avg10=([0-9.]+).*?psi_max=([0-9.]+).*?psi_available=([01]).*?load_per_cpu=([0-9.]+).*?load_max=([0-9.]+).*?over=([01])",
+        r"^([0-9.]+)\s+psi_avg10=([0-9.]+).*?psi_max=([0-9.]+).*?psi_available=([01]).*?load_per_cpu=([0-9.]+).*?load_max=([0-9.]+).*?over=([01])",
         line,
     )
     if not match:
         malformed += 1
         continue
+    sample_time = float(match.group(1))
     psi_value, psi_max, psi_available, load_value, load_max, flag = (
-        float(match.group(1)), float(match.group(2)), int(match.group(3)),
-        float(match.group(4)), float(match.group(5)), int(match.group(6)),
+        float(match.group(2)), float(match.group(3)), int(match.group(4)),
+        float(match.group(5)), float(match.group(6)), int(match.group(7)),
     )
-    samples.append((psi_value, psi_max, load_value, load_max))
+    samples.append((sample_time, psi_value, psi_max, load_value, load_max))
     if psi_available != 1:
         psi_unavailable += 1
     expected_over = int(
@@ -282,12 +316,40 @@ if malformed or psi_unavailable or inconsistent or limit_mismatch:
         f"inconsistent={inconsistent} limit_mismatch={limit_mismatch}"
     )
     raise SystemExit(2)
-peak_psi = max(row[0] for row in samples)
-peak_load = max(row[2] for row in samples)
+
+coverage_slack = max(0.75, sample_sec * 3.0)
+sample_times = [row[0] for row in samples]
+coverage_start_gap = max(0.0, sample_times[0] - benchmark_start)
+coverage_end_gap = max(0.0, benchmark_end - sample_times[-1])
+coverage_gap = max(
+    (later - earlier for earlier, later in zip(sample_times, sample_times[1:])),
+    default=0.0,
+)
+coverage_invalid = (
+    not math.isfinite(benchmark_start)
+    or not math.isfinite(benchmark_end)
+    or benchmark_start <= 0.0
+    or benchmark_end < benchmark_start
+    or coverage_start_gap > coverage_slack
+    or coverage_end_gap > coverage_slack
+    or coverage_gap > coverage_slack
+)
+if coverage_invalid:
+    print(
+        f"VERIFY_FARM performance pressure coverage incomplete "
+        f"start_gap={coverage_start_gap:.3f} end_gap={coverage_end_gap:.3f} "
+        f"max_gap={coverage_gap:.3f} slack={coverage_slack:.3f}"
+    )
+    raise SystemExit(2)
+
+peak_psi = max(row[1] for row in samples)
+peak_load = max(row[3] for row in samples)
 print(
     f"VERIFY_FARM performance pressure during benchmark samples={len(samples)} "
-    f"peak_psi={peak_psi:.3f} psi_max={samples[-1][1]:.3f} "
-    f"peak_load_per_cpu={peak_load:.3f} load_max={samples[-1][3]:.3f} over={over}"
+    f"peak_psi={peak_psi:.3f} psi_max={samples[-1][2]:.3f} "
+    f"peak_load_per_cpu={peak_load:.3f} load_max={samples[-1][4]:.3f} over={over} "
+    f"coverage_start_gap={coverage_start_gap:.3f} coverage_end_gap={coverage_end_gap:.3f} "
+    f"coverage_gap={coverage_gap:.3f}"
 )
 raise SystemExit(0 if over else 1)
 PY2
@@ -942,25 +1004,33 @@ PY2
     elif (( host_rc != 0 )); then
       performance_rc=$host_rc
     else
-      performance_host_monitor_start
-      benchmark_rc=0
-      (
-        set -e
-        cd "$PERF_WT"
-        npm run test:e2e -- "$PERF_SPEC_REL" --workers=1
-      ) >>"$PERF_LOG" 2>&1 || benchmark_rc=$?
-      performance_host_monitor_stop
-
-      pressure_rc=0
-      performance_pressure_invalid >>"$PERF_LOG" 2>&1 || pressure_rc=$?
-      if (( pressure_rc == 0 )); then
-        echo "VERIFY_FARM benchmark invalidated by host contention; deferring without verdict" >>"$PERF_LOG"
-        performance_rc=75
-      elif (( pressure_rc != 1 )); then
-        echo "VERIFY_FARM performance pressure monitor failed closed rc=$pressure_rc" >>"$PERF_LOG"
-        performance_rc=$pressure_rc
+      monitor_start_rc=0
+      performance_host_monitor_start || monitor_start_rc=$?
+      if (( monitor_start_rc != 0 )); then
+        echo "VERIFY_FARM performance pressure monitor failed readiness rc=$monitor_start_rc" >>"$PERF_LOG"
+        performance_rc=$monitor_start_rc
       else
-        performance_rc=$benchmark_rc
+        PERF_BENCHMARK_START=$(python3 -c 'import time; print(f"{time.time():.6f}")')
+        benchmark_rc=0
+        (
+          set -e
+          cd "$PERF_WT"
+          npm run test:e2e -- "$PERF_SPEC_REL" --workers=1
+        ) >>"$PERF_LOG" 2>&1 || benchmark_rc=$?
+        PERF_BENCHMARK_END=$(python3 -c 'import time; print(f"{time.time():.6f}")')
+        performance_host_monitor_stop
+
+        pressure_rc=0
+        performance_pressure_invalid >>"$PERF_LOG" 2>&1 || pressure_rc=$?
+        if (( pressure_rc == 0 )); then
+          echo "VERIFY_FARM benchmark invalidated by host contention; deferring without verdict" >>"$PERF_LOG"
+          performance_rc=75
+        elif (( pressure_rc != 1 )); then
+          echo "VERIFY_FARM performance pressure monitor failed closed rc=$pressure_rc" >>"$PERF_LOG"
+          performance_rc=$pressure_rc
+        else
+          performance_rc=$benchmark_rc
+        fi
       fi
 
       if (( performance_rc != 0 && performance_rc != 75 )); then
