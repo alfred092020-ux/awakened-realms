@@ -165,6 +165,35 @@ class MemoryIntelligenceTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "limit must be between 1 and 500"):
             distill_pending(self.c, session_id="battle-session", limit=501)
 
+    def test_pending_distillation_is_session_scoped(self):
+        battle = self._message(
+            "assistant",
+            "BATTLE-RENDER-001 discovery: scoped pending memory.",
+            {"task_id": "BATTLE-RENDER-001"},
+        )
+        open_chat(
+            self.c,
+            chat_id="other",
+            session_id="other-session",
+            archive_root=Path(tempfile.gettempdir()) / "memory-intelligence-tests",
+        )
+        other = append_chat_message(
+            self.c,
+            session_id="other-session",
+            role="assistant",
+            content="MAP-OTHER-001 discovery: unrelated pending memory.",
+            metadata={"task_id": "MAP-OTHER-001"},
+            source_path="test",
+        )
+        result = distill_pending(self.c, session_id="battle-session", limit=10)
+        self.assertEqual(1, result["processed_messages"])
+        self.assertIsNotNone(
+            self.c.execute("select 1 from memory_facts where message_id=?", (battle["id"],)).fetchone()
+        )
+        self.assertIsNone(
+            self.c.execute("select 1 from memory_facts where message_id=?", (other["id"],)).fetchone()
+        )
+
     def test_source_sha_requires_exact_full_git_sha(self):
         short = self._message(
             "tool-summary",
@@ -227,15 +256,16 @@ class MemoryIntelligenceTests(unittest.TestCase):
             {"task_id": "BATTLE-RENDER-001"},
         )
         claim_fact = distill_message(self.c, claim["id"])["facts"][0]
+        verified_sha = "b" * 40
         supported = self._message(
             "tool-summary",
-            "BATTLE-RENDER-001 build PASS with supporting test evidence.",
+            f"BATTLE-RENDER-001 build PASS at exact SHA {verified_sha} with supporting test evidence.",
             {"task_id": "BATTLE-RENDER-001"},
         )
         supported_fact = distill_message(self.c, supported["id"])["facts"][0]
 
         packet = build_context_packet(self.c, "BATTLE-RENDER-001")
-        self.assertEqual("VERIFIED", packet["memory_policy"]["operational_truth_requires"])
+        self.assertEqual("Brain only", packet["memory_policy"]["operational_truth_source"])
         self.assertEqual([], packet["transcript_excerpts"])
         self.assertTrue(all("provenance" in fact for fact in packet["structured_memory"]))
         self.assertTrue(all(not fact["operational_truth"] for fact in packet["structured_memory"]))
@@ -246,9 +276,29 @@ class MemoryIntelligenceTests(unittest.TestCase):
             (supported_fact["id"],),
         )
         self.c.commit()
+        label_only_packet = build_context_packet(self.c, "BATTLE-RENDER-001")
+        self.assertEqual([], label_only_packet["transcript_excerpts"])
+        self.assertTrue(all(not fact["operational_truth"] for fact in label_only_packet["structured_memory"]))
+
+        self.c.execute(
+            "create table verification(ref text primary key, sha text, mode text, status text, duration_sec real, ran_at text, details text)"
+        )
+        self.c.execute(
+            "insert into verification values(?,?,?,?,?,?,?)",
+            ("worker/battle", verified_sha, "full-e2e", "PASS", 1.0, "2026-09-27", "exact-sha test"),
+        )
+        self.c.commit()
         verified_packet = build_context_packet(self.c, "BATTLE-RENDER-001")
         self.assertEqual(1, len(verified_packet["transcript_excerpts"]))
         self.assertEqual(supported["id"], verified_packet["transcript_excerpts"][0]["message_id"])
+        verified_fact = next(
+            fact
+            for fact in verified_packet["structured_memory"]
+            if fact["id"] == supported_fact["id"]
+        )
+        self.assertFalse(verified_fact["operational_truth"])
+        self.assertTrue(verified_fact["context_evidence_eligible"])
+        self.assertEqual("PASS", verified_fact["provenance"]["exact_sha_verification"])
 
     def test_context_pack_chat_rejects_expired_lease(self):
         self.c.execute(

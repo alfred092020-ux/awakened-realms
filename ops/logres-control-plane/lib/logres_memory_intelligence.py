@@ -215,25 +215,14 @@ def distill_pending(conn: sqlite3.Connection, session_id: str | None = None, lim
         raise ValueError("session_id is required for pending distillation")
     if not 1 <= int(limit) <= 500:
         raise ValueError("limit must be between 1 and 500")
-    params: list[object] = []
-    where = []
-    if session_id:
-        where.append("m.session_id=?")
-        params.append(session_id)
-    where_sql = ("where " + " and ".join(where)) if where else ""
     rows = conn.execute(
-        f"""
-        select m.id from chat_messages m
-        {where_sql}
-        and not exists(select 1 from memory_facts f where f.message_id=m.id)
-        order by m.id asc limit ?
-        """ if where else
         """
         select m.id from chat_messages m
-         where not exists(select 1 from memory_facts f where f.message_id=m.id)
+         where m.session_id=?
+           and not exists(select 1 from memory_facts f where f.message_id=m.id)
          order by m.id asc limit ?
         """,
-        (*params, limit),
+        (session_id, int(limit)),
     ).fetchall()
     processed = 0
     inserted = 0
@@ -323,6 +312,21 @@ def _table_exists(conn: sqlite3.Connection, name: str) -> bool:
     ).fetchone())
 
 
+def _has_exact_sha_verification(conn: sqlite3.Connection, source_sha: str | None) -> bool:
+    if not source_sha or not SHA_RE.fullmatch(source_sha):
+        return False
+    if not _table_exists(conn, "verification"):
+        return False
+    return bool(conn.execute(
+        """
+        select 1 from verification
+         where sha=? and upper(status)='PASS' and lower(mode)='full-e2e'
+         limit 1
+        """,
+        (source_sha,),
+    ).fetchone())
+
+
 def build_context_packet(conn: sqlite3.Connection, task_id: str, *,
                          transcript_limit: int = 12, fact_limit: int = 20,
                          knowledge_limit: int = 12) -> dict:
@@ -370,6 +374,15 @@ def build_context_packet(conn: sqlite3.Connection, task_id: str, *,
 
     terms = [task[1], task[4] or "", *scopes[:8]]
     facts = relevant_facts(conn, task_id, terms=terms, limit=fact_limit)
+    for fact in facts:
+        exact_sha_verified = _has_exact_sha_verification(conn, fact["source_sha"])
+        fact["operational_truth"] = False
+        fact["context_evidence_eligible"] = bool(
+            fact["truth_status"] == "VERIFIED" and exact_sha_verified
+        )
+        fact["provenance"]["exact_sha_verification"] = (
+            "PASS" if exact_sha_verified else "UNVERIFIED"
+        )
 
     knowledge = []
     if _table_exists(conn, "knowledge_nodes") and _table_exists(conn, "knowledge_edges"):
@@ -393,7 +406,7 @@ def build_context_packet(conn: sqlite3.Connection, task_id: str, *,
     # Only VERIFIED facts may contribute raw transcript excerpts. CLAIM and
     # SUPPORTED facts remain labeled context and never become operational truth.
     message_ids = [
-        f["message_id"] for f in facts if f["operational_truth"]
+        f["message_id"] for f in facts if f["context_evidence_eligible"]
     ][:transcript_limit]
     excerpts = []
     if message_ids:
@@ -420,8 +433,10 @@ def build_context_packet(conn: sqlite3.Connection, task_id: str, *,
         "integration": integration,
         "structured_memory": facts,
         "memory_policy": {
-            "operational_truth_requires": "VERIFIED",
-            "claims_and_supported_are_context_only": True,
+            "operational_truth_source": "Brain only",
+            "memory_facts_are_context_only": True,
+            "context_transcript_requires": "VERIFIED + exact-SHA full-e2e PASS",
+            "exact_sha_verification_mode": "full-e2e",
         },
         "knowledge": knowledge,
         "transcript_excerpts": excerpts[:transcript_limit],
@@ -442,7 +457,7 @@ def _fact_dict(row) -> dict:
         "role": row[6], "kind": row[7], "statement": row[8],
         "confidence": float(row[9]), "truth_status": truth_status,
         "task_id": row[11], "source_sha": source_sha,
-        "operational_truth": truth_status == "VERIFIED",
+        "operational_truth": False,
         "provenance": {
             "session_id": row[2], "message_id": row[3], "ordinal": row[4],
             "chat_id": row[5], "role": row[6], "source_sha": source_sha,
