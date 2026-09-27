@@ -843,6 +843,26 @@ resolve_performance_control_outcome() {
   fi
 }
 
+resolve_performance_measurement_outcome() {
+  local benchmark_rc="$1" pressure_rc="$2"
+
+  if (( pressure_rc == 0 )); then
+    echo "VERIFY_FARM benchmark invalidated by host contention; deferring without verdict" >>"$PERF_LOG"
+    performance_rc=75
+    return 0
+  fi
+  if (( pressure_rc != 1 )); then
+    echo "VERIFY_FARM performance pressure monitor failed closed rc=$pressure_rc" >>"$PERF_LOG"
+    performance_rc="$pressure_rc"
+    return 0
+  fi
+
+  performance_rc="$benchmark_rc"
+  if (( performance_rc != 0 && performance_rc != 75 )); then
+    resolve_performance_control_outcome "$performance_rc"
+  fi
+}
+
 run_local_tests() {
   git -C "$BASE" worktree add --detach "$TEST_WT" "$SHA" >/dev/null
   prepare_deps "$TEST_WT"
@@ -1083,19 +1103,7 @@ PY2
 
         pressure_rc=0
         performance_pressure_invalid >>"$PERF_LOG" 2>&1 || pressure_rc=$?
-        if (( pressure_rc == 0 )); then
-          echo "VERIFY_FARM benchmark invalidated by host contention; deferring without verdict" >>"$PERF_LOG"
-          performance_rc=75
-        elif (( pressure_rc != 1 )); then
-          echo "VERIFY_FARM performance pressure monitor failed closed rc=$pressure_rc" >>"$PERF_LOG"
-          performance_rc=$pressure_rc
-        else
-          performance_rc=$benchmark_rc
-        fi
-      fi
-
-      if (( performance_rc != 0 && performance_rc != 75 )); then
-        resolve_performance_control_outcome "$performance_rc"
+        resolve_performance_measurement_outcome "$benchmark_rc" "$pressure_rc"
       fi
     fi
   fi

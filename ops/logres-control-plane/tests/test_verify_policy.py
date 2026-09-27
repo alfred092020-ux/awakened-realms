@@ -236,6 +236,56 @@ printf 'control-unavailable=%s\n' "$performance_rc"
         self.assertIn('control-fail=75', proc.stdout)
         self.assertIn('control-unavailable=17', proc.stdout)
 
+    def test_performance_measurement_outcome_executes_full_decision_matrix(self):
+        text = SCRIPT.read_text()
+        control_start = text.index('resolve_performance_control_outcome()')
+        control_end = text.index('run_local_tests()', control_start)
+        helpers = text[control_start:control_end]
+        script = helpers + r'''PERF_LOG=/tmp/perf-measurement-outcome-test.log
+run_performance_control() { return "$CONTROL_RC"; }
+probe() {
+  local label="$1" benchmark="$2" pressure="$3" control="$4"
+  CONTROL_RC="$control"
+  performance_rc=0
+  resolve_performance_measurement_outcome "$benchmark" "$pressure"
+  printf '%s=%s\n' "$label" "$performance_rc"
+}
+probe quiet-pass 0 1 0
+probe candidate-fail-control-pass 17 1 0
+probe candidate-fail-control-fail 17 1 1
+probe candidate-fail-control-unavailable 17 1 2
+probe contention 17 0 0
+probe validator-fail 17 2 0
+'''
+        proc = subprocess.run(
+            ['bash', '-c', script], text=True, capture_output=True, check=False
+        )
+        self.assertEqual(0, proc.returncode, proc.stderr)
+        self.assertIn('quiet-pass=0', proc.stdout)
+        self.assertIn('candidate-fail-control-pass=17', proc.stdout)
+        self.assertIn('candidate-fail-control-fail=75', proc.stdout)
+        self.assertIn('candidate-fail-control-unavailable=17', proc.stdout)
+        self.assertIn('contention=75', proc.stdout)
+        self.assertIn('validator-fail=2', proc.stdout)
+
+    def test_performance_monitor_stop_terminates_live_monitor_and_clears_pid(self):
+        text = SCRIPT.read_text()
+        start = text.index('performance_host_monitor_stop()')
+        end = text.index('performance_pressure_invalid()', start)
+        helper = text[start:end]
+        script = helper + r'''sleep 30 &
+PERF_PRESSURE_PID=$!
+PERF_PRESSURE_MONITOR_RC=99
+performance_host_monitor_stop
+printf 'pid=%s rc=%s\n' "$PERF_PRESSURE_PID" "$PERF_PRESSURE_MONITOR_RC"
+'''
+        proc = subprocess.run(
+            ['bash', '-c', script], text=True, capture_output=True, check=False,
+            timeout=5,
+        )
+        self.assertEqual(0, proc.returncode, proc.stderr)
+        self.assertIn('pid= rc=0', proc.stdout)
+
     def test_performance_midrun_host_contention_defers_measurement(self):
         text = SCRIPT.read_text()
         self.assertIn('PERF_PRESSURE_LOG=', text)
