@@ -446,6 +446,47 @@ describe(
     )
 
     it(
+      'requires both low CPU pressure and low load before each Chromium measurement',
+      () => {
+        expect(
+          performanceSpecSource,
+        ).toContain(
+          '/proc/pressure/cpu',
+        )
+
+        expect(
+          performanceSpecSource,
+        ).toContain(
+          '/proc/loadavg',
+        )
+
+        expect(
+          performanceSpecSource,
+        ).toMatch(
+          /HOST_CPU_PSI_AVG10_MAX\s*=\s*0\.5/,
+        )
+
+        expect(
+          performanceSpecSource,
+        ).toMatch(
+          /HOST_LOAD_PER_CPU_MAX\s*=\s*0\.2/,
+        )
+
+        expect(
+          performanceSpecSource,
+        ).toMatch(
+          /QUIET_CONSECUTIVE_SAMPLES\s*=\s*3/,
+        )
+
+        expect(
+          performanceSpecSource,
+        ).toMatch(
+          /await waitForQuietHost\(\)[\s\S]*?chromium\.launch\(/,
+        )
+      },
+    )
+
+    it(
       'median-of-three tolerates one transient spike but not two sustained bad windows',
       () => {
         const medianOfThree = (
