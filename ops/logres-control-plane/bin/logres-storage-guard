@@ -48,7 +48,7 @@ def main() -> int:
         else:
             free = filesystem_free_bytes(ROOT)
             pressure = classify_pressure(free, policy)
-            protected = collect_protected_paths(conn)
+            protected = collect_protected_paths(conn, root=ROOT)
             payload = {
                 "schema": "logres-storage-guard-status/1",
                 "apply": False,

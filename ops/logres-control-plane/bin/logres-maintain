@@ -4,12 +4,13 @@ LANE_LOCK="${LOGRES_MAINTENANCE_LANE_LOCK:-/tmp/logres-maintenance-lane.lock}"
 exec 8>"$LANE_LOCK"
 flock -n 8 || exit 0
 BASE=/home/ubuntu/logres/src/awakened-realms
-LOG=/home/ubuntu/logres/logs/maintenance.log
+LOG="${LOGRES_MAINTENANCE_LOG:-/home/ubuntu/logres/logs/maintenance.log}"
+STORAGE_GUARD="${LOGRES_STORAGE_GUARD_BIN:-/home/ubuntu/logres/bin/logres-storage-guard}"
 mkdir -p /home/ubuntu/logres/logs
 
 {
   echo "=== $(date -Is) ==="
-  /home/ubuntu/logres/bin/logres-storage-guard apply
+  "$STORAGE_GUARD" apply
   git -C "$BASE" worktree prune
   git -C "$BASE" maintenance run --auto || git -C "$BASE" gc --auto
   git -C "$BASE" commit-graph write --reachable --changed-paths || true

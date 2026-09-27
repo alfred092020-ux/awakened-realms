@@ -237,7 +237,8 @@ class StorageGuardTests(unittest.TestCase):
             conn.close()
             self.assertFalse(victim.exists())
             self.assertGreaterEqual(result["direct_cleanup"]["removed_bytes"], 64)
-            self.assertGreater(result["filesystem_reclaimed_bytes"], 0)
+            self.assertGreater(result["filesystem_free_delta_bytes"], 0)
+            self.assertGreaterEqual(result["accounted_reclaimed_bytes"], 64)
             manifest = Path(result["manifest_path"])
             self.assertTrue(manifest.is_file())
             saved = json.loads(manifest.read_text())
@@ -443,8 +444,8 @@ class StorageGuardTests(unittest.TestCase):
             float(policy["thresholds"]["critical_free_gib"]),
         )
         maintain = (CONTROL_ROOT / "bin" / "logres-maintain").read_text()
-        self.assertIn("logres-storage-guard apply", maintain)
-        self.assertNotIn("logres-storage-guard apply || true", maintain)
+        self.assertIn('"$STORAGE_GUARD" apply', maintain)
+        self.assertNotIn('"$STORAGE_GUARD" apply || true', maintain)
         self.assertNotIn("logres-workspace-gc apply", maintain)
         self.assertNotIn("logres-worktree-gc --apply", maintain)
         self.assertNotIn("tail -c 5242880", maintain)
@@ -459,6 +460,75 @@ class StorageGuardTests(unittest.TestCase):
         self.assertTrue(set(log_tier["patterns"]).issubset({
             "verify-farm-*.log", "finish-*.log", "preflight-*.log"
         }))
+
+
+    def test_inventory_reports_largest_children_inside_protected_roots_without_cleanup_eligibility(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            (root / "artifacts" / "big-private").mkdir(parents=True)
+            (root / "artifacts" / "small-private").mkdir(parents=True)
+            (root / "artifacts" / "big-private" / "blob.bin").write_bytes(b"x" * 4096)
+            (root / "artifacts" / "small-private" / "blob.bin").write_bytes(b"x" * 32)
+            report = inventory_storage(root, self.policy())
+            artifacts = next(row for row in report["roots"] if row["name"] == "artifacts")
+            self.assertTrue(artifacts["protected"])
+            self.assertEqual("big-private", artifacts["largest_children"][0]["name"])
+            plan = plan_cleanup(root, self.policy(), "critical", now_epoch=time.time())
+            self.assertFalse(any("/artifacts/" in row["path"] for row in plan["candidates"]))
+
+    def test_relative_brain_evidence_paths_are_protected_against_direct_cleanup(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            target = root / "scratch" / "worker-relative-proof"
+            target.parent.mkdir(parents=True)
+            target.write_bytes(b"evidence")
+            conn = sqlite3.connect(":memory:")
+            conn.execute("create table receipts(artifact_path text)")
+            conn.execute("insert into receipts values(?)", ("scratch/worker-relative-proof",))
+            protected = collect_protected_paths(conn, root=root)
+            conn.close()
+            self.assertIn(str(target.resolve()), protected)
+            old = time.time() - 200 * 3600
+            os.utime(target, (old, old))
+            plan = plan_cleanup(root, self.policy(), "critical", now_epoch=time.time(), protected_paths=protected)
+            self.assertFalse(any(row["path"] == str(target) for row in plan["candidates"]))
+
+    def test_repository_policy_explicitly_covers_worker_scratch_build_cache_and_delegated_previews(self):
+        policy = load_policy(CONTROL_ROOT / "config" / "storage_retention.json")
+        tiers = {row["name"]: row for row in policy["retention_tiers"]}
+        self.assertIn("worker_scratch", tiers)
+        self.assertEqual("scratch", tiers["worker_scratch"]["root"])
+        self.assertTrue({"worker-*", "patch-*", "research-*"}.issubset(set(tiers["worker_scratch"]["patterns"])))
+        self.assertIn("build_cache", tiers)
+        self.assertEqual("cache", tiers["build_cache"]["root"])
+        coverage = policy["cleanup_coverage"]
+        self.assertIn("logres-preview-reaper", coverage["stale_previews"])
+        self.assertIn("logres-workspace-gc", coverage["stale_worker_build_outputs"])
+        self.assertIn("logres-worktree-gc", coverage["stale_worker_build_outputs"])
+
+    def test_complete_manifest_separates_filesystem_delta_from_accounted_reclaimed_bytes(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            for name in ("scratch", "logs", "cache", "artifacts", "control", "index", "bin"):
+                (root / name).mkdir(parents=True, exist_ok=True)
+            victim = root / "scratch" / "capacity-old"
+            victim.write_bytes(b"x" * 777)
+            old = time.time() - 30 * 3600
+            os.utime(victim, (old, old))
+            (root / "control" / "autoflow.json").write_text(json.dumps({"swarm": {"enabled": True}}))
+            conn = sqlite3.connect(":memory:")
+            calls = iter([35 * 1024**3, 35 * 1024**3, 35 * 1024**3])
+            result = apply_guard(
+                root,
+                conn,
+                self.policy(),
+                runner=lambda argv, **kwargs: subprocess.CompletedProcess(argv, 0, stdout="ok", stderr=""),
+                free_bytes_fn=lambda _path: next(calls),
+            )
+            conn.close()
+            self.assertEqual(777, result["accounted_reclaimed_bytes"])
+            self.assertEqual(0, result["filesystem_free_delta_bytes"])
+            self.assertNotIn("filesystem_reclaimed_bytes", result)
 
 
 if __name__ == "__main__":

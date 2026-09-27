@@ -138,20 +138,53 @@ def _protected_root(path: Path, root: Path, policy: Mapping[str, Any]) -> bool:
     return False
 
 
+def _directory_inventory(path: Path, *, child_limit: int) -> tuple[int, list[dict[str, Any]]]:
+    total = 0
+    children: list[dict[str, Any]] = []
+    try:
+        entries = list(os.scandir(path))
+    except OSError:
+        return 0, []
+    for entry in entries:
+        child = Path(entry.path)
+        size = _path_size(child)
+        total += size
+        children.append(
+            {
+                "name": entry.name,
+                "path": str(child),
+                "bytes": size,
+                "kind": (
+                    "symlink" if entry.is_symlink()
+                    else "directory" if entry.is_dir(follow_symlinks=False)
+                    else "file"
+                ),
+            }
+        )
+    children.sort(key=lambda item: (-int(item["bytes"]), item["name"]))
+    return total, children[: max(0, child_limit)]
+
+
 def inventory_storage(root: Path, policy: Mapping[str, Any]) -> dict[str, Any]:
     root = Path(root)
     checked = validate_policy(policy)
+    child_limit = max(0, int(checked.get("largest_children_limit", 8) or 8))
     rows = []
     for spec in checked.get("inventory_roots", []):
         path = _resolve(root, spec["path"])
+        if path.is_dir() and not path.is_symlink():
+            size, largest_children = _directory_inventory(path, child_limit=child_limit)
+        else:
+            size, largest_children = _path_size(path), []
         rows.append(
             {
                 "name": str(spec["name"]),
                 "kind": str(spec.get("kind") or "other"),
                 "path": str(path),
-                "bytes": _path_size(path),
+                "bytes": size,
                 "exists": path.exists(),
                 "protected": _protected_root(path, root, checked),
+                "largest_children": largest_children,
             }
         )
     rows.sort(key=lambda item: (-int(item["bytes"]), item["name"]))
@@ -165,54 +198,66 @@ def _table_columns(conn: sqlite3.Connection, table: str) -> set[str]:
         return set()
 
 
-def _add_path(target: set[str], value: Any) -> None:
+def _add_path(target: set[str], value: Any, *, root: Path | None = None) -> None:
     if not isinstance(value, str) or not value.strip():
         return
     text = value.strip()
-    if not text.startswith("/"):
-        return
-    target.add(str(Path(text).resolve(strict=False)))
+    path = Path(text)
+    if path.is_absolute():
+        target.add(str(path.resolve(strict=False)))
+    elif root is not None:
+        target.add(str((Path(root) / path).resolve(strict=False)))
 
 
-def _walk_json_paths(target: set[str], value: Any) -> None:
+def _walk_json_paths(target: set[str], value: Any, *, root: Path | None = None) -> None:
     if isinstance(value, str):
-        _add_path(target, value)
+        _add_path(target, value, root=root)
     elif isinstance(value, list):
         for item in value:
-            _walk_json_paths(target, item)
+            _walk_json_paths(target, item, root=root)
     elif isinstance(value, dict):
         for item in value.values():
-            _walk_json_paths(target, item)
+            _walk_json_paths(target, item, root=root)
 
 
 def _quote_identifier(value: str) -> str:
     return '"' + str(value).replace('"', '""') + '"'
 
 
-def _collect_reference_value(target: set[str], value: Any) -> None:
+def _collect_reference_value(
+    target: set[str],
+    value: Any,
+    *,
+    root: Path | None = None,
+) -> None:
     if value is None:
         return
     if not isinstance(value, str):
-        _walk_json_paths(target, value)
+        _walk_json_paths(target, value, root=root)
         return
     text = value.strip()
     if not text:
         return
-    _add_path(target, text)
     if text[:1] in {"{", "["}:
         try:
             parsed = json.loads(text)
         except json.JSONDecodeError:
             return
-        _walk_json_paths(target, parsed)
+        _walk_json_paths(target, parsed, root=root)
+        return
+    _add_path(target, text, root=root)
 
 
-def collect_protected_paths(conn: sqlite3.Connection) -> set[str]:
-    """Return every absolute file reference discoverable from Brain schema.
+def collect_protected_paths(
+    conn: sqlite3.Connection,
+    *,
+    root: Path | None = None,
+) -> set[str]:
+    """Return path references discoverable from Brain/control-plane schema.
 
-    This intentionally discovers path-bearing columns rather than maintaining a
-    hand-written table list, so new evidence/receipt tables fail safe without a
-    storage-guard code change. Relative repository paths and hashes are ignored.
+    Absolute paths are preserved directly. Relative values in path-bearing
+    columns are resolved against ``root`` when supplied so cleanup fails safe
+    for repository-relative evidence receipts too.
     """
     protected: set[str] = set()
     try:
@@ -241,8 +286,8 @@ def collect_protected_paths(conn: sqlite3.Connection) -> set[str]:
                 )
             except sqlite3.OperationalError:
                 continue
-            for row in rows:
-                _collect_reference_value(protected, row[0])
+            for row_value in rows:
+                _collect_reference_value(protected, row_value[0], root=root)
     return protected
 
 
@@ -545,7 +590,7 @@ def apply_guard(
     before_inventory = inventory_storage(root, checked)
     before_free = int(free_bytes_fn(root))
     initial_pressure = classify_pressure(before_free, checked)
-    protected = collect_protected_paths(conn)
+    protected = collect_protected_paths(conn, root=root)
     initial_plan = plan_cleanup(
         root,
         checked,
@@ -671,7 +716,8 @@ def apply_guard(
         final_pressure=final_pressure,
         after_gc_free_bytes=after_gc_free,
         after_free_bytes=final_free,
-        filesystem_reclaimed_bytes=max(0, final_free - before_free),
+        filesystem_free_delta_bytes=max(0, final_free - before_free),
+        accounted_reclaimed_bytes=int(direct.get("removed_bytes", 0) or 0),
         inventory_after=after_inventory,
         cleanup_plan=plan,
         direct_cleanup=direct,

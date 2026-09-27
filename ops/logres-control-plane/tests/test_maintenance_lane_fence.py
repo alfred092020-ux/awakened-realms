@@ -60,12 +60,33 @@ class MaintenanceLaneFenceTests(unittest.TestCase):
     def test_maintain_is_versioned_with_expected_core_actions(self):
         text = (BIN / "logres-maintain").read_text()
         for marker in (
-            "logres-storage-guard apply",
+            '"$STORAGE_GUARD" apply',
             "git -C \"$BASE\" maintenance run --auto",
             "logres-control-backup --dated",
             "logres-doctor || true",
         ):
             self.assertIn(marker, text)
+
+
+    def test_maintenance_propagates_storage_guard_failure(self):
+        with tempfile.TemporaryDirectory() as td:
+            td_path = Path(td)
+            failing = td_path / "storage-guard-fail"
+            failing.write_text("#!/bin/sh\nexit 23\n")
+            failing.chmod(0o755)
+            env = os.environ.copy()
+            env["LOGRES_STORAGE_GUARD_BIN"] = str(failing)
+            env["LOGRES_MAINTENANCE_LANE_LOCK"] = str(td_path / "lane.lock")
+            env["LOGRES_MAINTENANCE_LOG"] = str(td_path / "maintenance.log")
+            result = subprocess.run(
+                [str(CONTROL_ROOT / "bin" / "logres-maintain")],
+                env=env,
+                text=True,
+                capture_output=True,
+                check=False,
+                timeout=10,
+            )
+            self.assertEqual(23, result.returncode)
 
 
 if __name__ == "__main__":

@@ -4,6 +4,13 @@
     "autoflow_config": "control/autoflow.json",
     "state_path": "control/storage-pressure.json"
   },
+  "cleanup_coverage": {
+    "canonical_build_output": "inventory-only/protected; never directly deleted by storage guard",
+    "expired_logs": "direct allowlisted logs tier",
+    "expired_worker_scratch": "direct allowlisted worker_scratch + capacity_scratch tiers",
+    "stale_previews": "delegated: logres-preview-reaper + terminal worktree GC",
+    "stale_worker_build_outputs": "delegated: logres-workspace-gc + logres-worktree-gc; direct allowlisted build-cache tier"
+  },
   "expected_autonomy_min_free_disk_gib": 30.0,
   "inventory_roots": [
     {
@@ -67,6 +74,7 @@
       "path": "research"
     }
   ],
+  "largest_children_limit": 8,
   "max_actions_per_run": 200,
   "protected_roots": [
     "control",
@@ -116,6 +124,36 @@
         "preflight-*.log"
       ],
       "root": "logs"
+    },
+    {
+      "min_age_hours": {
+        "critical": 12,
+        "high": 48,
+        "warning": 168
+      },
+      "name": "worker_scratch",
+      "patterns": [
+        "worker-*",
+        "patch-*",
+        "research-*",
+        "job-*"
+      ],
+      "root": "scratch"
+    },
+    {
+      "min_age_hours": {
+        "critical": 12,
+        "high": 48,
+        "warning": 168
+      },
+      "name": "build_cache",
+      "patterns": [
+        "build-*",
+        "vite-*",
+        "dist-*",
+        "tsbuild-*"
+      ],
+      "root": "cache"
     }
   ],
   "schema": "logres-storage-retention/1",
