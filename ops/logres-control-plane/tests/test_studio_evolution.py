@@ -159,5 +159,26 @@ class StudioEvolutionTests(unittest.TestCase):
             self.assertFalse(payload["direct_integration_authority"])
 
 
+    def test_brain_evidence_persistence_fails_closed_when_brain_event_store_is_missing(self):
+        conn = sqlite3.connect(":memory:")
+        conn.row_factory = sqlite3.Row
+        evo.ensure_schema(conn)
+        try:
+            with self.assertRaises(sqlite3.OperationalError):
+                evo.propose_improvement(conn, self.policy, self.outcome(window="missing-brain-events"))
+        finally:
+            conn.rollback()
+            conn.close()
+
+    def test_rollback_requires_complete_guardrail_metrics(self):
+        proposal = evo.propose_improvement(self.conn, self.policy, self.outcome(window="rollback-complete"))
+        metric = proposal["contract"]["metric_name"]
+        improved = proposal["baseline_value"] * (1.10 if proposal["direction"] == "higher" else 0.90)
+        evo.record_shadow_result(self.conn, self.policy, proposal["proposal_id"], {metric: improved})
+        evo.promote_policy(self.conn, self.policy, proposal["proposal_id"], "reviewer=qa-test;verdict=PASS")
+        with self.assertRaisesRegex(ValueError, "missing rollback metric"):
+            evo.rollback_if_regressed(self.conn, self.policy, {"verification_pass_rate": 0.9, metric: improved})
+
+
 if __name__ == "__main__":
     unittest.main()
