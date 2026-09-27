@@ -792,6 +792,27 @@ PY2
   return 1
 }
 
+resolve_performance_control_outcome() {
+  local candidate_rc="$1" control_rc=0
+  performance_rc="$candidate_rc"
+
+  if (( performance_rc == 0 || performance_rc == 75 )); then
+    return 0
+  fi
+
+  run_performance_control || control_rc=$?
+  if (( control_rc == 0 )); then
+    echo "VERIFY_FARM candidate timing failed while certified release control passed; preserving candidate failure rc=$candidate_rc" >>"$PERF_LOG"
+  elif (( control_rc == 1 )); then
+    echo "VERIFY_FARM candidate timing failed and certified release control also failed" >>"$PERF_LOG"
+    performance_rc=75
+  elif (( control_rc == 2 )); then
+    echo "VERIFY_FARM certified release control unavailable; preserving candidate failure" >>"$PERF_LOG"
+  else
+    echo "VERIFY_FARM certified release control returned unexpected rc=$control_rc; preserving candidate failure" >>"$PERF_LOG"
+  fi
+}
+
 run_local_tests() {
   git -C "$BASE" worktree add --detach "$TEST_WT" "$SHA" >/dev/null
   prepare_deps "$TEST_WT"
@@ -1044,14 +1065,7 @@ PY2
       fi
 
       if (( performance_rc != 0 && performance_rc != 75 )); then
-        control_rc=0
-        run_performance_control || control_rc=$?
-        if (( control_rc == 1 )); then
-          echo "VERIFY_FARM candidate timing failed and certified release control also failed"           >>"$PERF_LOG"
-          performance_rc=75
-        elif (( control_rc == 2 )); then
-          echo "VERIFY_FARM certified release control unavailable; preserving candidate failure"           >>"$PERF_LOG"
-        fi
+        resolve_performance_control_outcome "$performance_rc"
       fi
     fi
   fi

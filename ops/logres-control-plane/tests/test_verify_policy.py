@@ -207,6 +207,35 @@ class VerifyFarmE2EPolicyTests(unittest.TestCase):
         self.assertIn('certified release control FAIL; timing environment is inconclusive', text)
         self.assertIn('performance_control_log=$PERF_CONTROL_LOG', text)
 
+    def test_candidate_failure_survives_successful_release_control(self):
+        text = SCRIPT.read_text()
+        start = text.index('resolve_performance_control_outcome()')
+        end = text.index('run_local_tests()', start)
+        helper = text[start:end]
+        script = helper + r'''
+PERF_LOG=/tmp/perf-outcome-test.log
+run_performance_control() { return "$CONTROL_RC"; }
+CONTROL_RC=0
+performance_rc=0
+resolve_performance_control_outcome 17
+printf 'control-pass=%s\n' "$performance_rc"
+CONTROL_RC=1
+performance_rc=0
+resolve_performance_control_outcome 17
+printf 'control-fail=%s\n' "$performance_rc"
+CONTROL_RC=2
+performance_rc=0
+resolve_performance_control_outcome 17
+printf 'control-unavailable=%s\n' "$performance_rc"
+'''
+        proc = subprocess.run(
+            ['bash', '-c', script], text=True, capture_output=True, check=False
+        )
+        self.assertEqual(0, proc.returncode, proc.stderr)
+        self.assertIn('control-pass=17', proc.stdout)
+        self.assertIn('control-fail=75', proc.stdout)
+        self.assertIn('control-unavailable=17', proc.stdout)
+
     def test_performance_midrun_host_contention_defers_measurement(self):
         text = SCRIPT.read_text()
         self.assertIn('PERF_PRESSURE_LOG=', text)
