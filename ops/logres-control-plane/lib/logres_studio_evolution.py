@@ -90,17 +90,14 @@ def _finite(value: Any, label: str) -> float:
 
 
 def _brain_event(conn: sqlite3.Connection, event_type: str, subject: str, body: str, meta: Mapping[str, Any]) -> None:
-    try:
-        conn.execute(
-            """insert into brain_events(ts_epoch,ts,sender,recipient,event_type,priority,task_id,subject,body,dedupe_key,meta_json)
-               values(?,?,?,?,?,?,?,?,?,?,?)""",
-            (time.time(), _now(), "studio-evolution", "ALL", event_type, 1,
-             "AUTONOMOUS-STUDIO-CLOSED-LOOP-001", subject, body,
-             hashlib.sha256((event_type+subject+json.dumps(dict(meta),sort_keys=True)).encode()).hexdigest(),
-             json.dumps(dict(meta), sort_keys=True)),
-        )
-    except sqlite3.OperationalError:
-        return
+    conn.execute(
+        """insert into brain_events(ts_epoch,ts,sender,recipient,event_type,priority,task_id,subject,body,dedupe_key,meta_json)
+           values(?,?,?,?,?,?,?,?,?,?,?)""",
+        (time.time(), _now(), "studio-evolution", "ALL", event_type, 1,
+         "AUTONOMOUS-STUDIO-CLOSED-LOOP-001", subject, body,
+         hashlib.sha256((event_type+subject+json.dumps(dict(meta),sort_keys=True)).encode()).hexdigest(),
+         json.dumps(dict(meta), sort_keys=True)),
+    )
 
 
 def _decision(conn: sqlite3.Connection, proposal_id: int | None, phase: str, verdict: str, details: Mapping[str, Any]) -> int:
@@ -296,9 +293,15 @@ def rollback_if_regressed(conn: sqlite3.Connection, policy: Mapping[str, Any], m
     row = conn.execute("select source_proposal_id from studio_policy_versions where version=?", (active,)).fetchone()
     proposal = _proposal(conn, int(row[0])) if row and row[0] is not None else None
     guard = policy.get("rollback", {})
-    verification = _finite(metrics.get("verification_pass_rate", 1.0), "verification_pass_rate")
-    rework = _finite(metrics.get("rework_rate", 0.0), "rework_rate")
-    regressions = _finite(metrics.get("regressions", 0.0), "regressions")
+    required = {"verification_pass_rate", "rework_rate", "regressions"}
+    if proposal is not None:
+        required.add(str(proposal["metric_name"]))
+    missing = sorted(key for key in required if key not in metrics)
+    if missing:
+        raise ValueError("missing rollback metric: " + ",".join(missing))
+    verification = _finite(metrics["verification_pass_rate"], "verification_pass_rate")
+    rework = _finite(metrics["rework_rate"], "rework_rate")
+    regressions = _finite(metrics["regressions"], "regressions")
     breached = verification < float(guard.get("verification_pass_rate_min", 0.0)) or rework > float(guard.get("rework_rate_max", 1.0)) or regressions > float(guard.get("regressions_max", 1e9))
     if proposal is not None and proposal["metric_name"] in metrics:
         objective = _finite(metrics[proposal["metric_name"]], str(proposal["metric_name"]))
