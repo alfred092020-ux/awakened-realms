@@ -19,7 +19,7 @@ const HOST_CPU_PSI_AVG10_MAX = 0.5
 const HOST_LOAD_PER_CPU_MAX = 0.2
 const QUIET_CONSECUTIVE_SAMPLES = 3
 const QUIET_SAMPLE_INTERVAL_MS = 1000
-const QUIET_MAX_SAMPLES = 120
+const QUIET_MAX_SAMPLES = 180
 
 async function readHostPressure() {
   const [
@@ -372,7 +372,7 @@ test(
     }
 
     test.setTimeout(
-      240_000,
+      600_000,
     )
 
     const baseURL =

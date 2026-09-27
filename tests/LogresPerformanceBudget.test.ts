@@ -481,6 +481,18 @@ describe(
         expect(
           performanceSpecSource,
         ).toMatch(
+          /QUIET_MAX_SAMPLES\s*=\s*180/,
+        )
+
+        expect(
+          performanceSpecSource,
+        ).toMatch(
+          /test\.setTimeout\(\s*600_000,?\s*\)/,
+        )
+
+        expect(
+          performanceSpecSource,
+        ).toMatch(
           /await waitForQuietHost\(\)[\s\S]*?chromium\.launch\(/,
         )
       },
