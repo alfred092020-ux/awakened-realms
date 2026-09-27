@@ -57,6 +57,27 @@ def read_workers(**env_updates):
     )
 
 
+def repo_head():
+    return subprocess.check_output(
+        ["git", "-C", str(REPO_ROOT), "rev-parse", "HEAD"], text=True
+    ).strip()
+
+
+def run_real_performance_selftest(*, benchmark_rc, pressure_rc, control_rc):
+    env = policy_env(
+        LOGRES_REPO_ROOT=str(REPO_ROOT),
+        LOGRES_CONTROL_BIN="/bin/true",
+        LOGRES_VERIFY_FARM_PERF_SELFTEST="1",
+        LOGRES_VERIFY_FARM_SELFTEST_BENCHMARK_RC=str(benchmark_rc),
+        LOGRES_VERIFY_FARM_SELFTEST_PRESSURE_RC=str(pressure_rc),
+        LOGRES_VERIFY_FARM_SELFTEST_CONTROL_RC=str(control_rc),
+        LOGRES_REMOTE_VERIFY_ENABLED="0",
+    )
+    return subprocess.run(
+        [str(SCRIPT), repo_head()], text=True, capture_output=True, env=env, check=False
+    )
+
+
 class VerifyFarmE2EPolicyTests(unittest.TestCase):
     def test_low_core_host_defaults_to_one_worker(self):
         result = read_workers(LOGRES_CPU_COUNT_OVERRIDE="7")
@@ -285,6 +306,49 @@ printf 'pid=%s rc=%s\n' "$PERF_PRESSURE_PID" "$PERF_PRESSURE_MONITOR_RC"
         )
         self.assertEqual(0, proc.returncode, proc.stderr)
         self.assertIn('pid= rc=0', proc.stdout)
+
+    def test_real_verify_farm_executes_performance_verdict_matrix(self):
+        cases = (
+            (0, 1, 0, 0),
+            (17, 1, 0, 17),
+            (17, 1, 1, 75),
+            (17, 1, 2, 17),
+            (0, 0, 0, 75),
+            (0, 2, 0, 2),
+        )
+        for benchmark_rc, pressure_rc, control_rc, expected in cases:
+            with self.subTest(
+                benchmark_rc=benchmark_rc, pressure_rc=pressure_rc, control_rc=control_rc
+            ):
+                proc = run_real_performance_selftest(
+                    benchmark_rc=benchmark_rc,
+                    pressure_rc=pressure_rc,
+                    control_rc=control_rc,
+                )
+                self.assertEqual(expected, proc.returncode, proc.stderr)
+                self.assertIn(
+                    f"VERIFY_FARM SELFTEST performance_rc={expected}", proc.stdout
+                )
+
+    def test_real_verify_farm_cleanup_stops_monitor_on_exit_failure_and_term(self):
+        for mode, expected_rc in (("success", 0), ("fail", 2), ("term", 143)):
+            with self.subTest(mode=mode), tempfile.TemporaryDirectory() as td:
+                pid_file = Path(td) / "monitor.pid"
+                env = policy_env(
+                    LOGRES_REPO_ROOT=str(REPO_ROOT),
+                    LOGRES_CONTROL_BIN="/bin/true",
+                    LOGRES_VERIFY_FARM_CLEANUP_SELFTEST=mode,
+                    LOGRES_VERIFY_FARM_SELFTEST_PID_FILE=str(pid_file),
+                    LOGRES_REMOTE_VERIFY_ENABLED="0",
+                )
+                proc = subprocess.run(
+                    [str(SCRIPT), repo_head()],
+                    text=True, capture_output=True, env=env, check=False,
+                )
+                self.assertEqual(expected_rc, proc.returncode, proc.stderr)
+                monitor_pid = int(pid_file.read_text().strip())
+                with self.assertRaises(ProcessLookupError):
+                    os.kill(monitor_pid, 0)
 
     def test_performance_midrun_host_contention_defers_measurement(self):
         text = SCRIPT.read_text()

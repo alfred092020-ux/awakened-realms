@@ -538,7 +538,7 @@ fi
 prepare_cache_dimensions
 
 cleanup() {
-  rc=$?
+  local rc="${1:-$?}"
   trap - EXIT INT TERM
   performance_host_monitor_stop
   git -C "$BASE" worktree remove --force "$TEST_WT" >/dev/null 2>&1 || true
@@ -555,7 +555,9 @@ cleanup() {
   "$CONTROL" record-verify "$REF" "$SHA" full-e2e "$status" "$dur"     "verify-farm:$VERIFY_PATH+$E2E_VERIFY_TAG" >/dev/null 2>&1 || true
   exit $rc
 }
-trap cleanup EXIT INT TERM
+trap 'cleanup $?' EXIT
+trap 'cleanup 130' INT
+trap 'cleanup 143' TERM
 
 prepare_deps() {
   local wt="$1"
@@ -862,6 +864,34 @@ resolve_performance_measurement_outcome() {
     resolve_performance_control_outcome "$performance_rc"
   fi
 }
+
+# Bounded integration hooks used only by verifier-policy tests. They execute
+# this production script and the same verdict/cleanup functions, but exit
+# before creating browser worktrees or running the expensive farm.
+if [[ "${LOGRES_VERIFY_FARM_PERF_SELFTEST:-0}" == "1" ]]; then
+  injected_control_rc="${LOGRES_VERIFY_FARM_SELFTEST_CONTROL_RC:-0}"
+  run_performance_control() { return "$injected_control_rc"; }
+  performance_rc="${LOGRES_VERIFY_FARM_SELFTEST_INITIAL_RC:-0}"
+  resolve_performance_measurement_outcome \
+    "${LOGRES_VERIFY_FARM_SELFTEST_BENCHMARK_RC:-0}" \
+    "${LOGRES_VERIFY_FARM_SELFTEST_PRESSURE_RC:-1}"
+  echo "VERIFY_FARM SELFTEST performance_rc=$performance_rc"
+  exit "$performance_rc"
+fi
+
+if [[ -n "${LOGRES_VERIFY_FARM_CLEANUP_SELFTEST:-}" ]]; then
+  sleep 300 &
+  PERF_PRESSURE_PID=$!
+  if [[ -n "${LOGRES_VERIFY_FARM_SELFTEST_PID_FILE:-}" ]]; then
+    printf '%s\n' "$PERF_PRESSURE_PID" >"$LOGRES_VERIFY_FARM_SELFTEST_PID_FILE"
+  fi
+  case "$LOGRES_VERIFY_FARM_CLEANUP_SELFTEST" in
+    success) exit 0 ;;
+    fail) exit 2 ;;
+    term) kill -TERM "$$"; sleep 1; exit 99 ;;
+    *) echo "unknown cleanup selftest mode" >&2; exit 2 ;;
+  esac
+fi
 
 run_local_tests() {
   git -C "$BASE" worktree add --detach "$TEST_WT" "$SHA" >/dev/null
