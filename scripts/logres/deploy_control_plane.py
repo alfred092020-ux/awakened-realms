@@ -196,6 +196,7 @@ MANIFEST: dict[str, tuple[str, int]] = {
     "lib/logres_peer_consultation.py": ("lib/logres_peer_consultation.py", 0o600),
     "migrations/20260926_001_superbrain_v2.sql": ("migrations/20260926_001_superbrain_v2.sql", 0o600),
     "migrations/20260926_002_superbrain_selfheal_dispatch.sql": ("migrations/20260926_002_superbrain_selfheal_dispatch.sql", 0o600),
+    "migrations/20260926_003_superbrain_wake_feedback.sql": ("migrations/20260926_003_superbrain_wake_feedback.sql", 0o600),
     "apparmor/usr.bin.bwrap.logres": ("apparmor/usr.bin.bwrap.logres", 0o600),
     "systemd/logres-devin-worker@.service": ("systemd/logres-devin-worker@.service", 0o644),
     "systemd/logres-devin-lead.service": ("systemd/logres-devin-lead.service", 0o644),

@@ -222,6 +222,7 @@ PRODUCTION_FILES = (
     "lib/logres_superbrain.py",
     "migrations/20260926_001_superbrain_v2.sql",
     "migrations/20260926_002_superbrain_selfheal_dispatch.sql",
+    "migrations/20260926_003_superbrain_wake_feedback.sql",
     "systemd/logres-devin-worker@.service",
     "systemd/logres-devin-lead.service",
 )
@@ -316,6 +317,17 @@ class DeployControlPlaneTests(unittest.TestCase):
             self.assertTrue(
                 all("openai_api_key" not in str(item.destination) for item in deployed)
             )
+
+    def test_superbrain_wake_feedback_migration_is_deployed_privately(self):
+        migrations = (
+            "migrations/20260926_001_superbrain_v2.sql",
+            "migrations/20260926_002_superbrain_selfheal_dispatch.sql",
+            "migrations/20260926_003_superbrain_wake_feedback.sql",
+        )
+
+        for migration in migrations:
+            self.assertIn(migration, MANIFEST)
+            self.assertEqual(0o600, MANIFEST[migration][1])
 
     def test_repository_manifest_is_closed_over_local_python_imports(self):
         with tempfile.TemporaryDirectory() as td:
