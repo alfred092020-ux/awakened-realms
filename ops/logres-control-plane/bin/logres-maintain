@@ -9,7 +9,7 @@ mkdir -p /home/ubuntu/logres/logs
 
 {
   echo "=== $(date -Is) ==="
-  /home/ubuntu/logres/bin/logres-storage-guard apply || true
+  /home/ubuntu/logres/bin/logres-storage-guard apply
   git -C "$BASE" worktree prune
   git -C "$BASE" maintenance run --auto || git -C "$BASE" gc --auto
   git -C "$BASE" commit-graph write --reachable --changed-paths || true

@@ -13,6 +13,7 @@ REPO_ROOT = CONTROL_ROOT.parents[1]
 sys.path.insert(0, str(CONTROL_ROOT / "lib"))
 
 from logres_storage_guard import (
+    StorageGuardError,
     apply_guard,
     classify_pressure,
     fanout_guard,
@@ -240,6 +241,7 @@ class StorageGuardTests(unittest.TestCase):
             manifest = Path(result["manifest_path"])
             self.assertTrue(manifest.is_file())
             saved = json.loads(manifest.read_text())
+            self.assertEqual("COMPLETE", saved["status"])
             self.assertTrue(saved["direct_cleanup"]["actions"])
             self.assertTrue(any("logres-workspace-gc" in " ".join(c) for c in calls))
             self.assertTrue(any("logres-worktree-gc" in " ".join(c) for c in calls))
@@ -268,6 +270,126 @@ class StorageGuardTests(unittest.TestCase):
             self.assertEqual("high", recovered["band"])
             self.assertTrue(recovered["brownout"]["restored"])
             self.assertTrue(json.loads(config.read_text())["swarm"]["enabled"])
+
+    def test_manifest_prepare_failure_aborts_before_any_destructive_action(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            for name in ("scratch", "logs", "cache", "artifacts", "control", "index", "bin"):
+                (root / name).mkdir(parents=True, exist_ok=True)
+            victim = root / "scratch" / "capacity-old"
+            victim.write_bytes(b"x" * 64)
+            old = time.time() - 30 * 3600
+            os.utime(victim, (old, old))
+            (root / "control" / "autoflow.json").write_text(json.dumps({"swarm": {"enabled": True}}))
+            conn = sqlite3.connect(":memory:")
+            conn.executescript(
+                """
+                create table brain_events(artifact_path text);
+                create table integration_preflights(verification_log text);
+                create table regressions(logs_json text);
+                create table device_proofs(artifact_path text);
+                """
+            )
+            calls = []
+
+            def runner(argv, **kwargs):
+                calls.append(argv)
+                return subprocess.CompletedProcess(argv, 0, stdout="ok", stderr="")
+
+            def broken_writer(_path, _payload):
+                raise OSError("audit storage unavailable")
+
+            with self.assertRaisesRegex(OSError, "audit storage unavailable"):
+                apply_guard(
+                    root,
+                    conn,
+                    self.policy(),
+                    runner=runner,
+                    free_bytes_fn=lambda _path: 35 * 1024**3,
+                    manifest_writer=broken_writer,
+                )
+            conn.close()
+            self.assertTrue(victim.exists())
+            self.assertEqual([], calls)
+            self.assertTrue(json.loads((root / "control" / "autoflow.json").read_text())["swarm"]["enabled"])
+
+    def test_delegated_gc_failure_stops_direct_cleanup_with_failure_manifest(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            for name in ("scratch", "logs", "cache", "artifacts", "control", "index", "bin"):
+                (root / name).mkdir(parents=True, exist_ok=True)
+            victim = root / "scratch" / "capacity-old"
+            victim.write_bytes(b"x" * 64)
+            old = time.time() - 30 * 3600
+            os.utime(victim, (old, old))
+            (root / "control" / "autoflow.json").write_text(json.dumps({"swarm": {"enabled": True}}))
+            conn = sqlite3.connect(":memory:")
+            conn.executescript(
+                """
+                create table brain_events(artifact_path text);
+                create table integration_preflights(verification_log text);
+                create table regressions(logs_json text);
+                create table device_proofs(artifact_path text);
+                """
+            )
+            calls = []
+
+            def failing_runner(argv, **kwargs):
+                manifests = list((root / "artifacts" / "storage-guard").glob("*.json"))
+                self.assertEqual(1, len(manifests), "audit manifest must exist before delegated GC")
+                calls.append(argv)
+                return subprocess.CompletedProcess(argv, 7, stdout="partial", stderr="delegated failure")
+
+            with self.assertRaises(StorageGuardError) as caught:
+                apply_guard(
+                    root,
+                    conn,
+                    self.policy(),
+                    runner=failing_runner,
+                    free_bytes_fn=lambda _path: 35 * 1024**3,
+                )
+            conn.close()
+            self.assertTrue(victim.exists())
+            self.assertEqual(1, len(calls))
+            manifest = Path(caught.exception.manifest_path)
+            self.assertTrue(manifest.is_file())
+            saved = json.loads(manifest.read_text())
+            self.assertEqual("FAILED_DELEGATED_GC", saved["status"])
+            self.assertEqual(7, saved["delegated_cleanup"][0]["returncode"])
+            self.assertIsNone(saved.get("direct_cleanup"))
+
+    def test_brownout_failure_is_audited_and_aborts_before_cleanup(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            for name in ("scratch", "logs", "cache", "artifacts", "control", "index", "bin"):
+                (root / name).mkdir(parents=True, exist_ok=True)
+            victim = root / "scratch" / "capacity-old"
+            victim.write_bytes(b"x" * 64)
+            old = time.time() - 30 * 3600
+            os.utime(victim, (old, old))
+            (root / "control" / "autoflow.json").write_text("{broken-json")
+            conn = sqlite3.connect(":memory:")
+            calls = []
+
+            def runner(argv, **kwargs):
+                calls.append(argv)
+                return subprocess.CompletedProcess(argv, 0, stdout="ok", stderr="")
+
+            with self.assertRaises(StorageGuardError) as caught:
+                apply_guard(
+                    root,
+                    conn,
+                    self.policy(),
+                    runner=runner,
+                    free_bytes_fn=lambda _path: 25 * 1024**3,
+                )
+            conn.close()
+            self.assertTrue(victim.exists())
+            self.assertEqual([], calls)
+            manifest = Path(caught.exception.manifest_path)
+            saved = json.loads(manifest.read_text())
+            self.assertEqual("FAILED_BROWNOUT", saved["status"])
+            self.assertIn("JSONDecodeError", saved["error"])
 
     def test_critical_brownout_disables_swarm_and_safe_recovery_restores(self):
         with tempfile.TemporaryDirectory() as td:
@@ -322,6 +444,7 @@ class StorageGuardTests(unittest.TestCase):
         )
         maintain = (CONTROL_ROOT / "bin" / "logres-maintain").read_text()
         self.assertIn("logres-storage-guard apply", maintain)
+        self.assertNotIn("logres-storage-guard apply || true", maintain)
         self.assertNotIn("logres-workspace-gc apply", maintain)
         self.assertNotIn("logres-worktree-gc --apply", maintain)
         self.assertNotIn("tail -c 5242880", maintain)

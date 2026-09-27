@@ -14,6 +14,12 @@ GIB = 1024 ** 3
 BANDS = ("warning", "high", "critical")
 
 
+class StorageGuardError(RuntimeError):
+    def __init__(self, message: str, *, manifest_path: str | Path):
+        super().__init__(message)
+        self.manifest_path = str(manifest_path)
+
+
 def _resolve(root: Path, value: str | Path) -> Path:
     path = Path(value)
     return path if path.is_absolute() else Path(root) / path
@@ -478,24 +484,50 @@ def run_existing_gc(
     outcomes = []
     for command in commands:
         result = runner(command, text=True, capture_output=True, check=False)
-        outcomes.append(
-            {
-                "command": command,
-                "returncode": int(result.returncode),
-                "stdout": str(result.stdout or "")[-4000:],
-                "stderr": str(result.stderr or "")[-2000:],
-            }
-        )
+        outcome = {
+            "command": command,
+            "returncode": int(result.returncode),
+            "stdout": str(result.stdout or "")[-4000:],
+            "stderr": str(result.stderr or "")[-2000:],
+        }
+        outcomes.append(outcome)
+        if result.returncode:
+            break
     return outcomes
 
 
-def _write_manifest(root: Path, policy: Mapping[str, Any], payload: dict[str, Any]) -> Path:
+def _manifest_path(root: Path, policy: Mapping[str, Any]) -> Path:
     audit_root = _resolve(root, policy.get("audit_root", "artifacts/storage-guard"))
     audit_root.mkdir(parents=True, exist_ok=True)
     stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S.%fZ")
-    path = audit_root / f"storage-guard-{stamp}.json"
-    _atomic_json(path, payload)
-    return path
+    return audit_root / f"storage-guard-{stamp}.json"
+
+
+def _write_manifest(
+    path: Path,
+    payload: Mapping[str, Any],
+    *,
+    writer: Callable[[Path, Mapping[str, Any]], None] = _atomic_json,
+) -> Path:
+    writer(Path(path), payload)
+    return Path(path)
+
+
+def _failed_manifest(
+    manifest: Path,
+    payload: dict[str, Any],
+    *,
+    status: str,
+    error: Exception | str,
+    writer: Callable[[Path, Mapping[str, Any]], None],
+) -> None:
+    payload["status"] = status
+    payload["error"] = (
+        error if isinstance(error, str)
+        else f"{type(error).__name__}: {error}"
+    )
+    payload["failed_at"] = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    _write_manifest(manifest, payload, writer=writer)
 
 
 def apply_guard(
@@ -506,21 +538,98 @@ def apply_guard(
     now_epoch: float | None = None,
     runner: Callable[..., subprocess.CompletedProcess] = subprocess.run,
     free_bytes_fn: Callable[[Path], int] = filesystem_free_bytes,
+    manifest_writer: Callable[[Path, Mapping[str, Any]], None] = _atomic_json,
 ) -> dict[str, Any]:
     root = Path(root)
     checked = validate_policy(policy)
     before_inventory = inventory_storage(root, checked)
     before_free = int(free_bytes_fn(root))
     initial_pressure = classify_pressure(before_free, checked)
+    protected = collect_protected_paths(conn)
+    initial_plan = plan_cleanup(
+        root,
+        checked,
+        initial_pressure["band"],
+        now_epoch=now_epoch,
+        protected_paths=protected,
+    )
     brownout_cfg = checked.get("brownout", {})
     config_path = _resolve(root, brownout_cfg.get("autoflow_config", "control/autoflow.json"))
     state_path = _resolve(root, brownout_cfg.get("state_path", "control/storage-pressure.json"))
-    brownout_before = sync_brownout(config_path, state_path, critical=initial_pressure["band"] == "critical")
+    manifest = _manifest_path(root, checked)
+    payload: dict[str, Any] = {
+        "schema": "logres-storage-guard-run/1",
+        "status": "PREPARED",
+        "created_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "root": str(root),
+        "initial_pressure": initial_pressure,
+        "before_free_bytes": before_free,
+        "inventory_before": before_inventory,
+        "protected_reference_count": len(protected),
+        "initial_cleanup_plan": initial_plan,
+        "delegated_cleanup": [],
+        "direct_cleanup": None,
+        "brownout_before": None,
+        "brownout_after": None,
+        "safety": {
+            "brain_writes_preserved": True,
+            "verifier_writes_preserved": True,
+            "protected_roots": list(checked.get("protected_roots", [])),
+            "direct_worktree_deletion": False,
+            "workspace_gc_delegated": True,
+            "audit_manifest_precedes_destructive_actions": True,
+        },
+    }
+    # Fail before any mutation if the audit trail cannot be established.
+    _write_manifest(manifest, payload, writer=manifest_writer)
+
+    try:
+        brownout_before = sync_brownout(
+            config_path,
+            state_path,
+            critical=initial_pressure["band"] == "critical",
+        )
+    except Exception as exc:
+        _failed_manifest(
+            manifest,
+            payload,
+            status="FAILED_BROWNOUT",
+            error=exc,
+            writer=manifest_writer,
+        )
+        raise StorageGuardError(
+            f"storage brownout failed: {type(exc).__name__}: {exc}",
+            manifest_path=manifest,
+        ) from exc
+    payload["brownout_before"] = brownout_before
+    _write_manifest(manifest, payload, writer=manifest_writer)
 
     delegated = run_existing_gc(root, checked, runner=runner)
+    payload["delegated_cleanup"] = delegated
+    failed_delegated = next(
+        (item for item in delegated if int(item.get("returncode", 0)) != 0),
+        None,
+    )
+    if failed_delegated is not None:
+        _failed_manifest(
+            manifest,
+            payload,
+            status="FAILED_DELEGATED_GC",
+            error=(
+                "delegated cleanup failed rc="
+                f"{failed_delegated['returncode']} command="
+                + " ".join(str(x) for x in failed_delegated.get("command", []))
+            ),
+            writer=manifest_writer,
+        )
+        raise StorageGuardError(
+            "delegated cleanup failed; direct cleanup aborted",
+            manifest_path=manifest,
+        )
+    _write_manifest(manifest, payload, writer=manifest_writer)
+
     after_gc_free = int(free_bytes_fn(root))
     cleanup_pressure = classify_pressure(after_gc_free, checked)
-    protected = collect_protected_paths(conn)
     plan = plan_cleanup(
         root,
         checked,
@@ -531,35 +640,45 @@ def apply_guard(
     direct = _apply_cleanup(plan)
     final_free = int(free_bytes_fn(root))
     final_pressure = classify_pressure(final_free, checked)
-    brownout_after = sync_brownout(config_path, state_path, critical=final_pressure["band"] == "critical")
+    try:
+        brownout_after = sync_brownout(
+            config_path,
+            state_path,
+            critical=final_pressure["band"] == "critical",
+        )
+    except Exception as exc:
+        payload.update(
+            cleanup_pressure=cleanup_pressure,
+            cleanup_plan=plan,
+            direct_cleanup=direct,
+        )
+        _failed_manifest(
+            manifest,
+            payload,
+            status="FAILED_BROWNOUT",
+            error=exc,
+            writer=manifest_writer,
+        )
+        raise StorageGuardError(
+            f"storage brownout finalization failed: {type(exc).__name__}: {exc}",
+            manifest_path=manifest,
+        ) from exc
+
     after_inventory = inventory_storage(root, checked)
-    payload = {
-        "schema": "logres-storage-guard-run/1",
-        "created_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
-        "root": str(root),
-        "initial_pressure": initial_pressure,
-        "cleanup_pressure": cleanup_pressure,
-        "final_pressure": final_pressure,
-        "before_free_bytes": before_free,
-        "after_gc_free_bytes": after_gc_free,
-        "after_free_bytes": final_free,
-        "filesystem_reclaimed_bytes": max(0, final_free - before_free),
-        "inventory_before": before_inventory,
-        "inventory_after": after_inventory,
-        "protected_reference_count": len(protected),
-        "delegated_cleanup": delegated,
-        "cleanup_plan": plan,
-        "direct_cleanup": direct,
-        "brownout_before": brownout_before,
-        "brownout_after": brownout_after,
-        "safety": {
-            "brain_writes_preserved": True,
-            "verifier_writes_preserved": True,
-            "protected_roots": list(checked.get("protected_roots", [])),
-            "direct_worktree_deletion": False,
-            "workspace_gc_delegated": True,
-        },
-    }
-    manifest = _write_manifest(root, checked, payload)
+    payload.update(
+        status="COMPLETE",
+        cleanup_pressure=cleanup_pressure,
+        final_pressure=final_pressure,
+        after_gc_free_bytes=after_gc_free,
+        after_free_bytes=final_free,
+        filesystem_reclaimed_bytes=max(0, final_free - before_free),
+        inventory_after=after_inventory,
+        cleanup_plan=plan,
+        direct_cleanup=direct,
+        brownout_after=brownout_after,
+        completed_at=datetime.now(timezone.utc).isoformat(timespec="seconds"),
+    )
+    _write_manifest(manifest, payload, writer=manifest_writer)
     payload["manifest_path"] = str(manifest)
     return payload
+
