@@ -182,6 +182,11 @@ class LinearAdapterTests(unittest.TestCase):
         self.assertEqual("Logres Reconstruction", result["intent"]["payload"]["project"])
         self.assertEqual(["Autonomy", "Brain"], result["intent"]["payload"]["labels"])
         self.assertEqual(projection["projection_hash"], result["intent"]["projection_hash"])
+        repeated = plan_task_sync(
+            self.conn, "TASK-1", "logres", chat_id="sync-chat", now_epoch=time.time()
+        )
+        self.assertEqual(result["intent"]["id"], repeated["intent"]["id"])
+        self.assertEqual(1, len(list_intents(self.conn, provider="linear")))
 
         upsert_binding(
             self.conn,
