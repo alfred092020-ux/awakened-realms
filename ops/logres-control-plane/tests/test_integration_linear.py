@@ -143,6 +143,17 @@ class LinearAdapterTests(unittest.TestCase):
         )
         self.assertNotIn("private note", json.dumps(first["create_payload"]))
 
+    def test_priority_mapping_preserves_brain_urgency_without_linear_none(self):
+        self._target()
+        for brain_priority, linear_priority in ((0, 1), (1, 2), (2, 3), (3, 4), (9, 4)):
+            with self.subTest(brain_priority=brain_priority):
+                self.conn.execute(
+                    "update tasks set priority=? where id='TASK-1'",
+                    (brain_priority,),
+                )
+                projected = project_task(self.conn, "TASK-1", "logres")
+                self.assertEqual(linear_priority, projected["create_payload"]["priority"])
+
     def test_create_intent_is_idempotent_for_same_projection(self):
         self._target()
         self._capability()

@@ -17,6 +17,7 @@
 - Use capability `linear.issue.write` before creating any write intent.
 - Linear may never mutate Brain leases, integration authority, evidence confidence, Git branches, or `main`.
 - Projection payloads must be deterministic, bounded, sanitized, and compatible with Linear `save_issue` fields.
+- Priority contract: Brain P0→Linear 1 (Urgent), P1→2 (High), P2→3 (Medium), P3+→4 (Low); Linear 0 (None) is never emitted for a canonical Brain task.
 
 ## Review Focus
 
