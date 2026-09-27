@@ -153,30 +153,33 @@ def main(argv=None) -> int:
                 knowledge_limit=max(1, min(args.knowledge_limit, 30)),
                 transcript_limit=max(1, min(args.transcript_limit, 24)),
             )
+            out = json.dumps(pack, indent=2, sort_keys=True, ensure_ascii=False) + "\n"
+            conn.execute("begin immediate")
             final_now = time.time()
             final_lease = conn.execute(
                 "select 1 from brain_task_leases where chat_id=? and task_id=? and lease_until_epoch>? limit 1",
                 (args.chat, task_id, final_now),
             ).fetchone()
             if not final_lease:
+                conn.rollback()
                 print(
                     f"context-pack: lease expired before context emission for chat: {args.chat}",
                     file=sys.stderr,
                 )
                 return 5
+            if args.output_file:
+                Path(args.output_file).write_text(out)
+            else:
+                sys.stdout.write(out)
+                sys.stdout.flush()
+            conn.commit()
+            return 0
         except (sqlite3.Error, ValueError) as exc:
             print(f"context-pack: {exc}", file=sys.stderr)
             return 3
         finally:
             if "conn" in locals():
                 conn.close()
-        out = json.dumps(pack, indent=2, sort_keys=True, ensure_ascii=False) + "\n"
-        if args.output_file:
-            Path(args.output_file).write_text(out)
-        else:
-            sys.stdout.write(out)
-        return 0
-
     if not args.task_id:
         ap.error("task_id is required unless --chat is provided")
 

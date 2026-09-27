@@ -342,6 +342,46 @@ class MemoryIntelligenceTests(unittest.TestCase):
         self.assertIn("lease expired before context emission", stderr.getvalue())
         self.assertEqual("", stdout.getvalue())
 
+    def test_context_pack_emits_while_holding_final_lease_lock(self):
+        self.c.execute(
+            "create table brain_task_leases(task_id text primary key, chat_id text, lease_until_epoch real)"
+        )
+        self.c.execute(
+            "insert into brain_task_leases values(?,?,?)",
+            ("BATTLE-RENDER-001", "battle", 9999999999.0),
+        )
+        self.c.commit()
+        with tempfile.TemporaryDirectory() as td:
+            db = Path(td) / "control.sqlite"
+            disk = sqlite3.connect(db)
+            self.c.backup(disk)
+            disk.close()
+            module = runpy.run_path(str(CONTEXT_PACK), run_name="logres_context_pack_lock_test")
+
+            class LockProbe(io.StringIO):
+                locked = False
+
+                def write(self, text):
+                    probe = sqlite3.connect(db, timeout=0.01)
+                    try:
+                        probe.execute(
+                            "update brain_task_leases set lease_until_epoch=0 where task_id=?",
+                            ("BATTLE-RENDER-001",),
+                        )
+                        probe.commit()
+                    except sqlite3.OperationalError:
+                        self.locked = True
+                    finally:
+                        probe.close()
+                    return super().write(text)
+
+            stdout = LockProbe()
+            with contextlib.redirect_stdout(stdout):
+                rc = module["main"](["--chat", "battle", "--db", str(db)])
+        self.assertEqual(0, rc)
+        self.assertTrue(stdout.locked)
+        self.assertIn('"BATTLE-RENDER-001"', stdout.getvalue())
+
     def test_context_pack_chat_rejects_expired_lease(self):
         self.c.execute(
             "create table brain_task_leases(task_id text primary key, chat_id text, lease_until_epoch real)"
