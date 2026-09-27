@@ -389,18 +389,30 @@ describe(
     )
 
     it(
-      'uses three raw frame windows and median aggregation without relaxing budgets',
+      'uses three independent Chromium launches and median aggregation without relaxing budgets',
       () => {
         expect(
           performanceSpecSource,
         ).toContain(
-          'median-of-3-independent-windows',
+          'median-of-3-independent-browser-launches',
         )
 
         expect(
           performanceSpecSource,
         ).toMatch(
           /attemptIndex\s*<\s*3/,
+        )
+
+        expect(
+          performanceSpecSource,
+        ).toMatch(
+          /chromium\.launch\(/,
+        )
+
+        expect(
+          performanceSpecSource,
+        ).toContain(
+          'await browser.close()',
         )
 
         expect(

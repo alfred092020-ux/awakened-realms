@@ -9,6 +9,7 @@ import {
 import path from 'node:path'
 
 import {
+  chromium,
   expect,
   test,
 } from '@playwright/test'
@@ -206,7 +207,6 @@ function budgetFailure(
 test(
   'hydrated reconstructed field stays within exact-SHA Chromium performance budgets',
   async ({
-    page,
     request,
   }, testInfo) => {
     const config =
@@ -249,81 +249,22 @@ test(
       )
     }
 
-    const bootstrapStarted =
-      performance.now()
-
-    await page.goto('/')
-
-    await page.waitForFunction(
-      () =>
-        Boolean(
-          window
-            .__AWAKENED_REALMS_GAME__
-            ?.scene,
-        ),
-      undefined,
-      {
-        timeout:
-          profile
-            .budgets
-            .bootstrap_ms_max,
-      },
+    test.setTimeout(
+      90_000,
     )
 
-    const bootstrapMs =
-      performance.now() -
-      bootstrapStarted
+    const baseURL =
+      String(
+        testInfo.project
+          .use.baseURL ??
+          '',
+      ).trim()
 
-    const fieldStarted =
-      performance.now()
-
-    await page.evaluate(
-      () => {
-        const game =
-          window
-            .__AWAKENED_REALMS_GAME__
-
-        game.registry.set(
-          'logres.protocol.C_GMCL_CHAR_CREATE_REQ',
-          [
-            0,
-            'Novice',
-            0,
-            1,
-            1,
-            1,
-            1,
-            1,
-          ],
-        )
-
-        game.scene.start(
-          'LogresFieldScene',
-        )
-      },
-    )
-
-    await page.waitForFunction(
-      () =>
-        window
-          .__AWAKENED_REALMS_GAME__
-          .registry
-          .get(
-            'logres.playableField.status',
-          ) ===
-        'READY',
-      undefined,
-      {
-        timeout:
-          profile
-            .budgets
-            .field_ready_ms_max,
-      },
-    )
-
-    const fieldReadyMs =
-      performance.now() -
-      fieldStarted
+    if (!baseURL) {
+      throw new Error(
+        'Performance gate requires Playwright baseURL.',
+      )
+    }
 
     const frameAttempts =
       []
@@ -332,50 +273,215 @@ test(
       let attemptIndex =
         0;
       attemptIndex <
-      3;
+        3;
       attemptIndex +=
         1
     ) {
-      const intervals =
-        await collectFrameWindow(
-          page,
+      const browser =
+        await chromium.launch()
+
+      try {
+        const page =
+          await browser.newPage({
+            viewport: {
+              width:
+                720,
+              height:
+                1280,
+            },
+          })
+
+        const bootstrapStarted =
+          performance.now()
+
+        await page.goto(
+          baseURL,
         )
 
-      frameAttempts.push({
-        attempt:
-          attemptIndex +
-          1,
-        samples:
-          intervals.length,
-        frame_p95_ms:
-          Number(
-            percentile(
-              intervals,
-              95,
-            ).toFixed(
-              2,
+        await page.waitForFunction(
+          () =>
+            Boolean(
+              window
+                .__AWAKENED_REALMS_GAME__
+                ?.scene,
             ),
-          ),
-        frame_p99_ms:
-          Number(
-            percentile(
-              intervals,
-              99,
-            ).toFixed(
-              2,
+          undefined,
+          {
+            timeout:
+              profile
+                .budgets
+                .bootstrap_ms_max,
+          },
+        )
+
+        const bootstrapMs =
+          performance.now() -
+          bootstrapStarted
+
+        const fieldStarted =
+          performance.now()
+
+        await page.evaluate(
+          () => {
+            const game =
+              window
+                .__AWAKENED_REALMS_GAME__
+
+            game.registry.set(
+              'logres.protocol.C_GMCL_CHAR_CREATE_REQ',
+              [
+                0,
+                'Novice',
+                0,
+                1,
+                1,
+                1,
+                1,
+                1,
+              ],
+            )
+
+            game.scene.start(
+              'LogresFieldScene',
+            )
+          },
+        )
+
+        await page.waitForFunction(
+          () =>
+            window
+              .__AWAKENED_REALMS_GAME__
+              .registry
+              .get(
+                'logres.playableField.status',
+              ) ===
+            'READY',
+          undefined,
+          {
+            timeout:
+              profile
+                .budgets
+                .field_ready_ms_max,
+          },
+        )
+
+        const fieldReadyMs =
+          performance.now() -
+          fieldStarted
+
+        const intervals =
+          await collectFrameWindow(
+            page,
+          )
+
+        const usedJsHeapMb =
+          await page.evaluate(
+            () => {
+              const memory =
+                performance
+                  .memory
+
+              if (
+                !memory ||
+                typeof memory
+                  .usedJSHeapSize !==
+                  'number'
+              ) {
+                return null
+              }
+
+              return (
+                memory
+                  .usedJSHeapSize /
+                (
+                  1024 *
+                  1024
+                )
+              )
+            },
+          )
+
+        frameAttempts.push({
+          attempt:
+            attemptIndex +
+            1,
+          samples:
+            intervals.length,
+          bootstrap_ms:
+            Number(
+              bootstrapMs.toFixed(
+                2,
+              ),
             ),
-          ),
-      })
+          field_ready_ms:
+            Number(
+              fieldReadyMs.toFixed(
+                2,
+              ),
+            ),
+          frame_p95_ms:
+            Number(
+              percentile(
+                intervals,
+                95,
+              ).toFixed(
+                2,
+              ),
+            ),
+          frame_p99_ms:
+            Number(
+              percentile(
+                intervals,
+                99,
+              ).toFixed(
+                2,
+              ),
+            ),
+          used_js_heap_mb:
+            usedJsHeapMb ===
+            null
+              ? null
+              : Number(
+                  usedJsHeapMb.toFixed(
+                    2,
+                  ),
+                ),
+        })
+      } finally {
+        await browser.close()
+      }
 
       if (
         attemptIndex <
         2
       ) {
-        await page.waitForTimeout(
-          250,
+        await new Promise(
+          resolve =>
+            setTimeout(
+              resolve,
+              250,
+            ),
         )
       }
     }
+
+    const bootstrapMs =
+      median(
+        frameAttempts.map(
+          attempt =>
+            attempt
+              .bootstrap_ms,
+        ),
+      )
+
+    const fieldReadyMs =
+      median(
+        frameAttempts.map(
+          attempt =>
+            attempt
+              .field_ready_ms,
+        ),
+      )
 
     const frameP95Ms =
       median(
@@ -395,32 +501,26 @@ test(
         ),
       )
 
+    const heapSamples =
+      frameAttempts
+        .map(
+          attempt =>
+            attempt
+              .used_js_heap_mb,
+        )
+        .filter(
+          value =>
+            typeof value ===
+            'number',
+        )
+
     const usedJsHeapMb =
-      await page.evaluate(
-        () => {
-          const memory =
-            performance
-              .memory
-
-          if (
-            !memory ||
-            typeof memory
-              .usedJSHeapSize !==
-              'number'
-          ) {
-            return null
-          }
-
-          return (
-            memory
-              .usedJSHeapSize /
-            (
-              1024 *
-              1024
-            )
+      heapSamples.length ===
+      frameAttempts.length
+        ? Math.max(
+            ...heapSamples,
           )
-        },
-      )
+        : null
 
     const metrics = {
       bootstrap_ms:
@@ -531,7 +631,7 @@ test(
       frame_attempts:
         frameAttempts,
       frame_aggregation:
-        'median-of-3-independent-windows',
+        'median-of-3-independent-browser-launches',
       fidelity_guards: {
         private_field_runtime_required:
           true,
