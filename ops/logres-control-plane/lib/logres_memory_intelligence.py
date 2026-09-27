@@ -114,16 +114,19 @@ def _infer_kind(text: str) -> str:
 def _infer_confidence(role: str, text: str) -> tuple[float, str]:
     low = text.lower()
     if role == "user":
-        return 0.35, "CLAIM"
-    if role == "system-note":
-        return 0.55, "CLAIM"
-    if role == "tool-summary":
-        if any(x in low for x in ("pass", "integrated", "exact sha", "hash-match", "verified")):
-            return 0.82, "SUPPORTED"
-        return 0.68, "SUPPORTED"
-    if any(x in low for x in ("verified", "full e2e", "exact sha", "hash-match")):
-        return 0.72, "SUPPORTED"
-    return 0.50, "CLAIM"
+        confidence = 0.35
+    elif role == "system-note":
+        confidence = 0.55
+    elif role == "tool-summary":
+        confidence = 0.82 if any(
+            x in low for x in ("pass", "integrated", "exact sha", "hash-match", "verified")
+        ) else 0.68
+    elif any(x in low for x in ("verified", "full e2e", "exact sha", "hash-match")):
+        confidence = 0.72
+    else:
+        confidence = 0.50
+    # Transcript-derived memory is always advisory. Brain remains operational truth.
+    return confidence, "CLAIM"
 
 
 def _sentences(text: str) -> list[str]:
@@ -149,12 +152,8 @@ def _task_candidates(text: str, metadata: dict) -> list[str]:
 
 
 def _source_sha(text: str, metadata: dict) -> str | None:
-    # A SHA mentioned in free text is only a claim, not provenance. Persist an
-    # explicit source SHA only when the journal metadata names it directly.
-    del text
-    direct = metadata.get("source_sha")
-    if isinstance(direct, str) and SHA_RE.fullmatch(direct.strip()):
-        return direct.strip().lower()
+    # Transcript memory never asserts Git provenance. Exact-SHA truth stays in Brain/Git.
+    del text, metadata
     return None
 
 
@@ -259,48 +258,6 @@ def distill_pending(conn: sqlite3.Connection, session_id: str | None = None, lim
         processed += 1
         inserted += result["inserted"]
     return {"processed_messages": processed, "inserted_facts": inserted}
-
-
-def mark_truth(conn: sqlite3.Connection, fact_id: int, status: str, *,
-               confidence: float | None = None, supersedes_id: int | None = None) -> dict:
-    ensure_schema(conn)
-    status = status.upper()
-    if status not in {"CLAIM", "SUPPORTED", "VERIFIED", "REJECTED", "SUPERSEDED"}:
-        raise ValueError(f"invalid truth status: {status}")
-    if status in {"SUPPORTED", "VERIFIED"}:
-        raise ValueError(f"generic memory marking cannot promote facts to {status}")
-    current = conn.execute(
-        "select confidence from memory_facts where id=?",
-        (fact_id,),
-    ).fetchone()
-    if not current:
-        raise ValueError(f"unknown memory fact: {fact_id}")
-    if confidence is not None and not 0.0 <= float(confidence) <= 1.0:
-        raise ValueError("confidence must be between 0 and 1")
-    if confidence is not None and float(confidence) > float(current[0]):
-        raise ValueError("generic memory marking cannot increase confidence")
-    fields = ["truth_status=?", "updated_at=datetime('now')"]
-    values: list[object] = [status]
-    if confidence is not None:
-        fields.append("confidence=?")
-        values.append(float(confidence))
-    if supersedes_id is not None:
-        fields.append("supersedes_id=?")
-        values.append(int(supersedes_id))
-    values.append(fact_id)
-    conn.execute(f"update memory_facts set {','.join(fields)} where id=?", values)
-    conn.commit()
-    row = conn.execute(
-        """
-        select id,fingerprint,session_id,message_id,ordinal,chat_id,role,kind,
-               statement,confidence,truth_status,task_id,source_sha
-          from memory_facts where id=?
-        """,
-        (fact_id,),
-    ).fetchone()
-    if not row:
-        raise ValueError(f"unknown memory fact: {fact_id}")
-    return _fact_dict(row)
 
 
 def relevant_facts(conn: sqlite3.Connection, task_id: str, *, terms: Iterable[str] = (),

@@ -16,7 +16,6 @@ from logres_memory_intelligence import (
     distill_message,
     distill_pending,
     ensure_schema,
-    mark_truth,
 )
 
 DB = Path(os.environ.get("LOGRES_CONTROL_DB", ROOT / "control/control.sqlite"))
@@ -42,27 +41,13 @@ def main() -> int:
     pending.add_argument("--session", required=True)
     pending.add_argument("--limit", type=int, default=200)
 
-    mark = sub.add_parser("mark")
-    mark.add_argument("fact_id", type=int)
-    mark.add_argument("status", choices=("CLAIM", "REJECTED", "SUPERSEDED"))
-    mark.add_argument("--confidence", type=float)
-    mark.add_argument("--supersedes", type=int)
-
     args = ap.parse_args()
     c = conn()
     try:
         if args.cmd == "message":
             out = distill_message(c, args.message_id)
-        elif args.cmd == "pending":
-            out = distill_pending(c, session_id=args.session, limit=args.limit)
         else:
-            out = mark_truth(
-                c,
-                args.fact_id,
-                args.status,
-                confidence=args.confidence,
-                supersedes_id=args.supersedes,
-            )
+            out = distill_pending(c, session_id=args.session, limit=args.limit)
     finally:
         c.close()
     print(json.dumps(out, indent=2, sort_keys=True, ensure_ascii=False))

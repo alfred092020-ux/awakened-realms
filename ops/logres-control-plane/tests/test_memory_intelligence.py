@@ -17,7 +17,6 @@ from logres_memory_intelligence import (
     distill_message,
     distill_pending,
     ensure_schema,
-    mark_truth,
     relevant_facts,
 )
 
@@ -129,12 +128,12 @@ class MemoryIntelligenceTests(unittest.TestCase):
             (msg["id"],),
         ).fetchall()
         self.assertTrue(rows)
-        self.assertTrue(all(r["truth_status"] in ("CLAIM", "SUPPORTED") for r in rows))
+        self.assertTrue(all(r["truth_status"] == "CLAIM" for r in rows))
         self.assertTrue(all(r["task_id"] == "BATTLE-RENDER-001" for r in rows))
         self.assertTrue(all(r["session_id"] == "battle-session" for r in rows))
         self.assertTrue(all(r["ordinal"] == 1 for r in rows))
 
-    def test_tool_summary_stays_supported_and_generic_mark_cannot_verify(self):
+    def test_tool_summary_remains_advisory_claim(self):
         msg = self._message(
             "tool-summary",
             "BATTLE-RENDER-001 full E2E PASS at exact SHA abcdef1234567890.",
@@ -142,20 +141,8 @@ class MemoryIntelligenceTests(unittest.TestCase):
         )
         result = distill_message(self.c, msg["id"])
         fact = result["facts"][0]
-        self.assertEqual("SUPPORTED", fact["truth_status"])
-        with self.assertRaisesRegex(ValueError, "cannot promote.*VERIFIED"):
-            mark_truth(self.c, fact["id"], "VERIFIED", confidence=1.0)
-        with self.assertRaisesRegex(ValueError, "cannot promote.*SUPPORTED"):
-            mark_truth(self.c, fact["id"], "SUPPORTED", confidence=0.8)
-        with self.assertRaisesRegex(ValueError, "confidence.*0.*1"):
-            mark_truth(self.c, fact["id"], "CLAIM", confidence=1.1)
-        with self.assertRaisesRegex(ValueError, "confidence.*0.*1"):
-            mark_truth(self.c, fact["id"], "CLAIM", confidence=-0.1)
-        with self.assertRaisesRegex(ValueError, "cannot increase confidence"):
-            mark_truth(self.c, fact["id"], "CLAIM", confidence=0.9)
-        marked = mark_truth(self.c, fact["id"], "CLAIM", confidence=0.5)
-        self.assertEqual("CLAIM", marked["truth_status"])
-        self.assertEqual(0.5, marked["confidence"])
+        self.assertEqual("CLAIM", fact["truth_status"])
+        self.assertFalse(fact["operational_truth"])
 
     def test_distillation_redacts_credential_shaped_memory(self):
         value = "redactme1234567890"
@@ -210,29 +197,16 @@ class MemoryIntelligenceTests(unittest.TestCase):
             self.c.execute("select 1 from memory_facts where message_id=?", (other["id"],)).fetchone()
         )
 
-    def test_source_sha_requires_exact_full_git_sha(self):
-        short = self._message(
-            "tool-summary",
-            "BATTLE-RENDER-001 PASS at exact SHA abcdef1234567890.",
-            {"task_id": "BATTLE-RENDER-001"},
-        )
-        short_fact = distill_message(self.c, short["id"])["facts"][0]
-        self.assertIsNone(short_fact["source_sha"])
+    def test_memory_does_not_promote_message_supplied_source_sha(self):
         full_sha = "a" * 40
-        mentioned = self._message(
+        msg = self._message(
             "tool-summary",
             f"BATTLE-RENDER-001 PASS at exact SHA {full_sha}.",
-            {"task_id": "BATTLE-RENDER-001"},
-        )
-        mentioned_fact = distill_message(self.c, mentioned["id"])["facts"][0]
-        self.assertIsNone(mentioned_fact["source_sha"])
-        explicit = self._message(
-            "tool-summary",
-            "BATTLE-RENDER-001 PASS from explicit journal provenance.",
             {"task_id": "BATTLE-RENDER-001", "source_sha": full_sha},
         )
-        explicit_fact = distill_message(self.c, explicit["id"])["facts"][0]
-        self.assertEqual(full_sha, explicit_fact["source_sha"])
+        fact = distill_message(self.c, msg["id"])["facts"][0]
+        self.assertIsNone(fact["source_sha"])
+        self.assertIsNone(fact["provenance"]["source_sha"])
 
     def test_relevant_context_is_bounded_and_task_ranked(self):
         for idx in range(30):
