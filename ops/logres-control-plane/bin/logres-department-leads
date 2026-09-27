@@ -1,0 +1,24 @@
+#!/usr/bin/env python3
+from __future__ import annotations
+import argparse, json, sqlite3, sys
+from pathlib import Path
+HERE=Path(__file__).resolve(); CONTROL=HERE.parents[1]; sys.path.insert(0,str(CONTROL/'lib'))
+import logres_studio_org as studio
+import logres_department_leads as leads
+
+def main() -> int:
+    ap=argparse.ArgumentParser(prog='logres-department-leads')
+    ap.add_argument('command',choices=('status','standup','cycle'))
+    ap.add_argument('--root',default=str(CONTROL)); ap.add_argument('--execute',action='store_true')
+    ap.add_argument('--verifier-capacity',type=int,default=4); ap.add_argument('--resource-pressure',default='normal')
+    args=ap.parse_args(); root=Path(args.root)
+    policy=studio.load_policy(root/'config'/'studio_departments.json')
+    profiles=leads.load_profiles(root/'config'/'department_lead_profiles.json',policy)
+    db=root/'control'/'control.sqlite'; conn=sqlite3.connect(db); conn.row_factory=sqlite3.Row
+    studio.ensure_schema(conn); leads.ensure_schema(conn)
+    report=leads.studio_standup(conn,policy,profiles,verifier_capacity=args.verifier_capacity,resource_pressure=args.resource_pressure)
+    if args.command=='status': payload={'source':'brain','profiles':profiles,'departments':report['departments']}
+    elif args.command=='standup': payload=report
+    else: payload={**report,'worker_cycle':leads.run_worker_cycle(root,report,execute=args.execute)}
+    conn.close(); print(json.dumps(payload,indent=2,sort_keys=True)); return 0
+if __name__=='__main__': raise SystemExit(main())

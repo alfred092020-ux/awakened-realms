@@ -1,0 +1,445 @@
+{
+  "profiles": {
+    "art_ui_ux": {
+      "allowed_scope_prefixes": [
+        "src/game/ui",
+        "src/game/scenes",
+        "src/game/render",
+        "public/",
+        "assets/",
+        "e2e/"
+      ],
+      "decomposition_policy": {
+        "max_acceptance": 8,
+        "max_generated_per_cycle": 2,
+        "max_scopes": 6,
+        "max_tasks_per_cycle": 2,
+        "requires_provenance": true
+      },
+      "escalation_rules": [
+        "executive_production"
+      ],
+      "metrics": [
+        "throughput",
+        "verification_pass_rate",
+        "rework_rate"
+      ],
+      "queue_view": {
+        "statuses": [
+          "READY",
+          "ACTIVE",
+          "BLOCKED_DEP",
+          "BLOCKED_EVIDENCE"
+        ],
+        "task_types": [
+          "art",
+          "ui",
+          "ux",
+          "presentation"
+        ]
+      },
+      "review_responsibilities": [
+        "design_sensitive",
+        "release_critical",
+        "historical_fidelity"
+      ],
+      "specialist_roles": [
+        "ui_engineer",
+        "visual_reviewer"
+      ]
+    },
+    "devops_build_release": {
+      "allowed_scope_prefixes": [
+        "ops/logres-control-plane/",
+        "scripts/logres/",
+        "package.json",
+        "playwright.config",
+        "vite.config"
+      ],
+      "decomposition_policy": {
+        "max_acceptance": 8,
+        "max_generated_per_cycle": 2,
+        "max_scopes": 6,
+        "max_tasks_per_cycle": 2,
+        "requires_provenance": true
+      },
+      "escalation_rules": [
+        "executive_production"
+      ],
+      "metrics": [
+        "throughput",
+        "verification_pass_rate",
+        "queue_age_seconds"
+      ],
+      "queue_view": {
+        "statuses": [
+          "READY",
+          "ACTIVE",
+          "BLOCKED_DEP",
+          "BLOCKED_EVIDENCE"
+        ],
+        "task_types": [
+          "devops",
+          "build",
+          "release",
+          "control-plane"
+        ]
+      },
+      "review_responsibilities": [
+        "release_critical",
+        "security_sensitive"
+      ],
+      "specialist_roles": [
+        "build_engineer",
+        "release_engineer"
+      ]
+    },
+    "executive_production": {
+      "allowed_scope_prefixes": [
+        "ops/logres-control-plane/",
+        "docs/",
+        "scripts/logres/"
+      ],
+      "decomposition_policy": {
+        "max_acceptance": 8,
+        "max_generated_per_cycle": 2,
+        "max_scopes": 6,
+        "max_tasks_per_cycle": 2,
+        "requires_provenance": true
+      },
+      "escalation_rules": [
+        "user"
+      ],
+      "metrics": [
+        "throughput",
+        "critical_path_completions",
+        "queue_age_seconds"
+      ],
+      "queue_view": {
+        "statuses": [
+          "READY",
+          "ACTIVE",
+          "BLOCKED_DEP",
+          "BLOCKED_EVIDENCE"
+        ],
+        "task_types": [
+          "mission",
+          "planning",
+          "coordination"
+        ]
+      },
+      "review_responsibilities": [
+        "cross_department",
+        "release_critical"
+      ],
+      "specialist_roles": [
+        "planner",
+        "coordinator"
+      ]
+    },
+    "game_design": {
+      "allowed_scope_prefixes": [
+        "docs/",
+        "src/game/content/",
+        "src/game/data/",
+        "src/game/quest"
+      ],
+      "decomposition_policy": {
+        "max_acceptance": 8,
+        "max_generated_per_cycle": 2,
+        "max_scopes": 6,
+        "max_tasks_per_cycle": 2,
+        "requires_provenance": true
+      },
+      "escalation_rules": [
+        "executive_production"
+      ],
+      "metrics": [
+        "throughput",
+        "rework_rate",
+        "queue_age_seconds"
+      ],
+      "queue_view": {
+        "statuses": [
+          "READY",
+          "ACTIVE",
+          "BLOCKED_DEP",
+          "BLOCKED_EVIDENCE"
+        ],
+        "task_types": [
+          "design",
+          "systems",
+          "quest"
+        ]
+      },
+      "review_responsibilities": [
+        "design_sensitive",
+        "historical_fidelity"
+      ],
+      "specialist_roles": [
+        "systems_designer",
+        "quest_designer"
+      ]
+    },
+    "gameplay_engineering": {
+      "allowed_scope_prefixes": [
+        "src/game/",
+        "tests/",
+        "e2e/"
+      ],
+      "decomposition_policy": {
+        "max_acceptance": 8,
+        "max_generated_per_cycle": 2,
+        "max_scopes": 6,
+        "max_tasks_per_cycle": 2,
+        "requires_provenance": true
+      },
+      "escalation_rules": [
+        "executive_production"
+      ],
+      "metrics": [
+        "throughput",
+        "verification_pass_rate",
+        "rework_rate"
+      ],
+      "queue_view": {
+        "statuses": [
+          "READY",
+          "ACTIVE",
+          "BLOCKED_DEP",
+          "BLOCKED_EVIDENCE"
+        ],
+        "task_types": [
+          "implementation",
+          "battle",
+          "field",
+          "gameplay"
+        ]
+      },
+      "review_responsibilities": [
+        "design_sensitive",
+        "release_critical"
+      ],
+      "specialist_roles": [
+        "gameplay_engineer",
+        "battle_engineer"
+      ]
+    },
+    "knowledge_documentation": {
+      "allowed_scope_prefixes": [
+        "docs/",
+        "ops/logres-control-plane/",
+        "scripts/logres/"
+      ],
+      "decomposition_policy": {
+        "max_acceptance": 8,
+        "max_generated_per_cycle": 2,
+        "max_scopes": 6,
+        "max_tasks_per_cycle": 2,
+        "requires_provenance": true
+      },
+      "escalation_rules": [
+        "executive_production"
+      ],
+      "metrics": [
+        "throughput",
+        "queue_age_seconds",
+        "rework_rate"
+      ],
+      "queue_view": {
+        "statuses": [
+          "READY",
+          "ACTIVE",
+          "BLOCKED_DEP",
+          "BLOCKED_EVIDENCE"
+        ],
+        "task_types": [
+          "knowledge",
+          "documentation",
+          "memory"
+        ]
+      },
+      "review_responsibilities": [
+        "historical_fidelity"
+      ],
+      "specialist_roles": [
+        "memory_curator",
+        "documentation_engineer"
+      ]
+    },
+    "performance_telemetry": {
+      "allowed_scope_prefixes": [
+        "e2e/logres-performance",
+        "ops/logres-control-plane/config/performance",
+        "tests/LogresPerformance"
+      ],
+      "decomposition_policy": {
+        "max_acceptance": 8,
+        "max_generated_per_cycle": 2,
+        "max_scopes": 6,
+        "max_tasks_per_cycle": 2,
+        "requires_provenance": true
+      },
+      "escalation_rules": [
+        "executive_production"
+      ],
+      "metrics": [
+        "verification_pass_rate",
+        "resource_cost",
+        "queue_age_seconds"
+      ],
+      "queue_view": {
+        "statuses": [
+          "READY",
+          "ACTIVE",
+          "BLOCKED_DEP",
+          "BLOCKED_EVIDENCE"
+        ],
+        "task_types": [
+          "performance",
+          "telemetry",
+          "metrics"
+        ]
+      },
+      "review_responsibilities": [
+        "release_critical"
+      ],
+      "specialist_roles": [
+        "performance_engineer",
+        "telemetry_analyst"
+      ]
+    },
+    "qa_test": {
+      "allowed_scope_prefixes": [
+        "tests/",
+        "e2e/",
+        "ops/logres-control-plane/tests/"
+      ],
+      "decomposition_policy": {
+        "max_acceptance": 8,
+        "max_generated_per_cycle": 2,
+        "max_scopes": 6,
+        "max_tasks_per_cycle": 2,
+        "requires_provenance": true
+      },
+      "escalation_rules": [
+        "executive_production"
+      ],
+      "metrics": [
+        "verification_pass_rate",
+        "queue_age_seconds",
+        "regression_rate"
+      ],
+      "queue_view": {
+        "statuses": [
+          "READY",
+          "ACTIVE",
+          "BLOCKED_DEP",
+          "BLOCKED_EVIDENCE"
+        ],
+        "task_types": [
+          "qa",
+          "test",
+          "regression",
+          "device"
+        ]
+      },
+      "review_responsibilities": [
+        "release_critical",
+        "security_sensitive"
+      ],
+      "specialist_roles": [
+        "test_engineer",
+        "device_qa"
+      ]
+    },
+    "reverse_engineering_research": {
+      "allowed_scope_prefixes": [
+        "docs/",
+        "tools/",
+        "scripts/logres/",
+        "ops/logres/evidence/"
+      ],
+      "decomposition_policy": {
+        "max_acceptance": 8,
+        "max_generated_per_cycle": 2,
+        "max_scopes": 6,
+        "max_tasks_per_cycle": 2,
+        "requires_provenance": true
+      },
+      "escalation_rules": [
+        "executive_production"
+      ],
+      "metrics": [
+        "throughput",
+        "queue_age_seconds",
+        "rework_rate"
+      ],
+      "queue_view": {
+        "statuses": [
+          "READY",
+          "ACTIVE",
+          "BLOCKED_DEP",
+          "BLOCKED_EVIDENCE"
+        ],
+        "task_types": [
+          "research",
+          "reverse",
+          "evidence",
+          "protocol"
+        ]
+      },
+      "review_responsibilities": [
+        "historical_fidelity",
+        "design_sensitive"
+      ],
+      "specialist_roles": [
+        "reverse_engineer",
+        "evidence_analyst"
+      ]
+    },
+    "security_integrity": {
+      "allowed_scope_prefixes": [
+        "ops/logres-control-plane/",
+        "scripts/logres/"
+      ],
+      "decomposition_policy": {
+        "max_acceptance": 8,
+        "max_generated_per_cycle": 2,
+        "max_scopes": 6,
+        "max_tasks_per_cycle": 2,
+        "requires_provenance": true
+      },
+      "escalation_rules": [
+        "user"
+      ],
+      "metrics": [
+        "verification_pass_rate",
+        "regression_rate",
+        "blocker_age_seconds"
+      ],
+      "queue_view": {
+        "statuses": [
+          "READY",
+          "ACTIVE",
+          "BLOCKED_DEP",
+          "BLOCKED_EVIDENCE"
+        ],
+        "task_types": [
+          "security",
+          "integrity",
+          "isolation"
+        ]
+      },
+      "review_responsibilities": [
+        "security_sensitive",
+        "release_critical"
+      ],
+      "specialist_roles": [
+        "security_reviewer",
+        "isolation_engineer"
+      ]
+    }
+  },
+  "schema": 1
+}
