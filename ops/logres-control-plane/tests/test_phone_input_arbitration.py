@@ -51,6 +51,16 @@ class PhoneInputArbitrationTests(unittest.TestCase):
             check=False,
         )
 
+    def test_phone_mutation_lock_defaults_to_shared_control_filesystem(self):
+        shared = "/home/ubuntu/logres/control/phone-hardware-qa.lock"
+        phone_script = SCRIPT.read_text()
+        hardware_script = (ROOT / "bin/logres-hardware-qa").read_text()
+        chat_wake = (ROOT / "lib/logres_chat_wake.py").read_text()
+
+        for source in (phone_script, hardware_script, chat_wake):
+            self.assertIn(shared, source)
+            self.assertNotIn("/tmp/logres-phone-hardware-qa.lock", source)
+
     def test_canonical_transport_exists(self):
         self.assertTrue(SCRIPT.is_file(), "canonical logres-phone-qa is missing")
 

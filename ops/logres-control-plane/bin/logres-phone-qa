@@ -12,7 +12,7 @@ if [[ -z "$PHONE_SSH_PORT" ]]; then
   fi
 fi
 KEY="${LOGRES_PHONE_QA_KEY:-/home/ubuntu/logres/control/android-device/qa_controller_ed25519}"
-QA_LOCK="${LOGRES_PHONE_QA_LOCK_PATH:-/tmp/logres-phone-hardware-qa.lock}"
+QA_LOCK="${LOGRES_PHONE_QA_LOCK_PATH:-/home/ubuntu/logres/control/phone-hardware-qa.lock}"
 MUTATION_LOCK_FD=""
 SSH=(ssh -p "$PHONE_SSH_PORT" -i "$KEY" -o BatchMode=yes -o ConnectTimeout=8 "$PHONE_USER@$PHONE_HOST")
 SCP=(scp -P "$PHONE_SSH_PORT" -i "$KEY" -o BatchMode=yes)

@@ -18,7 +18,8 @@ PKG="com.nexuscore.awakenedrealms"
 ACTIVITY=f"{PKG}/.MainActivity"
 APK_DIR=ROOT/"artifacts/apk"
 PROOFS=PHONE_DIR/"proofs"
-LOCK=Path("/tmp/logres-phone-hardware-qa.lock")
+PHONE_MUTATION_LOCK_DEFAULT="/home/ubuntu/logres/control/phone-hardware-qa.lock"
+LOCK=Path(os.environ.get("LOGRES_PHONE_QA_LOCK_PATH", PHONE_MUTATION_LOCK_DEFAULT))
 DEVICE_PROOF_BIN=Path(os.environ.get(
     "LOGRES_DEVICE_PROOF_BIN",
     str(REPO/"ops/logres-control-plane/bin/logres-device-proof"),
