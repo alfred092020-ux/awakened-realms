@@ -1,0 +1,18 @@
+#!/usr/bin/env python3
+from __future__ import annotations
+import argparse, json, sqlite3, sys
+from pathlib import Path
+HERE = Path(__file__).resolve(); ROOT = HERE.parents[1]; sys.path.insert(0, str(ROOT / "lib"))
+from logres_studio_org import ensure_schema, load_policy, plan_departments
+
+def main() -> int:
+    ap=argparse.ArgumentParser(); ap.add_argument("command", choices=("status","init")); ap.add_argument("--root", default=str(ROOT)); ap.add_argument("--json", action="store_true"); args=ap.parse_args()
+    root=Path(args.root); policy=load_policy(root / "config" / "studio_departments.json"); db=root / "control" / "control.sqlite"
+    conn=sqlite3.connect(db); conn.row_factory=sqlite3.Row; ensure_schema(conn)
+    if args.command=="init": payload={"initialized":True,"departments":len(policy["departments"])}
+    else:
+        try: tasks=[dict(r) for r in conn.execute("select id,status,lane,title,priority,note from tasks")]
+        except sqlite3.Error: tasks=[]
+        payload={"departments":plan_departments(tasks,policy,verifier_capacity=4,resource_pressure="normal"),"guardrails":policy["guardrails"]}
+    conn.close(); print(json.dumps(payload, indent=2, sort_keys=True)); return 0
+if __name__ == "__main__": raise SystemExit(main())
