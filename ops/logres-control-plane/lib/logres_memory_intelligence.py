@@ -7,6 +7,8 @@ import sqlite3
 from dataclasses import dataclass
 from typing import Iterable
 
+from logres_context_pack import _redact as _redact_context_value
+
 TASK_RE = re.compile(r"\b[A-Z][A-Z0-9]+(?:-[A-Z0-9]+){1,}\b")
 SHA_RE = re.compile(r"\b[0-9a-f]{40}\b", re.I)
 FILE_RE = re.compile(r"(?<![\w.-])(?:[\w.-]+/)+[\w.-]+(?:\.[A-Za-z0-9]+)?")
@@ -35,6 +37,27 @@ class MemoryFact:
     truth_status: str
     task_id: str | None
     source_sha: str | None
+
+
+SENSITIVE_METADATA_KEY_RE = re.compile(
+    r"(token|secret|password|passwd|api[_-]?key|credential|private[_-]?key)",
+    re.I,
+)
+
+
+def _sanitize_metadata(value, counter):
+    if isinstance(value, dict):
+        out = {}
+        for key, item in value.items():
+            if SENSITIVE_METADATA_KEY_RE.search(str(key)):
+                out[str(key)] = "[REDACTED]"
+                counter[0] += 1
+            else:
+                out[str(key)] = _sanitize_metadata(item, counter)
+        return out
+    if isinstance(value, list):
+        return [_sanitize_metadata(item, counter) for item in value]
+    return _redact_context_value(value, counter)
 
 
 def _compact(value) -> str:
@@ -126,11 +149,13 @@ def _task_candidates(text: str, metadata: dict) -> list[str]:
 
 
 def _source_sha(text: str, metadata: dict) -> str | None:
-    direct = metadata.get("sha")
+    # A SHA mentioned in free text is only a claim, not provenance. Persist an
+    # explicit source SHA only when the journal metadata names it directly.
+    del text
+    direct = metadata.get("source_sha")
     if isinstance(direct, str) and SHA_RE.fullmatch(direct.strip()):
         return direct.strip().lower()
-    match = SHA_RE.search(text)
-    return match.group(0).lower() if match else None
+    return None
 
 
 def distill_message(conn: sqlite3.Connection, message_id: int) -> dict:
@@ -148,11 +173,14 @@ def distill_message(conn: sqlite3.Connection, message_id: int) -> dict:
         raise ValueError(f"unknown chat message id: {message_id}")
 
     metadata = json.loads(row[6] or "{}")
-    statements = _sentences(row[4])
+    redactions = [0]
+    safe_metadata = _sanitize_metadata(metadata, redactions)
+    safe_content = _redact_context_value(row[4], redactions)
+    statements = _sentences(safe_content)
     inserted = 0
     facts = []
-    tasks = _task_candidates(row[4], metadata)
-    source_sha = _source_sha(row[4], metadata)
+    tasks = _task_candidates(safe_content, safe_metadata)
+    source_sha = _source_sha(safe_content, safe_metadata)
 
     for statement in statements:
         kind = _infer_kind(statement)
@@ -180,7 +208,7 @@ def distill_message(conn: sqlite3.Connection, message_id: int) -> dict:
             (
                 fingerprint,row[1],row[0],row[2],row[7],row[3],kind,statement,
                 confidence,truth_status,task_id,source_sha,
-                _compact({"message_sha256": row[5], "metadata": metadata}),
+                _compact({"message_sha256": row[5], "metadata": safe_metadata, "redactions": redactions[0]}),
             ),
         )
         if cur.rowcount:
@@ -285,7 +313,7 @@ def relevant_facts(conn: sqlite3.Connection, task_id: str, *, terms: Iterable[st
                statement,confidence,truth_status,task_id,source_sha
           from memory_facts
          where truth_status not in ('REJECTED','SUPERSEDED')
-           and (task_id=? or task_id is null)
+           and task_id=?
          order by confidence desc,id desc
          limit 500
         """,
@@ -309,40 +337,6 @@ def relevant_facts(conn: sqlite3.Connection, task_id: str, *, terms: Iterable[st
 def _table_exists(conn: sqlite3.Connection, name: str) -> bool:
     return bool(conn.execute(
         "select 1 from sqlite_master where type='table' and name=?", (name,)
-    ).fetchone())
-
-
-def _has_exact_sha_verification(conn: sqlite3.Connection, source_sha: str | None) -> bool:
-    if not source_sha or not SHA_RE.fullmatch(source_sha):
-        return False
-    if not _table_exists(conn, "verification"):
-        return False
-    return bool(conn.execute(
-        """
-        select 1 from verification
-         where sha=? and upper(status)='PASS' and lower(mode)='full-e2e'
-         limit 1
-        """,
-        (source_sha,),
-    ).fetchone())
-
-
-def _has_brain_context_authorization(conn: sqlite3.Connection, fact: dict) -> bool:
-    source_sha = fact.get("source_sha")
-    task_id = fact.get("task_id")
-    fingerprint = fact.get("fingerprint")
-    if not source_sha or not task_id or not fingerprint:
-        return False
-    if not _table_exists(conn, "brain_events"):
-        return False
-    dedupe_key = f"memory-context:{fingerprint}:{source_sha}"
-    return bool(conn.execute(
-        """
-        select 1 from brain_events
-         where event_type='EVIDENCE' and task_id=? and dedupe_key=?
-         limit 1
-        """,
-        (task_id, dedupe_key),
     ).fetchone())
 
 
@@ -371,7 +365,7 @@ def build_context_packet(conn: sqlite3.Connection, task_id: str, *,
         deps = [
             {"depends_on": r[0], "kind": r[1], "rationale": r[2] or ""}
             for r in conn.execute(
-                "select depends_on,kind,rationale from task_dependencies where task_id=?",
+                "select depends_on,kind,rationale from task_dependencies where task_id=? order by depends_on,kind",
                 (task_id,),
             )
         ]
@@ -385,7 +379,7 @@ def build_context_packet(conn: sqlite3.Connection, task_id: str, *,
             for r in conn.execute(
                 """
                 select sha,branch,status,verification_mode,updated_at
-                  from integration_queue where task_id=? order by updated_at desc limit 5
+                  from integration_queue where task_id=? order by updated_at desc,sha asc limit 5
                 """,
                 (task_id,),
             )
@@ -394,18 +388,8 @@ def build_context_packet(conn: sqlite3.Connection, task_id: str, *,
     terms = [task[1], task[4] or "", *scopes[:8]]
     facts = relevant_facts(conn, task_id, terms=terms, limit=fact_limit)
     for fact in facts:
-        exact_sha_verified = _has_exact_sha_verification(conn, fact["source_sha"])
-        brain_authorized = _has_brain_context_authorization(conn, fact)
         fact["operational_truth"] = False
-        fact["context_evidence_eligible"] = bool(
-            exact_sha_verified and brain_authorized
-        )
-        fact["provenance"]["exact_sha_verification"] = (
-            "PASS" if exact_sha_verified else "UNVERIFIED"
-        )
-        fact["provenance"]["brain_context_authorization"] = (
-            "PASS" if brain_authorized else "UNAUTHORIZED"
-        )
+        fact["provenance"]["claimed_source_sha"] = fact.get("source_sha")
 
     knowledge = []
     if _table_exists(conn, "knowledge_nodes") and _table_exists(conn, "knowledge_edges"):
@@ -420,34 +404,15 @@ def build_context_packet(conn: sqlite3.Connection, task_id: str, *,
                 select n.node_id,n.kind,n.label,n.provenance,n.confidence,e.relation
                   from knowledge_edges e join knowledge_nodes n on n.node_id=e.src
                  where e.dst=? or e.task_id=?
-                 order by n.confidence desc limit ?
+                 order by n.confidence desc,n.node_id asc,e.relation asc limit ?
                 """,
                 (f"task:{task_id}", task_id, knowledge_limit),
             )
         ]
 
-    # Only VERIFIED facts may contribute raw transcript excerpts. CLAIM and
-    # SUPPORTED facts remain labeled context and never become operational truth.
-    message_ids = [
-        f["message_id"] for f in facts if f["context_evidence_eligible"]
-    ][:transcript_limit]
-    excerpts = []
-    if message_ids:
-        marks = ",".join("?" for _ in message_ids)
-        excerpts = [
-            {
-                "message_id": r[0], "session_id": r[1], "ordinal": r[2],
-                "role": r[3], "content": r[4][:900], "ts": r[5],
-            }
-            for r in conn.execute(
-                f"""
-                select id,session_id,ordinal,role,content,ts
-                  from chat_messages where id in ({marks})
-                 order by id desc
-                """,
-                message_ids,
-            )
-        ]
+    # Transcript persistence remains in the journal. Memory context exposes only
+    # distilled, provenance-labeled facts and never replays raw transcript text.
+    excerpts: list[dict] = []
 
     return {
         "task": task_dict,
@@ -458,8 +423,7 @@ def build_context_packet(conn: sqlite3.Connection, task_id: str, *,
         "memory_policy": {
             "operational_truth_source": "Brain only",
             "memory_facts_are_context_only": True,
-            "context_transcript_requires": "Brain EVIDENCE authorization + exact-SHA full-e2e PASS",
-            "exact_sha_verification_mode": "full-e2e",
+            "raw_transcript_replay": False,
         },
         "knowledge": knowledge,
         "transcript_excerpts": excerpts[:transcript_limit],

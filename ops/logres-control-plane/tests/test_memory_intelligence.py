@@ -157,6 +157,22 @@ class MemoryIntelligenceTests(unittest.TestCase):
         self.assertEqual("CLAIM", marked["truth_status"])
         self.assertEqual(0.5, marked["confidence"])
 
+    def test_distillation_redacts_credential_shaped_memory(self):
+        value = "redactme1234567890"
+        msg = self._message(
+            "assistant",
+            f"BATTLE-RENDER-001 failed with token={value}.",
+            {"task_id": "BATTLE-RENDER-001", "secret": value},
+        )
+        distill_message(self.c, msg["id"])
+        row = self.c.execute(
+            "select statement,metadata_json from memory_facts where message_id=? limit 1",
+            (msg["id"],),
+        ).fetchone()
+        stored = row[0] + row[1]
+        self.assertNotIn(value, stored)
+        self.assertIn("[REDACTED]", stored)
+
     def test_pending_distillation_requires_session_and_bounded_limit(self):
         with self.assertRaisesRegex(ValueError, "session_id is required"):
             distill_pending(self.c)
@@ -203,13 +219,20 @@ class MemoryIntelligenceTests(unittest.TestCase):
         short_fact = distill_message(self.c, short["id"])["facts"][0]
         self.assertIsNone(short_fact["source_sha"])
         full_sha = "a" * 40
-        full = self._message(
+        mentioned = self._message(
             "tool-summary",
             f"BATTLE-RENDER-001 PASS at exact SHA {full_sha}.",
             {"task_id": "BATTLE-RENDER-001"},
         )
-        full_fact = distill_message(self.c, full["id"])["facts"][0]
-        self.assertEqual(full_sha, full_fact["source_sha"])
+        mentioned_fact = distill_message(self.c, mentioned["id"])["facts"][0]
+        self.assertIsNone(mentioned_fact["source_sha"])
+        explicit = self._message(
+            "tool-summary",
+            "BATTLE-RENDER-001 PASS from explicit journal provenance.",
+            {"task_id": "BATTLE-RENDER-001", "source_sha": full_sha},
+        )
+        explicit_fact = distill_message(self.c, explicit["id"])["facts"][0]
+        self.assertEqual(full_sha, explicit_fact["source_sha"])
 
     def test_relevant_context_is_bounded_and_task_ranked(self):
         for idx in range(30):
@@ -225,6 +248,12 @@ class MemoryIntelligenceTests(unittest.TestCase):
             {"task_id": "MAP-OTHER-001"},
         )
         distill_message(self.c, other["id"])
+        unscoped = self._message(
+            "assistant",
+            "Battle animation evidence indicates timing from an unscoped discussion.",
+            {},
+        )
+        distill_message(self.c, unscoped["id"])
 
         facts = relevant_facts(self.c, "BATTLE-RENDER-001", limit=7)
         self.assertLessEqual(len(facts), 7)
@@ -249,71 +278,36 @@ class MemoryIntelligenceTests(unittest.TestCase):
             )
         )
 
-    def test_context_packet_keeps_unverified_memory_out_of_operational_transcript(self):
+    def test_context_packet_memory_is_advisory_and_never_replays_raw_transcript(self):
         claim = self._message(
             "assistant",
             "BATTLE-RENDER-001 discovery: animation timing remains an inference.",
             {"task_id": "BATTLE-RENDER-001"},
         )
         claim_fact = distill_message(self.c, claim["id"])["facts"][0]
-        verified_sha = "b" * 40
         supported = self._message(
             "tool-summary",
-            f"BATTLE-RENDER-001 build PASS at exact SHA {verified_sha} with supporting test evidence.",
+            "BATTLE-RENDER-001 build PASS with supporting test evidence.",
             {"task_id": "BATTLE-RENDER-001"},
         )
         supported_fact = distill_message(self.c, supported["id"])["facts"][0]
 
         packet = build_context_packet(self.c, "BATTLE-RENDER-001")
         self.assertEqual("Brain only", packet["memory_policy"]["operational_truth_source"])
+        self.assertTrue(packet["memory_policy"]["memory_facts_are_context_only"])
+        self.assertFalse(packet["memory_policy"]["raw_transcript_replay"])
         self.assertEqual([], packet["transcript_excerpts"])
         self.assertTrue(all("provenance" in fact for fact in packet["structured_memory"]))
         self.assertTrue(all(not fact["operational_truth"] for fact in packet["structured_memory"]))
-        self.assertFalse(claim_fact["truth_status"] == "VERIFIED")
 
         self.c.execute(
-            "update memory_facts set truth_status='VERIFIED', confidence=1.0 where id=?",
-            (supported_fact["id"],),
+            "update memory_facts set truth_status='VERIFIED', confidence=1.0 where id in (?,?)",
+            (claim_fact["id"], supported_fact["id"]),
         )
         self.c.commit()
-        label_only_packet = build_context_packet(self.c, "BATTLE-RENDER-001")
-        self.assertEqual([], label_only_packet["transcript_excerpts"])
-        self.assertTrue(all(not fact["operational_truth"] for fact in label_only_packet["structured_memory"]))
-
-        self.c.execute(
-            "create table verification(ref text primary key, sha text, mode text, status text, duration_sec real, ran_at text, details text)"
-        )
-        self.c.execute(
-            "insert into verification values(?,?,?,?,?,?,?)",
-            ("worker/battle", verified_sha, "full-e2e", "PASS", 1.0, "2026-09-27", "exact-sha test"),
-        )
-        self.c.commit()
-        verification_only_packet = build_context_packet(self.c, "BATTLE-RENDER-001")
-        self.assertEqual([], verification_only_packet["transcript_excerpts"])
-
-        self.c.execute(
-            "create table brain_events(id integer primary key, event_type text, task_id text, dedupe_key text)"
-        )
-        self.c.execute(
-            "insert into brain_events(event_type,task_id,dedupe_key) values(?,?,?)",
-            (
-                "EVIDENCE",
-                "BATTLE-RENDER-001",
-                f"memory-context:{supported_fact['fingerprint']}:{verified_sha}",
-            ),
-        )
-        self.c.commit()
-        verified_packet = build_context_packet(self.c, "BATTLE-RENDER-001")
-        self.assertEqual(1, len(verified_packet["transcript_excerpts"]))
-        self.assertEqual(supported["id"], verified_packet["transcript_excerpts"][0]["message_id"])
-        verified_fact = next(
-            fact
-            for fact in verified_packet["structured_memory"]
-            if fact["id"] == supported_fact["id"]
-        )
-        self.assertFalse(verified_fact["operational_truth"])
-        self.assertTrue(verified_fact["context_evidence_eligible"])
-        self.assertEqual("PASS", verified_fact["provenance"]["exact_sha_verification"])
+        mutated_packet = build_context_packet(self.c, "BATTLE-RENDER-001")
+        self.assertEqual([], mutated_packet["transcript_excerpts"])
+        self.assertTrue(all(not fact["operational_truth"] for fact in mutated_packet["structured_memory"]))
 
     def test_context_pack_chat_selects_newest_active_lease_deterministically(self):
         self.c.execute(
