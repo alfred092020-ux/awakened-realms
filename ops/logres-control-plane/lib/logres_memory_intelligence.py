@@ -297,6 +297,10 @@ def _table_exists(conn: sqlite3.Connection, name: str) -> bool:
     ).fetchone())
 
 
+def _column_exists(conn: sqlite3.Connection, table: str, column: str) -> bool:
+    return any(row[1] == column for row in conn.execute(f"pragma table_info({table})"))
+
+
 def build_context_packet(conn: sqlite3.Connection, task_id: str, *,
                          transcript_limit: int = 12, fact_limit: int = 20,
                          knowledge_limit: int = 12) -> dict:
@@ -350,13 +354,8 @@ def build_context_packet(conn: sqlite3.Connection, task_id: str, *,
 
     knowledge = []
     if _table_exists(conn, "knowledge_nodes") and _table_exists(conn, "knowledge_edges"):
-        knowledge = [
-            {
-                "node_id": r[0], "kind": r[1], "label": r[2],
-                "provenance": r[3], "confidence": r[4],
-                "relation": r[5],
-            }
-            for r in conn.execute(
+        if _column_exists(conn, "knowledge_edges", "task_id"):
+            knowledge_rows = conn.execute(
                 """
                 select n.node_id,n.kind,n.label,n.provenance,n.confidence,e.relation
                   from knowledge_edges e join knowledge_nodes n on n.node_id=e.src
@@ -365,6 +364,23 @@ def build_context_packet(conn: sqlite3.Connection, task_id: str, *,
                 """,
                 (f"task:{task_id}", task_id, knowledge_limit),
             )
+        else:
+            knowledge_rows = conn.execute(
+                """
+                select n.node_id,n.kind,n.label,n.provenance,n.confidence,e.relation
+                  from knowledge_edges e join knowledge_nodes n on n.node_id=e.src
+                 where e.dst=?
+                 order by n.confidence desc,n.node_id asc,e.relation asc limit ?
+                """,
+                (f"task:{task_id}", knowledge_limit),
+            )
+        knowledge = [
+            {
+                "node_id": r[0], "kind": r[1], "label": r[2],
+                "provenance": r[3], "confidence": r[4],
+                "relation": r[5],
+            }
+            for r in knowledge_rows
         ]
 
     # Transcript persistence remains in the journal. Memory context exposes only

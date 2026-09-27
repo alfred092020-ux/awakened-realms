@@ -256,6 +256,46 @@ class MemoryIntelligenceTests(unittest.TestCase):
             )
         )
 
+    def test_context_packet_supports_legacy_knowledge_edges_without_task_id(self):
+        self.c.execute("drop table knowledge_edges")
+        self.c.execute(
+            """
+            create table knowledge_edges(
+              src text,dst text,relation text,confidence real,
+              metadata_json text,updated_at text,
+              primary key(src,dst,relation)
+            )
+            """
+        )
+        self.c.execute(
+            "insert into knowledge_nodes values(?,?,?,?,?,?,?,?,?)",
+            (
+                "evidence:legacy",
+                "evidence",
+                "Legacy evidence",
+                "Brain",
+                0.9,
+                None,
+                None,
+                "{}",
+                "2026-09-27",
+            ),
+        )
+        self.c.execute(
+            "insert into knowledge_edges values(?,?,?,?,?,?)",
+            (
+                "evidence:legacy",
+                "task:BATTLE-RENDER-001",
+                "supports",
+                0.9,
+                "{}",
+                "2026-09-27",
+            ),
+        )
+        self.c.commit()
+        packet = build_context_packet(self.c, "BATTLE-RENDER-001")
+        self.assertTrue(any(item["node_id"] == "evidence:legacy" for item in packet["knowledge"]))
+
     def test_context_packet_memory_is_advisory_and_never_replays_raw_transcript(self):
         claim = self._message(
             "assistant",
