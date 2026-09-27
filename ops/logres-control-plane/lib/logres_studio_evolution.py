@@ -138,6 +138,29 @@ def validate_patch(policy: Mapping[str, Any], patch: Mapping[str, Any]) -> dict[
     return {domain: dict(values)}
 
 
+def _empty_policy_state() -> dict[str, Any]:
+    return {"departments": {}}
+
+
+def validate_policy_state(policy: Mapping[str, Any], state: Mapping[str, Any]) -> dict[str, Any]:
+    if not isinstance(state, Mapping) or set(state) != {"departments"}:
+        raise ValueError("persisted policy outside bounded contract")
+    departments = state.get("departments")
+    if not isinstance(departments, Mapping):
+        raise ValueError("persisted policy departments must be a mapping")
+    normalized: dict[str, Any] = {"departments": {}}
+    for department, overlays in departments.items():
+        name = str(department).strip()
+        if not name or not isinstance(overlays, Mapping):
+            raise ValueError("persisted policy department is invalid")
+        normalized_overlays: dict[str, Any] = {}
+        for domain, values in overlays.items():
+            checked = validate_patch(policy, {str(domain): values})
+            normalized_overlays.update(checked)
+        normalized["departments"][name] = normalized_overlays
+    return normalized
+
+
 def _validate_outcome(outcome: Mapping[str, Any]) -> dict[str, Any]:
     if not str(outcome.get("department") or "").strip() or not str(outcome.get("window") or "").strip():
         raise ValueError("missing measured outcome identity")
@@ -253,10 +276,14 @@ def _attestation_pass(policy: Mapping[str, Any], raw: str) -> bool:
 def _active_policy(conn: sqlite3.Connection) -> tuple[int, dict[str, Any]]:
     state = conn.execute("select active_version from studio_evolution_state where singleton=1").fetchone()
     if state is None:
-        return 0, {}
+        return 0, _empty_policy_state()
     version = int(state[0])
     row = conn.execute("select policy_json from studio_policy_versions where version=?", (version,)).fetchone()
-    return version, json.loads(row[0]) if row else {}
+    if row is None:
+        if version == 0:
+            return 0, _empty_policy_state()
+        raise ValueError(f"missing active policy version: {version}")
+    return version, json.loads(row[0])
 
 
 def promote_policy(conn: sqlite3.Connection, policy: Mapping[str, Any], proposal_id: int, independent_attestation: str) -> dict[str, Any]:
@@ -268,10 +295,12 @@ def promote_policy(conn: sqlite3.Connection, policy: Mapping[str, Any], proposal
         raise ValueError("independent verification PASS attestation is required")
     patch = validate_patch(policy, json.loads(row["patch_json"]))
     current_version, current_policy = _active_policy(conn)
+    current_policy = validate_policy_state(policy, current_policy)
     if conn.execute("select 1 from studio_policy_versions where version=0").fetchone() is None:
-        conn.execute("insert into studio_policy_versions(version,created_at,source_proposal_id,policy_json,evidence_json,independent_attestation,status) values(0,?,?,?,?,?,?)", (_now(), None, json.dumps({},sort_keys=True), json.dumps({"kind":"baseline"}), "SYSTEM_BASELINE", "VERIFIED"))
+        conn.execute("insert into studio_policy_versions(version,created_at,source_proposal_id,policy_json,evidence_json,independent_attestation,status) values(0,?,?,?,?,?,?)", (_now(), None, json.dumps(_empty_policy_state(),sort_keys=True), json.dumps({"kind":"baseline"}), "SYSTEM_BASELINE", "VERIFIED"))
     merged = json.loads(json.dumps(current_policy))
-    merged.setdefault("departments", {}).setdefault(str(row["department"]), {}).update(patch)
+    merged["departments"].setdefault(str(row["department"]), {}).update(patch)
+    merged = validate_policy_state(policy, merged)
     version = int(conn.execute("select coalesce(max(version),0)+1 from studio_policy_versions").fetchone()[0])
     conn.execute("update studio_policy_versions set status='VERIFIED' where status='ACTIVE_VERIFIED'")
     evidence = {"proposal_id":int(proposal_id),"shadow":json.loads(row["shadow_json"]),"contract":json.loads(row["contract_json"]),"source_evidence":json.loads(row["evidence_json"])}

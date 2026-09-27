@@ -180,5 +180,44 @@ class StudioEvolutionTests(unittest.TestCase):
             evo.rollback_if_regressed(self.conn, self.policy, {"verification_pass_rate": 0.9, metric: improved})
 
 
+    def test_promotion_rejects_protected_authority_in_persisted_active_policy(self):
+        proposal = evo.propose_improvement(self.conn, self.policy, self.outcome(window="tampered-active"))
+        metric = proposal["contract"]["metric_name"]
+        improved = proposal["baseline_value"] * (1.10 if proposal["direction"] == "higher" else 0.90)
+        evo.record_shadow_result(self.conn, self.policy, proposal["proposal_id"], {metric: improved})
+        tampered = {"departments": {"gameplay_engineering": {"routing": {"merge_authority": 1}}}}
+        self.conn.execute(
+            "insert into studio_policy_versions(version,created_at,source_proposal_id,policy_json,evidence_json,independent_attestation,status) values(1,'now',null,?,?,?,'ACTIVE_VERIFIED')",
+            (json.dumps(tampered), json.dumps({"kind": "tampered"}), "reviewer=external;verdict=PASS"),
+        )
+        self.conn.execute(
+            "insert into studio_evolution_state(singleton,active_version,last_decision_id,last_rollback_from,last_rollback_at) values(1,1,null,null,null)"
+        )
+        self.conn.commit()
+        with self.assertRaisesRegex(ValueError, "protected|persisted policy"):
+            evo.promote_policy(self.conn, self.policy, proposal["proposal_id"], "reviewer=qa-test;verdict=PASS")
+
+    def test_promotion_fails_closed_when_active_policy_version_is_missing(self):
+        proposal = evo.propose_improvement(self.conn, self.policy, self.outcome(window="missing-active-version"))
+        metric = proposal["contract"]["metric_name"]
+        improved = proposal["baseline_value"] * (1.10 if proposal["direction"] == "higher" else 0.90)
+        evo.record_shadow_result(self.conn, self.policy, proposal["proposal_id"], {metric: improved})
+        self.conn.execute(
+            "insert into studio_evolution_state(singleton,active_version,last_decision_id,last_rollback_from,last_rollback_at) values(1,99,null,null,null)"
+        )
+        self.conn.commit()
+        with self.assertRaisesRegex(ValueError, "missing active policy version"):
+            evo.promote_policy(self.conn, self.policy, proposal["proposal_id"], "reviewer=qa-test;verdict=PASS")
+
+    def test_first_promotion_persists_explicit_empty_department_overlay_baseline(self):
+        proposal = evo.propose_improvement(self.conn, self.policy, self.outcome(window="explicit-baseline"))
+        metric = proposal["contract"]["metric_name"]
+        improved = proposal["baseline_value"] * (1.10 if proposal["direction"] == "higher" else 0.90)
+        evo.record_shadow_result(self.conn, self.policy, proposal["proposal_id"], {metric: improved})
+        evo.promote_policy(self.conn, self.policy, proposal["proposal_id"], "reviewer=qa-test;verdict=PASS")
+        baseline = self.conn.execute("select policy_json from studio_policy_versions where version=0").fetchone()[0]
+        self.assertEqual(json.loads(baseline), {"departments": {}})
+
+
 if __name__ == "__main__":
     unittest.main()
