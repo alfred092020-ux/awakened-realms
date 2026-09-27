@@ -300,17 +300,18 @@ for line in p.read_text().splitlines():
         float(match.group(2)), float(match.group(3)), int(match.group(4)),
         float(match.group(5)), float(match.group(6)), int(match.group(7)),
     )
-    samples.append((sample_time, psi_value, psi_max, load_value, load_max))
     if psi_available != 1:
         psi_unavailable += 1
     expected_over = int(
         psi_value > configured_psi_max or
         load_value > configured_load_max
     )
+    samples.append(
+        (sample_time, psi_value, psi_max, load_value, load_max, expected_over)
+    )
     limit_mismatch += int(psi_max != configured_psi_max)
     limit_mismatch += int(load_max != configured_load_max)
     inconsistent += int(flag != expected_over)
-    over += expected_over
 if not samples:
     print("VERIFY_FARM performance pressure monitor produced no samples")
     raise SystemExit(2)
@@ -322,44 +323,64 @@ if malformed or psi_unavailable or inconsistent or limit_mismatch:
     )
     raise SystemExit(2)
 
+sample_times = [row[0] for row in samples]
+if any(later <= earlier for earlier, later in zip(sample_times, sample_times[1:])):
+    print("VERIFY_FARM performance pressure timestamps not strictly increasing")
+    raise SystemExit(2)
+
 coverage_slack = max(0.75, sample_sec * 3.0)
 benchmark_duration = max(0.0, benchmark_end - benchmark_start)
 minimum_samples = max(2, int(math.ceil(benchmark_duration / coverage_slack)))
-sample_times = [row[0] for row in samples]
-coverage_start_gap = max(0.0, sample_times[0] - benchmark_start)
-coverage_end_gap = max(0.0, benchmark_end - sample_times[-1])
-coverage_gap = max(
-    (later - earlier for earlier, later in zip(sample_times, sample_times[1:])),
+window_samples = [
+    row for row in samples if benchmark_start <= row[0] <= benchmark_end
+]
+window_times = [row[0] for row in window_samples]
+post_window_tail = max(
+    (row[0] - benchmark_end for row in samples if row[0] > benchmark_end),
     default=0.0,
 )
+if window_times:
+    coverage_start_gap = window_times[0] - benchmark_start
+    coverage_end_gap = benchmark_end - window_times[-1]
+    coverage_gap = max(
+        (later - earlier for earlier, later in zip(window_times, window_times[1:])),
+        default=0.0,
+    )
+else:
+    coverage_start_gap = math.inf
+    coverage_end_gap = math.inf
+    coverage_gap = math.inf
 coverage_invalid = (
     not math.isfinite(benchmark_start)
     or not math.isfinite(benchmark_end)
     or benchmark_start <= 0.0
     or benchmark_end < benchmark_start
-    or len(samples) < minimum_samples
+    or len(window_samples) < minimum_samples
     or coverage_start_gap > coverage_slack
     or coverage_end_gap > coverage_slack
     or coverage_gap > coverage_slack
+    or post_window_tail > coverage_slack
 )
 if coverage_invalid:
     print(
         f"VERIFY_FARM performance pressure coverage incomplete "
         f"start_gap={coverage_start_gap:.3f} end_gap={coverage_end_gap:.3f} "
-        f"max_gap={coverage_gap:.3f} slack={coverage_slack:.3f} "
-        f"samples={len(samples)} minimum_samples={minimum_samples}"
+        f"max_gap={coverage_gap:.3f} post_tail={post_window_tail:.3f} "
+        f"slack={coverage_slack:.3f} raw_samples={len(samples)} "
+        f"window_samples={len(window_samples)} minimum_samples={minimum_samples}"
     )
     raise SystemExit(2)
 
-peak_psi = max(row[1] for row in samples)
-peak_load = max(row[3] for row in samples)
+over = sum(row[5] for row in window_samples)
+peak_psi = max(row[1] for row in window_samples)
+peak_load = max(row[3] for row in window_samples)
 print(
-    f"VERIFY_FARM performance pressure during benchmark samples={len(samples)} "
-    f"peak_psi={peak_psi:.3f} psi_max={samples[-1][2]:.3f} "
-    f"peak_load_per_cpu={peak_load:.3f} load_max={samples[-1][4]:.3f} over={over} "
+    f"VERIFY_FARM performance pressure during benchmark raw_samples={len(samples)} "
+    f"window_samples={len(window_samples)} peak_psi={peak_psi:.3f} "
+    f"psi_max={window_samples[-1][2]:.3f} peak_load_per_cpu={peak_load:.3f} "
+    f"load_max={window_samples[-1][4]:.3f} over={over} "
     f"coverage_start_gap={coverage_start_gap:.3f} coverage_end_gap={coverage_end_gap:.3f} "
-    f"coverage_gap={coverage_gap:.3f} samples={len(samples)} "
-    f"minimum_samples={minimum_samples}"
+    f"coverage_gap={coverage_gap:.3f} minimum_samples={minimum_samples}"
 )
 raise SystemExit(0 if over else 1)
 PY2

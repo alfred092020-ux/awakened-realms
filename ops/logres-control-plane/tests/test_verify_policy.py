@@ -312,7 +312,7 @@ printf 'control-unavailable=%s\n' "$performance_rc"
         self.assertIn('coverage_start_gap', block)
         self.assertIn('coverage_end_gap', block)
         self.assertIn('minimum_samples = max(2,', block)
-        self.assertIn('len(samples) < minimum_samples', block)
+        self.assertIn('len(window_samples) < minimum_samples', block)
         self.assertIn('if coverage_invalid:', block)
         self.assertIn('raise SystemExit(2)', block)
 
@@ -388,6 +388,47 @@ printf 'control-unavailable=%s\n' "$performance_rc"
         self.assertEqual(1, proc.returncode)
         self.assertIn('samples=9', proc.stdout)
         self.assertIn('over=0', proc.stdout)
+
+    def test_performance_pressure_validator_rejects_out_of_order_samples(self):
+        text = SCRIPT.read_text()
+        block_start = text.index('performance_pressure_invalid()')
+        code_start = text.index("<<'PY2'\n", block_start) + len("<<'PY2'\n")
+        code_end = text.index('\nPY2\n}', code_start)
+        validator = text[code_start:code_end]
+        with tempfile.TemporaryDirectory() as td:
+            pressure = Path(td) / 'pressure.log'
+            pressure.write_text(
+                '100.100 psi_avg10=0.100 psi_max=0.500 psi_available=1 load_per_cpu=0.100 load_max=0.200 over=0\n'
+                '100.050 psi_avg10=0.100 psi_max=0.500 psi_available=1 load_per_cpu=0.100 load_max=0.200 over=0\n'
+                '100.200 psi_avg10=0.100 psi_max=0.500 psi_available=1 load_per_cpu=0.100 load_max=0.200 over=0\n'
+            )
+            proc = subprocess.run(
+                ['python3', '-c', validator, str(pressure), '0', '0.5', '0.2',
+                 '100.0', '100.25', '0.25', '1'],
+                text=True, capture_output=True, check=False,
+            )
+        self.assertEqual(2, proc.returncode)
+        self.assertIn('timestamps not strictly increasing', proc.stdout)
+
+    def test_performance_pressure_validator_does_not_count_out_of_window_samples(self):
+        text = SCRIPT.read_text()
+        block_start = text.index('performance_pressure_invalid()')
+        code_start = text.index("<<'PY2'\n", block_start) + len("<<'PY2'\n")
+        code_end = text.index('\nPY2\n}', code_start)
+        validator = text[code_start:code_end]
+        with tempfile.TemporaryDirectory() as td:
+            pressure = Path(td) / 'pressure.log'
+            pressure.write_text(
+                '99.900 psi_avg10=0.100 psi_max=0.500 psi_available=1 load_per_cpu=0.100 load_max=0.200 over=0\n'
+                '100.300 psi_avg10=0.100 psi_max=0.500 psi_available=1 load_per_cpu=0.100 load_max=0.200 over=0\n'
+            )
+            proc = subprocess.run(
+                ['python3', '-c', validator, str(pressure), '0', '0.5', '0.2',
+                 '100.0', '100.2', '0.25', '1'],
+                text=True, capture_output=True, check=False,
+            )
+        self.assertEqual(2, proc.returncode)
+        self.assertIn('coverage incomplete', proc.stdout)
 
     def test_performance_pressure_validator_requires_monitor_ready_token(self):
         text = SCRIPT.read_text()
