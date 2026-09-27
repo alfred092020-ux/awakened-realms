@@ -113,31 +113,29 @@ psi = Path("/proc/pressure/cpu")
 consecutive = 0
 
 for attempt in range(1, attempts + 1):
-    source = "load"
-    value = None
-    limit = None
-
+    psi_value = None
     if psi.is_file():
         text = psi.read_text()
         match = re.search(r"^some .*?avg10=([0-9.]+)", text, re.MULTILINE)
         if match:
-            source = "psi_avg10"
-            value = float(match.group(1))
-            limit = psi_limit
+            psi_value = float(match.group(1))
 
-    if value is None:
-        load1 = os.getloadavg()[0]
-        cpus = os.cpu_count() or 1
-        source = "load_per_cpu"
-        value = load1 / cpus
-        limit = load_limit
+    load1 = os.getloadavg()[0]
+    cpus = os.cpu_count() or 1
+    load_value = load1 / cpus
 
-    ready = value <= limit
+    ready = (
+        psi_value is not None
+        and psi_value <= psi_limit
+        and load_value <= load_limit
+    )
     consecutive = consecutive + 1 if ready else 0
 
+    psi_text = "missing" if psi_value is None else f"{psi_value:.3f}"
     print(
         f"VERIFY_FARM performance host pressure attempt={attempt}/{attempts} "
-        f"{source}={value:.3f} max={limit:.3f} "
+        f"psi_avg10={psi_text} max_psi={psi_limit:.3f} "
+        f"load_per_cpu={load_value:.3f} max_load={load_limit:.3f} "
         f"ready_streak={consecutive}/{required_consecutive}",
         flush=True,
     )

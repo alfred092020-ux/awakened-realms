@@ -350,6 +350,35 @@ printf 'pid=%s rc=%s\n' "$PERF_PRESSURE_PID" "$PERF_PRESSURE_MONITOR_RC"
                 with self.assertRaises(ProcessLookupError):
                     os.kill(monitor_pid, 0)
 
+    def test_performance_host_ready_requires_both_psi_and_load_to_be_quiet(self):
+        text = SCRIPT.read_text()
+        start = text.index('performance_host_ready()')
+        code_start = text.index("<<'PY2'\n", start) + len("<<'PY2'\n")
+        code_end = text.index('\nPY2\n}', code_start)
+        probe = text[code_start:code_end]
+        with tempfile.TemporaryDirectory() as td:
+            psi = Path(td) / 'cpu.pressure'
+            psi.write_text('some avg10=0.100 avg60=0.100 avg300=0.100 total=1\n')
+            probe = probe.replace(
+                'psi = Path("/proc/pressure/cpu")',
+                f'psi = Path({str(psi)!r})',
+            )
+            probe = probe.replace(
+                'load1 = os.getloadavg()[0]',
+                'load1 = 4.2',
+            )
+            probe = probe.replace(
+                'cpus = os.cpu_count() or 1',
+                'cpus = 14',
+            )
+            proc = subprocess.run(
+                ['python3', '-c', probe, '0.5', '0.2', '1', '0', '1'],
+                text=True, capture_output=True, check=False,
+            )
+        self.assertEqual(75, proc.returncode, proc.stdout + proc.stderr)
+        self.assertIn('psi_avg10=0.100', proc.stdout)
+        self.assertIn('load_per_cpu=0.300', proc.stdout)
+
     def test_performance_midrun_host_contention_defers_measurement(self):
         text = SCRIPT.read_text()
         self.assertIn('PERF_PRESSURE_LOG=', text)
