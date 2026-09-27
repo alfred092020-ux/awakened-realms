@@ -118,6 +118,10 @@ class ChatMemoryBridgeTests(unittest.TestCase):
                 stub.write_text("#!/bin/sh\nexit 0\n")
                 stub.chmod(0o755)
 
+            context_pack = bin_root / "logres-context-pack"
+            context_pack.write_text("#!/bin/sh\nexit 5\n")
+            context_pack.chmod(0o755)
+
             os.symlink(CHAT_MEMORY, bin_root / "logres-chat-memory")
 
             env = os.environ.copy()

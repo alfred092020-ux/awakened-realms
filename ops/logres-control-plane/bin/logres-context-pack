@@ -13,6 +13,7 @@ import json
 import os
 import sqlite3
 import sys
+import time
 from pathlib import Path
 
 CONTROL_ROOT = Path(__file__).resolve().parents[1]
@@ -123,15 +124,21 @@ def main(argv=None) -> int:
             conn.row_factory = sqlite3.Row
             conn.execute("pragma busy_timeout=30000")
             ensure_memory_schema(conn)
-            task_id = args.task_id
-            if not task_id:
-                row = conn.execute(
-                    "select task_id from brain_task_leases where chat_id=? order by rowid desc limit 1",
-                    (args.chat,),
-                ).fetchone()
-                if not row:
-                    raise ValueError(f"no active task lease for chat: {args.chat}")
-                task_id = row[0]
+            row = conn.execute(
+                "select task_id from brain_task_leases where chat_id=? and lease_until_epoch>? order by rowid desc limit 1",
+                (args.chat, time.time()),
+            ).fetchone()
+            if not row:
+                print(f"context-pack: no active task lease for chat: {args.chat}", file=sys.stderr)
+                return 5
+            leased_task_id = row[0]
+            if args.task_id and args.task_id != leased_task_id:
+                print(
+                    f"context-pack: chat {args.chat} does not own task {args.task_id}",
+                    file=sys.stderr,
+                )
+                return 6
+            task_id = args.task_id or leased_task_id
             pack = build_memory_context_packet(
                 conn,
                 task_id,

@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from typing import Iterable
 
 TASK_RE = re.compile(r"\b[A-Z][A-Z0-9]+(?:-[A-Z0-9]+){1,}\b")
-SHA_RE = re.compile(r"\b[0-9a-f]{12,40}\b", re.I)
+SHA_RE = re.compile(r"\b[0-9a-f]{40}\b", re.I)
 FILE_RE = re.compile(r"(?<![\w.-])(?:[\w.-]+/)+[\w.-]+(?:\.[A-Za-z0-9]+)?")
 
 FACT_KINDS = {
@@ -211,6 +211,10 @@ def distill_message(conn: sqlite3.Connection, message_id: int) -> dict:
 
 def distill_pending(conn: sqlite3.Connection, session_id: str | None = None, limit: int = 200) -> dict:
     ensure_schema(conn)
+    if not session_id:
+        raise ValueError("session_id is required for pending distillation")
+    if not 1 <= int(limit) <= 500:
+        raise ValueError("limit must be between 1 and 500")
     params: list[object] = []
     where = []
     if session_id:
@@ -246,6 +250,18 @@ def mark_truth(conn: sqlite3.Connection, fact_id: int, status: str, *,
     status = status.upper()
     if status not in {"CLAIM", "SUPPORTED", "VERIFIED", "REJECTED", "SUPERSEDED"}:
         raise ValueError(f"invalid truth status: {status}")
+    if status in {"SUPPORTED", "VERIFIED"}:
+        raise ValueError(f"generic memory marking cannot promote facts to {status}")
+    current = conn.execute(
+        "select confidence from memory_facts where id=?",
+        (fact_id,),
+    ).fetchone()
+    if not current:
+        raise ValueError(f"unknown memory fact: {fact_id}")
+    if confidence is not None and not 0.0 <= float(confidence) <= 1.0:
+        raise ValueError("confidence must be between 0 and 1")
+    if confidence is not None and float(confidence) > float(current[0]):
+        raise ValueError("generic memory marking cannot increase confidence")
     fields = ["truth_status=?", "updated_at=datetime('now')"]
     values: list[object] = [status]
     if confidence is not None:
@@ -374,8 +390,11 @@ def build_context_packet(conn: sqlite3.Connection, task_id: str, *,
             )
         ]
 
-    # Transcript excerpts are only messages backing selected facts, bounded by limit.
-    message_ids = [f["message_id"] for f in facts[:transcript_limit]]
+    # Only VERIFIED facts may contribute raw transcript excerpts. CLAIM and
+    # SUPPORTED facts remain labeled context and never become operational truth.
+    message_ids = [
+        f["message_id"] for f in facts if f["operational_truth"]
+    ][:transcript_limit]
     excerpts = []
     if message_ids:
         marks = ",".join("?" for _ in message_ids)
@@ -400,6 +419,10 @@ def build_context_packet(conn: sqlite3.Connection, task_id: str, *,
         "dependencies": deps,
         "integration": integration,
         "structured_memory": facts,
+        "memory_policy": {
+            "operational_truth_requires": "VERIFIED",
+            "claims_and_supported_are_context_only": True,
+        },
         "knowledge": knowledge,
         "transcript_excerpts": excerpts[:transcript_limit],
         "bounds": {
@@ -411,10 +434,17 @@ def build_context_packet(conn: sqlite3.Connection, task_id: str, *,
 
 
 def _fact_dict(row) -> dict:
+    truth_status = row[10]
+    source_sha = row[12]
     return {
         "id": row[0], "fingerprint": row[1], "session_id": row[2],
         "message_id": row[3], "ordinal": row[4], "chat_id": row[5],
         "role": row[6], "kind": row[7], "statement": row[8],
-        "confidence": float(row[9]), "truth_status": row[10],
-        "task_id": row[11], "source_sha": row[12],
+        "confidence": float(row[9]), "truth_status": truth_status,
+        "task_id": row[11], "source_sha": source_sha,
+        "operational_truth": truth_status == "VERIFIED",
+        "provenance": {
+            "session_id": row[2], "message_id": row[3], "ordinal": row[4],
+            "chat_id": row[5], "role": row[6], "source_sha": source_sha,
+        },
     }

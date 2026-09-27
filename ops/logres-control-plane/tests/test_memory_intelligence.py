@@ -15,6 +15,7 @@ from logres_journal import append_chat_message, ensure_schema as ensure_journal,
 from logres_memory_intelligence import (
     build_context_packet,
     distill_message,
+    distill_pending,
     ensure_schema,
     mark_truth,
     relevant_facts,
@@ -133,7 +134,7 @@ class MemoryIntelligenceTests(unittest.TestCase):
         self.assertTrue(all(r["session_id"] == "battle-session" for r in rows))
         self.assertTrue(all(r["ordinal"] == 1 for r in rows))
 
-    def test_tool_summary_is_supported_but_not_verified_until_marked(self):
+    def test_tool_summary_stays_supported_and_generic_mark_cannot_verify(self):
         msg = self._message(
             "tool-summary",
             "BATTLE-RENDER-001 full E2E PASS at exact SHA abcdef1234567890.",
@@ -142,9 +143,44 @@ class MemoryIntelligenceTests(unittest.TestCase):
         result = distill_message(self.c, msg["id"])
         fact = result["facts"][0]
         self.assertEqual("SUPPORTED", fact["truth_status"])
-        marked = mark_truth(self.c, fact["id"], "VERIFIED", confidence=1.0)
-        self.assertEqual("VERIFIED", marked["truth_status"])
-        self.assertEqual(1.0, marked["confidence"])
+        with self.assertRaisesRegex(ValueError, "cannot promote.*VERIFIED"):
+            mark_truth(self.c, fact["id"], "VERIFIED", confidence=1.0)
+        with self.assertRaisesRegex(ValueError, "cannot promote.*SUPPORTED"):
+            mark_truth(self.c, fact["id"], "SUPPORTED", confidence=0.8)
+        with self.assertRaisesRegex(ValueError, "confidence.*0.*1"):
+            mark_truth(self.c, fact["id"], "CLAIM", confidence=1.1)
+        with self.assertRaisesRegex(ValueError, "confidence.*0.*1"):
+            mark_truth(self.c, fact["id"], "CLAIM", confidence=-0.1)
+        with self.assertRaisesRegex(ValueError, "cannot increase confidence"):
+            mark_truth(self.c, fact["id"], "CLAIM", confidence=0.9)
+        marked = mark_truth(self.c, fact["id"], "CLAIM", confidence=0.5)
+        self.assertEqual("CLAIM", marked["truth_status"])
+        self.assertEqual(0.5, marked["confidence"])
+
+    def test_pending_distillation_requires_session_and_bounded_limit(self):
+        with self.assertRaisesRegex(ValueError, "session_id is required"):
+            distill_pending(self.c)
+        with self.assertRaisesRegex(ValueError, "limit must be between 1 and 500"):
+            distill_pending(self.c, session_id="battle-session", limit=0)
+        with self.assertRaisesRegex(ValueError, "limit must be between 1 and 500"):
+            distill_pending(self.c, session_id="battle-session", limit=501)
+
+    def test_source_sha_requires_exact_full_git_sha(self):
+        short = self._message(
+            "tool-summary",
+            "BATTLE-RENDER-001 PASS at exact SHA abcdef1234567890.",
+            {"task_id": "BATTLE-RENDER-001"},
+        )
+        short_fact = distill_message(self.c, short["id"])["facts"][0]
+        self.assertIsNone(short_fact["source_sha"])
+        full_sha = "a" * 40
+        full = self._message(
+            "tool-summary",
+            f"BATTLE-RENDER-001 PASS at exact SHA {full_sha}.",
+            {"task_id": "BATTLE-RENDER-001"},
+        )
+        full_fact = distill_message(self.c, full["id"])["facts"][0]
+        self.assertEqual(full_sha, full_fact["source_sha"])
 
     def test_relevant_context_is_bounded_and_task_ranked(self):
         for idx in range(30):
@@ -184,13 +220,93 @@ class MemoryIntelligenceTests(unittest.TestCase):
             )
         )
 
-    def test_chat_start_bootstrap_requests_bounded_memory_context(self):
+    def test_context_packet_keeps_unverified_memory_out_of_operational_transcript(self):
+        claim = self._message(
+            "assistant",
+            "BATTLE-RENDER-001 discovery: animation timing remains an inference.",
+            {"task_id": "BATTLE-RENDER-001"},
+        )
+        claim_fact = distill_message(self.c, claim["id"])["facts"][0]
+        supported = self._message(
+            "tool-summary",
+            "BATTLE-RENDER-001 build PASS with supporting test evidence.",
+            {"task_id": "BATTLE-RENDER-001"},
+        )
+        supported_fact = distill_message(self.c, supported["id"])["facts"][0]
+
+        packet = build_context_packet(self.c, "BATTLE-RENDER-001")
+        self.assertEqual("VERIFIED", packet["memory_policy"]["operational_truth_requires"])
+        self.assertEqual([], packet["transcript_excerpts"])
+        self.assertTrue(all("provenance" in fact for fact in packet["structured_memory"]))
+        self.assertTrue(all(not fact["operational_truth"] for fact in packet["structured_memory"]))
+        self.assertFalse(claim_fact["truth_status"] == "VERIFIED")
+
+        self.c.execute(
+            "update memory_facts set truth_status='VERIFIED', confidence=1.0 where id=?",
+            (supported_fact["id"],),
+        )
+        self.c.commit()
+        verified_packet = build_context_packet(self.c, "BATTLE-RENDER-001")
+        self.assertEqual(1, len(verified_packet["transcript_excerpts"]))
+        self.assertEqual(supported["id"], verified_packet["transcript_excerpts"][0]["message_id"])
+
+    def test_context_pack_chat_rejects_expired_lease(self):
+        self.c.execute(
+            "create table brain_task_leases(task_id text primary key, chat_id text, lease_until_epoch real)"
+        )
+        self.c.execute(
+            "insert into brain_task_leases values(?,?,?)",
+            ("BATTLE-RENDER-001", "battle", 1.0),
+        )
+        self.c.commit()
+        with tempfile.TemporaryDirectory() as td:
+            db = Path(td) / "control.sqlite"
+            disk = sqlite3.connect(db)
+            self.c.backup(disk)
+            disk.close()
+            env = os.environ.copy()
+            env["LOGRES_CONTROL_DB"] = str(db)
+            result = subprocess.run(
+                [sys.executable, str(CONTEXT_PACK), "--chat", "battle"],
+                env=env, text=True, capture_output=True, check=False,
+            )
+        self.assertEqual(result.returncode, 5, result.stderr)
+        self.assertIn("no active task lease", result.stderr)
+
+    def test_context_pack_chat_rejects_task_mismatch(self):
+        self.c.execute(
+            "create table brain_task_leases(task_id text primary key, chat_id text, lease_until_epoch real)"
+        )
+        self.c.execute(
+            "insert into brain_task_leases values(?,?,?)",
+            ("BATTLE-RENDER-001", "battle", 9999999999.0),
+        )
+        self.c.commit()
+        with tempfile.TemporaryDirectory() as td:
+            db = Path(td) / "control.sqlite"
+            disk = sqlite3.connect(db)
+            self.c.backup(disk)
+            disk.close()
+            env = os.environ.copy()
+            env["LOGRES_CONTROL_DB"] = str(db)
+            result = subprocess.run(
+                [sys.executable, str(CONTEXT_PACK), "MAP-OTHER-001", "--chat", "battle"],
+                env=env, text=True, capture_output=True, check=False,
+            )
+        self.assertEqual(result.returncode, 6, result.stderr)
+        self.assertIn("does not own task", result.stderr)
+
+    def test_chat_start_bootstrap_requests_bounded_memory_context_and_fails_closed(self):
         chat_start = (CONTROL_ROOT / "bin" / "logres-chat-start").read_text()
         self.assertIn("=== RELEVANT TASK CONTEXT ===", chat_start)
         self.assertIn(
             'logres-context-pack" --chat "$CHAT" --fact-limit 12 --knowledge-limit 8 --transcript-limit 8',
             chat_start,
         )
+        self.assertIn("CONTEXT_RC=$?", chat_start)
+        self.assertIn('[[ "$CONTEXT_RC" == "5" ]]', chat_start)
+        self.assertIn('exit "$CONTEXT_RC"', chat_start)
+        self.assertNotIn('|| echo "No active task context."', chat_start)
 
     def test_context_pack_cli_resolves_active_chat_and_returns_memory_context(self):
         msg = self._message(

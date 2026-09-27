@@ -39,12 +39,12 @@ def main() -> int:
     msg.add_argument("message_id", type=int)
 
     pending = sub.add_parser("pending")
-    pending.add_argument("--session")
+    pending.add_argument("--session", required=True)
     pending.add_argument("--limit", type=int, default=200)
 
     mark = sub.add_parser("mark")
     mark.add_argument("fact_id", type=int)
-    mark.add_argument("status")
+    mark.add_argument("status", choices=("CLAIM", "REJECTED", "SUPERSEDED"))
     mark.add_argument("--confidence", type=float)
     mark.add_argument("--supersedes", type=int)
 

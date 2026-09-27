@@ -69,7 +69,19 @@ else
 fi
 echo
 echo "=== RELEVANT TASK CONTEXT ==="
-"$ROOT/bin/logres-context-pack" --chat "$CHAT" --fact-limit 12 --knowledge-limit 8 --transcript-limit 8 2>/dev/null || echo "No active task context."
+set +e
+CONTEXT_OUTPUT="$("$ROOT/bin/logres-context-pack" --chat "$CHAT" --fact-limit 12 --knowledge-limit 8 --transcript-limit 8 2>&1)"
+CONTEXT_RC=$?
+set -e
+if [[ "$CONTEXT_RC" == "0" ]]; then
+  printf '%s\n' "$CONTEXT_OUTPUT"
+elif [[ "$CONTEXT_RC" == "5" ]]; then
+  echo "No active task context."
+else
+  printf '%s\n' "$CONTEXT_OUTPUT" >&2
+  echo "Task context bootstrap failed closed." >&2
+  exit "$CONTEXT_RC"
+fi
 
 
 if [[ "$CHAT" == "lead" ]]; then
