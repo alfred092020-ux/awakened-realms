@@ -53,8 +53,8 @@ CACHE_READY=0
 CACHE_ARGS=()
 PERF_SPEC_REL="e2e/logres-performance.spec.mjs"
 PERF_REQUIRED=0
-PERF_MAX_CPU_PSI_AVG10="${LOGRES_PERF_MAX_CPU_PSI_AVG10:-0.5}"
-PERF_MAX_LOAD_PER_CPU="${LOGRES_PERF_MAX_LOAD_PER_CPU:-0.2}"
+PERF_MAX_CPU_PSI_AVG10="0.5"
+PERF_MAX_LOAD_PER_CPU="0.2"
 PERF_HOST_SETTLE_ATTEMPTS="${LOGRES_PERF_HOST_SETTLE_ATTEMPTS:-30}"
 PERF_HOST_SETTLE_SLEEP_SEC="${LOGRES_PERF_HOST_SETTLE_SLEEP_SEC:-2}"
 PERF_HOST_READY_CONSECUTIVE="${LOGRES_PERF_HOST_READY_CONSECUTIVE:-2}"
@@ -224,13 +224,19 @@ performance_host_monitor_stop() {
 }
 
 performance_pressure_invalid() {
-  python3 - "$PERF_PRESSURE_LOG" "$PERF_PRESSURE_MONITOR_RC" <<'PY2'
+  python3 - \
+    "$PERF_PRESSURE_LOG" \
+    "$PERF_PRESSURE_MONITOR_RC" \
+    "$PERF_MAX_CPU_PSI_AVG10" \
+    "$PERF_MAX_LOAD_PER_CPU" <<'PY2'
 from pathlib import Path
 import re
 import sys
 
 p = Path(sys.argv[1])
 monitor_rc = int(sys.argv[2])
+configured_psi_max = float(sys.argv[3])
+configured_load_max = float(sys.argv[4])
 if monitor_rc != 0:
     print(f"VERIFY_FARM performance pressure monitor exited unexpectedly rc={monitor_rc}")
     raise SystemExit(2)
@@ -242,6 +248,7 @@ over = 0
 malformed = 0
 psi_unavailable = 0
 inconsistent = 0
+limit_mismatch = 0
 for line in p.read_text().splitlines():
     match = re.search(
         r"psi_avg10=([0-9.]+).*?psi_max=([0-9.]+).*?psi_available=([01]).*?load_per_cpu=([0-9.]+).*?load_max=([0-9.]+).*?over=([01])",
@@ -257,17 +264,22 @@ for line in p.read_text().splitlines():
     samples.append((psi_value, psi_max, load_value, load_max))
     if psi_available != 1:
         psi_unavailable += 1
-    expected_over = int(psi_value > psi_max or load_value > load_max)
+    expected_over = int(
+        psi_value > configured_psi_max or
+        load_value > configured_load_max
+    )
+    limit_mismatch += int(psi_max != configured_psi_max)
+    limit_mismatch += int(load_max != configured_load_max)
     inconsistent += int(flag != expected_over)
     over += expected_over
 if not samples:
     print("VERIFY_FARM performance pressure monitor produced no samples")
     raise SystemExit(2)
-if malformed or psi_unavailable or inconsistent:
+if malformed or psi_unavailable or inconsistent or limit_mismatch:
     print(
         f"VERIFY_FARM performance pressure evidence invalid "
         f"malformed={malformed} psi_unavailable={psi_unavailable} "
-        f"inconsistent={inconsistent}"
+        f"inconsistent={inconsistent} limit_mismatch={limit_mismatch}"
     )
     raise SystemExit(2)
 peak_psi = max(row[0] for row in samples)
