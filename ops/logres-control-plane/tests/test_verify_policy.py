@@ -224,6 +224,17 @@ class VerifyFarmE2EPolicyTests(unittest.TestCase):
         self.assertGreater(perf_block.index('performance_host_monitor_stop'), benchmark)
         self.assertGreater(perf_block.index('performance_pressure_invalid'), benchmark)
 
+    def test_performance_midrun_pressure_evidence_fails_closed_when_unavailable_or_malformed(self):
+        text = SCRIPT.read_text()
+        start = text.index('performance_pressure_invalid()')
+        end = text.index('remote_enabled()', start)
+        block = text[start:end]
+        self.assertIn('psi_available=([01])', block)
+        self.assertIn('malformed += 1', block)
+        self.assertIn('psi_unavailable += 1', block)
+        self.assertIn('if malformed or psi_unavailable:', block)
+        self.assertIn('raise SystemExit(2)', block)
+
     def test_canonical_farm_exports_exact_sha_for_visual_truth(self):
         text = SCRIPT.read_text()
         self.assertIn('export LOGRES_VERIFY_SHA="$SHA"', text)

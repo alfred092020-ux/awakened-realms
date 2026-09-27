@@ -177,7 +177,7 @@ while True:
         if match:
             psi_available = True
             psi_value = float(match.group(1))
-    over = int(psi_value > psi_limit or load_value > load_limit)
+    over = int((not psi_available) or psi_value > psi_limit or load_value > load_limit)
     with out.open("a") as fh:
         fh.write(
             f"{time.time():.3f} psi_avg10={psi_value:.3f} psi_max={psi_limit:.3f} "
@@ -209,21 +209,32 @@ if not p.is_file():
     raise SystemExit(2)
 samples = []
 over = 0
+malformed = 0
+psi_unavailable = 0
 for line in p.read_text().splitlines():
     match = re.search(
-        r"psi_avg10=([0-9.]+).*?psi_max=([0-9.]+).*?load_per_cpu=([0-9.]+).*?load_max=([0-9.]+).*?over=([01])",
+        r"psi_avg10=([0-9.]+).*?psi_max=([0-9.]+).*?psi_available=([01]).*?load_per_cpu=([0-9.]+).*?load_max=([0-9.]+).*?over=([01])",
         line,
     )
     if not match:
+        malformed += 1
         continue
-    psi_value, psi_max, load_value, load_max, flag = (
-        float(match.group(1)), float(match.group(2)),
-        float(match.group(3)), float(match.group(4)), int(match.group(5)),
+    psi_value, psi_max, psi_available, load_value, load_max, flag = (
+        float(match.group(1)), float(match.group(2)), int(match.group(3)),
+        float(match.group(4)), float(match.group(5)), int(match.group(6)),
     )
     samples.append((psi_value, psi_max, load_value, load_max))
+    if psi_available != 1:
+        psi_unavailable += 1
     over += flag
 if not samples:
     print("VERIFY_FARM performance pressure monitor produced no samples")
+    raise SystemExit(2)
+if malformed or psi_unavailable:
+    print(
+        f"VERIFY_FARM performance pressure evidence invalid "
+        f"malformed={malformed} psi_unavailable={psi_unavailable}"
+    )
     raise SystemExit(2)
 peak_psi = max(row[0] for row in samples)
 peak_load = max(row[2] for row in samples)
