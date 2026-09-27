@@ -207,6 +207,23 @@ class VerifyFarmE2EPolicyTests(unittest.TestCase):
         self.assertIn('certified release control FAIL; timing environment is inconclusive', text)
         self.assertIn('performance_control_log=$PERF_CONTROL_LOG', text)
 
+    def test_performance_midrun_host_contention_defers_measurement(self):
+        text = SCRIPT.read_text()
+        self.assertIn('PERF_PRESSURE_LOG=', text)
+        self.assertIn('performance_host_monitor_start()', text)
+        self.assertIn('performance_host_monitor_stop()', text)
+        self.assertIn('performance_pressure_invalid()', text)
+        self.assertIn('benchmark invalidated by host contention', text)
+        self.assertIn('PERF_MAX_CPU_PSI_AVG10', text)
+        self.assertIn('psi_avg10=', text)
+        self.assertIn('load_per_cpu=', text)
+        self.assertIn('psi_value > psi_limit or load_value > load_limit', text)
+        perf_block = text[text.index('performance_rc=0'):text.index('if (( performance_rc == 75 )); then')]
+        benchmark = perf_block.index('npm run test:e2e -- "$PERF_SPEC_REL" --workers=1')
+        self.assertLess(perf_block.index('performance_host_monitor_start'), benchmark)
+        self.assertGreater(perf_block.index('performance_host_monitor_stop'), benchmark)
+        self.assertGreater(perf_block.index('performance_pressure_invalid'), benchmark)
+
     def test_canonical_farm_exports_exact_sha_for_visual_truth(self):
         text = SCRIPT.read_text()
         self.assertIn('export LOGRES_VERIFY_SHA="$SHA"', text)

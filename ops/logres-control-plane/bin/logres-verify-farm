@@ -17,7 +17,9 @@ TEST_LOG="/home/ubuntu/logres/logs/verify-farm-$STAMP-test.log"
 E2E_LOG="/home/ubuntu/logres/logs/verify-farm-$STAMP-e2e.log"
 PERF_LOG="/home/ubuntu/logres/logs/verify-farm-$STAMP-performance.log"
 PERF_CONTROL_LOG="/home/ubuntu/logres/logs/verify-farm-$STAMP-performance-control.log"
+PERF_PRESSURE_LOG="/home/ubuntu/logres/logs/verify-farm-$STAMP-performance-pressure.log"
 PERF_CONTROL_WT="$ROOT/verify-farm-$STAMP-performance-control"
+PERF_PRESSURE_PID=""
 BEHAVIOR_LOG="/home/ubuntu/logres/logs/verify-farm-$STAMP-behavior.log"
 BEHAVIOR_TRACE_MERGE_LOG="/home/ubuntu/logres/logs/verify-farm-$STAMP-behavior-trace-merge.log"
 BEHAVIOR_TRACE_FAILURE_DIR="${LOGRES_BEHAVIOR_TRACE_FAILURE_DIR:-/home/ubuntu/logres/artifacts/behavior-trace-merge-failures}"
@@ -55,6 +57,7 @@ PERF_MAX_LOAD_PER_CPU="${LOGRES_PERF_MAX_LOAD_PER_CPU:-0.70}"
 PERF_HOST_SETTLE_ATTEMPTS="${LOGRES_PERF_HOST_SETTLE_ATTEMPTS:-30}"
 PERF_HOST_SETTLE_SLEEP_SEC="${LOGRES_PERF_HOST_SETTLE_SLEEP_SEC:-2}"
 PERF_HOST_READY_CONSECUTIVE="${LOGRES_PERF_HOST_READY_CONSECUTIVE:-2}"
+PERF_PRESSURE_SAMPLE_SEC="${LOGRES_PERF_PRESSURE_SAMPLE_SEC:-0.25}"
 
 select_e2e_workers() {
   local override="${LOGRES_E2E_WORKERS:-}"
@@ -142,6 +145,94 @@ for attempt in range(1, attempts + 1):
         time.sleep(sleep_sec)
 
 raise SystemExit(75)
+PY2
+}
+
+performance_host_monitor_start() {
+  : >"$PERF_PRESSURE_LOG"
+  python3 - \
+    "$PERF_MAX_CPU_PSI_AVG10" \
+    "$PERF_MAX_LOAD_PER_CPU" \
+    "$PERF_PRESSURE_SAMPLE_SEC" \
+    "$PERF_PRESSURE_LOG" <<'PY2' &
+from pathlib import Path
+import os
+import re
+import sys
+import time
+
+psi_limit = float(sys.argv[1])
+load_limit = float(sys.argv[2])
+sample_sec = max(0.05, float(sys.argv[3]))
+out = Path(sys.argv[4])
+psi = Path("/proc/pressure/cpu")
+
+while True:
+    load_value = os.getloadavg()[0] / (os.cpu_count() or 1)
+    psi_value = 0.0
+    psi_available = False
+    if psi.is_file():
+        text = psi.read_text()
+        match = re.search(r"^some .*?avg10=([0-9.]+)", text, re.MULTILINE)
+        if match:
+            psi_available = True
+            psi_value = float(match.group(1))
+    over = int(psi_value > psi_limit or load_value > load_limit)
+    with out.open("a") as fh:
+        fh.write(
+            f"{time.time():.3f} psi_avg10={psi_value:.3f} psi_max={psi_limit:.3f} "
+            f"psi_available={int(psi_available)} load_per_cpu={load_value:.3f} "
+            f"load_max={load_limit:.3f} over={over}\n"
+        )
+    time.sleep(sample_sec)
+PY2
+  PERF_PRESSURE_PID=$!
+}
+
+performance_host_monitor_stop() {
+  local pid="${PERF_PRESSURE_PID:-}"
+  [[ -n "$pid" ]] || return 0
+  kill "$pid" >/dev/null 2>&1 || true
+  wait "$pid" 2>/dev/null || true
+  PERF_PRESSURE_PID=""
+}
+
+performance_pressure_invalid() {
+  python3 - "$PERF_PRESSURE_LOG" <<'PY2'
+from pathlib import Path
+import re
+import sys
+
+p = Path(sys.argv[1])
+if not p.is_file():
+    print("VERIFY_FARM performance pressure monitor missing")
+    raise SystemExit(2)
+samples = []
+over = 0
+for line in p.read_text().splitlines():
+    match = re.search(
+        r"psi_avg10=([0-9.]+).*?psi_max=([0-9.]+).*?load_per_cpu=([0-9.]+).*?load_max=([0-9.]+).*?over=([01])",
+        line,
+    )
+    if not match:
+        continue
+    psi_value, psi_max, load_value, load_max, flag = (
+        float(match.group(1)), float(match.group(2)),
+        float(match.group(3)), float(match.group(4)), int(match.group(5)),
+    )
+    samples.append((psi_value, psi_max, load_value, load_max))
+    over += flag
+if not samples:
+    print("VERIFY_FARM performance pressure monitor produced no samples")
+    raise SystemExit(2)
+peak_psi = max(row[0] for row in samples)
+peak_load = max(row[2] for row in samples)
+print(
+    f"VERIFY_FARM performance pressure during benchmark samples={len(samples)} "
+    f"peak_psi={peak_psi:.3f} psi_max={samples[-1][1]:.3f} "
+    f"peak_load_per_cpu={peak_load:.3f} load_max={samples[-1][3]:.3f} over={over}"
+)
+raise SystemExit(0 if over else 1)
 PY2
 }
 
@@ -290,6 +381,7 @@ prepare_cache_dimensions
 cleanup() {
   rc=$?
   trap - EXIT INT TERM
+  performance_host_monitor_stop
   git -C "$BASE" worktree remove --force "$TEST_WT" >/dev/null 2>&1 || true
   git -C "$BASE" worktree remove --force "$E2E_WT" >/dev/null 2>&1 || true
   git -C "$BASE" worktree remove --force "$PERF_WT" >/dev/null 2>&1 || true
@@ -793,13 +885,28 @@ PY2
     elif (( host_rc != 0 )); then
       performance_rc=$host_rc
     else
+      performance_host_monitor_start
+      benchmark_rc=0
       (
         set -e
         cd "$PERF_WT"
         npm run test:e2e -- "$PERF_SPEC_REL" --workers=1
-      ) >>"$PERF_LOG" 2>&1 || performance_rc=$?
+      ) >>"$PERF_LOG" 2>&1 || benchmark_rc=$?
+      performance_host_monitor_stop
 
-      if (( performance_rc != 0 )); then
+      pressure_rc=0
+      performance_pressure_invalid >>"$PERF_LOG" 2>&1 || pressure_rc=$?
+      if (( pressure_rc == 0 )); then
+        echo "VERIFY_FARM benchmark invalidated by host contention; deferring without verdict" >>"$PERF_LOG"
+        performance_rc=75
+      elif (( pressure_rc != 1 )); then
+        echo "VERIFY_FARM performance pressure monitor failed closed rc=$pressure_rc" >>"$PERF_LOG"
+        performance_rc=$pressure_rc
+      else
+        performance_rc=$benchmark_rc
+      fi
+
+      if (( performance_rc != 0 && performance_rc != 75 )); then
         control_rc=0
         run_performance_control || control_rc=$?
         if (( control_rc == 1 )); then
