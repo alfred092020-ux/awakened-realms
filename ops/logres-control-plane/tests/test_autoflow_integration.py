@@ -1,8 +1,12 @@
 import hashlib
+import importlib.machinery
+import importlib.util
 import sys
 import tempfile
 import unittest
 from pathlib import Path
+from types import SimpleNamespace
+from unittest import mock
 
 TEST_DIR = Path(__file__).resolve().parent
 LIB_DIR = TEST_DIR.parent / "lib"
@@ -15,6 +19,18 @@ from logres_ai_runner import automatic_api_allowed, budget_state
 from logres_copilot_router import copilot_eligibility, dispatch_task, reconcile_copilot_job
 from logres_reconcile import backpressure
 from logres_route_store import ensure_route_schema
+
+
+def load_control_script(name: str, filename: str):
+    path = TEST_DIR.parent / "bin" / filename
+    loader = importlib.machinery.SourceFileLoader(name, str(path))
+    spec = importlib.util.spec_from_loader(name, loader)
+    module = importlib.util.module_from_spec(spec)
+    loader.exec_module(module)
+    return module
+
+
+coordinator = load_control_script("logres_coordinator_autoflow_test", "logres-coordinator")
 
 
 class FakeAIRunner:
@@ -217,6 +233,63 @@ class AutoflowIntegrationTests(unittest.TestCase):
                 "select count(*) from integration_queue where task_id=? and sha=?",
                 ("IMP1", "c" * 40),
             ).fetchone()[0],
+        )
+
+    def test_worker_auto_cannot_lease_task_after_copilot_dispatch_wins_race(self):
+        conn = make_test_db()
+        ensure_route_schema(conn)
+        seed_task(
+            conn,
+            task_id="IMP-RACE",
+            priority=0,
+            status="READY",
+            work_type="implementation",
+            evidence_policy="CONFIRMED ORIGINAL Global evidence required",
+            acceptance=("race guarded",),
+        )
+        conn.execute(
+            "insert into task_scopes(task_id,path_prefix) values(?,?)",
+            ("IMP-RACE", "src/race.ts"),
+        )
+        conn.execute(
+            "create table brain_members(chat_id text primary key,status text,last_seen_epoch real)"
+        )
+        conn.execute(
+            "insert into brain_members values('worker-auto','IDLE',0)"
+        )
+        conn.commit()
+
+        config = test_config()
+        config["routing"]["copilot_dispatch_enabled"] = True
+        config["routing"]["copilot_mode"] = "bounded_implementation"
+        github = FakeGitHub()
+        dispatched = dispatch_task(
+            conn,
+            "IMP-RACE",
+            "b" * 40,
+            config,
+            github,
+        )
+        self.assertEqual("ACTIVE", dispatched.job.state)
+
+        args = SimpleNamespace(
+            chat="worker-auto",
+            task=None,
+            minutes=60,
+            max_active=6,
+        )
+        with (
+            mock.patch.object(coordinator, "reconcile", return_value=None),
+            mock.patch.object(coordinator, "git_sha", return_value="b" * 40),
+        ):
+            with self.assertRaises(SystemExit) as raised:
+                coordinator.cmd_acquire(conn, args)
+
+        self.assertEqual("NO_READY_WORK", str(raised.exception))
+        self.assertIsNone(
+            conn.execute(
+                "select task_id from brain_task_leases where task_id='IMP-RACE'"
+            ).fetchone()
         )
 
     def test_combined_backpressure_pauses_implementation_and_unknown_ai_spend(self):
