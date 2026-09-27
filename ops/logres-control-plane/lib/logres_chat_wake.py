@@ -222,7 +222,7 @@ class ChatWakeBridge:
         transport: PhoneTransport | None = None,
         clock: Callable[[], float] = time.time,
         sleeper: Callable[[float], None] = time.sleep,
-        hardware_lock_path: str | Path = "/tmp/logres-phone-hardware-qa.lock",
+        hardware_lock_path: str | Path = "/home/ubuntu/logres/control/phone-hardware-qa.lock",
         bridge_lock_path: str | Path = "/tmp/logres-chatgpt-phone-bridge.lock",
     ):
         self.root = Path(root)
