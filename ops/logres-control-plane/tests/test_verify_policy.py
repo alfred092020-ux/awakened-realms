@@ -319,8 +319,8 @@ printf 'control-unavailable=%s\n' "$performance_rc"
     def test_performance_pressure_validator_rejects_partial_benchmark_coverage(self):
         text = SCRIPT.read_text()
         block_start = text.index('performance_pressure_invalid()')
-        code_start = text.index("<<'PY2'\n", block_start) + len("<<'PY2'\n")
-        code_end = text.index('\nPY2\n}', code_start)
+        code_start = text.index("<<'PY2' || validator_rc=$?\n", block_start) + len("<<'PY2' || validator_rc=$?\n")
+        code_end = text.index('\nPY2\n  case "$validator_rc"', code_start)
         validator = text[code_start:code_end]
         with tempfile.TemporaryDirectory() as td:
             pressure = Path(td) / 'pressure.log'
@@ -343,8 +343,8 @@ printf 'control-unavailable=%s\n' "$performance_rc"
     def test_performance_pressure_validator_rejects_single_sample_even_for_short_interval(self):
         text = SCRIPT.read_text()
         block_start = text.index('performance_pressure_invalid()')
-        code_start = text.index("<<'PY2'\n", block_start) + len("<<'PY2'\n")
-        code_end = text.index('\nPY2\n}', code_start)
+        code_start = text.index("<<'PY2' || validator_rc=$?\n", block_start) + len("<<'PY2' || validator_rc=$?\n")
+        code_end = text.index('\nPY2\n  case "$validator_rc"', code_start)
         validator = text[code_start:code_end]
         with tempfile.TemporaryDirectory() as td:
             pressure = Path(td) / 'pressure.log'
@@ -365,8 +365,8 @@ printf 'control-unavailable=%s\n' "$performance_rc"
     def test_performance_pressure_validator_accepts_dense_quiet_coverage(self):
         text = SCRIPT.read_text()
         block_start = text.index('performance_pressure_invalid()')
-        code_start = text.index("<<'PY2'\n", block_start) + len("<<'PY2'\n")
-        code_end = text.index('\nPY2\n}', code_start)
+        code_start = text.index("<<'PY2' || validator_rc=$?\n", block_start) + len("<<'PY2' || validator_rc=$?\n")
+        code_end = text.index('\nPY2\n  case "$validator_rc"', code_start)
         validator = text[code_start:code_end]
         with tempfile.TemporaryDirectory() as td:
             pressure = Path(td) / 'pressure.log'
@@ -385,15 +385,15 @@ printf 'control-unavailable=%s\n' "$performance_rc"
                 ],
                 text=True, capture_output=True, check=False,
             )
-        self.assertEqual(1, proc.returncode)
+        self.assertEqual(10, proc.returncode)
         self.assertIn('samples=9', proc.stdout)
         self.assertIn('over=0', proc.stdout)
 
     def test_performance_pressure_validator_rejects_out_of_order_samples(self):
         text = SCRIPT.read_text()
         block_start = text.index('performance_pressure_invalid()')
-        code_start = text.index("<<'PY2'\n", block_start) + len("<<'PY2'\n")
-        code_end = text.index('\nPY2\n}', code_start)
+        code_start = text.index("<<'PY2' || validator_rc=$?\n", block_start) + len("<<'PY2' || validator_rc=$?\n")
+        code_end = text.index('\nPY2\n  case "$validator_rc"', code_start)
         validator = text[code_start:code_end]
         with tempfile.TemporaryDirectory() as td:
             pressure = Path(td) / 'pressure.log'
@@ -413,8 +413,8 @@ printf 'control-unavailable=%s\n' "$performance_rc"
     def test_performance_pressure_validator_does_not_count_out_of_window_samples(self):
         text = SCRIPT.read_text()
         block_start = text.index('performance_pressure_invalid()')
-        code_start = text.index("<<'PY2'\n", block_start) + len("<<'PY2'\n")
-        code_end = text.index('\nPY2\n}', code_start)
+        code_start = text.index("<<'PY2' || validator_rc=$?\n", block_start) + len("<<'PY2' || validator_rc=$?\n")
+        code_end = text.index('\nPY2\n  case "$validator_rc"', code_start)
         validator = text[code_start:code_end]
         with tempfile.TemporaryDirectory() as td:
             pressure = Path(td) / 'pressure.log'
@@ -429,6 +429,17 @@ printf 'control-unavailable=%s\n' "$performance_rc"
             )
         self.assertEqual(2, proc.returncode)
         self.assertIn('coverage incomplete', proc.stdout)
+
+    def test_performance_pressure_validator_reserves_quiet_exit_code_and_maps_crashes_fail_closed(self):
+        text = SCRIPT.read_text()
+        start = text.index('performance_pressure_invalid()')
+        end = text.index('remote_enabled()', start)
+        block = text[start:end]
+        self.assertIn('raise SystemExit(0 if over else 10)', block)
+        self.assertIn('10)', block)
+        self.assertIn('return 1', block)
+        self.assertIn('*)', block)
+        self.assertIn('return 2', block)
 
     def test_performance_pressure_validator_requires_monitor_ready_token(self):
         text = SCRIPT.read_text()

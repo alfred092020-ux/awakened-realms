@@ -250,6 +250,7 @@ performance_host_monitor_stop() {
 }
 
 performance_pressure_invalid() {
+  local validator_rc=0
   python3 - \
     "$PERF_PRESSURE_LOG" \
     "$PERF_PRESSURE_MONITOR_RC" \
@@ -258,7 +259,7 @@ performance_pressure_invalid() {
     "$PERF_BENCHMARK_START" \
     "$PERF_BENCHMARK_END" \
     "$PERF_PRESSURE_SAMPLE_SEC" \
-    "$PERF_PRESSURE_MONITOR_READY" <<'PY2'
+    "$PERF_PRESSURE_MONITOR_READY" <<'PY2' || validator_rc=$?
 from pathlib import Path
 import math
 import re
@@ -382,8 +383,16 @@ print(
     f"coverage_start_gap={coverage_start_gap:.3f} coverage_end_gap={coverage_end_gap:.3f} "
     f"coverage_gap={coverage_gap:.3f} minimum_samples={minimum_samples}"
 )
-raise SystemExit(0 if over else 1)
+raise SystemExit(0 if over else 10)
 PY2
+  case "$validator_rc" in
+    0) return 0 ;;
+    10) return 1 ;;
+    *)
+      echo "VERIFY_FARM performance pressure validator crashed rc=$validator_rc"
+      return 2
+      ;;
+  esac
 }
 
 remote_enabled() {
