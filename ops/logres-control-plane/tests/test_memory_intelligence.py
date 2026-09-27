@@ -259,6 +259,28 @@ class MemoryIntelligenceTests(unittest.TestCase):
                     "{}",
                 ),
             )
+            c.execute(
+                """
+                insert into memory_facts(
+                  fingerprint,session_id,message_id,ordinal,chat_id,role,kind,
+                  statement,confidence,truth_status,task_id,metadata_json
+                ) values(?,?,?,?,?,?,?,?,?,?,?,?)
+                """,
+                (
+                    "orphan-fingerprint",
+                    "missing-session",
+                    999999,
+                    1,
+                    "legacy",
+                    "assistant",
+                    "discovery",
+                    "LEGACY-MEMORY-001 discovery: orphan provenance.",
+                    0.5,
+                    "CLAIM",
+                    "LEGACY-MEMORY-001",
+                    "{}",
+                ),
+            )
             c.commit()
             expected_sha = c.execute(
                 "select message_sha256 from chat_messages where id=?", (msg["id"],)
@@ -268,8 +290,17 @@ class MemoryIntelligenceTests(unittest.TestCase):
             stored_sha = c.execute(
                 "select message_sha256 from memory_facts where fingerprint='legacy-fingerprint'"
             ).fetchone()[0]
+            orphan_sha = c.execute(
+                "select message_sha256 from memory_facts where fingerprint='orphan-fingerprint'"
+            ).fetchone()[0]
+            visible = relevant_facts(c, "LEGACY-MEMORY-001", limit=10)
             self.assertIn("message_sha256", columns)
             self.assertEqual(expected_sha, stored_sha)
+            self.assertIsNone(orphan_sha)
+            self.assertEqual(
+                ["legacy-fingerprint"],
+                [item["fingerprint"] for item in visible],
+            )
         finally:
             c.close()
 

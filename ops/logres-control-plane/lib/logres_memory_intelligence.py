@@ -295,6 +295,7 @@ def relevant_facts(conn: sqlite3.Connection, task_id: str, *, terms: Iterable[st
                f.source_sha,f.message_sha256
           from memory_facts f
          where f.truth_status='CLAIM'
+           and f.message_sha256 is not null
            and f.task_id=?
          order by f.confidence desc,f.id desc
          limit 500
