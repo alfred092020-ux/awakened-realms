@@ -1,0 +1,156 @@
+{
+  "authority": "ADVISORY_STUDIO_EVOLUTION_NO_DIRECT_INTEGRATION_SPEND_CREDENTIAL_OR_PROTECTED_BRANCH_AUTHORITY",
+  "direct_integration_authority": false,
+  "domain_priority": [
+    "review_scheduling",
+    "decomposition",
+    "concurrency",
+    "specialization",
+    "routing"
+  ],
+  "evolvable_domains": {
+    "concurrency": {
+      "bounds": {
+        "max_workers": [
+          1,
+          8
+        ],
+        "queue_pressure_threshold": [
+          1,
+          20
+        ]
+      },
+      "candidate": {
+        "max_workers": 4,
+        "queue_pressure_threshold": 3
+      },
+      "direction": "lower",
+      "metric": "queue_age_seconds",
+      "trigger": {
+        "metric": "queue_age_seconds",
+        "operator": "gt",
+        "resource_pressure_max": 0.8,
+        "threshold": 300.0
+      }
+    },
+    "decomposition": {
+      "bounds": {
+        "max_task_minutes": [
+          30,
+          240
+        ],
+        "split_threshold": [
+          1,
+          8
+        ]
+      },
+      "candidate": {
+        "max_task_minutes": 90,
+        "split_threshold": 2
+      },
+      "direction": "lower",
+      "metric": "rework_rate",
+      "trigger": {
+        "metric": "rework_rate",
+        "operator": "gt",
+        "threshold": 0.15
+      }
+    },
+    "review_scheduling": {
+      "bounds": {
+        "review_batch_size": [
+          1,
+          4
+        ],
+        "sensitive_review_priority": [
+          0,
+          2
+        ]
+      },
+      "candidate": {
+        "review_batch_size": 1,
+        "sensitive_review_priority": 1
+      },
+      "direction": "higher",
+      "metric": "verification_pass_rate",
+      "trigger": {
+        "metric": "verification_pass_rate",
+        "operator": "lt",
+        "threshold": 0.9
+      }
+    },
+    "routing": {
+      "bounds": {
+        "critical_path_bias": [
+          0.0,
+          1.0
+        ],
+        "queue_pressure_weight": [
+          0.25,
+          2.0
+        ]
+      },
+      "candidate": {
+        "critical_path_bias": 0.75,
+        "queue_pressure_weight": 1.0
+      },
+      "direction": "higher",
+      "metric": "critical_path_completions",
+      "trigger": {
+        "metric": "critical_path_completions",
+        "operator": "lte",
+        "threshold": 1.0
+      }
+    },
+    "specialization": {
+      "bounds": {
+        "specialist_slots": [
+          0,
+          6
+        ],
+        "specialization_threshold": [
+          1,
+          10
+        ]
+      },
+      "candidate": {
+        "specialist_slots": 2,
+        "specialization_threshold": 2
+      },
+      "direction": "higher",
+      "metric": "throughput",
+      "trigger": {
+        "metric": "throughput",
+        "operator": "lt",
+        "threshold": 2.0
+      }
+    }
+  },
+  "forbidden_attestation_reviewers": [
+    "studio-evolution",
+    "executive-lead",
+    "department-lead",
+    "devin-lead"
+  ],
+  "protected_key_fragments": [
+    "safety",
+    "spend",
+    "billing",
+    "credential",
+    "secret",
+    "token",
+    "protected_branch",
+    "merge_authority",
+    "deploy_authority",
+    "direct_integration",
+    "independent_verification",
+    "paid_model",
+    "privileged_exec"
+  ],
+  "rollback": {
+    "regressions_max": 3,
+    "rework_rate_max": 0.3,
+    "verification_pass_rate_min": 0.75
+  },
+  "version": 1
+}
