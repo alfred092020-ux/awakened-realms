@@ -1,10 +1,14 @@
+import contextlib
+import io
 import json
 import os
+import runpy
 import sqlite3
 import subprocess
 import sys
 import tempfile
 import unittest
+from unittest import mock
 from pathlib import Path
 
 CONTROL_ROOT = Path(__file__).resolve().parents[1]
@@ -313,6 +317,30 @@ class MemoryIntelligenceTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         payload = json.loads(result.stdout)
         self.assertEqual("MAP-OTHER-001", payload["task"]["id"])
+
+    def test_context_pack_chat_revalidates_lease_before_emit(self):
+        self.c.execute(
+            "create table brain_task_leases(task_id text primary key, chat_id text, lease_until_epoch real)"
+        )
+        self.c.execute(
+            "insert into brain_task_leases values(?,?,?)",
+            ("BATTLE-RENDER-001", "battle", 150.0),
+        )
+        self.c.commit()
+        with tempfile.TemporaryDirectory() as td:
+            db = Path(td) / "control.sqlite"
+            disk = sqlite3.connect(db)
+            self.c.backup(disk)
+            disk.close()
+            module = runpy.run_path(str(CONTEXT_PACK), run_name="logres_context_pack_test")
+            stderr = io.StringIO()
+            stdout = io.StringIO()
+            with mock.patch.object(module["time"], "time", side_effect=[100.0, 200.0]):
+                with contextlib.redirect_stderr(stderr), contextlib.redirect_stdout(stdout):
+                    rc = module["main"](["--chat", "battle", "--db", str(db)])
+        self.assertEqual(5, rc)
+        self.assertIn("lease expired before context emission", stderr.getvalue())
+        self.assertEqual("", stdout.getvalue())
 
     def test_context_pack_chat_rejects_expired_lease(self):
         self.c.execute(
