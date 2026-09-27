@@ -150,6 +150,21 @@ class DevinLeadLifecycleTests(unittest.TestCase):
         route=lead.route_task(task,{'capacity':{'plan':{'lane_caps':{'devin_cloud':2}}}},lead.default_policy())
         self.assertEqual('devin',route['engine']); self.assertEqual('swe-2-max',route['model']); self.assertFalse(route['paid'])
 
+
+    def test_route_uses_confident_learned_free_model(self):
+        task={'id':'G','priority':0,'lane':'game','title':'Battle flow','status':'READY','work_type':'implementation'}
+        snap={'capacity':{'plan':{'lane_caps':{'devin_cloud':2}}},'learned_routing':{'implementation':{'engine':'devin','model':'swe-2-medium','confidence':0.8,'samples':8,'reason':'verified_outcomes'}}}
+        route=lead.route_task(task,snap,lead.default_policy())
+        self.assertEqual('devin',route['engine']); self.assertEqual('swe-2-medium',route['model']); self.assertEqual('verified_outcomes',route['routing_reason']); self.assertFalse(route['paid'])
+
+    def test_route_rejects_learned_paid_or_low_confidence_model(self):
+        task={'id':'G','priority':0,'lane':'game','title':'Battle flow','status':'READY','work_type':'implementation'}
+        policy=lead.default_policy()
+        for learned in ({'engine':'devin','model':'paid-model','confidence':1.0,'samples':99,'reason':'bad'}, {'engine':'devin','model':'swe-2-medium','confidence':0.1,'samples':1,'reason':'sparse'}):
+            snap={'capacity':{'plan':{'lane_caps':{'devin_cloud':1}}},'learned_routing':{'implementation':learned}}
+            route=lead.route_task(task,snap,policy)
+            self.assertEqual('swe-2-max',route['model']); self.assertFalse(route['paid'])
+
     def test_paid_route_is_never_enabled_by_lead(self):
         policy=lead.default_policy(); policy['models']['allow_paid_default']=True
         task={'id':'G','priority':0,'lane':'game','title':'Battle flow','status':'READY','work_type':'implementation'}

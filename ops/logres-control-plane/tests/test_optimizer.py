@@ -12,6 +12,7 @@ from fixtures import make_test_db, seed_task
 from logres_knowledge import refresh_graph
 from logres_optimizer import (
     engine_success_rate,
+    learned_model_choice,
     rank_task_ids,
     record_swarm_observations,
     score_ready_tasks,
@@ -130,6 +131,35 @@ class OptimizerTests(unittest.TestCase):
 
         self.assertAlmostEqual(0.825, rate, places=3)
 
+
+    def test_learned_model_choice_requires_bounded_sample_and_uses_outcomes_latency_cost(self):
+        conn = make_test_db(); add_discovery_table(conn); refresh_graph(conn)
+        learned_model_choice(conn, work_type='implementation', candidates=['swe-2-max'], preferred='swe-2-max', min_samples=3)
+        # max: slower and one failure; medium: consistently successful, faster, cheap
+        rows = [
+            ('M1','devin','implementation','DONE',180.0,0.0,'swe-2-max'),
+            ('M2','devin','implementation','FAILED',140.0,0.0,'swe-2-max'),
+            ('M3','devin','implementation','DONE',170.0,0.0,'swe-2-max'),
+            ('D1','devin','implementation','DONE',70.0,0.0,'swe-2-medium'),
+            ('D2','devin','implementation','DONE',75.0,0.0,'swe-2-medium'),
+            ('D3','devin','implementation','DONE',80.0,0.0,'swe-2-medium'),
+        ]
+        for task,engine,work,outcome,duration,cost,model in rows:
+            conn.execute("insert into optimizer_observations(task_id,engine,work_type,outcome,duration_seconds,estimated_cost_usd,model) values(?,?,?,?,?,?,?)", (task,engine,work,outcome,duration,cost,model))
+        conn.commit()
+        choice=learned_model_choice(conn, work_type='implementation', candidates=['swe-2-max','swe-2-medium','paid-model'], preferred='swe-2-max', min_samples=3)
+        self.assertEqual('swe-2-medium', choice['model'])
+        self.assertGreaterEqual(choice['samples'], 3)
+        self.assertGreater(choice['confidence'], 0)
+        self.assertNotIn('paid-model', choice['eligible_models'])
+
+    def test_learned_model_choice_cold_start_is_deterministic_and_free(self):
+        conn=make_test_db(); add_discovery_table(conn); refresh_graph(conn)
+        choice=learned_model_choice(conn, work_type='implementation', candidates=['swe-2-max','swe-2-medium'], preferred='swe-2-max', min_samples=3)
+        self.assertEqual('swe-2-max', choice['model'])
+        self.assertEqual('cold_start', choice['reason'])
+        self.assertFalse(choice['learned'])
+
     def test_swarm_observations_are_idempotent(self):
         conn = make_test_db()
         add_discovery_table(conn)
@@ -162,13 +192,14 @@ class OptimizerTests(unittest.TestCase):
         self.assertEqual(1, record_swarm_observations(conn))
         self.assertEqual(0, record_swarm_observations(conn))
         row = conn.execute(
-            """select outcome,duration_seconds,estimated_cost_usd,source_job_id
+            """select outcome,duration_seconds,estimated_cost_usd,source_job_id,model
                  from optimizer_observations"""
         ).fetchone()
         self.assertEqual("DONE", row[0])
         self.assertAlmostEqual(60.0, row[1], places=1)
         self.assertAlmostEqual(0.001, row[2], places=6)
         self.assertIsNotNone(row[3])
+        self.assertIsNone(row[4])
 
 
 if __name__ == "__main__":

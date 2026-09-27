@@ -3,12 +3,19 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import sqlite3
 import statistics
+import sys
 import subprocess
 import tempfile
 import time
 from datetime import datetime, timezone
 from pathlib import Path
+
+LIB_DIR = Path(__file__).resolve().parent
+if str(LIB_DIR) not in sys.path:
+    sys.path.insert(0, str(LIB_DIR))
+from logres_optimizer import learned_model_choice, score_ready_tasks
 
 
 def _ensure_runtime(conn) -> None:
@@ -29,9 +36,13 @@ def load_lead_policy(path: Path) -> dict:
     models = data.get("models", {})
     if bool(models.get("allow_paid_default", False)):
         raise ValueError("paid models may not be enabled by default")
+    free_models = {"swe-2-max", "swe-2-medium", "swe-2-high"}
     preferred = str(models.get("preferred") or "swe-2-max")
-    if preferred not in {"swe-2-max", "swe-2-medium", "swe-2-high"}:
+    if preferred not in free_models:
         raise ValueError("preferred model must be a free SWE-2 variant")
+    candidates = models.get("candidates", list(free_models))
+    if not isinstance(candidates, list) or not candidates or any(str(item) not in free_models for item in candidates):
+        raise ValueError("learned model candidates must contain only free SWE-2 variants")
     return data
 
 
@@ -111,7 +122,14 @@ def default_policy() -> dict:
         "predicate_cooldown_seconds": 900,
         "infrastructure_work_ratio_max": 0.35,
         "stale_worker_seconds": 900,
-        "models": {"preferred": "swe-2-max", "allow_paid_default": False},
+        "models": {
+            "preferred": "swe-2-max",
+            "candidates": ["swe-2-max", "swe-2-medium", "swe-2-high"],
+            "min_samples": 3,
+            "min_confidence": 0.5,
+            "window": 30,
+            "allow_paid_default": False,
+        },
     }
 
 
@@ -132,6 +150,27 @@ def _load_json_file(path: Path) -> dict:
 
 def collect_planning_snapshot(conn, root: Path, policy: dict) -> dict:
     root = Path(root)
+    models = dict(policy.get("models") or {})
+    learned_routing = {}
+    optimizer_scores = {}
+    try:
+        learned_routing["implementation"] = {
+            "engine": "devin",
+            **learned_model_choice(
+                conn,
+                work_type="implementation",
+                candidates=list(models.get("candidates") or ["swe-2-max", "swe-2-medium", "swe-2-high"]),
+                preferred=str(models.get("preferred") or "swe-2-max"),
+                min_samples=int(models.get("min_samples", 3) or 3),
+                window=int(models.get("window", 30) or 30),
+            ),
+        }
+    except (sqlite3.Error, ValueError):
+        learned_routing = {}
+    try:
+        optimizer_scores = {item.task_id: float(item.score) for item in score_ready_tasks(conn)}
+    except (sqlite3.Error, ValueError):
+        optimizer_scores = {}
     return {
         "tasks": _table_rows(conn, "tasks"),
         "leases": _table_rows(conn, "brain_task_leases"),
@@ -144,6 +183,8 @@ def collect_planning_snapshot(conn, root: Path, policy: dict) -> dict:
         "goal_snapshots": _table_rows(conn, "goal_snapshots"),
         "capacity": _load_json_file(root / "control" / "capacity-state.json"),
         "swarm": _load_json_file(root / "control" / "swarm-state.json"),
+        "learned_routing": learned_routing,
+        "optimizer_scores": optimizer_scores,
         "policy": policy,
     }
 
@@ -168,7 +209,8 @@ def score_ready_task(task: dict, snapshot: dict, policy: dict) -> tuple:
         class_rank = 2
     else:
         class_rank = 3
-    return (class_rank, priority, str(task.get("id") or ""))
+    learned_score = float(snapshot.get("optimizer_scores", {}).get(str(task.get("id") or ""), 0.0) or 0.0)
+    return (class_rank, priority, -learned_score, str(task.get("id") or ""))
 
 
 def select_frontier(snapshot: dict, policy: dict) -> list[dict]:
@@ -366,7 +408,31 @@ def route_task(task: dict, snapshot: dict, policy: dict) -> dict:
         return {"task_id": task.get("id"), "action": "dispatch", "engine": "research", "paid": False}
     devin_cap = int(snapshot.get("capacity", {}).get("plan", {}).get("lane_caps", {}).get("devin_cloud", 1) or 0)
     if devin_cap > 0:
-        return {"task_id": task.get("id"), "action": "dispatch", "engine": "devin", "model": str(policy.get("models", {}).get("preferred") or "swe-2-max"), "paid": False}
+        models = dict(policy.get("models") or {})
+        preferred = str(models.get("preferred") or "swe-2-max")
+        free_models = {"swe-2-max", "swe-2-medium", "swe-2-high"}
+        learned = snapshot.get("learned_routing", {}).get(work_type, {})
+        learned_model = str(learned.get("model") or "")
+        confidence = float(learned.get("confidence", 0.0) or 0.0)
+        samples = int(learned.get("samples", 0) or 0)
+        min_confidence = float(models.get("min_confidence", 0.5) or 0.5)
+        min_samples = int(models.get("min_samples", 3) or 3)
+        use_learned = (
+            str(learned.get("engine") or "devin") == "devin"
+            and learned_model in free_models
+            and confidence >= min_confidence
+            and samples >= min_samples
+        )
+        model = learned_model if use_learned else preferred
+        if model not in free_models:
+            model = "swe-2-max"
+        return {
+            "task_id": task.get("id"), "action": "dispatch", "engine": "devin",
+            "model": model, "paid": False,
+            "routing_reason": str(learned.get("reason") or "cold_start") if use_learned else "policy_fallback",
+            "routing_confidence": confidence if use_learned else 0.0,
+            "routing_samples": samples if use_learned else 0,
+        }
     return {"task_id": task.get("id"), "action": "defer", "reason": "no free implementation capacity", "paid": False}
 
 

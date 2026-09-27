@@ -9,6 +9,14 @@
   "stale_worker_seconds": 900,
   "models": {
     "preferred": "swe-2-max",
-    "allow_paid_default": false
+    "allow_paid_default": false,
+    "candidates": [
+      "swe-2-max",
+      "swe-2-medium",
+      "swe-2-high"
+    ],
+    "min_samples": 3,
+    "min_confidence": 0.5,
+    "window": 30
   }
 }
