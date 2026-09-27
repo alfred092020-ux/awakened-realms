@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 import sqlite3
+import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -40,6 +42,91 @@ def _table_exists(conn: sqlite3.Connection, name: str) -> bool:
         "select 1 from sqlite_master where type='table' and name=?",
         (name,),
     ).fetchone() is not None
+
+
+_EXACT_SHA_RE = re.compile(r"^[0-9a-fA-F]{40}$")
+
+
+def _exact_sha(value: Any) -> str | None:
+    raw = str(value or "").strip()
+    return raw.lower() if _EXACT_SHA_RE.fullmatch(raw) else None
+
+
+def _rows_as_dicts(cursor: sqlite3.Cursor) -> list[dict[str, Any]]:
+    names = [str(item[0]) for item in cursor.description or ()]
+    return [dict(zip(names, row)) for row in cursor.fetchall()]
+
+
+def _sha_attribution_sources(
+    conn: sqlite3.Connection,
+    sha: str,
+    *,
+    root: Path,
+) -> list[str]:
+    sources: list[str] = []
+    if _table_exists(conn, "verification"):
+        row = conn.execute(
+            "select 1 from verification where lower(sha)=? limit 1",
+            (sha,),
+        ).fetchone()
+        if row is not None:
+            sources.append("verification")
+    try:
+        proc = subprocess.run(
+            ["git", "-C", str(root), "cat-file", "-e", f"{sha}^{{commit}}"],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            check=False,
+            timeout=5,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        proc = None
+    if proc is not None and proc.returncode == 0:
+        sources.append("git")
+    return sources
+
+
+def _regression_evidence(
+    conn: sqlite3.Connection,
+    integration_sha: str,
+    *,
+    root: Path,
+) -> tuple[int, list[dict[str, Any]], list[dict[str, Any]]]:
+    if not _table_exists(conn, "regressions"):
+        return 0, [], []
+    rows = _rows_as_dicts(
+        conn.execute("select * from regressions where status='OPEN' order by id")
+    )
+    canonical = _exact_sha(integration_sha)
+    blocking: list[dict[str, Any]] = []
+    nonblocking: list[dict[str, Any]] = []
+    for row in rows:
+        evidence = dict(row)
+        raw_sha = str(row.get("sha") or "").strip()
+        exact = _exact_sha(raw_sha)
+        evidence["sha"] = exact if exact is not None else (raw_sha or None)
+        evidence["attribution_sources"] = []
+        if not raw_sha:
+            evidence["blocking_reason"] = "missing_sha"
+            blocking.append(evidence)
+            continue
+        if exact is None:
+            evidence["blocking_reason"] = "malformed_sha"
+            blocking.append(evidence)
+            continue
+        if canonical is not None and exact == canonical:
+            evidence["blocking_reason"] = "current_integration_sha"
+            blocking.append(evidence)
+            continue
+        sources = _sha_attribution_sources(conn, exact, root=root)
+        evidence["attribution_sources"] = sources
+        if not sources:
+            evidence["blocking_reason"] = "unattributable_sha"
+            blocking.append(evidence)
+            continue
+        evidence["nonblocking_reason"] = "noncanonical_attributed_sha"
+        nonblocking.append(evidence)
+    return len(rows), blocking, nonblocking
 
 
 def _artifact_hashes(
@@ -120,16 +207,6 @@ def _verification_rows(conn: sqlite3.Connection, integration_sha: str) -> list[d
     ]
 
 
-def _open_regression_count(conn: sqlite3.Connection) -> int:
-    if not _table_exists(conn, "regressions"):
-        return 0
-    return int(
-        conn.execute(
-            "select count(*) from regressions where status='OPEN'"
-        ).fetchone()[0]
-    )
-
-
 def build_certificate(
     conn: sqlite3.Connection,
     contracts: dict[str, Any],
@@ -146,7 +223,11 @@ def build_certificate(
         integration_sha=integration_sha,
         root=root,
     ).to_dict()
-    open_regressions = _open_regression_count(conn)
+    open_regressions, blocking_regressions, nonblocking_regressions = _regression_evidence(
+        conn,
+        integration_sha,
+        root=root,
+    )
     content_scope_report = None
     content_scope_valid = True
     if milestone_id == "CONTENT-0.5":
@@ -158,8 +239,8 @@ def build_certificate(
     valid = (
         result["state"] == "COMPLETE"
         and not result["unmet_criterion_ids"]
-        and open_regressions == 0
-        and len(integration_sha) == 40
+        and not blocking_regressions
+        and _exact_sha(integration_sha) is not None
         and content_scope_valid
     )
     return {
@@ -180,6 +261,10 @@ def build_certificate(
             root=root,
         ),
         "open_regression_count": open_regressions,
+        "blocking_regression_count": len(blocking_regressions),
+        "nonblocking_regression_count": len(nonblocking_regressions),
+        "blocking_regressions": blocking_regressions,
+        "nonblocking_regressions": nonblocking_regressions,
         "project_completion_scope": content_scope_report,
         "completion_claim": (
             "DECLARED_RECONSTRUCTION_SCOPE_ONLY"

@@ -130,6 +130,54 @@ def add_device_proof(
     return int(cur.lastrowid), artifact
 
 
+def add_regression(
+    conn,
+    *,
+    regression_id: int,
+    sha: str | None,
+    task_id: str = "REG-TEST",
+    kind: str = "candidate-verify",
+    ref: str | None = None,
+    status: str = "OPEN",
+):
+    conn.execute(
+        """insert into regressions(
+             id,fingerprint,task_id,kind,ref,sha,summary,logs_json,
+             created_at,created_epoch,status
+           ) values(?,?,?,?,?,?,?,?,?,?,?)""",
+        (
+            regression_id,
+            f"fp-{regression_id}",
+            task_id,
+            kind,
+            ref,
+            sha,
+            f"regression {regression_id}",
+            "[]",
+            "2026-09-24T00:00:00+00:00",
+            float(regression_id),
+            status,
+        ),
+    )
+    conn.commit()
+
+
+def add_verification(conn, *, sha: str, status: str = "FAIL", ref: str | None = None):
+    conn.execute(
+        "insert into verification values(?,?,?,?,?,?,?)",
+        (
+            ref or f"verify-{sha[:12]}",
+            sha,
+            "full-e2e",
+            status,
+            1.0,
+            "2026-09-24T00:00:00+00:00",
+            "test evidence",
+        ),
+    )
+    conn.commit()
+
+
 def make_db():
     conn = sqlite3.connect(":memory:")
     conn.row_factory = sqlite3.Row
@@ -144,7 +192,17 @@ def make_db():
           duration_sec real,ran_at text,details text
         );
         create table regressions(
-          id integer primary key,status text
+          id integer primary key,
+          fingerprint text not null,
+          task_id text,
+          kind text not null,
+          ref text,
+          sha text,
+          summary text not null,
+          logs_json text not null default '[]',
+          created_at text not null,
+          created_epoch real not null,
+          status text not null default 'OPEN'
         );
         create table milestones(
           id text primary key,status text,updated_at text
@@ -261,7 +319,7 @@ class GoalCertifyTests(unittest.TestCase):
 
     def test_open_regression_fails_closed(self):
         conn = make_db()
-        conn.execute("insert into regressions values(1,'OPEN')")
+        add_regression(conn, regression_id=1, sha=None)
         cert = build_certificate(
             conn,
             contracts(),
@@ -272,6 +330,114 @@ class GoalCertifyTests(unittest.TestCase):
         )
         self.assertFalse(cert["valid"])
         self.assertEqual(1, cert["open_regression_count"])
+        self.assertEqual(1, cert["blocking_regression_count"])
+        self.assertEqual([], cert["nonblocking_regressions"])
+        self.assertEqual("missing_sha", cert["blocking_regressions"][0]["blocking_reason"])
+
+    def test_open_regression_on_current_integration_sha_blocks_certificate(self):
+        conn = make_db()
+        add_regression(conn, regression_id=1, sha=SHA, ref=SHA)
+        cert = build_certificate(
+            conn,
+            contracts(),
+            "M",
+            integration_sha=SHA,
+            root=Path("."),
+            timestamp="2026-09-24T00:00:00+00:00",
+        )
+        self.assertFalse(cert["valid"])
+        self.assertEqual(1, cert["open_regression_count"])
+        self.assertEqual(1, cert["blocking_regression_count"])
+        self.assertEqual("current_integration_sha", cert["blocking_regressions"][0]["blocking_reason"])
+        self.assertEqual(SHA, cert["blocking_regressions"][0]["sha"])
+
+    def test_attributed_noncanonical_regression_is_audit_only(self):
+        conn = make_db()
+        candidate = "b" * 40
+        add_verification(conn, sha=candidate, status="FAIL", ref="candidate-fail")
+        add_regression(conn, regression_id=1, sha=candidate, ref=candidate)
+        before = [tuple(row) for row in conn.execute("select * from regressions order by id")]
+        cert = build_certificate(
+            conn,
+            contracts(),
+            "M",
+            integration_sha=SHA,
+            root=Path("."),
+            timestamp="2026-09-24T00:00:00+00:00",
+        )
+        after = [tuple(row) for row in conn.execute("select * from regressions order by id")]
+        self.assertTrue(cert["valid"])
+        self.assertEqual("PASS", cert["status"])
+        self.assertEqual(1, cert["open_regression_count"])
+        self.assertEqual(0, cert["blocking_regression_count"])
+        self.assertEqual([], cert["blocking_regressions"])
+        self.assertEqual(1, len(cert["nonblocking_regressions"]))
+        evidence = cert["nonblocking_regressions"][0]
+        self.assertEqual(candidate, evidence["sha"])
+        self.assertEqual("noncanonical_attributed_sha", evidence["nonblocking_reason"])
+        self.assertIn("verification", evidence["attribution_sources"])
+        self.assertEqual(before, after)
+
+    def test_missing_malformed_and_unattributable_regressions_fail_closed(self):
+        conn = make_db()
+        add_regression(conn, regression_id=1, sha=None)
+        add_regression(conn, regression_id=2, sha="not-a-sha")
+        add_regression(conn, regression_id=3, sha="c" * 40)
+        with tempfile.TemporaryDirectory() as td:
+            cert = build_certificate(
+                conn,
+                contracts(),
+                "M",
+                integration_sha=SHA,
+                root=Path(td),
+                timestamp="2026-09-24T00:00:00+00:00",
+            )
+        self.assertFalse(cert["valid"])
+        self.assertEqual(3, cert["open_regression_count"])
+        self.assertEqual(3, cert["blocking_regression_count"])
+        reasons = {row["blocking_reason"] for row in cert["blocking_regressions"]}
+        self.assertEqual({"missing_sha", "malformed_sha", "unattributable_sha"}, reasons)
+
+    def test_failed_memory_and_plugin_candidates_do_not_invalidate_verified_canonical_release(self):
+        conn = make_db()
+        memory_sha = "b" * 40
+        plugin_sha = "c" * 40
+        add_verification(conn, sha=memory_sha, status="FAIL", ref="memory-candidate")
+        add_verification(conn, sha=plugin_sha, status="FAIL", ref="plugin-candidate")
+        add_regression(
+            conn,
+            regression_id=1,
+            sha=memory_sha,
+            task_id="MEMORY-INTELLIGENCE-CANDIDATE",
+            ref=memory_sha,
+        )
+        add_regression(
+            conn,
+            regression_id=2,
+            sha=plugin_sha,
+            task_id="BRAIN-PLUGIN-CANDIDATE",
+            ref=plugin_sha,
+        )
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            add_device_proof(conn, root, sha=SHA)
+            before = [tuple(row) for row in conn.execute("select * from regressions order by id")]
+            cert = build_certificate(
+                conn,
+                device_contracts(),
+                "M",
+                integration_sha=SHA,
+                root=root,
+                timestamp="2026-09-24T00:00:00+00:00",
+            )
+            after = [tuple(row) for row in conn.execute("select * from regressions order by id")]
+        self.assertTrue(cert["valid"])
+        self.assertEqual("PASS", cert["status"])
+        self.assertEqual(2, cert["open_regression_count"])
+        self.assertEqual(0, cert["blocking_regression_count"])
+        self.assertEqual(2, len(cert["nonblocking_regressions"]))
+        self.assertEqual({memory_sha, plugin_sha}, {row["sha"] for row in cert["nonblocking_regressions"]})
+        self.assertEqual(before, after)
 
     def test_contract_change_invalidates_old_certificate(self):
         conn = make_db()
