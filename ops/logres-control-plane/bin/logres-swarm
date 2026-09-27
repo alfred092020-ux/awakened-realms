@@ -18,6 +18,10 @@ from logres_devin import DevinAgentError, devin_models_report, select_model
 from logres_knowledge import graph_stats, refresh_graph
 from logres_optimizer import record_swarm_observations
 from logres_resource_broker import infer_task_workload, plan_workload
+from logres_storage_guard import (
+    fanout_guard as storage_fanout_guard,
+    load_policy as load_storage_policy,
+)
 from logres_swarm import (
     acquire_task,
     active_structural_repair,
@@ -91,6 +95,12 @@ INTEGRATION_CHECKOUT = Path(
 )
 WORKER_START = str(ROOT / "bin/logres-worker-start")
 SUPERVISOR = str(ROOT / "bin/logres-supervisor")
+STORAGE_POLICY = Path(
+    os.environ.get(
+        "LOGRES_STORAGE_POLICY",
+        str(CONTROL_ROOT / "config/storage_retention.json"),
+    )
+)
 
 
 def load_json(path: Path) -> dict:
@@ -861,6 +871,23 @@ def dispatch_copilot(limit: int) -> dict:
 
 
 def tick(dry_run: bool = False) -> dict:
+    try:
+        storage_gate = storage_fanout_guard(
+            ROOT,
+            load_storage_policy(STORAGE_POLICY),
+            CONFIG,
+            apply_brownout=not dry_run,
+        )
+    except Exception as exc:
+        storage_gate = {
+            "band": "unknown",
+            "allow_new_fanout": False,
+            "preserve_brain_writes": True,
+            "preserve_verifier_writes": True,
+            "error": f"{type(exc).__name__}: {exc}",
+            "brownout": {"active": True, "changed": False},
+        }
+
     supervisor = {"ensured": False}
     if not dry_run and Path(SUPERVISOR).is_file():
         try:
@@ -907,7 +934,13 @@ def tick(dry_run: bool = False) -> dict:
         "implementation": [],
         "research": [],
         "dry_run": dry_run,
+        "storage": storage_gate,
     }
+    if not storage_gate["allow_new_fanout"]:
+        payload["status"] = "STORAGE_BROWNOUT"
+        payload["after"] = swarm_capacity(conn, cfg).__dict__
+        conn.close()
+        return payload
     if not payload["enabled"] or before.free_slots <= 0:
         payload["after"] = swarm_capacity(conn, cfg).__dict__
         conn.close()

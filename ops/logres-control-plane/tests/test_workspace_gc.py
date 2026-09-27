@@ -297,6 +297,10 @@ class WorkspaceGcMaintenanceTests(unittest.TestCase):
             CONTROL_ROOT / "bin" / "logres-maintain"
         ).read_text()
         self.assertIn(
+            "logres-storage-guard apply",
+            maintain,
+        )
+        self.assertNotIn(
             "logres-workspace-gc apply --limit 25",
             maintain,
         )

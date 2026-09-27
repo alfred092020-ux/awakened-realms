@@ -42,6 +42,20 @@ class SwarmTests(unittest.TestCase):
     def tearDown(self):
         self.conn.close()
 
+    def test_swarm_storage_gate_precedes_every_new_fanout_lane(self):
+        script = (CONTROL_ROOT / "bin" / "logres-swarm").read_text()
+        self.assertIn("from logres_storage_guard import", script)
+        gate = script.index("storage_fanout_guard(")
+        refusal = script.index('if not storage_gate["allow_new_fanout"]')
+        self.assertLess(gate, refusal)
+        for marker in (
+            'payload["devin"] = dispatch_devin',
+            'payload["copilot"] = dispatch_copilot',
+            'payload["implementation"] = dispatch_patch',
+            'payload["research"] = dispatch_research',
+        ):
+            self.assertLess(refusal, script.index(marker))
+
     def test_swarm_tick_keeps_user_supervisor_alive(self):
         script = (CONTROL_ROOT / "bin" / "logres-swarm").read_text()
         self.assertIn('SUPERVISOR = str(ROOT / "bin/logres-supervisor")', script)

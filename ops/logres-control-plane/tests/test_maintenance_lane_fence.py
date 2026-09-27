@@ -60,7 +60,7 @@ class MaintenanceLaneFenceTests(unittest.TestCase):
     def test_maintain_is_versioned_with_expected_core_actions(self):
         text = (BIN / "logres-maintain").read_text()
         for marker in (
-            "logres-worktree-gc --apply --age-hours 24",
+            "logres-storage-guard apply",
             "git -C \"$BASE\" maintenance run --auto",
             "logres-control-backup --dated",
             "logres-doctor || true",

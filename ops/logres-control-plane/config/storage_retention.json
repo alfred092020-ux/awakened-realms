@@ -1,0 +1,133 @@
+{
+  "audit_root": "artifacts/storage-guard",
+  "brownout": {
+    "autoflow_config": "control/autoflow.json",
+    "state_path": "control/storage-pressure.json"
+  },
+  "expected_autonomy_min_free_disk_gib": 30.0,
+  "inventory_roots": [
+    {
+      "kind": "worktrees",
+      "name": "worktrees",
+      "path": "work"
+    },
+    {
+      "kind": "logs",
+      "name": "logs",
+      "path": "logs"
+    },
+    {
+      "kind": "evidence_and_extracted_assets",
+      "name": "artifacts",
+      "path": "artifacts"
+    },
+    {
+      "kind": "cache",
+      "name": "cache",
+      "path": "cache"
+    },
+    {
+      "kind": "evidence",
+      "name": "index",
+      "path": "index"
+    },
+    {
+      "kind": "brain",
+      "name": "control",
+      "path": "control"
+    },
+    {
+      "kind": "scratch",
+      "name": "tmp",
+      "path": "tmp"
+    },
+    {
+      "kind": "scratch",
+      "name": "scratch",
+      "path": "scratch"
+    },
+    {
+      "kind": "verification",
+      "name": "verification_shm",
+      "path": "/dev/shm/logres"
+    },
+    {
+      "kind": "build",
+      "name": "canonical_dist",
+      "path": "src/awakened-realms/dist"
+    },
+    {
+      "kind": "recovery",
+      "name": "recovery",
+      "path": "recovery"
+    },
+    {
+      "kind": "research_evidence",
+      "name": "research",
+      "path": "research"
+    }
+  ],
+  "max_actions_per_run": 200,
+  "protected_roots": [
+    "control",
+    "index",
+    "artifacts",
+    "recovery",
+    "research",
+    "src",
+    "work"
+  ],
+  "retention_tiers": [
+    {
+      "min_age_hours": {
+        "critical": 6,
+        "high": 12,
+        "warning": 24
+      },
+      "name": "verification_tmp",
+      "patterns": [
+        "verify-farm-*",
+        "merge-preflight-*"
+      ],
+      "root": "/dev/shm/logres"
+    },
+    {
+      "min_age_hours": {
+        "critical": 6,
+        "high": 24,
+        "warning": 72
+      },
+      "name": "capacity_scratch",
+      "patterns": [
+        "capacity-*"
+      ],
+      "root": "scratch"
+    },
+    {
+      "min_age_hours": {
+        "critical": 72,
+        "high": 168,
+        "warning": 336
+      },
+      "name": "logs",
+      "patterns": [
+        "verify-farm-*.log",
+        "finish-*.log",
+        "preflight-*.log"
+      ],
+      "root": "logs"
+    }
+  ],
+  "schema": "logres-storage-retention/1",
+  "thresholds": {
+    "critical_free_gib": 30.0,
+    "high_free_gib": 40.0,
+    "warning_free_gib": 60.0
+  },
+  "workspace_gc": {
+    "enabled": true,
+    "preview_age_hours": 2,
+    "workspace_limit": 25,
+    "worktree_age_hours": 24
+  }
+}

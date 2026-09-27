@@ -1,0 +1,73 @@
+#!/usr/bin/env python3
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import sqlite3
+import sys
+from pathlib import Path
+
+CONTROL_ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(CONTROL_ROOT / "lib"))
+
+from logres_storage_guard import (
+    apply_guard,
+    classify_pressure,
+    collect_protected_paths,
+    filesystem_free_bytes,
+    inventory_storage,
+    load_policy,
+    plan_cleanup,
+)
+
+ROOT = Path(os.environ.get("LOGRES_ROOT", "/home/ubuntu/logres"))
+DB = Path(os.environ.get("LOGRES_CONTROL_DB", str(ROOT / "control/control.sqlite")))
+POLICY = Path(os.environ.get("LOGRES_STORAGE_POLICY", str(CONTROL_ROOT / "config/storage_retention.json")))
+
+
+def connect() -> sqlite3.Connection:
+    conn = sqlite3.connect(DB, timeout=30)
+    conn.row_factory = sqlite3.Row
+    conn.execute("pragma busy_timeout=30000")
+    return conn
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(prog="logres-storage-guard")
+    sub = parser.add_subparsers(dest="command", required=True)
+    sub.add_parser("status")
+    sub.add_parser("plan")
+    sub.add_parser("apply")
+    args = parser.parse_args()
+    policy = load_policy(POLICY)
+    conn = connect()
+    try:
+        if args.command == "apply":
+            payload = apply_guard(ROOT, conn, policy)
+        else:
+            free = filesystem_free_bytes(ROOT)
+            pressure = classify_pressure(free, policy)
+            protected = collect_protected_paths(conn)
+            payload = {
+                "schema": "logres-storage-guard-status/1",
+                "apply": False,
+                "pressure": pressure,
+                "inventory": inventory_storage(ROOT, policy),
+                "protected_reference_count": len(protected),
+            }
+            if args.command == "plan":
+                payload["cleanup_plan"] = plan_cleanup(
+                    ROOT,
+                    policy,
+                    pressure["band"],
+                    protected_paths=protected,
+                )
+        print(json.dumps(payload, indent=2, sort_keys=True))
+        return 0
+    finally:
+        conn.close()
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

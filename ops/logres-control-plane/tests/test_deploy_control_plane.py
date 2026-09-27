@@ -33,6 +33,7 @@ PRODUCTION_FILES = (
     "bin/logres-temporal",
     "bin/logres-health-snapshot",
     "bin/logres-maintain",
+    "bin/logres-storage-guard",
     "bin/logres-blocker-router",
     "bin/logres-behavior-trace",
     "bin/logres-bottleneck",
@@ -162,6 +163,7 @@ PRODUCTION_FILES = (
     "lib/logres_optimizer.py",
     "lib/logres_patch_agent.py",
     "lib/logres_preview_reaper.py",
+    "lib/logres_storage_guard.py",
     "lib/logres_reconcile.py",
     "lib/logres_regression_reconcile.py",
     "lib/logres_regression_signature.py",
@@ -203,6 +205,7 @@ PRODUCTION_FILES = (
     "config/studio_departments.json",
     "config/department_lead_profiles.json",
     "config/studio_evolution.json",
+    "config/storage_retention.json",
     "config/devin_isolation.json",
     "config/devin_workers.json",
     "config/devin_chatgpt_workers.json",
@@ -320,6 +323,16 @@ class DeployControlPlaneTests(unittest.TestCase):
             self.assertTrue(
                 all("openai_api_key" not in str(item.destination) for item in deployed)
             )
+
+    def test_storage_guard_runtime_and_policy_are_deployed(self):
+        expected = {
+            "bin/logres-storage-guard": 0o755,
+            "lib/logres_storage_guard.py": 0o600,
+            "config/storage_retention.json": 0o600,
+        }
+        for path, mode in expected.items():
+            self.assertIn(path, MANIFEST)
+            self.assertEqual(mode, MANIFEST[path][1])
 
     def test_superbrain_wake_feedback_migration_is_deployed_privately(self):
         migrations = (

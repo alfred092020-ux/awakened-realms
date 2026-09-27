@@ -9,8 +9,7 @@ mkdir -p /home/ubuntu/logres/logs
 
 {
   echo "=== $(date -Is) ==="
-  /home/ubuntu/logres/bin/logres-workspace-gc apply --limit 25 || true
-  /home/ubuntu/logres/bin/logres-worktree-gc --apply --age-hours 24 || true
+  /home/ubuntu/logres/bin/logres-storage-guard apply || true
   git -C "$BASE" worktree prune
   git -C "$BASE" maintenance run --auto || git -C "$BASE" gc --auto
   git -C "$BASE" commit-graph write --reachable --changed-paths || true
@@ -46,15 +45,5 @@ for p in [
     except Exception as e:
         print('sqlite optimize failed',p,e)
 PY
-  for f in     /home/ubuntu/.desktop-commander-remote.log     /home/ubuntu/.desktop-commander-watchdog.log     /home/ubuntu/logres/logs/*.log     /home/ubuntu/logres/index/*.log
-  do
-    [[ -f "$f" ]] || continue
-    size=$(stat -c %s "$f" 2>/dev/null || echo 0)
-    if (( size > 20971520 )); then
-      tail -c 5242880 "$f" > "$f.trim"
-      mv "$f.trim" "$f"
-      echo "trimmed $f"
-    fi
-  done
   /home/ubuntu/logres/bin/logres-doctor || true
 } >> "$LOG" 2>&1
