@@ -150,6 +150,29 @@ class VerifyFarmE2EPolicyTests(unittest.TestCase):
         self.assertIn('--log "$PERF_LOG"', text)
         self.assertIn('performance_log=$PERF_LOG', text)
 
+    def test_performance_lane_uses_fresh_exact_sha_worktree_after_shared_e2e(self):
+        text = SCRIPT.read_text()
+        self.assertIn('PERF_WT="$ROOT/verify-farm-$STAMP-performance"', text)
+        self.assertIn('git -C "$BASE" worktree add --detach "$PERF_WT" "$SHA"', text)
+        self.assertIn('prepare_deps "$PERF_WT"', text)
+        self.assertIn('hydrate "$PERF_WT"', text)
+        self.assertIn('cd "$PERF_WT"', text)
+        self.assertIn('git -C "$BASE" worktree remove --force "$PERF_WT"', text)
+        perf_block = text[text.index('performance_rc=0'):text.index('if (( performance_rc == 75 )); then')]
+        self.assertNotIn('cd "$E2E_WT"\n      npm run test:e2e -- "$PERF_SPEC_REL"', perf_block)
+
+    def test_performance_lane_setup_failure_cannot_fall_through_to_benchmark(self):
+        text = SCRIPT.read_text()
+        perf_block = text[text.index('performance_rc=0'):text.index('if (( performance_rc == 75 )); then')]
+        self.assertIn(
+            'if (( performance_rc == 0 )); then\n    host_rc=0',
+            perf_block,
+        )
+        self.assertIn(
+            'npm run test:e2e -- "$PERF_SPEC_REL" --workers=1',
+            perf_block,
+        )
+
     def test_performance_host_contention_defers_without_false_failure(self):
         text = SCRIPT.read_text()
         self.assertIn('performance_host_ready()', text)
@@ -166,14 +189,14 @@ class VerifyFarmE2EPolicyTests(unittest.TestCase):
         self.assertIn('no verification verdict recorded', text)
         self.assertLess(
             text.index('wait "$e2e_pid" || e2e_rc=$?'),
-            text.index('performance_host_ready >"$PERF_LOG"'),
+            text.index('performance_host_ready >>"$PERF_LOG"'),
         )
         candidate_perf_index = text.index(
             'npm run test:e2e -- "$PERF_SPEC_REL" --workers=1',
             text.index('performance_rc=0'),
         )
         self.assertLess(
-            text.index('performance_host_ready >"$PERF_LOG"'),
+            text.index('performance_host_ready >>"$PERF_LOG"'),
             candidate_perf_index,
         )
         self.assertIn('latest_release_control_sha()', text)

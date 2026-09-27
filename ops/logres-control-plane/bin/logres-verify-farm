@@ -12,6 +12,7 @@ PRIVATE_ANCHOR="${LOGRES_PRIVATE_ANCHOR:-/home/ubuntu/logres/private/logres-priv
 STAMP=$(date +%Y%m%dT%H%M%S)
 TEST_WT="$ROOT/verify-farm-$STAMP-test"
 E2E_WT="$ROOT/verify-farm-$STAMP-e2e"
+PERF_WT="$ROOT/verify-farm-$STAMP-performance"
 TEST_LOG="/home/ubuntu/logres/logs/verify-farm-$STAMP-test.log"
 E2E_LOG="/home/ubuntu/logres/logs/verify-farm-$STAMP-e2e.log"
 PERF_LOG="/home/ubuntu/logres/logs/verify-farm-$STAMP-performance.log"
@@ -291,6 +292,7 @@ cleanup() {
   trap - EXIT INT TERM
   git -C "$BASE" worktree remove --force "$TEST_WT" >/dev/null 2>&1 || true
   git -C "$BASE" worktree remove --force "$E2E_WT" >/dev/null 2>&1 || true
+  git -C "$BASE" worktree remove --force "$PERF_WT" >/dev/null 2>&1 || true
   git -C "$BASE" worktree remove --force "$PERF_CONTROL_WT" >/dev/null 2>&1 || true
   rm -f     "/tmp/logres-remote-pool-health-$STAMP.json"     "$CACHE_JSON"     "$BEHAVIOR_TRACE_DB"     "$BEHAVIOR_TRACE_DB-shm"     "$BEHAVIOR_TRACE_DB-wal"     "$BEHAVIOR_TRACE_WRAPPER"     "$VISUAL_TRUTH_DB"     "$VISUAL_TRUTH_DB-shm"     "$VISUAL_TRUTH_DB-wal"     "$VISUAL_TRUTH_WRAPPER"
   dur=$(( $(date +%s)-START ))
@@ -754,27 +756,58 @@ wait "$e2e_pid" || e2e_rc=$?
 
 performance_rc=0
 if (( e2e_rc == 0 && PERF_REQUIRED == 1 )); then
-  host_rc=0
-  performance_host_ready >"$PERF_LOG" 2>&1 || host_rc=$?
-  if (( host_rc == 75 )); then
-    performance_rc=75
-  elif (( host_rc != 0 )); then
-    performance_rc=$host_rc
-  else
-    (
-      set -e
-      cd "$E2E_WT"
-      npm run test:e2e -- "$PERF_SPEC_REL" --workers=1
-    ) >>"$PERF_LOG" 2>&1 || performance_rc=$?
+  git -C "$BASE" worktree add --detach "$PERF_WT" "$SHA" >>"$PERF_LOG" 2>&1 || performance_rc=$?
+  if (( performance_rc == 0 )); then
+    prepare_deps "$PERF_WT" >>"$PERF_LOG" 2>&1 || performance_rc=$?
+  fi
+  if (( performance_rc == 0 )); then
+    hydrate "$PERF_WT" >>"$PERF_LOG" 2>&1 || performance_rc=$?
+  fi
+  if (( performance_rc == 0 )); then
+    PERF_PORT=$(python3 - <<'PY2'
+import socket
+s=socket.socket()
+s.bind(("127.0.0.1",0))
+print(s.getsockname()[1])
+s.close()
+PY2
+)
+    python3 - "$PERF_WT/playwright.config.mjs" "$PERF_PORT" <<'PY2' >>"$PERF_LOG" 2>&1 || performance_rc=$?
+from pathlib import Path
+import sys
+p=Path(sys.argv[1]); port=sys.argv[2]
+s=p.read_text()
+s=s.replace("127.0.0.1:4174",f"127.0.0.1:{port}")
+s=s.replace("--port 4174",f"--port {port}")
+p.write_text(s)
+PY2
+  fi
+  if (( performance_rc == 0 )); then
+    (cd "$PERF_WT" && npm run build) >>"$PERF_LOG" 2>&1 || performance_rc=$?
+  fi
+  if (( performance_rc == 0 )); then
+    host_rc=0
+    performance_host_ready >>"$PERF_LOG" 2>&1 || host_rc=$?
+    if (( host_rc == 75 )); then
+      performance_rc=75
+    elif (( host_rc != 0 )); then
+      performance_rc=$host_rc
+    else
+      (
+        set -e
+        cd "$PERF_WT"
+        npm run test:e2e -- "$PERF_SPEC_REL" --workers=1
+      ) >>"$PERF_LOG" 2>&1 || performance_rc=$?
 
-    if (( performance_rc != 0 )); then
-      control_rc=0
-      run_performance_control || control_rc=$?
-      if (( control_rc == 1 )); then
-        echo "VERIFY_FARM candidate timing failed and certified release control also failed"           >>"$PERF_LOG"
-        performance_rc=75
-      elif (( control_rc == 2 )); then
-        echo "VERIFY_FARM certified release control unavailable; preserving candidate failure"           >>"$PERF_LOG"
+      if (( performance_rc != 0 )); then
+        control_rc=0
+        run_performance_control || control_rc=$?
+        if (( control_rc == 1 )); then
+          echo "VERIFY_FARM candidate timing failed and certified release control also failed"           >>"$PERF_LOG"
+          performance_rc=75
+        elif (( control_rc == 2 )); then
+          echo "VERIFY_FARM certified release control unavailable; preserving candidate failure"           >>"$PERF_LOG"
+        fi
       fi
     fi
   fi
