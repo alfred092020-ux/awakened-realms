@@ -172,6 +172,107 @@ class MemoryIntelligenceTests(unittest.TestCase):
         self.assertEqual(message_sha, scoped_fact["provenance"]["message_sha256"])
         self.assertEqual("journal-metadata", scoped_fact["provenance"]["task_binding"])
 
+    def test_memory_fact_retains_journal_hash_without_source_message(self):
+        msg = self._message(
+            "assistant",
+            "BATTLE-RENDER-001 discovery: persistent journal provenance test.",
+            {"task_id": "BATTLE-RENDER-001"},
+        )
+        fact = distill_message(self.c, msg["id"])["facts"][0]
+        original_sha = self.c.execute(
+            "select message_sha256 from chat_messages where id=?",
+            (msg["id"],),
+        ).fetchone()[0]
+        stored_sha = self.c.execute(
+            "select message_sha256 from memory_facts where id=?",
+            (fact["id"],),
+        ).fetchone()[0]
+        self.assertEqual(original_sha, stored_sha)
+
+        self.c.execute("delete from chat_messages where id=?", (msg["id"],))
+        self.c.commit()
+        facts = relevant_facts(self.c, "BATTLE-RENDER-001", limit=5)
+        retained = next(item for item in facts if item["id"] == fact["id"])
+        self.assertEqual(original_sha, retained["provenance"]["message_sha256"])
+
+    def test_schema_migrates_legacy_memory_facts_and_backfills_journal_hash(self):
+        c = sqlite3.connect(":memory:")
+        c.row_factory = sqlite3.Row
+        try:
+            ensure_journal(c)
+            open_chat(
+                c,
+                chat_id="legacy",
+                session_id="legacy-session",
+                archive_root=Path(tempfile.gettempdir()) / "memory-intelligence-tests",
+            )
+            msg = append_chat_message(
+                c,
+                session_id="legacy-session",
+                role="assistant",
+                content="LEGACY-MEMORY-001 discovery: migrate provenance.",
+                metadata={"task_id": "LEGACY-MEMORY-001"},
+                source_path="test",
+            )
+            c.executescript(
+                """
+                create table memory_facts(
+                  id integer primary key autoincrement,
+                  fingerprint text not null unique,
+                  session_id text not null,
+                  message_id integer not null,
+                  ordinal integer not null,
+                  chat_id text not null,
+                  role text not null,
+                  kind text not null,
+                  statement text not null,
+                  confidence real not null,
+                  truth_status text not null default 'CLAIM',
+                  task_id text,
+                  source_sha text,
+                  metadata_json text not null default '{}',
+                  supersedes_id integer,
+                  created_at text not null default (datetime('now')),
+                  updated_at text not null default (datetime('now'))
+                );
+                """
+            )
+            c.execute(
+                """
+                insert into memory_facts(
+                  fingerprint,session_id,message_id,ordinal,chat_id,role,kind,
+                  statement,confidence,truth_status,task_id,metadata_json
+                ) values(?,?,?,?,?,?,?,?,?,?,?,?)
+                """,
+                (
+                    "legacy-fingerprint",
+                    "legacy-session",
+                    msg["id"],
+                    1,
+                    "legacy",
+                    "assistant",
+                    "discovery",
+                    "LEGACY-MEMORY-001 discovery: migrate provenance.",
+                    0.5,
+                    "CLAIM",
+                    "LEGACY-MEMORY-001",
+                    "{}",
+                ),
+            )
+            c.commit()
+            expected_sha = c.execute(
+                "select message_sha256 from chat_messages where id=?", (msg["id"],)
+            ).fetchone()[0]
+            ensure_schema(c)
+            columns = {row[1] for row in c.execute("pragma table_info(memory_facts)")}
+            stored_sha = c.execute(
+                "select message_sha256 from memory_facts where fingerprint='legacy-fingerprint'"
+            ).fetchone()[0]
+            self.assertIn("message_sha256", columns)
+            self.assertEqual(expected_sha, stored_sha)
+        finally:
+            c.close()
+
     def test_distillation_redacts_credential_shaped_memory(self):
         value = "redactme1234567890"
         msg = self._message(

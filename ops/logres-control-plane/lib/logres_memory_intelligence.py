@@ -72,6 +72,7 @@ def ensure_schema(conn: sqlite3.Connection) -> None:
           fingerprint text not null unique,
           session_id text not null,
           message_id integer not null,
+          message_sha256 text,
           ordinal integer not null,
           chat_id text not null,
           role text not null,
@@ -100,6 +101,24 @@ def ensure_schema(conn: sqlite3.Connection) -> None:
         );
         """
     )
+    columns = {row[1] for row in conn.execute("pragma table_info(memory_facts)")}
+    if "message_sha256" not in columns:
+        conn.execute("alter table memory_facts add column message_sha256 text")
+    journal_exists = conn.execute(
+        "select 1 from sqlite_master where type='table' and name='chat_messages'"
+    ).fetchone()
+    if journal_exists:
+        conn.execute(
+            """
+            update memory_facts
+               set message_sha256=(
+                   select m.message_sha256 from chat_messages m
+                    where m.id=memory_facts.message_id
+                      and m.session_id=memory_facts.session_id
+               )
+             where message_sha256 is null
+            """
+        )
     conn.commit()
 
 
@@ -202,13 +221,13 @@ def distill_message(conn: sqlite3.Connection, message_id: int) -> dict:
         cur = conn.execute(
             """
             insert into memory_facts(
-              fingerprint,session_id,message_id,ordinal,chat_id,role,kind,
+              fingerprint,session_id,message_id,message_sha256,ordinal,chat_id,role,kind,
               statement,confidence,truth_status,task_id,source_sha,metadata_json
-            ) values(?,?,?,?,?,?,?,?,?,?,?,?,?)
+            ) values(?,?,?,?,?,?,?,?,?,?,?,?,?,?)
             on conflict(fingerprint) do nothing
             """,
             (
-                fingerprint,row[1],row[0],row[2],row[7],row[3],kind,statement,
+                fingerprint,row[1],row[0],row[5],row[2],row[7],row[3],kind,statement,
                 confidence,truth_status,task_id,source_sha,
                 _compact({"message_sha256": row[5], "metadata": safe_metadata, "redactions": redactions[0]}),
             ),
@@ -219,9 +238,8 @@ def distill_message(conn: sqlite3.Connection, message_id: int) -> dict:
             """
             select f.id,f.fingerprint,f.session_id,f.message_id,f.ordinal,f.chat_id,
                    f.role,f.kind,f.statement,f.confidence,f.truth_status,f.task_id,
-                   f.source_sha,m.message_sha256
+                   f.source_sha,f.message_sha256
               from memory_facts f
-              join chat_messages m on m.id=f.message_id and m.session_id=f.session_id
              where f.fingerprint=?
             """,
             (fingerprint,),
@@ -274,9 +292,8 @@ def relevant_facts(conn: sqlite3.Connection, task_id: str, *, terms: Iterable[st
         """
         select f.id,f.fingerprint,f.session_id,f.message_id,f.ordinal,f.chat_id,
                f.role,f.kind,f.statement,f.confidence,f.truth_status,f.task_id,
-               f.source_sha,m.message_sha256
+               f.source_sha,f.message_sha256
           from memory_facts f
-          join chat_messages m on m.id=f.message_id and m.session_id=f.session_id
          where f.truth_status='CLAIM'
            and f.task_id=?
          order by f.confidence desc,f.id desc
