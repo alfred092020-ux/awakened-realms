@@ -6,6 +6,7 @@ import {
   readFile,
   writeFile,
 } from 'node:fs/promises'
+import os from 'node:os'
 import path from 'node:path'
 
 import {
@@ -13,6 +14,127 @@ import {
   expect,
   test,
 } from '@playwright/test'
+
+const HOST_CPU_PSI_AVG10_MAX = 0.5
+const HOST_LOAD_PER_CPU_MAX = 0.2
+const QUIET_CONSECUTIVE_SAMPLES = 3
+const QUIET_SAMPLE_INTERVAL_MS = 1000
+const QUIET_MAX_SAMPLES = 120
+
+async function readHostPressure() {
+  const [
+    psiText,
+    loadText,
+  ] =
+    await Promise.all([
+      readFile(
+        '/proc/pressure/cpu',
+        'utf8',
+      ),
+      readFile(
+        '/proc/loadavg',
+        'utf8',
+      ),
+    ])
+
+  const psiMatch =
+    psiText.match(
+      /^some .*?avg10=([0-9.]+)/m,
+    )
+
+  const psiAvg10 =
+    Number(
+      psiMatch?.[1],
+    )
+
+  const load1 =
+    Number(
+      loadText
+        .trim()
+        .split(/\s+/)[0],
+    )
+
+  const cpuCount =
+    Math.max(
+      1,
+      os.cpus().length,
+    )
+
+  const loadPerCpu =
+    load1 /
+    cpuCount
+
+  if (
+    !Number.isFinite(
+      psiAvg10,
+    ) ||
+    !Number.isFinite(
+      loadPerCpu,
+    )
+  ) {
+    throw new Error(
+      'Performance gate could not read Linux host pressure.',
+    )
+  }
+
+  return {
+    psi_avg10:
+      psiAvg10,
+    load_per_cpu:
+      loadPerCpu,
+  }
+}
+
+async function waitForQuietHost() {
+  let consecutive =
+    0
+
+  let latest =
+    null
+
+  for (
+    let sampleIndex =
+      0;
+    sampleIndex <
+      QUIET_MAX_SAMPLES;
+    sampleIndex +=
+      1
+  ) {
+    latest =
+      await readHostPressure()
+
+    const quiet =
+      latest.psi_avg10 <=
+        HOST_CPU_PSI_AVG10_MAX &&
+      latest.load_per_cpu <=
+        HOST_LOAD_PER_CPU_MAX
+
+    consecutive =
+      quiet
+        ? consecutive +
+          1
+        : 0
+
+    if (
+      consecutive >=
+      QUIET_CONSECUTIVE_SAMPLES
+    ) {
+      return latest
+    }
+
+    await new Promise(
+      resolve =>
+        setTimeout(
+          resolve,
+          QUIET_SAMPLE_INTERVAL_MS,
+        ),
+    )
+  }
+
+  throw new Error(
+    `Performance host did not reach dual-quiet state: psi=${latest?.psi_avg10 ?? 'missing'} load_per_cpu=${latest?.load_per_cpu ?? 'missing'}`,
+  )
+}
 
 function exactSha() {
   const fromEnv =
@@ -250,7 +372,7 @@ test(
     }
 
     test.setTimeout(
-      90_000,
+      240_000,
     )
 
     const baseURL =
@@ -277,6 +399,9 @@ test(
       attemptIndex +=
         1
     ) {
+      const hostPressure =
+        await waitForQuietHost()
+
       const browser =
         await chromium.launch()
 
@@ -407,6 +532,18 @@ test(
             1,
           samples:
             intervals.length,
+          host_psi_avg10:
+            Number(
+              hostPressure.psi_avg10.toFixed(
+                3,
+              ),
+            ),
+          host_load_per_cpu:
+            Number(
+              hostPressure.load_per_cpu.toFixed(
+                3,
+              ),
+            ),
           bootstrap_ms:
             Number(
               bootstrapMs.toFixed(
