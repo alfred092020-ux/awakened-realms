@@ -257,7 +257,8 @@ performance_pressure_invalid() {
     "$PERF_MAX_LOAD_PER_CPU" \
     "$PERF_BENCHMARK_START" \
     "$PERF_BENCHMARK_END" \
-    "$PERF_PRESSURE_SAMPLE_SEC" <<'PY2'
+    "$PERF_PRESSURE_SAMPLE_SEC" \
+    "$PERF_PRESSURE_MONITOR_READY" <<'PY2'
 from pathlib import Path
 import math
 import re
@@ -270,8 +271,12 @@ configured_load_max = float(sys.argv[4])
 benchmark_start = float(sys.argv[5])
 benchmark_end = float(sys.argv[6])
 sample_sec = float(sys.argv[7])
+monitor_ready = int(sys.argv[8])
 if monitor_rc != 0:
     print(f"VERIFY_FARM performance pressure monitor exited unexpectedly rc={monitor_rc}")
+    raise SystemExit(2)
+if monitor_ready != 1:
+    print("VERIFY_FARM performance pressure monitor never reached readiness")
     raise SystemExit(2)
 if not p.is_file():
     print("VERIFY_FARM performance pressure monitor missing")
@@ -318,6 +323,8 @@ if malformed or psi_unavailable or inconsistent or limit_mismatch:
     raise SystemExit(2)
 
 coverage_slack = max(0.75, sample_sec * 3.0)
+benchmark_duration = max(0.0, benchmark_end - benchmark_start)
+minimum_samples = max(2, int(math.ceil(benchmark_duration / coverage_slack)))
 sample_times = [row[0] for row in samples]
 coverage_start_gap = max(0.0, sample_times[0] - benchmark_start)
 coverage_end_gap = max(0.0, benchmark_end - sample_times[-1])
@@ -330,6 +337,7 @@ coverage_invalid = (
     or not math.isfinite(benchmark_end)
     or benchmark_start <= 0.0
     or benchmark_end < benchmark_start
+    or len(samples) < minimum_samples
     or coverage_start_gap > coverage_slack
     or coverage_end_gap > coverage_slack
     or coverage_gap > coverage_slack
@@ -338,7 +346,8 @@ if coverage_invalid:
     print(
         f"VERIFY_FARM performance pressure coverage incomplete "
         f"start_gap={coverage_start_gap:.3f} end_gap={coverage_end_gap:.3f} "
-        f"max_gap={coverage_gap:.3f} slack={coverage_slack:.3f}"
+        f"max_gap={coverage_gap:.3f} slack={coverage_slack:.3f} "
+        f"samples={len(samples)} minimum_samples={minimum_samples}"
     )
     raise SystemExit(2)
 
@@ -349,7 +358,8 @@ print(
     f"peak_psi={peak_psi:.3f} psi_max={samples[-1][2]:.3f} "
     f"peak_load_per_cpu={peak_load:.3f} load_max={samples[-1][4]:.3f} over={over} "
     f"coverage_start_gap={coverage_start_gap:.3f} coverage_end_gap={coverage_end_gap:.3f} "
-    f"coverage_gap={coverage_gap:.3f}"
+    f"coverage_gap={coverage_gap:.3f} samples={len(samples)} "
+    f"minimum_samples={minimum_samples}"
 )
 raise SystemExit(0 if over else 1)
 PY2
