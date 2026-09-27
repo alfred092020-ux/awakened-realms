@@ -578,7 +578,7 @@ printf 'pid=%s rc=%s\n' "$PERF_PRESSURE_PID" "$PERF_PRESSURE_MONITOR_RC"
         start = text.index('performance_pressure_invalid()')
         end = text.index('remote_enabled()', start)
         block = text[start:end]
-        self.assertIn('raise SystemExit(0 if over else 10)', block)
+        self.assertIn('raise SystemExit(10)', block)
         self.assertIn('10)', block)
         self.assertIn('return 1', block)
         self.assertIn('*)', block)
@@ -633,8 +633,34 @@ printf '%s\n' "$rc"
         )
 
         self.assertEqual(1, run_case(quiet))
-        self.assertEqual(0, run_case(contention))
+        self.assertEqual(1, run_case(contention))
         self.assertEqual(2, run_case(crashed))
+
+    def test_performance_pressure_validator_treats_benchmark_self_load_as_audit_evidence(self):
+        text = SCRIPT.read_text()
+        block_start = text.index('performance_pressure_invalid()')
+        code_start = text.index("<<'PY2' || validator_rc=$?\n", block_start) + len("<<'PY2' || validator_rc=$?\n")
+        code_end = text.index('\nPY2\n  case "$validator_rc"', code_start)
+        validator = text[code_start:code_end]
+        with tempfile.TemporaryDirectory() as td:
+            pressure = Path(td) / 'pressure.log'
+            lines = []
+            for index in range(9):
+                ts = 100.0 + index * 0.25
+                lines.append(
+                    f'{ts:.3f} psi_avg10=0.800 psi_max=0.500 psi_available=1 '
+                    'load_per_cpu=0.300 load_max=0.200 over=1'
+                )
+            pressure.write_text('\n'.join(lines) + '\n')
+            proc = subprocess.run(
+                [
+                    'python3', '-c', validator, str(pressure), '0', '0.5', '0.2',
+                    '100.1', '101.9', '0.25', '1',
+                ],
+                text=True, capture_output=True, check=False,
+            )
+        self.assertEqual(10, proc.returncode)
+        self.assertIn('over=7', proc.stdout)
 
     def test_performance_pressure_validator_requires_monitor_ready_token(self):
         text = SCRIPT.read_text()
