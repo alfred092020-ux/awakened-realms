@@ -1,6 +1,7 @@
 import importlib.util
 import json
 import os
+import re
 import subprocess
 import tempfile
 import unittest
@@ -349,6 +350,23 @@ printf 'pid=%s rc=%s\n' "$PERF_PRESSURE_PID" "$PERF_PRESSURE_MONITOR_RC"
                 monitor_pid = int(pid_file.read_text().strip())
                 with self.assertRaises(ProcessLookupError):
                     os.kill(monitor_pid, 0)
+
+    def test_performance_outer_settle_budget_covers_three_minute_quiet_window(self):
+        text = SCRIPT.read_text()
+        attempts = re.search(
+            r'PERF_HOST_SETTLE_ATTEMPTS="\$\{LOGRES_PERF_HOST_SETTLE_ATTEMPTS:-([0-9]+)\}"',
+            text,
+        )
+        sleep_sec = re.search(
+            r'PERF_HOST_SETTLE_SLEEP_SEC="\$\{LOGRES_PERF_HOST_SETTLE_SLEEP_SEC:-([0-9]+)\}"',
+            text,
+        )
+        self.assertIsNotNone(attempts)
+        self.assertIsNotNone(sleep_sec)
+        self.assertGreaterEqual(int(attempts.group(1)) * int(sleep_sec.group(1)), 180)
+        self.assertIn('PERF_MAX_CPU_PSI_AVG10="0.5"', text)
+        self.assertIn('PERF_MAX_LOAD_PER_CPU="0.2"', text)
+        self.assertIn('PERF_HOST_READY_CONSECUTIVE="${LOGRES_PERF_HOST_READY_CONSECUTIVE:-2}"', text)
 
     def test_performance_host_ready_requires_both_psi_and_load_to_be_quiet(self):
         text = SCRIPT.read_text()
