@@ -18,6 +18,8 @@ BRAIN=os.environ.get("LOGRES_BRAIN",str(ROOT/"bin/logres-brain"))
 CONTROL=os.environ.get("LOGRES_CONTROL",str(ROOT/"bin/logres-control"))
 SATISFIED={"DONE","RESOLVED","INTEGRATED"}
 PRESERVED_QUEUE_STATES={"INTEGRATED","SUPERSEDED","QUARANTINED"}
+LIVE_COPILOT_STATES=("ASSIGNING","ACTIVE","PR_READY","VERIFYING")
+COPILOT_ROUTE_RESERVED_STATES=("NEW","ROUTED","ASSIGNING","ACTIVE","PR_READY","VERIFYING")
 
 def iso():
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
@@ -155,6 +157,55 @@ def active_leases(c):
       left join task_metadata m on m.task_id=t.id
       where l.lease_until_epoch>? order by t.priority,l.task_id""",(time.time(),)))
 
+def _table_exists(c,name):
+    return c.execute(
+        "select 1 from sqlite_master where type='table' and name=?",(name,)
+    ).fetchone() is not None
+
+def live_copilot_owner(c,task_id):
+    # Route reservation is the earliest durable Copilot ownership signal.
+    # It exists before issue creation and before copilot_jobs is populated, so
+    # worker-start AUTO must honor it to close the planning/acquire race.
+    if _table_exists(c,"route_jobs"):
+        route=c.execute(
+            """select id,state from route_jobs
+                 where task_id=? and route_kind='COPILOT'
+                 order by id desc limit 1""",
+            (task_id,),
+        ).fetchone()
+        if route is not None:
+            if route["state"] not in COPILOT_ROUTE_RESERVED_STATES:
+                return None
+            job=None
+            if _table_exists(c,"copilot_jobs"):
+                job=c.execute(
+                    """select id,state,branch,candidate_sha from copilot_jobs
+                         where route_job_id=? order by id desc limit 1""",
+                    (route["id"],),
+                ).fetchone()
+            return {
+                "id": int(job["id"]) if job is not None else int(route["id"]),
+                "state": str(job["state"]) if job is not None else str(route["state"]),
+                "route_state": str(route["state"]),
+                "branch": job["branch"] if job is not None else None,
+                "candidate_sha": job["candidate_sha"] if job is not None else None,
+                "source": "copilot_job" if job is not None else "copilot_route",
+            }
+
+    # Compatibility fallback for older databases with copilot_jobs but no
+    # route_jobs. Only the latest job is authoritative so a newer terminal job
+    # cannot leave an older live-state row permanently blocking the task.
+    if not _table_exists(c,"copilot_jobs"):
+        return None
+    job=c.execute(
+        """select id,state,branch,candidate_sha from copilot_jobs
+             where task_id=? order by id desc limit 1""",
+        (task_id,),
+    ).fetchone()
+    if job is None or job["state"] not in LIVE_COPILOT_STATES:
+        return None
+    return job
+
 def downstream_count(c,task):
     seen=set(); frontier=[task]
     while frontier:
@@ -206,6 +257,8 @@ def ready_rows(c):
       m.evidence_policy from tasks t left join task_metadata m on m.task_id=t.id
       where t.status='READY' order by t.priority,t.id"""):
         if r["id"] in leased or not hard_deps_ok(c,r["id"]):
+            continue
+        if live_copilot_owner(c,r["id"]) is not None:
             continue
         key=r["concurrency_key"] or r["lane"]
         if key and key in active_keys:
@@ -690,6 +743,17 @@ def cmd_acquire(c,args):
 
         task=candidates[0]
         task_id=task["id"]
+
+        # Planning happens before the write transaction in worker-start AUTO.
+        # Recheck Copilot ownership while holding BEGIN IMMEDIATE so a route
+        # that won the race cannot also receive a worker lease.
+        copilot_owner=live_copilot_owner(c,task_id)
+        if copilot_owner is not None:
+            c.rollback()
+            raise SystemExit(
+                f"COPILOT_OWNED task={task_id} job={copilot_owner['id']} "
+                f"state={copilot_owner['state']}"
+            )
 
         # Reuse a preserved stale-work branch if the task still points to one;
         # otherwise create a fresh branch name. The worktree itself is created
