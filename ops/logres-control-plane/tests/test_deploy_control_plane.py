@@ -158,6 +158,7 @@ PRODUCTION_FILES = (
     "lib/logres_finish_loop.py",
     "lib/logres_impact.py",
     "lib/logres_integration.py",
+    "lib/logres_integration_linear.py",
     "lib/logres_knowledge.py",
     "lib/logres_mission.py",
     "lib/logres_optimizer.py",
@@ -323,6 +324,11 @@ class DeployControlPlaneTests(unittest.TestCase):
             self.assertTrue(
                 all("openai_api_key" not in str(item.destination) for item in deployed)
             )
+
+    def test_linear_integration_adapter_is_deployed_privately(self):
+        path = "lib/logres_integration_linear.py"
+        self.assertIn(path, MANIFEST)
+        self.assertEqual(0o600, MANIFEST[path][1])
 
     def test_storage_guard_runtime_and_policy_are_deployed(self):
         expected = {

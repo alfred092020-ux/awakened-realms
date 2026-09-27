@@ -175,6 +175,7 @@ MANIFEST: dict[str, tuple[str, int]] = {
     "lib/logres_finish_loop.py": ("lib/logres_finish_loop.py", 0o600),
     "lib/logres_impact.py": ("lib/logres_impact.py", 0o600),
     "lib/logres_integration.py": ("lib/logres_integration.py", 0o600),
+    "lib/logres_integration_linear.py": ("lib/logres_integration_linear.py", 0o600),
     "lib/logres_knowledge.py": ("lib/logres_knowledge.py", 0o600),
     "lib/logres_mission.py": ("lib/logres_mission.py", 0o600),
     "lib/logres_optimizer.py": ("lib/logres_optimizer.py", 0o600),
