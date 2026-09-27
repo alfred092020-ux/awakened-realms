@@ -441,6 +441,58 @@ printf 'control-unavailable=%s\n' "$performance_rc"
         self.assertIn('*)', block)
         self.assertIn('return 2', block)
 
+    def test_performance_pressure_shell_exit_contract_is_unambiguous(self):
+        text = SCRIPT.read_text()
+        fn_start = text.index('performance_pressure_invalid() {')
+        fn_end = text.index('\n\nremote_enabled()', fn_start)
+        function = text[fn_start:fn_end]
+
+        def run_case(lines):
+            with tempfile.TemporaryDirectory() as td:
+                pressure = Path(td) / 'pressure.log'
+                pressure.write_text('\n'.join(lines) + '\n')
+                shell = f'''
+set -u
+PERF_PRESSURE_LOG="$1"
+PERF_PRESSURE_MONITOR_RC=0
+PERF_MAX_CPU_PSI_AVG10=0.5
+PERF_MAX_LOAD_PER_CPU=0.2
+PERF_BENCHMARK_START=100.1
+PERF_BENCHMARK_END=101.9
+PERF_PRESSURE_SAMPLE_SEC=0.25
+PERF_PRESSURE_MONITOR_READY=1
+{function}
+rc=0
+performance_pressure_invalid >/dev/null 2>&1 || rc=$?
+printf '%s\n' "$rc"
+'''
+                proc = subprocess.run(
+                    ['bash', '-c', shell, 'bash', str(pressure)],
+                    text=True, capture_output=True, check=False,
+                )
+            self.assertEqual(0, proc.returncode)
+            return int(proc.stdout.strip().splitlines()[-1])
+
+        quiet = [
+            f'{100.0 + i * 0.25:.3f} psi_avg10=0.100 psi_max=0.500 psi_available=1 '
+            'load_per_cpu=0.100 load_max=0.200 over=0'
+            for i in range(9)
+        ]
+        contention = list(quiet)
+        contention[4] = (
+            '101.000 psi_avg10=0.600 psi_max=0.500 psi_available=1 '
+            'load_per_cpu=0.100 load_max=0.200 over=1'
+        )
+        crashed = list(quiet)
+        crashed[4] = (
+            '101.000 psi_avg10=.. psi_max=0.500 psi_available=1 '
+            'load_per_cpu=0.100 load_max=0.200 over=0'
+        )
+
+        self.assertEqual(1, run_case(quiet))
+        self.assertEqual(0, run_case(contention))
+        self.assertEqual(2, run_case(crashed))
+
     def test_performance_pressure_validator_requires_monitor_ready_token(self):
         text = SCRIPT.read_text()
         start = text.index('performance_pressure_invalid()')
