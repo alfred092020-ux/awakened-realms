@@ -127,6 +127,10 @@ class ParseTests(unittest.TestCase):
  def test_operator_actor_defaults_to_joined_nexus_identity(self):
   self.assertEqual(ncc.ACTOR,"nexus")
 
+ def test_brain_timeouts_allow_slow_health_truth_without_false_error(self):
+  self.assertGreaterEqual(ncc.BRAIN_DIGEST_TIMEOUT,15)
+  self.assertGreaterEqual(ncc.BRAIN_HEALTH_TIMEOUT,20)
+
  def test_wake_lead_posts_through_nexus_identity(self):
   calls=[]
   def fake_run(cmd,timeout=6):

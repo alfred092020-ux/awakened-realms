@@ -15,6 +15,8 @@ TOKEN = os.environ.get("NEXUS_CONTROL_CENTER_TOKEN", "")
 ACTOR = os.environ.get("NEXUS_CONTROL_CENTER_ACTOR", "nexus")
 FAST_POLL = max(0.5, float(os.environ.get("NEXUS_CONTROL_CENTER_FAST_POLL", "1.0")))
 FULL_POLL = max(10.0, float(os.environ.get("NEXUS_CONTROL_CENTER_FULL_POLL", "15")))
+BRAIN_DIGEST_TIMEOUT = max(1.0, float(os.environ.get("NEXUS_CONTROL_CENTER_BRAIN_DIGEST_TIMEOUT", "15")))
+BRAIN_HEALTH_TIMEOUT = max(1.0, float(os.environ.get("NEXUS_CONTROL_CENTER_BRAIN_HEALTH_TIMEOUT", "20")))
 SESSION_TTL = int(os.environ.get("NEXUS_CONTROL_CENTER_SESSION_TTL", "28800"))
 AUDIT_DIR = ROOT / "control/nexus-command-center"
 AUDIT_LOG = AUDIT_DIR / "audit.jsonl"
@@ -157,7 +159,7 @@ def runtime_operations():
 
 def snapshot(full=False,previous=None,refresh_heavy=False):
     now=time.time(); sources={}
-    dr,digest,derr=run([str(BRAIN),"digest","--limit","50"],8)
+    dr,digest,derr=run([str(BRAIN),"digest","--limit","50"],BRAIN_DIGEST_TIMEOUT)
     if dr==0:
         parsed=parse_digest(digest); workers=parsed["workers"]; events=parsed["events"]; tasks=parsed["tasks"]
         for k,label in (("brain_presence","Brain presence"),("brain_events","Brain events"),("brain_tasks","Brain tasks")):
@@ -177,7 +179,7 @@ def snapshot(full=False,previous=None,refresh_heavy=False):
         if gr==0 and orc==0 and sha and origin:
             integration={"branch":"feat/logres-reconstruction","sha":sha,"short":sha[:12],"origin_sha":origin,"in_sync":sha==origin}; sources["git"]=source_record("git","OK",now,60000,"Git: canonical integration + origin")
         else: integration["in_sync"]=None; sources["git"]=carry_source(previous,"git",ge or oe,60000,"Git: canonical integration + origin")
-        hr,h,he=run([str(BRAIN),"health"],5)
+        hr,h,he=run([str(BRAIN),"health"],BRAIN_HEALTH_TIMEOUT)
         if hr==0: health_data=parse_health(h); health_error=None; sources["brain_health"]=source_record("brain_health","OK",now,60000,"Brain: logres-brain health")
         else: health_error=he or "Brain health unavailable"; sources["brain_health"]=carry_source(previous,"brain_health",health_error,60000,"Brain: logres-brain health")
     metrics=system_metrics(); sources["system"]=source_record("system","OK",now,15000,"Linux kernel: /proc telemetry")
