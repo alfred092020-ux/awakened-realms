@@ -24,7 +24,7 @@
   },
   "router": {
     "allow_paid": false,
-    "devin_bin": "devin",
+    "devin_bin": "/home/ubuntu/.local/bin/devin",
     "dispatch_per_tick": 2,
     "enabled": true,
     "execution_mode": "unattended",

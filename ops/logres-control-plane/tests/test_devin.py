@@ -1054,6 +1054,12 @@ class PermissionManifestTests(unittest.TestCase):
             self.assertEqual(text1, p.read_text())
             self.assertEqual(str(p), meta1["path"])
 
+    def test_worker_config_pins_absolute_devin_binary(self):
+        raw = json.loads(self.policy_path().read_text())
+        devin_bin = raw["router"]["devin_bin"]
+        self.assertTrue(Path(devin_bin).is_absolute())
+        self.assertEqual("/home/ubuntu/.local/bin/devin", devin_bin)
+
     def test_build_argv_includes_task_config_without_changing_smart_mode(self):
         argv = build_devin_argv(
             prompt_file=Path("/p"),
