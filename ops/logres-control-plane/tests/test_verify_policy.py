@@ -688,6 +688,16 @@ printf '%s\n' "$rc"
         self.assertIn('monitor_ready = int(sys.argv[8])', block)
         self.assertIn('if monitor_ready != 1:', block)
 
+    def test_performance_pressure_monitor_serializes_round_trip_precision(self):
+        text = SCRIPT.read_text()
+        start = text.index("performance_host_monitor_start()")
+        end = text.index("performance_pressure_invalid()", start)
+        block = text[start:end]
+        self.assertIn("psi_avg10={psi_value!r}", block)
+        self.assertIn("load_per_cpu={load_value!r}", block)
+        self.assertIn("psi_max={psi_limit!r}", block)
+        self.assertIn("load_max={load_limit!r}", block)
+
     def test_performance_midrun_validator_recomputes_over_and_rejects_inconsistency(self):
         text = SCRIPT.read_text()
         start = text.index('performance_pressure_invalid()')
