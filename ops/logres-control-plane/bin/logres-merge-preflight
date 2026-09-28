@@ -14,6 +14,16 @@ INTEGRATION=os.environ.get("LOGRES_INTEGRATION_BRANCH","feat/logres-reconstructi
 LOCK_PATH=os.environ.get("LOGRES_INTEGRATION_LOCK","/tmp/logres-integration.lock")
 FETCH_LOCK_PATH=os.environ.get("LOGRES_FETCH_LOCK","/tmp/logres-git-fetch.lock")
 
+def close_canonical_db_for_gate(c):
+    c.commit()
+    c.close()
+
+def reopen_canonical_db_after_gate():
+    c=sqlite3.connect(DB,timeout=30)
+    c.row_factory=sqlite3.Row
+    ensure(c)
+    return c
+
 def integration_lock():
     f=open(LOCK_PATH,"a+")
     try:
@@ -424,16 +434,13 @@ def preflight(c,limit,min_age=0,min_count=1):
             # a stale inode can create a packet file whose authoritative DB row is
             # missing. Reopen the canonical DB after the gate before persisting the
             # preflight verdict.
-            c.commit()
-            c.close()
+            close_canonical_db_for_gate(c)
             t0=time.time()
             gp=subprocess.run([GATE,"candidate",result_sha],text=True,
                 stdout=subprocess.PIPE,stderr=subprocess.STDOUT,
                 env={**os.environ,"LOGRES_GATE_FORCE":"1"})
             duration=time.time()-t0
-            c=sqlite3.connect(DB,timeout=30)
-            c.row_factory=sqlite3.Row
-            ensure(c)
+            c=reopen_canonical_db_after_gate()
         log.write_text(gp.stdout or "")
         if gp.returncode==0:
             state="VERIFIED"
