@@ -208,19 +208,23 @@ else:
         add("code_index","FAIL",str(e))
 
 # SQLite integrity
-for name,path in [
-    ("control_db",Path("/home/ubuntu/logres/control/control.sqlite")),
-    ("context_db",Path("/home/ubuntu/logres/index/logres-context.sqlite")),
-    ("native_db",Path("/home/ubuntu/logres/index/current-jp-native.sqlite")),
-    ("code_db",Path("/home/ubuntu/logres/index/code-symbols.sqlite")),
-    ("re_evidence_db",Path("/home/ubuntu/logres/index/re-evidence.sqlite")),
-    ("ai_db",Path("/home/ubuntu/logres/control/ai.sqlite")),
+for name,path,immutable in [
+    ("control_db",Path("/home/ubuntu/logres/control/control.sqlite"),False),
+    ("context_db",Path("/home/ubuntu/logres/index/logres-context.sqlite"),False),
+    ("native_db",Path("/home/ubuntu/logres/index/current-jp-native.sqlite"),False),
+    ("code_db",Path("/home/ubuntu/logres/index/code-symbols.sqlite"),False),
+    ("re_evidence_db",Path("/home/ubuntu/logres/index/re-evidence.sqlite"),True),
+    ("ai_db",Path("/home/ubuntu/logres/control/ai.sqlite"),False),
 ]:
     if not path.exists():
         add(name,"FAIL","missing")
         continue
     try:
-        c=sqlite3.connect(path)
+        if immutable:
+            uri = f"file:{path}?mode=ro&immutable=1"
+            c=sqlite3.connect(uri, uri=True)
+        else:
+            c=sqlite3.connect(path)
         result=c.execute("pragma integrity_check").fetchone()[0]
         c.close()
         add(name,"PASS" if result=="ok" else "FAIL",result)
