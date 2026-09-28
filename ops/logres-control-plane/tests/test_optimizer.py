@@ -77,6 +77,34 @@ class OptimizerTests(unittest.TestCase):
         self.assertEqual("A-UNLOCK", ranked[0])
         self.assertEqual("B-LEAF", ranked[1])
 
+    def test_active_milestone_task_wins_inside_same_priority_band(self):
+        conn = make_test_db()
+        add_discovery_table(conn)
+        conn.execute("create table milestones(id text primary key,title text,status text,sort_order integer)")
+        seed_task(conn, task_id="AUTONOMY-CLOSED-LOOP-CANARY-003", priority=0)
+        seed_task(conn, task_id="UNRELATED-P0", priority=0)
+        conn.execute("update task_metadata set expected_minutes=20 where task_id='AUTONOMY-CLOSED-LOOP-CANARY-003'")
+        conn.execute("update task_metadata set expected_minutes=5 where task_id='UNRELATED-P0'")
+        conn.execute("insert into milestones(id,title,status,sort_order) values('AUTONOMY-COMPLETION','Autonomy','ACTIVE',0)")
+        conn.commit()
+        refresh_graph(conn)
+        ranked = rank_task_ids(conn, limit=2)
+        self.assertEqual("AUTONOMY-CLOSED-LOOP-CANARY-003", ranked[0])
+        self.assertEqual("UNRELATED-P0", ranked[1])
+
+    def test_priority_band_remains_authoritative_over_active_milestone(self):
+        conn = make_test_db()
+        add_discovery_table(conn)
+        conn.execute("create table milestones(id text primary key,title text,status text,sort_order integer)")
+        seed_task(conn, task_id="AUTONOMY-CLOSED-LOOP-CANARY-003", priority=1)
+        seed_task(conn, task_id="UNRELATED-P0", priority=0)
+        conn.execute("insert into milestones(id,title,status,sort_order) values('AUTONOMY-COMPLETION','Autonomy','ACTIVE',0)")
+        conn.commit()
+        refresh_graph(conn)
+        ranked = rank_task_ids(conn, limit=2)
+        self.assertEqual("UNRELATED-P0", ranked[0])
+        self.assertEqual("AUTONOMY-CLOSED-LOOP-CANARY-003", ranked[1])
+
     def test_information_gap_prioritizes_under_resolved_research(self):
         conn = make_test_db()
         add_discovery_table(conn)

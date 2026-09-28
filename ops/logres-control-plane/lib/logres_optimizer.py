@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+import json
 import sqlite3
 from dataclasses import asdict, dataclass
+from pathlib import Path
 
+from logres_finish_loop import active_milestone_id
 from logres_knowledge import ensure_schema as ensure_knowledge_schema
 from logres_knowledge import task_knowledge
 
@@ -98,6 +101,30 @@ def _critical_path(
     visiting.remove(task_id)
     memo[task_id] = own + tail
     return memo[task_id]
+
+
+def _active_milestone_task_ids(conn: sqlite3.Connection) -> set[str]:
+    try:
+        milestone_id = active_milestone_id(conn)
+    except (sqlite3.OperationalError, ValueError):
+        return set()
+    path = Path(__file__).resolve().parent.parent / "config" / "milestone_contracts.json"
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return set()
+    milestone = (payload.get("milestones") or {}).get(milestone_id) or {}
+    task_ids: set[str] = set()
+    for criterion in milestone.get("criteria") or []:
+        if not isinstance(criterion, dict):
+            continue
+        check = criterion.get("check") or {}
+        if isinstance(check, dict) and check.get("task_id"):
+            task_ids.add(str(check["task_id"]))
+        template = criterion.get("task_template") or {}
+        if isinstance(template, dict) and template.get("task_id"):
+            task_ids.add(str(template["task_id"]))
+    return task_ids
 
 
 FREE_DEVIN_MODELS = ("swe-2-max", "swe-2-medium", "swe-2-high")
@@ -291,6 +318,7 @@ def score_ready_tasks(
     ensure_knowledge_schema(conn)
     memo: dict[str, int] = {}
     scored: list[OptimizedTask] = []
+    active_milestone_tasks = _active_milestone_task_ids(conn)
     rows = conn.execute(
         """select t.id,t.priority,t.title,
                   coalesce(m.work_type,'implementation') work_type,
@@ -335,6 +363,8 @@ def score_ready_tasks(
             f"expected={expected}m",
             f"engine_success={success:.2f}",
         ]
+        if task_id in active_milestone_tasks:
+            rationale.append("active-milestone")
 
         if work_type in {"research", "evidence", "analysis"}:
             evidence_bonus = gap * 18_000.0
@@ -363,7 +393,14 @@ def score_ready_tasks(
             )
         )
 
-    scored.sort(key=lambda item: (-item.score, item.task_id))
+    scored.sort(
+        key=lambda item: (
+            item.priority,
+            item.task_id not in active_milestone_tasks,
+            -item.score,
+            item.task_id,
+        )
+    )
     return scored
 
 
