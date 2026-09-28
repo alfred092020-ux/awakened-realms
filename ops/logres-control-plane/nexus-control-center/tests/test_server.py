@@ -14,4 +14,7 @@ class ParseTests(unittest.TestCase):
  def test_dashboard(self):
   x=ncc.parse_dashboard("=== ACTIVE TASK LEASES ===\nP0 A owner=o progress=20% branch=worker/a until=2026-01-01T00:00:00+00:00\n=== READY WORK PACKAGES ===\nP1 B [implementation] ~20m :: Build thing")
   self.assertEqual(x["active"][0]["task"],"A"); self.assertEqual(x["ready"][0]["task"],"B")
+ def test_hidden_auth_overlay_is_actually_hidden(self):
+  css=(pathlib.Path(__file__).resolve().parents[1]/"static"/"app.css").read_text()
+  self.assertIn("[hidden]{display:none!important}",css)
 if __name__=="__main__": unittest.main()
