@@ -759,6 +759,9 @@ class ExecutionIsolationTests(unittest.TestCase):
             prompt_file=Path("/p"), permission_mode="autonomous", sandbox=True
         )
         self.assertIn("--sandbox", argv)
+        mode_index = argv.index("--permission-mode")
+        self.assertEqual("dangerous", argv[mode_index + 1])
+        self.assertNotIn("autonomous", argv)
 
     def test_invalid_mode_or_marker_is_refused(self):
         with self.assertRaises(DevinAgentError):

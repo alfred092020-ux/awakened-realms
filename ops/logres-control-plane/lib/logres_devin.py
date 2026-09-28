@@ -43,6 +43,16 @@ PERMISSION_MODES = frozenset(
         "autonomous",
     }
 )
+DEVIN_CLI_PERMISSION_MODE_MAP = {
+    "normal": "auto",
+    "auto": "auto",
+    "accept-edits": "accept-edits",
+    "smart": "smart",
+    "dangerous": "dangerous",
+    "yolo": "dangerous",
+    "bypass": "dangerous",
+    "autonomous": "dangerous",
+}
 EXECUTION_MODES = frozenset({"interactive", "unattended"})
 DEFAULT_EXECUTION_MODE = "interactive"
 DEVIN_NATIVE_SANDBOX = "devin-native-sandbox"
@@ -521,13 +531,14 @@ def build_devin_argv(
     )
     if mode == "autonomous" and not sandbox:
         raise DevinAgentError("autonomous permission mode requires --sandbox")
+    cli_mode = DEVIN_CLI_PERMISSION_MODE_MAP[mode]
     argv = [
         str(devin_bin),
         "-p",
         "--model",
         str(model),
         "--permission-mode",
-        mode,
+        cli_mode,
         "--prompt-file",
         str(prompt_file),
         "--respect-workspace-trust",

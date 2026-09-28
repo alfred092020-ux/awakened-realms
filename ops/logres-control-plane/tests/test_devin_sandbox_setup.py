@@ -581,7 +581,7 @@ class StatusTests(ModuleFixture):
 
 
 class CommandConstructionTests(ModuleFixture):
-    def test_smoke_argv_uses_autonomous_sandbox(self):
+    def test_smoke_argv_uses_current_cli_dangerous_mode_inside_sandbox(self):
         argv = self.module.build_smoke_argv(
             devin_bin="/usr/bin/devin",
             model="swe-2-max",
@@ -596,7 +596,7 @@ class CommandConstructionTests(ModuleFixture):
                 "--model",
                 "swe-2-max",
                 "--permission-mode",
-                "autonomous",
+                "dangerous",
                 "--sandbox",
                 "--respect-workspace-trust",
                 "false",

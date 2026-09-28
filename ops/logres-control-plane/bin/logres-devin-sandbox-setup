@@ -562,7 +562,7 @@ def build_smoke_argv(
         "--model",
         str(model),
         "--permission-mode",
-        "autonomous",
+        "dangerous",
         "--sandbox",
         "--respect-workspace-trust",
         "false",
