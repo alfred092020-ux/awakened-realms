@@ -418,11 +418,22 @@ def preflight(c,limit,min_age=0,min_count=1):
                 stdout=f"REUSED exact-SHA full-e2e PASS from {exact_pass['ran_at']}\n",
             )
         else:
+            # The candidate gate can run for minutes and may exercise control-plane
+            # maintenance that rotates/reopens the canonical SQLite file. Do not
+            # retain a pre-gate connection across that boundary: committing through
+            # a stale inode can create a packet file whose authoritative DB row is
+            # missing. Reopen the canonical DB after the gate before persisting the
+            # preflight verdict.
+            c.commit()
+            c.close()
             t0=time.time()
             gp=subprocess.run([GATE,"candidate",result_sha],text=True,
                 stdout=subprocess.PIPE,stderr=subprocess.STDOUT,
                 env={**os.environ,"LOGRES_GATE_FORCE":"1"})
             duration=time.time()-t0
+            c=sqlite3.connect(DB,timeout=30)
+            c.row_factory=sqlite3.Row
+            ensure(c)
         log.write_text(gp.stdout or "")
         if gp.returncode==0:
             state="VERIFIED"

@@ -37,6 +37,17 @@ class MergePreflightBusyTests(unittest.TestCase):
         self.assertLess(busy_index, regression_index)
         self.assertLess(busy_index, quarantine_index)
 
+    def test_gate_reopens_canonical_db_before_persisting_packet(self):
+        text = SCRIPT.read_text()
+        gate = text.index('gp=subprocess.run([GATE,"candidate",result_sha]')
+        close = text.rindex('c.close()', 0, gate)
+        reopen = text.index('c=sqlite3.connect(DB,timeout=30)', gate)
+        insert = text.index('insert into integration_preflights', reopen)
+        self.assertLess(close, gate)
+        self.assertLess(gate, reopen)
+        self.assertLess(reopen, insert)
+        self.assertIn('c.row_factory=sqlite3.Row', text[reopen:insert])
+
     def test_busy_preflight_keeps_queue_mutation_out_of_busy_branch(self):
         text = SCRIPT.read_text()
         packet_index = text.index('c.commit(); p=packet(c,pid)')
