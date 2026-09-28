@@ -133,6 +133,26 @@ def sha256_file(path: Path) -> str:
     return digest.hexdigest()
 
 
+def runtime_owner(root: Path) -> tuple[int, int]:
+    stat = Path(root).stat()
+    return stat.st_uid, stat.st_gid
+
+
+def normalize_runtime_ownership(
+    path: Path,
+    owner: tuple[int, int],
+    *,
+    chown_fn=os.chown,
+) -> bool:
+    path = Path(path)
+    uid, gid = owner
+    current = path.stat()
+    if current.st_uid == uid and current.st_gid == gid:
+        return False
+    chown_fn(path, uid, gid)
+    return True
+
+
 def snapshot_supervisor_runtime(root: Path) -> dict[str, str | None]:
     result = {}
     for relative in SUPERVISOR_RUNTIME_FILES:
@@ -154,7 +174,13 @@ def scheduler_recent(
     return age <= max_age_seconds, age
 
 
-def atomic_json(path: Path, payload: dict) -> None:
+def atomic_json(
+    path: Path,
+    payload: dict,
+    *,
+    owner: tuple[int, int] | None = None,
+    chown_fn=os.chown,
+) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     fd, temp_name = tempfile.mkstemp(
         prefix=f".{path.name}.",
@@ -168,6 +194,8 @@ def atomic_json(path: Path, payload: dict) -> None:
             handle.write("\n")
             handle.flush()
             os.fsync(handle.fileno())
+        if owner is not None:
+            normalize_runtime_ownership(temp, owner, chown_fn=chown_fn)
         os.replace(temp, path)
     finally:
         if temp.exists():
@@ -199,6 +227,7 @@ def deploy_runtime(
     scheduler_log_path: Path | None = None,
     scheduler_max_age_seconds: float = 180.0,
     now_epoch: float | None = None,
+    chown_fn=os.chown,
 ) -> dict:
     sha = validate_integration_source(repo, sha, runner=runner)
     deploy_fn = deploy_fn or load_deploy_function(repo)
@@ -212,6 +241,7 @@ def deploy_runtime(
             f"control-plane manifest deployment failed: {exc}"
         ) from exc
 
+    target_owner = runtime_owner(root)
     files = {}
     for item in deployments:
         source = Path(item.source)
@@ -220,6 +250,11 @@ def deploy_runtime(
             raise RuntimeDeployError(
                 f"deployed file missing: {source} -> {destination}"
             )
+        normalize_runtime_ownership(
+            destination,
+            target_owner,
+            chown_fn=chown_fn,
+        )
         source_hash = sha256_file(source)
         destination_hash = sha256_file(destination)
         if source_hash != destination_hash:
@@ -309,7 +344,12 @@ def deploy_runtime(
             "legacy_cron_detail": cron_diagnostic[-500:],
         },
     }
-    atomic_json(stamp_path, payload)
+    atomic_json(
+        stamp_path,
+        payload,
+        owner=target_owner,
+        chown_fn=chown_fn,
+    )
     return payload
 def main() -> int:
     parser = argparse.ArgumentParser(prog="logres-runtime-deploy")

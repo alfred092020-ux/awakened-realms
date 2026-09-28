@@ -191,6 +191,98 @@ class RuntimeDeployTests(unittest.TestCase):
                 saved["files"]["bin/fake-helper"],
             )
 
+    def test_root_style_deploy_normalizes_runtime_file_and_stamp_ownership(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            repo, sha = init_repo(root)
+            target = root / "runtime"
+            target.mkdir()
+            stamp = target / "control" / "runtime-deployment.json"
+            runtime_owner = target.stat()
+            expected_owner = (runtime_owner.st_uid, runtime_owner.st_gid)
+            chown_calls = []
+
+            def fake_deploy(source_root, target_root, dry_run=False):
+                source = source_root / "bin" / "fake-helper"
+                destination = target_root / "bin" / "fake-helper"
+                destination.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(source, destination)
+                return [
+                    types.SimpleNamespace(
+                        source=source,
+                        destination=destination,
+                        mode=0o755,
+                    )
+                ]
+
+            original_stat = runtime.normalize_runtime_ownership
+
+            def force_normalize(path, owner, *, chown_fn):
+                chown_fn(path, owner[0], owner[1])
+                return True
+
+            def fake_chown(path, uid, gid):
+                chown_calls.append((Path(path), uid, gid))
+
+            def runner(argv, **kwargs):
+                argv = [str(x) for x in argv]
+                if argv and argv[0] == "git":
+                    return subprocess.run(argv, **kwargs)
+                return subprocess.CompletedProcess(argv, 0, "ok\n", "")
+
+            runtime.normalize_runtime_ownership = force_normalize
+            try:
+                payload = runtime.deploy_runtime(
+                    repo,
+                    target,
+                    sha,
+                    stamp_path=stamp,
+                    deploy_fn=fake_deploy,
+                    runner=runner,
+                    chown_fn=fake_chown,
+                )
+            finally:
+                runtime.normalize_runtime_ownership = original_stat
+
+            self.assertEqual(sha, payload["integration_sha"])
+            self.assertIn(
+                (target / "bin" / "fake-helper", *expected_owner),
+                chown_calls,
+            )
+            self.assertTrue(
+                any(
+                    call[0].name.startswith(".runtime-deployment.json.")
+                    and call[1:] == expected_owner
+                    for call in chown_calls
+                )
+            )
+            self.assertEqual(
+                runtime.sha256_file(
+                    repo
+                    / "ops"
+                    / "logres-control-plane"
+                    / "bin"
+                    / "fake-helper"
+                ),
+                payload["files"]["bin/fake-helper"],
+            )
+
+    def test_matching_runtime_owner_skips_chown(self):
+        with tempfile.TemporaryDirectory() as td:
+            path = Path(td) / "owned"
+            path.write_text("x")
+            stat = path.stat()
+            calls = []
+
+            changed = runtime.normalize_runtime_ownership(
+                path,
+                (stat.st_uid, stat.st_gid),
+                chown_fn=lambda *args: calls.append(args),
+            )
+
+            self.assertFalse(changed)
+            self.assertEqual([], calls)
+
     def test_changed_supervisor_runtime_requests_reload(self):
         with tempfile.TemporaryDirectory() as td:
             root = Path(td)
