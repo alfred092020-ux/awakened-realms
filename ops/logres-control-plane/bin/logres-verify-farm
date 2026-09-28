@@ -184,9 +184,9 @@ while True:
     over = int((not psi_available) or psi_value > psi_limit or load_value > load_limit)
     with out.open("a") as fh:
         fh.write(
-            f"{time.time():.3f} psi_avg10={psi_value:.3f} psi_max={psi_limit:.3f} "
-            f"psi_available={int(psi_available)} load_per_cpu={load_value:.3f} "
-            f"load_max={load_limit:.3f} over={over}\n"
+            f"{time.time():.6f} psi_avg10={psi_value!r} psi_max={psi_limit!r} "
+            f"psi_available={int(psi_available)} load_per_cpu={load_value!r} "
+            f"load_max={load_limit!r} over={over}\n"
         )
         fh.flush()
     time.sleep(sample_sec)
@@ -288,7 +288,7 @@ inconsistent = 0
 limit_mismatch = 0
 for line in p.read_text().splitlines():
     match = re.search(
-        r"^([0-9.]+)\s+psi_avg10=([0-9.]+).*?psi_max=([0-9.]+).*?psi_available=([01]).*?load_per_cpu=([0-9.]+).*?load_max=([0-9.]+).*?over=([01])",
+        r"^([0-9.eE+-]+)\s+psi_avg10=([0-9.eE+-]+).*?psi_max=([0-9.eE+-]+).*?psi_available=([01]).*?load_per_cpu=([0-9.eE+-]+).*?load_max=([0-9.eE+-]+).*?over=([01])",
         line,
     )
     if not match:
