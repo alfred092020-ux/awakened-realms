@@ -1,3 +1,4 @@
+import fcntl
 import json
 import os
 import signal
@@ -32,6 +33,7 @@ from logres_supervisor import (
     failover_tick,
     handback_path,
     launch_background_job,
+    performance_quiescence_active,
     live_brain_leases,
     refresh_background_run,
     reload_if_idle,
@@ -128,6 +130,20 @@ class SupervisorTests(unittest.TestCase):
         self.assertEqual("devin_lead", lead.background_group)
         self.assertLessEqual(lead.interval_seconds, 30)
         self.assertGreaterEqual(lead.timeout_seconds, 604800)
+
+    def test_performance_quiescence_lock_detects_external_holder(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            lock_path = root / "control/performance-quiescence.lock"
+            lock_path.parent.mkdir(parents=True)
+            handle = lock_path.open("a+")
+            try:
+                fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+                self.assertTrue(performance_quiescence_active(root))
+            finally:
+                fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+                handle.close()
+            self.assertFalse(performance_quiescence_active(root))
 
     def test_due_respects_interval(self):
         job = ScheduledJob("x", ("true",), 60, 10)

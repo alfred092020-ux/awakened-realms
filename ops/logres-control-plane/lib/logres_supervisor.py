@@ -813,6 +813,21 @@ def should_run_job(
     return now_epoch - float(last) >= 10.0
 
 
+def performance_quiescence_active(root: Path) -> bool:
+    lock_path = root / "control/performance-quiescence.lock"
+    lock_path.parent.mkdir(parents=True, exist_ok=True)
+    handle = lock_path.open("a+")
+    try:
+        try:
+            fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            return True
+        fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+        return False
+    finally:
+        handle.close()
+
+
 def background_lane_busy(
     job: ScheduledJob,
     jobs: tuple[ScheduledJob, ...],
@@ -1126,6 +1141,12 @@ def tick(
     atomic_json(heartbeat_path, state)
 
     ran = []
+    performance_quiesced = performance_quiescence_active(root)
+    state["performance_quiescence"] = performance_quiesced
+    if performance_quiesced:
+        atomic_json(heartbeat_path, state)
+        return {"ran": ran, "state": state, "performance_quiescence": True}
+
     for job in jobs:
         if not should_run_job(
             job,

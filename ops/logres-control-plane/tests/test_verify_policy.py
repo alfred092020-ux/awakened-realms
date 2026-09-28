@@ -80,6 +80,16 @@ def run_real_performance_selftest(*, benchmark_rc, pressure_rc, control_rc):
 
 
 class VerifyFarmE2EPolicyTests(unittest.TestCase):
+    def test_performance_lane_acquires_supervisor_quiescence_lock(self):
+        text = SCRIPT.read_text()
+        self.assertIn('performance-quiescence.lock', text)
+        self.assertIn('performance_quiescence_start', text)
+        self.assertIn('flock -w "$PERF_QUIESCENCE_WAIT_SEC" 8', text)
+        self.assertLess(
+            text.index('performance_quiescence_start >>"$PERF_LOG"'),
+            text.index('performance_host_ready >>"$PERF_LOG"'),
+        )
+
     def test_low_core_host_defaults_to_one_worker(self):
         result = read_workers(LOGRES_CPU_COUNT_OVERRIDE="7")
         self.assertEqual(0, result.returncode, result.stderr)

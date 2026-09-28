@@ -62,6 +62,8 @@ PERF_HOST_SETTLE_ATTEMPTS="${LOGRES_PERF_HOST_SETTLE_ATTEMPTS:-90}"
 PERF_HOST_SETTLE_SLEEP_SEC="${LOGRES_PERF_HOST_SETTLE_SLEEP_SEC:-2}"
 PERF_HOST_READY_CONSECUTIVE="${LOGRES_PERF_HOST_READY_CONSECUTIVE:-2}"
 PERF_PRESSURE_SAMPLE_SEC="${LOGRES_PERF_PRESSURE_SAMPLE_SEC:-0.25}"
+PERF_QUIESCENCE_LOCK="${LOGRES_PERF_QUIESCENCE_LOCK:-/home/ubuntu/logres/control/performance-quiescence.lock}"
+PERF_QUIESCENCE_WAIT_SEC="${LOGRES_PERF_QUIESCENCE_WAIT_SEC:-30}"
 
 select_e2e_workers() {
   local override="${LOGRES_E2E_WORKERS:-}"
@@ -95,6 +97,16 @@ fi
 
 E2E_WORKERS=$(select_e2e_workers)
 E2E_VERIFY_TAG="e2e-w${E2E_WORKERS}"
+
+performance_quiescence_start() {
+  mkdir -p "$(dirname "$PERF_QUIESCENCE_LOCK")"
+  exec 8>"$PERF_QUIESCENCE_LOCK"
+  if ! flock -w "$PERF_QUIESCENCE_WAIT_SEC" 8; then
+    echo "VERIFY_FARM BUSY performance quiescence lock timeout" >&2
+    return 75
+  fi
+  echo "VERIFY_FARM performance quiescence acquired lock=$PERF_QUIESCENCE_LOCK"
+}
 
 performance_host_ready() {
   python3 -     "$PERF_MAX_CPU_PSI_AVG10"     "$PERF_MAX_LOAD_PER_CPU"     "$PERF_HOST_SETTLE_ATTEMPTS"     "$PERF_HOST_SETTLE_SLEEP_SEC"     "$PERF_HOST_READY_CONSECUTIVE" <<'PY2'
@@ -1079,7 +1091,16 @@ wait "$e2e_pid" || e2e_rc=$?
 
 performance_rc=0
 if (( e2e_rc == 0 && PERF_REQUIRED == 1 )); then
-  git -C "$BASE" worktree add --detach "$PERF_WT" "$SHA" >>"$PERF_LOG" 2>&1 || performance_rc=$?
+  quiescence_rc=0
+  performance_quiescence_start >>"$PERF_LOG" 2>&1 || quiescence_rc=$?
+  if (( quiescence_rc == 75 )); then
+    performance_rc=75
+  elif (( quiescence_rc != 0 )); then
+    performance_rc=$quiescence_rc
+  fi
+  if (( performance_rc == 0 )); then
+    git -C "$BASE" worktree add --detach "$PERF_WT" "$SHA" >>"$PERF_LOG" 2>&1 || performance_rc=$?
+  fi
   if (( performance_rc == 0 )); then
     prepare_deps "$PERF_WT" >>"$PERF_LOG" 2>&1 || performance_rc=$?
   fi
