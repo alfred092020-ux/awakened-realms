@@ -58,5 +58,10 @@ class ParseTests(unittest.TestCase):
   self.assertEqual(m["display"],"standalone")
   self.assertEqual(m["name"],"Nexus Command Center")
 
+ def test_mobile_grid_children_can_shrink(self):
+  css=(pathlib.Path(__file__).resolve().parents[1]/"static"/"app.css").read_text()
+  self.assertIn(".worker>div,.task>div,.event>div{min-width:0}",css)
+  self.assertIn("overflow-x:hidden",css)
+
 if __name__=="__main__":
  unittest.main()
