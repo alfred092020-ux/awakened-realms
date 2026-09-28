@@ -1,4 +1,5 @@
 import json
+import os
 import signal
 import subprocess
 import sys
@@ -6,6 +7,7 @@ import tempfile
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
+from unittest.mock import patch
 
 TEST_DIR = Path(__file__).resolve().parent
 CONTROL_ROOT = TEST_DIR.parent
@@ -228,6 +230,40 @@ class ModelPolicyTests(unittest.TestCase):
         with self.assertRaises(DevinAgentError) as ctx:
             devin_models_report(run, "devin")
         self.assertIn("devin models list failed", str(ctx.exception))
+
+    def test_devin_models_report_retries_readonly_home_once(self):
+        calls = []
+        def run(argv, **kwargs):
+            calls.append(("initial", argv, kwargs))
+            return SimpleNamespace(returncode=101, stdout="", stderr="Read-only file system")
+        def retry_run(argv, **kwargs):
+            calls.append(("retry", argv, kwargs))
+            return SimpleNamespace(returncode=0, stdout=MODELS_REPORT, stderr="")
+        with tempfile.TemporaryDirectory() as tmp:
+            original = Path(tmp) / "original"
+            fallback = Path(tmp) / "fallback"
+            (original / ".config/devin").mkdir(parents=True)
+            (original / ".local/share/devin").mkdir(parents=True)
+            (original / ".config/devin/config.json").write_text("{}")
+            (original / ".local/share/devin/credentials.toml").write_text("token='x'")
+            with patch.dict(os.environ, {"HOME": str(original)}, clear=False):
+                report = devin_models_report(run, "devin", retry_run=retry_run, fallback_home=fallback)
+            self.assertTrue((fallback / ".config/devin/config.json").is_symlink())
+            self.assertTrue((fallback / ".local/share/devin/credentials.toml").is_symlink())
+        self.assertIn("swe-2-max", report["variants"])
+        self.assertEqual(["initial", "retry"], [item[0] for item in calls])
+        self.assertEqual(str(fallback), calls[1][2]["env"]["HOME"])
+
+    def test_devin_models_report_does_not_retry_non_readonly_failure(self):
+        retries = []
+        def run(argv, **kwargs):
+            return SimpleNamespace(returncode=1, stdout="", stderr="denied")
+        def retry_run(argv, **kwargs):
+            retries.append(1)
+            return SimpleNamespace(returncode=0, stdout=MODELS_REPORT, stderr="")
+        with self.assertRaises(DevinAgentError):
+            devin_models_report(run, "devin", retry_run=retry_run)
+        self.assertEqual([], retries)
 
 
 class RedactionTests(unittest.TestCase):

@@ -862,12 +862,36 @@ def run_child_with_lease(
     }
 
 
-def devin_models_report(run, devin_bin: str) -> dict:
-    proc = run([str(devin_bin), "models", "list", "--format", "json"], timeout=120)
-    if proc.returncode:
-        raise DevinAgentError("devin models list failed")
-    return parse_models_report(proc.stdout or "")
+def _prepare_model_discovery_home(home: Path, original_home: Path) -> Path:
+    home = Path(home)
+    original_home = Path(original_home)
+    for rel in (Path('.config/devin'), Path('.local/share/devin'), Path('.cache')):
+        path = home / rel
+        path.mkdir(parents=True, exist_ok=True)
+        path.chmod(0o700)
+    for rel in (Path('.config/devin/config.json'), Path('.local/share/devin/credentials.toml')):
+        source = original_home / rel
+        target = home / rel
+        if target.exists() or target.is_symlink():
+            target.unlink()
+        if source.is_file():
+            target.symlink_to(source)
+    return home
 
+
+def devin_models_report(run, devin_bin: str, *, retry_run=subprocess.run, fallback_home: Path | None = None) -> dict:
+    argv = [str(devin_bin), 'models', 'list', '--format', 'json']
+    proc = run(argv, timeout=120)
+    if proc.returncode and 'read-only file system' in str(proc.stderr or '').lower():
+        original_home = Path(os.environ.get('HOME') or Path.home())
+        home = Path(fallback_home or os.environ.get('LOGRES_DEVIN_MODEL_HOME') or '/home/ubuntu/logres/control/devin-model-discovery-home')
+        _prepare_model_discovery_home(home, original_home)
+        env = dict(os.environ)
+        env['HOME'] = str(home)
+        proc = retry_run(argv, text=True, capture_output=True, check=False, timeout=120, env=env)
+    if proc.returncode:
+        raise DevinAgentError('devin models list failed')
+    return parse_models_report(proc.stdout or '')
 
 def env_flag(environ, name: str) -> bool:
     return str(environ.get(name, "")).strip().lower() in {"1", "true", "yes", "on"}
