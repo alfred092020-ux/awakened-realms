@@ -1,4 +1,6 @@
 from pathlib import Path
+import sqlite3
+import tempfile
 import unittest
 
 SCRIPT = (
@@ -47,6 +49,55 @@ class MergePreflightBusyTests(unittest.TestCase):
         self.assertLess(gate, reopen)
         self.assertLess(reopen, insert)
         self.assertIn('c.row_factory=sqlite3.Row', text[reopen:insert])
+
+    def test_reopen_after_atomic_database_replacement_writes_canonical_file(self):
+        with tempfile.TemporaryDirectory() as td:
+            db = Path(td) / "control.sqlite"
+            old = sqlite3.connect(db)
+            old.execute("create table verdicts(id integer primary key, value text)")
+            old.execute("insert into verdicts(value) values ('before-gate')")
+            old.commit()
+            old.close()
+
+            replacement = Path(td) / "replacement.sqlite"
+            fresh = sqlite3.connect(replacement)
+            fresh.execute("create table verdicts(id integer primary key, value text)")
+            fresh.execute("insert into verdicts(value) values ('canonical-after-gate')")
+            fresh.commit()
+            fresh.close()
+            replacement.replace(db)
+
+            reopened = sqlite3.connect(db, timeout=30)
+            reopened.execute("insert into verdicts(value) values ('preflight-verdict')")
+            reopened.commit()
+            reopened.close()
+
+            canonical = sqlite3.connect(db)
+            values = [row[0] for row in canonical.execute("select value from verdicts order by id")]
+            canonical.close()
+            self.assertEqual(values, ['canonical-after-gate', 'preflight-verdict'])
+
+    def test_reopen_after_gate_failure_can_persist_failed_verdict(self):
+        with tempfile.TemporaryDirectory() as td:
+            db = Path(td) / "control.sqlite"
+            c = sqlite3.connect(db)
+            c.execute("create table verdicts(status text not null, rc integer not null)")
+            c.commit()
+            c.close()
+            replacement = Path(td) / "replacement.sqlite"
+            c = sqlite3.connect(replacement)
+            c.execute("create table verdicts(status text not null, rc integer not null)")
+            c.commit()
+            c.close()
+            replacement.replace(db)
+            gate_rc = 1
+            reopened = sqlite3.connect(db, timeout=30)
+            reopened.execute("insert into verdicts(status,rc) values(?,?)", ('FAILED', gate_rc))
+            reopened.commit()
+            reopened.close()
+            canonical = sqlite3.connect(db)
+            self.assertEqual(canonical.execute("select status,rc from verdicts").fetchone(), ('FAILED', 1))
+            canonical.close()
 
     def test_busy_preflight_keeps_queue_mutation_out_of_busy_branch(self):
         text = SCRIPT.read_text()
