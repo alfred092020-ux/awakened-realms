@@ -46,7 +46,9 @@ def make_db():
         create table integration_queue(
           task_id text not null,
           sha text not null,
-          status text not null
+          status text not null,
+          verification_mode text,
+          integrated_at text
         );
         create table integration_preflights(
           id integer primary key,
@@ -61,6 +63,21 @@ def make_db():
           candidate_sha text not null,
           branch text,
           primary key(preflight_id,ordinal)
+        );
+        create table swarm_jobs(
+          id integer primary key autoincrement,
+          task_id text not null,
+          worker_id text not null,
+          engine text not null,
+          state text not null,
+          started_at text,
+          finished_at text
+        );
+        create table zero_human_runs(
+          id integer primary key autoincrement,
+          created_at text not null,
+          can_continue integer not null,
+          payload_json text not null
         );
         create table device_proofs(
           id integer primary key autoincrement,
@@ -115,6 +132,16 @@ class GoalContractTests(unittest.TestCase):
         self.assertEqual(len(ids), len(set(ids)))
         self.assertIn("millennium-tree-map-identity", ids)
         self.assertIn("android-real-device-visual-proof", ids)
+
+    def test_autonomy_completion_contract_is_machine_checkable_and_weights_sum_to_100(self):
+        contracts = load_contracts(CONTROL_ROOT / "config" / "milestone_contracts.json")
+        milestone = contracts["milestones"]["AUTONOMY-COMPLETION"]
+        self.assertEqual(100, sum(item["weight"] for item in milestone["criteria"]))
+        soak = next(item for item in milestone["criteria"] if item["id"] == "closed-loop-soak")
+        self.assertEqual("autonomy_soak", soak["check"]["type"])
+        self.assertTrue(soak["check"]["require_failed_attempt"])
+        self.assertTrue(soak["check"]["require_next_dispatch"])
+        self.assertEqual("full-e2e", soak["check"]["integration_verification_mode"])
 
     def test_release_contract_requires_exact_sha_device_proof_but_demo_remains_compatible(self):
         path = CONTROL_ROOT / "config" / "milestone_contracts.json"
@@ -397,7 +424,7 @@ class GoalContractTests(unittest.TestCase):
         candidate = "b" * 40
         conn.execute("insert into tasks values('T','DONE')")
         conn.execute(
-            "insert into integration_queue values(?,?,?)",
+            "insert into integration_queue(task_id,sha,status) values(?,?,?)",
             ("T", candidate, "READY_FOR_PREFLIGHT"),
         )
         item = criterion(
@@ -432,7 +459,7 @@ class GoalContractTests(unittest.TestCase):
         candidate = "b" * 40
         conn.execute("insert into tasks values('T','DONE')")
         conn.execute(
-            "insert into integration_queue values(?,?,?)",
+            "insert into integration_queue(task_id,sha,status) values(?,?,?)",
             ("T", candidate, "INTEGRATED"),
         )
         item = criterion(
@@ -459,7 +486,7 @@ class GoalContractTests(unittest.TestCase):
         result_sha = "c" * 40
         conn.execute("insert into tasks values('T','DONE')")
         conn.execute(
-            "insert into integration_queue values(?,?,?)",
+            "insert into integration_queue(task_id,sha,status) values(?,?,?)",
             ("T", candidate, "INTEGRATED"),
         )
         conn.execute(
@@ -493,7 +520,7 @@ class GoalContractTests(unittest.TestCase):
         result_sha = "c" * 40
         conn.execute("insert into tasks values('T','DONE')")
         conn.execute(
-            "insert into integration_queue values(?,?,?)",
+            "insert into integration_queue(task_id,sha,status) values(?,?,?)",
             ("T", candidate, "INTEGRATED"),
         )
         conn.execute(
@@ -536,7 +563,7 @@ class GoalContractTests(unittest.TestCase):
             ),
         )
         conn.execute(
-            "insert into integration_queue values(?,?,?)",
+            "insert into integration_queue(task_id,sha,status) values(?,?,?)",
             ("CARRIER", carrier_candidate, "INTEGRATED"),
         )
         item = criterion(
@@ -588,7 +615,7 @@ class GoalContractTests(unittest.TestCase):
             ("T", "CARRIER", "integration_carrier", ""),
         )
         conn.execute(
-            "insert into integration_queue values(?,?,?)",
+            "insert into integration_queue(task_id,sha,status) values(?,?,?)",
             ("CARRIER", carrier_candidate, "READY_FOR_PREFLIGHT"),
         )
         item = criterion(
@@ -618,7 +645,7 @@ class GoalContractTests(unittest.TestCase):
             ("T", "CARRIER", "integration_carrier", ""),
         )
         conn.execute(
-            "insert into integration_queue values(?,?,?)",
+            "insert into integration_queue(task_id,sha,status) values(?,?,?)",
             ("CARRIER", carrier_candidate, "INTEGRATED"),
         )
         item = criterion(
@@ -648,7 +675,7 @@ class GoalContractTests(unittest.TestCase):
             ("T", "CARRIER", "integration_carrier", ""),
         )
         conn.execute(
-            "insert into integration_queue values(?,?,?)",
+            "insert into integration_queue(task_id,sha,status) values(?,?,?)",
             ("CARRIER", carrier_candidate, "INTEGRATED"),
         )
         item = criterion(
@@ -678,7 +705,7 @@ class GoalContractTests(unittest.TestCase):
             ("T", "OTHER", "hard", ""),
         )
         conn.execute(
-            "insert into integration_queue values(?,?,?)",
+            "insert into integration_queue(task_id,sha,status) values(?,?,?)",
             ("OTHER", candidate, "INTEGRATED"),
         )
         item = criterion(
@@ -714,11 +741,11 @@ class GoalContractTests(unittest.TestCase):
             ("T", "B", "integration_carrier", ""),
         )
         conn.execute(
-            "insert into integration_queue values(?,?,?)",
+            "insert into integration_queue(task_id,sha,status) values(?,?,?)",
             ("A", bad, "INTEGRATED"),
         )
         conn.execute(
-            "insert into integration_queue values(?,?,?)",
+            "insert into integration_queue(task_id,sha,status) values(?,?,?)",
             ("B", good, "INTEGRATED"),
         )
         item = criterion(
@@ -744,7 +771,7 @@ class GoalContractTests(unittest.TestCase):
         candidate = "b" * 40
         conn.execute("insert into tasks values('T','DONE')")
         conn.execute(
-            "insert into integration_queue values(?,?,?)",
+            "insert into integration_queue(task_id,sha,status) values(?,?,?)",
             ("T", candidate, "INTEGRATED"),
         )
         item = criterion(
@@ -770,7 +797,7 @@ class GoalContractTests(unittest.TestCase):
         candidate = "b" * 40
         conn.execute("insert into tasks values('T','SUPERSEDED')")
         conn.execute(
-            "insert into integration_queue values(?,?,?)",
+            "insert into integration_queue(task_id,sha,status) values(?,?,?)",
             ("T", candidate, "INTEGRATED"),
         )
         item = criterion(
@@ -910,6 +937,33 @@ class GoalContractTests(unittest.TestCase):
             )
         self.assertEqual("BLOCKED_EVIDENCE", dependency_result.status)
         self.assertEqual("BLOCKED_EVIDENCE", evidence_result.status)
+
+    def test_autonomy_soak_requires_failure_recovery_integration_zero_human_and_next_dispatch(self):
+        conn = make_db()
+        task = "CANARY"
+        conn.execute("insert into swarm_jobs(task_id,worker_id,engine,state,started_at,finished_at) values(?,?,?,?,?,?)", (task,"auto-devin-1","devin","FAILED","2099-01-01T00:00:00+00:00","2099-01-01T00:01:00+00:00"))
+        conn.execute("insert into swarm_jobs(task_id,worker_id,engine,state,started_at,finished_at) values(?,?,?,?,?,?)", (task,"auto-devin-1","devin","DONE","2099-01-01T00:02:00+00:00","2099-01-01T00:03:00+00:00"))
+        conn.execute("insert into integration_queue(task_id,sha,status,verification_mode,integrated_at) values(?,?,?,?,?)", (task,"a"*40,"INTEGRATED","full-e2e","2099-01-01T00:04:00+00:00"))
+        conn.execute("insert into zero_human_runs(created_at,can_continue,payload_json) values(?,?,?)", ("2099-01-01T00:05:00+00:00",1,json.dumps({"metrics":{"state_inconsistencies":0}})))
+        conn.execute("insert into swarm_jobs(task_id,worker_id,engine,state,started_at,finished_at) values(?,?,?,?,?,?)", ("NEXT","auto-devin-2","devin","RUNNING","2099-01-01T00:06:00+00:00",None))
+        item = criterion("soak", {"type":"autonomy_soak","task_id":task,"window_hours":1000000,"min_zero_human_runs":1,"min_span_seconds":300,"require_failed_attempt":True,"require_next_dispatch":True,"integration_verification_mode":"full-e2e"})
+        with tempfile.TemporaryDirectory() as td:
+            result = evaluate_criterion(conn,item,integration_sha="a"*40,root=Path(td))
+        self.assertTrue(result.passed)
+        self.assertIn("closed loop proved",result.reason)
+
+    def test_autonomy_soak_fails_closed_without_next_dispatch(self):
+        conn = make_db()
+        task = "CANARY"
+        conn.execute("insert into swarm_jobs(task_id,worker_id,engine,state,started_at,finished_at) values(?,?,?,?,?,?)", (task,"auto-devin-1","devin","FAILED","2099-01-01T00:00:00+00:00","2099-01-01T00:01:00+00:00"))
+        conn.execute("insert into swarm_jobs(task_id,worker_id,engine,state,started_at,finished_at) values(?,?,?,?,?,?)", (task,"auto-devin-1","devin","DONE","2099-01-01T00:02:00+00:00","2099-01-01T00:03:00+00:00"))
+        conn.execute("insert into integration_queue(task_id,sha,status,verification_mode,integrated_at) values(?,?,?,?,?)", (task,"a"*40,"INTEGRATED","full-e2e","2099-01-01T00:04:00+00:00"))
+        conn.execute("insert into zero_human_runs(created_at,can_continue,payload_json) values(?,?,?)", ("2099-01-01T00:05:00+00:00",1,json.dumps({"metrics":{"state_inconsistencies":0}})))
+        item = criterion("soak", {"type":"autonomy_soak","task_id":task,"window_hours":1000000})
+        with tempfile.TemporaryDirectory() as td:
+            result = evaluate_criterion(conn,item,integration_sha="a"*40,root=Path(td))
+        self.assertFalse(result.passed)
+        self.assertIn("next-work dispatch",result.reason)
 
     def test_external_manual_gate_is_fail_closed(self):
         conn = make_db()

@@ -997,6 +997,205 @@
           }
         }
       ]
+    },
+    "AUTONOMY-COMPLETION": {
+      "title": "Hands-off governed autonomy",
+      "definition_of_done": "Persistent production autonomy selects and executes work, recovers failures, verifies and integrates exact candidates, records evidence, advances to the next work item without human prompting, and keeps self-improvement isolated in shadow.",
+      "criteria": [
+        {
+          "id": "persistent-supervisor",
+          "weight": 6,
+          "description": "Persistent autonomous supervisor and scheduler recover recurring work.",
+          "check": {
+            "type": "task_state",
+            "task_id": "AUTONOMY-USER-SUPERVISOR-001",
+            "pass_statuses": [
+              "DONE",
+              "RESOLVED"
+            ],
+            "integration_required": true
+          }
+        },
+        {
+          "id": "autonomous-swarm",
+          "weight": 7,
+          "description": "Autonomous swarm selects, claims, and dispatches eligible work.",
+          "check": {
+            "type": "task_state",
+            "task_id": "AUTONOMY-SWARM-001",
+            "pass_statuses": [
+              "DONE",
+              "RESOLVED"
+            ],
+            "integration_required": true
+          }
+        },
+        {
+          "id": "isolated-worker-lifecycle",
+          "weight": 7,
+          "description": "Unattended workers use governed leases, branches, worktrees, and hardened isolation.",
+          "check": {
+            "type": "task_state",
+            "task_id": "DEVIN-AUTONOMY-LAUNCH-GATE-REPAIR-001",
+            "pass_statuses": [
+              "DONE",
+              "RESOLVED"
+            ],
+            "integration_required": true
+          }
+        },
+        {
+          "id": "stale-state-recovery",
+          "weight": 6,
+          "description": "Stale claims and abandoned work are reconciled safely.",
+          "check": {
+            "type": "task_state",
+            "task_id": "CLAIMS-RECONCILE-DURABILITY-001",
+            "pass_statuses": [
+              "DONE",
+              "RESOLVED"
+            ],
+            "integration_required": true
+          }
+        },
+        {
+          "id": "failure-quarantine",
+          "weight": 6,
+          "description": "Failing candidates are isolated without blocking healthy work.",
+          "check": {
+            "type": "task_state",
+            "task_id": "AUTONOMY-REGRESSION-ISOLATION-001",
+            "pass_statuses": [
+              "DONE",
+              "RESOLVED"
+            ],
+            "integration_required": true
+          }
+        },
+        {
+          "id": "governed-integration",
+          "weight": 7,
+          "description": "Autonomous exact-SHA preflight and guarded integration are proven.",
+          "check": {
+            "type": "task_state",
+            "task_id": "AUTONOMY-CANARY-001",
+            "pass_statuses": [
+              "DONE",
+              "RESOLVED"
+            ],
+            "integration_required": true
+          }
+        },
+        {
+          "id": "brain-git-runtime-health",
+          "weight": 6,
+          "description": "Control-plane state, index, and runtime deployment self-heal against canonical Git.",
+          "check": {
+            "type": "task_state",
+            "task_id": "AUTONOMY-HEALTH-SELFHEAL-001",
+            "pass_statuses": [
+              "DONE",
+              "RESOLVED"
+            ],
+            "integration_required": true
+          }
+        },
+        {
+          "id": "service-recovery",
+          "weight": 7,
+          "description": "Executable chaos certification proves recovery after service interruption.",
+          "check": {
+            "type": "task_state",
+            "task_id": "AUTONOMY-CHAOS-CERT-001",
+            "pass_statuses": [
+              "DONE",
+              "RESOLVED"
+            ],
+            "integration_required": true
+          }
+        },
+        {
+          "id": "device-proof-recovery",
+          "weight": 5,
+          "description": "Physical QA proof persistence self-reconciles safely.",
+          "check": {
+            "type": "task_state",
+            "task_id": "DEVICE-PROOF-PERSISTENCE-001",
+            "pass_statuses": [
+              "DONE",
+              "RESOLVED"
+            ],
+            "integration_required": true
+          }
+        },
+        {
+          "id": "blocker-routing-recursion",
+          "weight": 6,
+          "description": "Blocker routing is durable and recursive task explosion is fenced.",
+          "check": {
+            "type": "task_state",
+            "task_id": "CONTROL-PLANE-DURABILITY-001",
+            "pass_statuses": [
+              "DONE",
+              "RESOLVED"
+            ],
+            "integration_required": true
+          }
+        },
+        {
+          "id": "shadow-self-improvement",
+          "weight": 6,
+          "description": "Self-improvement runs in a bounded recurring shadow loop.",
+          "check": {
+            "type": "task_state",
+            "task_id": "AUTONOMY-SHADOW-GOVERNOR-LOOP-001",
+            "pass_statuses": [
+              "DONE",
+              "RESOLVED"
+            ],
+            "integration_required": true
+          }
+        },
+        {
+          "id": "metrics-resource-feedback",
+          "weight": 5,
+          "description": "Autonomy records bottlenecks and routes resources from measured system state.",
+          "check": {
+            "type": "task_state",
+            "task_id": "AUTONOMY-BEYOND-001",
+            "pass_statuses": [
+              "DONE",
+              "RESOLVED"
+            ],
+            "integration_required": true
+          }
+        },
+        {
+          "id": "exact-current-sha-full-e2e",
+          "weight": 10,
+          "description": "Current integration SHA has authoritative full-E2E PASS.",
+          "check": {
+            "type": "verification",
+            "mode": "full-e2e",
+            "status": "PASS"
+          }
+        },
+        {
+          "id": "closed-loop-soak",
+          "weight": 16,
+          "description": "Recent autonomous canary recovers a failure, completes, integrates through full-E2E, records zero-human continuation evidence, then selects the next job.",
+          "check": {
+            "type": "autonomy_soak",
+            "task_id": "DEVICE-PROOF-ORPHAN-RECONCILE-002",
+            "window_hours": 24,
+            "min_zero_human_runs": 1,
+            "min_span_seconds": 300,
+            "require_failed_attempt": true,
+            "require_next_dispatch": true,
+            "integration_verification_mode": "full-e2e"
+          }
+        }
+      ]
     }
   }
 }

@@ -4,6 +4,7 @@ import hashlib
 import json
 import sqlite3
 import subprocess
+from datetime import datetime, timedelta, timezone
 from collections.abc import Callable
 from dataclasses import dataclass, asdict
 from pathlib import Path
@@ -21,6 +22,7 @@ SUPPORTED_CHECKS = {
     "evidence_state",
     "external_manual",
     "device_proof",
+    "autonomy_soak",
 }
 PASS_TASK_STATES = {"DONE", "RESOLVED"}
 TERMINAL_TASK_STATES = {"DONE", "RESOLVED", "SUPERSEDED", "CANCELLED"}
@@ -139,6 +141,18 @@ def validate_contracts(payload: dict[str, Any]) -> None:
                         f"{milestone_id}/{criterion_id}: "
                         "device_proof status must be non-empty"
                     )
+            if check_type == "autonomy_soak":
+                task_id = str(check.get("task_id") or "").strip()
+                if not task_id:
+                    raise ValueError(f"{milestone_id}/{criterion_id}: autonomy_soak task_id is required")
+                for key, default in (("window_hours", 24), ("min_zero_human_runs", 1), ("min_span_seconds", 0)):
+                    raw = check.get(key, default)
+                    floor = 0 if key == "min_span_seconds" else 1
+                    if not isinstance(raw, (int, float)) or raw < floor:
+                        raise ValueError(f"{milestone_id}/{criterion_id}: autonomy_soak {key} is invalid")
+                for key in ("require_failed_attempt", "require_next_dispatch"):
+                    if key in check and not isinstance(check[key], bool):
+                        raise ValueError(f"{milestone_id}/{criterion_id}: autonomy_soak {key} must be boolean")
             template = item.get("task_template")
             if template is not None:
                 _validate_task_template(milestone_id, criterion_id, template)
@@ -599,6 +613,119 @@ def resolve_device_proof(
     )
 
 
+def _parse_iso8601(value: str | None) -> datetime | None:
+    text = str(value or "").strip()
+    if not text:
+        return None
+    try:
+        parsed = datetime.fromisoformat(text.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    return parsed.astimezone(timezone.utc)
+
+
+def _evaluate_autonomy_soak(
+    conn: sqlite3.Connection,
+    criterion: dict[str, Any],
+) -> tuple[str, bool, str, str | None]:
+    check = criterion["check"]
+    task_id = str(check.get("task_id") or "").strip()
+    window_hours = float(check.get("window_hours", 24))
+    min_zero_runs = int(check.get("min_zero_human_runs", 1))
+    min_span_seconds = float(check.get("min_span_seconds", 0))
+    require_failed = bool(check.get("require_failed_attempt", True))
+    require_next = bool(check.get("require_next_dispatch", True))
+    required_mode = str(check.get("integration_verification_mode") or "full-e2e")
+    required = {"swarm_jobs", "integration_queue", "zero_human_runs"}
+    missing = sorted(name for name in required if not _table_exists(conn, name))
+    if missing:
+        return "BLOCKED_DEP", False, "missing autonomy evidence tables: " + ",".join(missing), task_id
+    cutoff = datetime.now(timezone.utc) - timedelta(hours=window_hours)
+    rows = list(conn.execute(
+        "select id,started_at,finished_at,worker_id,engine from swarm_jobs where task_id=? and state='DONE' order by id desc",
+        (task_id,),
+    ))
+    success = next((row for row in rows if (_parse_iso8601(row[2]) or datetime.min.replace(tzinfo=timezone.utc)) >= cutoff), None)
+    if success is None:
+        return "BLOCKED_DEP", False, f"no successful autonomous swarm job for {task_id} inside {window_hours:g}h window", task_id
+    success_finished = _parse_iso8601(success[2])
+    success_started = _parse_iso8601(success[1]) or success_finished
+    if success_finished is None:
+        return "BLOCKED_DEP", False, "successful swarm job lacks finished_at", task_id
+    failed_finished = None
+    if require_failed:
+        failed = [
+            ts for ts in (
+                _parse_iso8601(row[0])
+                for row in conn.execute(
+                    "select finished_at from swarm_jobs where task_id=? and state='FAILED' order by id desc",
+                    (task_id,),
+                )
+            )
+            if ts is not None and cutoff <= ts <= success_finished
+        ]
+        if not failed:
+            return "BLOCKED_DEP", False, f"no failed autonomous attempt recovered before successful {task_id} job", task_id
+        failed_finished = min(failed)
+    integrated = None
+    for row in conn.execute(
+        "select sha,verification_mode,integrated_at from integration_queue where task_id=? and status='INTEGRATED' order by integrated_at desc",
+        (task_id,),
+    ):
+        ts = _parse_iso8601(row[2])
+        if ts is not None and ts >= success_finished and ts >= cutoff:
+            integrated = (row, ts)
+            break
+    if integrated is None:
+        return "BLOCKED_DEP", False, f"successful {task_id} swarm job is not followed by governed integration", task_id
+    integrated_row, integrated_at = integrated
+    if required_mode and str(integrated_row[1] or "") != required_mode:
+        return "BLOCKED_DEP", False, f"integration verification_mode={integrated_row[1] or 'MISSING'}; required {required_mode}", task_id
+    qualifying_zero = []
+    for created_at, payload_json in conn.execute(
+        "select created_at,payload_json from zero_human_runs where can_continue=1 order by id asc"
+    ):
+        ts = _parse_iso8601(created_at)
+        if ts is None or ts < integrated_at:
+            continue
+        try:
+            payload = json.loads(str(payload_json or "{}"))
+        except json.JSONDecodeError:
+            continue
+        metrics = payload.get("metrics") if isinstance(payload, dict) else None
+        if isinstance(metrics, dict) and int(metrics.get("state_inconsistencies", 0) or 0) == 0:
+            qualifying_zero.append(ts)
+    if len(qualifying_zero) < min_zero_runs:
+        return "BLOCKED_DEP", False, f"zero-human continuation evidence after integration={len(qualifying_zero)}; required {min_zero_runs}", task_id
+    next_started = None
+    next_task = None
+    if require_next:
+        for row in conn.execute(
+            "select task_id,started_at from swarm_jobs where task_id<>? order by id asc",
+            (task_id,),
+        ):
+            ts = _parse_iso8601(row[1])
+            if ts is not None and ts > integrated_at:
+                next_started = ts
+                next_task = str(row[0])
+                break
+        if next_started is None:
+            return "BLOCKED_DEP", False, "no autonomous next-work dispatch after canary integration", task_id
+    terminal_time = next_started or qualifying_zero[-1]
+    start_time = failed_finished or success_started or success_finished
+    span = max(0.0, (terminal_time - start_time).total_seconds())
+    if span < min_span_seconds:
+        return "BLOCKED_DEP", False, f"autonomy soak span={span:.0f}s; required {min_span_seconds:.0f}s", task_id
+    return (
+        "PASS",
+        True,
+        f"closed loop proved task={task_id} worker={success[3]} engine={success[4]} integrated_sha={integrated_row[0]} mode={integrated_row[1]} zero_human_runs={len(qualifying_zero)} next_task={next_task or 'not-required'} span={span:.0f}s",
+        task_id,
+    )
+
+
 def _evaluate_device_proof(
     conn: sqlite3.Connection,
     criterion: dict[str, Any],
@@ -651,6 +778,8 @@ def evaluate_criterion(
             integration_sha=integration_sha,
             root=root,
         )
+    elif check_type == "autonomy_soak":
+        result = _evaluate_autonomy_soak(conn, criterion)
     else:
         raise ValueError(f"unsupported criterion check: {check_type}")
 
