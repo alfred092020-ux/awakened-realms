@@ -124,5 +124,19 @@ class ParseTests(unittest.TestCase):
   self.assertIn("prefers-reduced-motion:reduce",css)
   self.assertIn("IntersectionObserver",js)
 
+ def test_operator_actor_defaults_to_joined_nexus_identity(self):
+  self.assertEqual(ncc.ACTOR,"nexus")
+
+ def test_wake_lead_posts_through_nexus_identity(self):
+  calls=[]
+  def fake_run(cmd,timeout=6):
+   calls.append(cmd); return 0,"POSTED event=1",""
+  with mock.patch.object(ncc,"run",side_effect=fake_run):
+   ok,state,msg=ncc.control_request("wake-lead",{})
+  self.assertTrue(ok)
+  self.assertEqual(state,"EXECUTED")
+  self.assertEqual(calls[0][0],str(ncc.BRAIN))
+  self.assertEqual(calls[0][1:4],["post","nexus","lead"])
+
 if __name__=="__main__":
  unittest.main()
