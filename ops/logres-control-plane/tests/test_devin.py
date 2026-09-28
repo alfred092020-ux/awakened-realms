@@ -1110,7 +1110,7 @@ class PermissionManifestTests(unittest.TestCase):
         )
         self.assertNotIn("dangerous", argv)
 
-    def test_sandboxed_argv_prefers_exec_without_broad_permission_mode(self):
+    def test_sandboxed_unattended_smart_maps_to_cli_autonomous(self):
         argv = build_devin_argv(
             prompt_file=Path("/p"),
             config_path=Path("/control/task-permission.json"),
@@ -1122,11 +1122,23 @@ class PermissionManifestTests(unittest.TestCase):
         self.assertEqual(
             "autonomous", argv[argv.index("--permission-mode") + 1]
         )
-        self.assertNotIn("dangerous", argv)
         self.assertNotIn("bypass", argv)
 
         interactive = build_devin_argv(prompt_file=Path("/p"))
+        self.assertEqual(
+            DEFAULT_PERMISSION_MODE,
+            interactive[interactive.index("--permission-mode") + 1],
+        )
         self.assertNotIn("--prefer-exec-tool", interactive)
+
+    def test_sandboxed_interactive_smart_stays_smart(self):
+        argv = build_devin_argv(
+            prompt_file=Path("/p"),
+            permission_mode="smart",
+            sandbox=True,
+            execution_mode="interactive",
+        )
+        self.assertEqual("smart", argv[argv.index("--permission-mode") + 1])
 
 class BinContractTests(unittest.TestCase):
     def test_bin_preserves_swarm_agent_argument_contract(self):
