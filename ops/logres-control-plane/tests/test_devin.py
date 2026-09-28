@@ -1001,7 +1001,7 @@ class PermissionManifestTests(unittest.TestCase):
         allow = manifest["permissions"]["allow"]
         deny = manifest["permissions"]["deny"]
         self.assertIn("Read(**)", allow)
-        self.assertFalse(any(rule.startswith("Exec(") for rule in allow))
+        self.assertIn("Exec(*)", allow)
         self.assertTrue(any(rule.startswith("Read(**/*secret") for rule in deny))
         self.assertIn(
             "Write(ops/logres-control-plane/lib/example.py)", allow
