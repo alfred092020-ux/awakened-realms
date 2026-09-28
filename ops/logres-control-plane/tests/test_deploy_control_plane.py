@@ -227,11 +227,13 @@ PRODUCTION_FILES = (
     "lib/logres_factory_metrics.py",
     "lib/logres_migrations.py",
     "lib/logres_peer_consultation.py",
+    "lib/logres_phone_agent_broker.py",
     "lib/logres_superbrain.py",
     "migrations/20260926_001_superbrain_v2.sql",
     "migrations/20260926_002_superbrain_selfheal_dispatch.sql",
     "migrations/20260926_003_superbrain_wake_feedback.sql",
     "systemd/logres-devin-worker@.service",
+    "systemd/logres-phone-agent-broker.service",
     "systemd/logres-devin-lead.service",
 )
 
