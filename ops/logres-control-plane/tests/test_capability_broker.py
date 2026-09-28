@@ -58,7 +58,7 @@ class CapabilityBrokerTests(unittest.TestCase):
         self.assertTrue(out["use_tool"])
         self.assertEqual("github", out["ready"][0]["capability"]["capability_id"])
 
-    def test_vm_task_prefers_remote_desktop(self):
+    def test_vm_task_prefers_nexus_commander_with_remote_desktop_fallback(self):
         self.add_task(
             "VM-001",
             "Inspect Oracle VM runtime logs and restart process",
@@ -66,7 +66,11 @@ class CapabilityBrokerTests(unittest.TestCase):
         )
         out = recommend(self.c, "VM-001")
         ids = [x["capability"]["capability_id"] for x in out["ready"]]
-        self.assertEqual("remote-desktop", ids[0])
+        self.assertEqual("nexus-commander", ids[0])
+        self.assertIn("remote-desktop", ids)
+        nexus = next(x for x in out["ready"] if x["capability"]["capability_id"] == "nexus-commander")
+        remote = next(x for x in out["ready"] if x["capability"]["capability_id"] == "remote-desktop")
+        self.assertLess(nexus["capability"]["fallback_rank"], remote["capability"]["fallback_rank"])
 
     def test_unknown_provider_is_recommended_for_connection_check_not_claimed_ready(self):
         self.add_task(

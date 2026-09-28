@@ -112,7 +112,7 @@ echo "=== SHARED ENVIRONMENT ==="
 head -1 "$ROOT/control/SYNC_HEALTH.txt" 2>/dev/null || echo "SYNC_STATUS=UNKNOWN"
 "$ROOT/bin/logres-nexus" status 2>/dev/null || echo "Nexus status unavailable"
 echo "Nexus primary helper: $ROOT/bin/logres-nexus"
-echo "Desktop Commander: bridge/bootstrap/emergency fallback."
+echo "Desktop Commander: emergency bootstrap/recovery fallback only."
 
 cat <<RULES
 
@@ -133,7 +133,7 @@ BRAIN NETWORK RULES
 - Post only meaningful checkpoints/findings/blockers/decisions.
 - Store large evidence once; send path/hash, not duplicated content.
 - Finish with logres-finish-task <chat-id> <task-id>; it runs the fast worker gate, then queues the immutable SHA for shared full-E2E preflight.
-- Use logres-nexus for suitable execution; minimize direct Desktop Commander calls.
+- Use Nexus Commander for normal execution. Use Desktop Commander only for emergency bootstrap/recovery when Nexus is unavailable.
 - Never steal a live lease or mutate/delete another owner's dirty worktree.
 - Brain may coordinate/assign work; Lead remains the only integration authority.
 RULES
