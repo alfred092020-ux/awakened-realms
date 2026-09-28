@@ -1,0 +1,16 @@
+[Unit]
+Description=Nexus Control Center
+After=network-online.target
+[Service]
+Type=simple
+WorkingDirectory=/home/ubuntu/logres/src/awakened-realms/ops/nexus-control-center
+EnvironmentFile=-/home/ubuntu/.config/nexus-control-center.env
+ExecStart=/usr/bin/python3 /home/ubuntu/logres/src/awakened-realms/ops/nexus-control-center/server.py --host 127.0.0.1 --port 8787
+Restart=always
+RestartSec=2
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=read-only
+[Install]
+WantedBy=default.target
