@@ -290,22 +290,38 @@ class SwarmTests(unittest.TestCase):
             branch="worker/auto-devin-2-drun", model="swe-2-max"
         )
         self.conn.execute(
-            "update swarm_jobs set state='FAILED',session_id='systemd:failed.service' where id=?",
+            "update swarm_jobs set state='FAILED',session_id='systemd:test-failed' where id=?",
             (failed_id,),
         )
         self.conn.execute(
-            "update swarm_jobs set state='RUNNING',pid=?,session_id='systemd:running.service' where id=?",
+            "update swarm_jobs set state='RUNNING',pid=?,session_id='systemd:test-running' where id=?",
             (os.getpid(), running_id),
         )
+        extra_ids = []
+        for index in range(4):
+            task_id = f"DEXTRA{index}"
+            seed_task(self.conn, task_id=task_id, status="READY", work_type="implementation")
+            job_id = create_job(
+                self.conn, task_id, f"auto-devin-{index + 3}", "devin",
+                branch=f"worker/auto-devin-extra-{index}", model="swe-2-max"
+            )
+            self.conn.execute(
+                "update swarm_jobs set state='FAILED',session_id='systemd:test-extra' where id=?",
+                (job_id,),
+            )
+            extra_ids.append(job_id)
         self.conn.commit()
+
         rows = helper(self.conn)
-        self.assertEqual([failed_id], [row["id"] for row in rows])
-        self.conn.execute(
-            "update swarm_jobs set session_id='cleaned:systemd:failed.service' where id=?",
-            (failed_id,),
-        )
+        self.assertEqual([failed_id, extra_ids[0]], [row["id"] for row in rows])
+        for job_id in (failed_id, extra_ids[0]):
+            self.conn.execute(
+                "update swarm_jobs set session_id='cleaned:systemd:test' where id=?",
+                (job_id,),
+            )
         self.conn.commit()
-        self.assertEqual([], helper(self.conn))
+        self.assertEqual(extra_ids[1:3], [row["id"] for row in helper(self.conn)])
+        self.assertEqual([], helper(self.conn, limit=0))
 
     def test_dead_swarm_process_is_marked_failed(self):
         seed_task(

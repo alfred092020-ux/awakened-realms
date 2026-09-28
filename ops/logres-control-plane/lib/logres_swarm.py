@@ -516,8 +516,13 @@ def reconcile_jobs(conn: sqlite3.Connection) -> list[int]:
     return stale
 
 
-def terminal_devin_cleanup_candidates(conn: sqlite3.Connection) -> list[sqlite3.Row]:
+def terminal_devin_cleanup_candidates(
+    conn: sqlite3.Connection, *, limit: int = 2
+) -> list[sqlite3.Row]:
     ensure_schema(conn)
+    bounded_limit = max(0, int(limit))
+    if bounded_limit == 0:
+        return []
     return list(
         conn.execute(
             """select id,task_id,worker_id,branch,session_id,state
@@ -526,7 +531,9 @@ def terminal_devin_cleanup_candidates(conn: sqlite3.Connection) -> list[sqlite3.
                   and state in ('DONE','BLOCKED','FAILED','SUPERSEDED')
                   and branch is not null
                   and session_id like 'systemd:%'
-                order by id"""
+                order by id
+                limit ?""",
+            (bounded_limit,),
         )
     )
 
