@@ -106,5 +106,23 @@ class ParseTests(unittest.TestCase):
   self.assertEqual(x["counts"]["active_workers"],1)
   self.assertEqual(x["counts"]["working"],1)
 
+ def test_mobile_live_strip_and_unknown_pipeline_truth_are_explicit(self):
+  root=pathlib.Path(__file__).resolve().parents[1]/"static"
+  html=(root/"index.html").read_text()
+  js=(root/"app.js").read_text()
+  self.assertIn('id="last-update"',html)
+  self.assertIn('id="connection-age"',html)
+  self.assertIn('id="pipeline-note"',html)
+  self.assertIn("tt.blocked_known",js)
+  self.assertIn("'—'",js)
+
+ def test_reconnect_is_bounded_and_mobile_motion_can_be_reduced(self):
+  root=pathlib.Path(__file__).resolve().parents[1]/"static"
+  js=(root/"app.js").read_text()
+  css=(root/"app.css").read_text()
+  self.assertIn("Math.min(12000",js)
+  self.assertIn("prefers-reduced-motion:reduce",css)
+  self.assertIn("IntersectionObserver",js)
+
 if __name__=="__main__":
  unittest.main()
