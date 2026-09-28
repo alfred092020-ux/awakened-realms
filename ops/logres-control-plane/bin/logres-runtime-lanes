@@ -1,0 +1,82 @@
+#!/usr/bin/env python3
+from __future__ import annotations
+
+import argparse
+import json
+import sqlite3
+from pathlib import Path
+import sys
+
+HERE = Path(__file__).resolve().parent
+LIB = HERE.parent / "lib"
+sys.path.insert(0, str(LIB))
+
+from logres_runtime_lanes import RuntimeLaneStore, sandbox_path, workload_resources
+
+
+def parser() -> argparse.ArgumentParser:
+    p = argparse.ArgumentParser(description="Lease scarce runtime resources without serializing source work")
+    p.add_argument("--db", required=True, type=Path)
+    sub = p.add_subparsers(dest="command", required=True)
+
+    sub.add_parser("init")
+
+    acq = sub.add_parser("acquire")
+    acq.add_argument("--owner", required=True)
+    acq.add_argument("--task", required=True)
+    acq.add_argument("--ttl", type=int, default=900)
+    group = acq.add_mutually_exclusive_group(required=True)
+    group.add_argument("--resource", action="append", dest="resources")
+    group.add_argument("--workload", choices=("verify", "promote", "deploy-live-nexus", "device-qa"))
+
+    renew = sub.add_parser("renew")
+    renew.add_argument("lease_id")
+    renew.add_argument("--ttl", type=int, default=900)
+
+    release = sub.add_parser("release")
+    release.add_argument("lease_id")
+
+    sub.add_parser("status")
+
+    sb = sub.add_parser("sandbox")
+    sb.add_argument("--root", required=True, type=Path)
+    sb.add_argument("--owner", required=True)
+    sb.add_argument("--task", required=True)
+    sb.add_argument("--base-sha", required=True)
+    return p
+
+
+def main() -> int:
+    args = parser().parse_args()
+    args.db.parent.mkdir(parents=True, exist_ok=True)
+    conn = sqlite3.connect(args.db)
+    store = RuntimeLaneStore(conn)
+    store.ensure_schema()
+    store.define_defaults()
+
+    if args.command == "init":
+        print(json.dumps(store.status(), sort_keys=True))
+    elif args.command == "acquire":
+        resources = args.resources or workload_resources(args.workload)
+        lease_id = store.acquire(
+            resources,
+            owner=args.owner,
+            task_id=args.task,
+            ttl_seconds=args.ttl,
+        )
+        print(json.dumps({"lease_id": lease_id, "resources": list(resources)}, sort_keys=True))
+    elif args.command == "renew":
+        count = store.renew(args.lease_id, ttl_seconds=args.ttl)
+        print(json.dumps({"lease_id": args.lease_id, "renewed_resources": count}, sort_keys=True))
+    elif args.command == "release":
+        count = store.release(args.lease_id)
+        print(json.dumps({"lease_id": args.lease_id, "released_resources": count}, sort_keys=True))
+    elif args.command == "status":
+        print(json.dumps(store.status(), sort_keys=True))
+    elif args.command == "sandbox":
+        print(sandbox_path(args.root, args.owner, args.task, args.base_sha))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
