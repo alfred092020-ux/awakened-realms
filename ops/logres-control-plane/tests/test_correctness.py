@@ -460,6 +460,67 @@ class ReceiptPersistenceTests(unittest.TestCase):
         with self.assertRaises(lc.CorrectnessError):
             lc.record_receipt(conn, {"sha": "abc123", "verdict": "PASS"})
 
+    def _attestation_db(self):
+        conn = sqlite3.connect(":memory:")
+        conn.execute(
+            """create table tasks(
+                 id text primary key, priority integer, lane text, title text,
+                 status text, branch text, owner text, note text, updated_at text
+               )"""
+        )
+        conn.execute(
+            """insert into tasks(id,priority,lane,title,status,branch,owner,note,updated_at)
+               values('L3-REVIEW-001',0,'verification','review','ACTIVE',null,
+                      'independent-reviewer','',datetime('now'))"""
+        )
+        conn.commit()
+        return conn
+
+    def test_attestation_persistence_is_exact_sha_scoped(self):
+        conn = self._attestation_db()
+        sha_a = "a" * 40
+        sha_b = "b" * 40
+        row_id = lc.record_attestation(
+            conn,
+            sha=sha_a,
+            reviewer="independent-reviewer",
+            note="exact SHA review PASS",
+            source_task="L3-REVIEW-001",
+        )
+        self.assertGreater(row_id, 0)
+        rows_a = lc.attestations_for_sha(conn, sha_a)
+        rows_b = lc.attestations_for_sha(conn, sha_b)
+        self.assertEqual(1, len(rows_a))
+        self.assertEqual([], rows_b)
+        self.assertEqual("independent-reviewer", rows_a[0]["reviewer"])
+        self.assertEqual("L3-REVIEW-001", rows_a[0]["source_task"])
+
+    def test_attestation_persistence_rejects_self_or_nonverification_source(self):
+        conn = self._attestation_db()
+        with self.assertRaises(lc.CorrectnessError):
+            lc.record_attestation(
+                conn, sha="a" * 40, reviewer="implementation-worker",
+                note="self review", source_task="L3-REVIEW-001"
+            )
+        conn.execute("update tasks set lane='control-plane' where id='L3-REVIEW-001'")
+        conn.commit()
+        with self.assertRaises(lc.CorrectnessError):
+            lc.record_attestation(
+                conn, sha="a" * 40, reviewer="independent-reviewer",
+                note="wrong lane", source_task="L3-REVIEW-001"
+            )
+
+    def test_attestation_persistence_rejects_invalid_or_empty_fields(self):
+        conn = self._attestation_db()
+        for kwargs in (
+            dict(sha="not-a-sha", reviewer="independent-reviewer", note="n", source_task="L3-REVIEW-001"),
+            dict(sha="a" * 40, reviewer="", note="n", source_task="L3-REVIEW-001"),
+            dict(sha="a" * 40, reviewer="independent-reviewer", note="", source_task="L3-REVIEW-001"),
+            dict(sha="a" * 40, reviewer="independent-reviewer", note="n", source_task=None),
+        ):
+            with self.assertRaises(lc.CorrectnessError):
+                lc.record_attestation(conn, **kwargs)
+
     def test_receipt_persistence_retries_transient_writer_lock(self):
         with tempfile.TemporaryDirectory() as td:
             db = Path(td) / "control.sqlite"
@@ -620,6 +681,62 @@ class CliEndToEndTests(unittest.TestCase):
             self.assertEqual(0, proc.returncode, proc.stderr)
             stored = json.loads(proc.stdout)
             self.assertEqual(receipt["verdict"], stored["verdict"])
+
+    def test_cli_attest_and_evaluate_auto_load_exact_sha(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            db = root / "control.sqlite"
+            conn = sqlite3.connect(db)
+            conn.execute(
+                """create table tasks(
+                     id text primary key, priority integer, lane text, title text,
+                     status text, branch text, owner text, note text, updated_at text
+                   )"""
+            )
+            conn.execute(
+                """insert into tasks(id,priority,lane,title,status,branch,owner,note,updated_at)
+                   values('L3-REVIEW-CLI',0,'verification','review','ACTIVE',null,
+                          'peer-reviewer','',datetime('now'))"""
+            )
+            conn.commit()
+            conn.close()
+
+            env = os.environ.copy()
+            env["PYTHONPATH"] = str(CONTROL_ROOT / "lib")
+            proc = subprocess.run(
+                [
+                    sys.executable, str(CLI), "attest", SHA,
+                    "--reviewer", "peer-reviewer",
+                    "--note", "exact evaluator review PASS",
+                    "--source-task", "L3-REVIEW-CLI",
+                    "--control-db", str(db),
+                ],
+                capture_output=True, text=True, env=env,
+            )
+            self.assertEqual(0, proc.returncode, proc.stderr)
+
+            policy = load_policy()
+            plan = make_plan(policy, ["ops/logres-control-plane/bin/logres-verify-farm"])
+            plan_file = root / "plan.json"
+            plan_file.write_text(json.dumps(plan))
+            outcomes_file = root / "outcomes.json"
+            outcomes_file.write_text(json.dumps(full_outcomes()))
+            receipt_file = root / "receipt.json"
+            proc = subprocess.run(
+                [
+                    sys.executable, str(CLI), "evaluate",
+                    "--plan", str(plan_file),
+                    "--outcomes", str(outcomes_file),
+                    "--sha", SHA,
+                    "--policy", str(POLICY_PATH),
+                    "--control-db", str(db),
+                    "--output", str(receipt_file),
+                ],
+                capture_output=True, text=True, env=env,
+            )
+            receipt = json.loads(receipt_file.read_text())
+            self.assertEqual("PASS", receipt["levels"]["L3"]["verdict"])
+            self.assertEqual("peer-reviewer", receipt["levels"]["L3"]["attestation"]["reviewer"])
 
     def test_cli_fails_closed_on_bad_policy(self):
         with tempfile.TemporaryDirectory() as td:

@@ -1166,9 +1166,89 @@ def ensure_schema(conn: sqlite3.Connection) -> None:
         );
         create index if not exists correctness_receipts_sha_idx
           on correctness_receipts(sha,id);
+        create table if not exists correctness_attestations(
+          id integer primary key autoincrement,
+          sha text not null,
+          reviewer text not null,
+          note text not null,
+          source_task text,
+          created_at text not null,
+          created_epoch real not null
+        );
+        create index if not exists correctness_attestations_sha_idx
+          on correctness_attestations(sha,id);
         """
     )
     conn.commit()
+
+
+def record_attestation(
+    conn: sqlite3.Connection,
+    *,
+    sha: str,
+    reviewer: str,
+    note: str,
+    source_task: str | None = None,
+) -> int:
+    ensure_schema(conn)
+    exact_sha = require_sha(sha)
+    reviewer = str(reviewer or "").strip()
+    note = str(note or "").strip()
+    source_task = str(source_task or "").strip() or None
+    if not reviewer:
+        raise CorrectnessError("attestation reviewer is required")
+    if not note:
+        raise CorrectnessError("attestation note is required")
+    if not source_task:
+        raise CorrectnessError("attestation source_task is required")
+    if not _table_exists(conn, "tasks"):
+        raise CorrectnessError("attestation requires canonical tasks table")
+    source = conn.execute(
+        "select lane,owner,status from tasks where id=?",
+        (source_task,),
+    ).fetchone()
+    if source is None:
+        raise CorrectnessError(f"attestation source task not found: {source_task}")
+    lane, owner, status = source
+    if str(lane or "") != "verification":
+        raise CorrectnessError("attestation source task must use verification lane")
+    if str(owner or "").strip() != reviewer:
+        raise CorrectnessError("attestation reviewer must match verification task owner")
+    if str(status or "") not in {"ACTIVE", "DONE"}:
+        raise CorrectnessError("attestation source task must be ACTIVE or DONE")
+    stamp = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    epoch = datetime.fromisoformat(stamp).timestamp()
+    cur = conn.execute(
+        """insert into correctness_attestations(
+             sha,reviewer,note,source_task,created_at,created_epoch
+           ) values(?,?,?,?,?,?)""",
+        (exact_sha, reviewer, note, source_task, stamp, epoch),
+    )
+    conn.commit()
+    return int(cur.lastrowid)
+
+
+def attestations_for_sha(conn: sqlite3.Connection, sha: str) -> list[dict]:
+    ensure_schema(conn)
+    exact_sha = require_sha(sha)
+    rows = conn.execute(
+        """select id,sha,reviewer,note,source_task,created_at
+             from correctness_attestations
+            where sha=?
+            order by id""",
+        (exact_sha,),
+    )
+    return [
+        {
+            "id": int(row[0]),
+            "sha": row[1],
+            "reviewer": row[2],
+            "note": row[3],
+            "source_task": row[4],
+            "created_at": row[5],
+        }
+        for row in rows
+    ]
 
 
 def record_receipt(conn: sqlite3.Connection, receipt: dict) -> int:

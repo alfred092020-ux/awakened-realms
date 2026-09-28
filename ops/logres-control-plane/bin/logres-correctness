@@ -5,6 +5,7 @@ Subcommands:
   plan       Classify a candidate diff (L0) and emit the verification plan.
   evaluate   Evaluate L1-L3 against run outcomes + existing truth stores and
              emit/persist the exact-SHA correctness receipt.
+  attest     Persist an independent L3 attestation for one exact SHA.
   receipt    Fetch the latest correctness receipt for an exact SHA.
   latest     List latest receipts per SHA.
 
@@ -103,6 +104,13 @@ def cmd_evaluate(args) -> int:
         dbs.append(Path(args.control_db))
     truth = lc.collect_truth(dbs, plan["sha"])
     attestations = [_parse_attestation(a) for a in args.attestation]
+    if args.control_db and Path(args.control_db).is_file():
+        att_conn = sqlite3.connect(args.control_db, timeout=10)
+        try:
+            att_conn.execute("pragma busy_timeout=10000")
+            attestations.extend(lc.attestations_for_sha(att_conn, plan["sha"]))
+        finally:
+            att_conn.close()
     receipt = lc.evaluate(
         plan,
         outcomes,
@@ -208,6 +216,34 @@ def cmd_backfill(args) -> int:
     return EXIT.get(receipt["verdict"], 2)
 
 
+def cmd_attest(args) -> int:
+    sha = lc.require_sha(args.sha)
+    reviewer = str(args.reviewer or "").strip()
+    note = str(args.note or "").strip()
+    if not reviewer:
+        raise lc.CorrectnessError("attestation reviewer is required")
+    if not note:
+        raise lc.CorrectnessError("attestation note is required")
+    db = Path(args.control_db or DEFAULT_DB)
+    conn = sqlite3.connect(db, timeout=10)
+    conn.row_factory = sqlite3.Row
+    try:
+        conn.execute("pragma busy_timeout=10000")
+        row_id = lc.record_attestation(
+            conn,
+            sha=sha,
+            reviewer=reviewer,
+            note=note,
+            source_task=args.source_task,
+        )
+        rows = lc.attestations_for_sha(conn, sha)
+        row = next(item for item in rows if item["id"] == row_id)
+    finally:
+        conn.close()
+    _print(row)
+    return 0
+
+
 def cmd_receipt(args) -> int:
     sha = lc.require_sha(args.sha)
     conn = sqlite3.connect(args.control_db or DEFAULT_DB, timeout=10)
@@ -271,6 +307,13 @@ def main() -> int:
                    help="L3 attestation 'reviewer=<who>;note=<what>'")
     e.add_argument("--output")
 
+    a = sub.add_parser("attest", help="persist independent L3 attestation for exact SHA")
+    a.add_argument("sha")
+    a.add_argument("--reviewer", required=True)
+    a.add_argument("--note", required=True)
+    a.add_argument("--source-task")
+    a.add_argument("--control-db", default=None)
+
     r = sub.add_parser("receipt", help="fetch latest receipt for exact SHA")
     r.add_argument("sha")
     r.add_argument("--control-db", default=None)
@@ -296,6 +339,8 @@ def main() -> int:
             return cmd_plan(args)
         if args.cmd == "evaluate":
             return cmd_evaluate(args)
+        if args.cmd == "attest":
+            return cmd_attest(args)
         if args.cmd == "receipt":
             return cmd_receipt(args)
         if args.cmd == "backfill":
