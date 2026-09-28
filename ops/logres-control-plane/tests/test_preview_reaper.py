@@ -17,6 +17,7 @@ from logres_preview_reaper import (
     preview_worktree_from_command,
     process_still_matches,
     reap,
+    verify_farm_ancestor_active,
 )
 
 
@@ -119,6 +120,30 @@ class PreviewReaperDecisionTests(unittest.TestCase):
         self.assertFalse(decision.eligible)
         self.assertEqual("unknown-worktree", decision.reason)
 
+    def test_abandoned_verify_farm_temp_preview_is_eligible(self):
+        root = "/dev/shm/logres/verify-farm-20260928T120000-performance"
+        decision = decide_preview(
+            process(root=root),
+            None,
+            set(),
+            min_age_seconds=7200,
+            verify_farm_active=False,
+        )
+        self.assertTrue(decision.eligible)
+        self.assertEqual("eligible-verifier-temp", decision.reason)
+
+    def test_active_verify_farm_temp_preview_is_protected(self):
+        root = "/dev/shm/logres/verify-farm-20260928T120000-performance"
+        decision = decide_preview(
+            process(root=root),
+            None,
+            set(),
+            min_age_seconds=7200,
+            verify_farm_active=True,
+        )
+        self.assertFalse(decision.eligible)
+        self.assertEqual("active-verifier", decision.reason)
+
     def test_young_preview_is_protected(self):
         decision = decide_preview(
             process(age=600),
@@ -150,6 +175,32 @@ class PreviewReaperApplyTests(unittest.TestCase):
             command.replace(" ", "\0").encode() + b"\0"
         )
         return temp, root
+
+    def test_verify_farm_ancestor_detection_distinguishes_active_and_orphan(self):
+        root = "/dev/shm/logres/verify-farm-20260928T120000-performance"
+        preview = process(root=root)
+        temp = tempfile.TemporaryDirectory()
+        proc_root = Path(temp.name)
+        try:
+            (proc_root / "1234").mkdir()
+            (proc_root / "1234" / "cmdline").write_bytes(
+                preview.command.replace(" ", "\0").encode() + b"\0"
+            )
+            stat = ["0"] * 24
+            stat[3] = "1200"
+            (proc_root / "1234" / "stat").write_text(" ".join(stat))
+            (proc_root / "1200").mkdir()
+            (proc_root / "1200" / "cmdline").write_bytes(
+                f"bash\0/home/ubuntu/logres/bin/logres-verify-farm\0deadbeef\0".encode()
+            )
+            parent_stat = ["0"] * 24
+            parent_stat[3] = "1"
+            (proc_root / "1200" / "stat").write_text(" ".join(parent_stat))
+            self.assertTrue(verify_farm_ancestor_active(preview, proc_root))
+            (proc_root / "1200" / "cmdline").write_bytes(b"sh\0-c\0vite preview\0")
+            self.assertFalse(verify_farm_ancestor_active(preview, proc_root))
+        finally:
+            temp.cleanup()
 
     def test_process_match_requires_same_pid_command_and_root(self):
         temp, proc_root = self._proc_root()

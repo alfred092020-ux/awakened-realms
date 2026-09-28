@@ -14,6 +14,9 @@ from typing import Callable
 VITE_PREVIEW_RE = re.compile(
     r"(?:^|\s)node\s+(?P<root>/[^\s]+?)/node_modules/\.bin/vite\s+preview(?:\s|$)"
 )
+VERIFY_FARM_TEMP_RE = re.compile(
+    r"^/dev/shm/logres/verify-farm-[A-Za-z0-9T_-]+-performance$"
+)
 
 
 @dataclass(frozen=True)
@@ -50,8 +53,16 @@ def decide_preview(
     active_branches: set[str],
     *,
     min_age_seconds: float,
+    verify_farm_active: bool | None = None,
 ) -> ReaperDecision:
     if worktree is None:
+        if VERIFY_FARM_TEMP_RE.fullmatch(process.worktree_path):
+            if process.age_seconds < min_age_seconds:
+                return ReaperDecision(False, "young")
+            if verify_farm_active is True:
+                return ReaperDecision(False, "active-verifier")
+            if verify_farm_active is False:
+                return ReaperDecision(True, "eligible-verifier-temp")
         return ReaperDecision(False, "unknown-worktree")
     if process.worktree_path != worktree.path:
         return ReaperDecision(False, "path-mismatch")
@@ -122,6 +133,35 @@ def _process_rss_bytes(proc_dir: Path, page_size: int) -> int:
     return max(0, int(fields[23])) * page_size
 
 
+
+def _process_parent_pid(proc_dir: Path) -> int:
+    fields = (proc_dir / "stat").read_text().split()
+    return int(fields[3])
+
+
+def verify_farm_ancestor_active(
+    process: PreviewProcess,
+    proc_root: Path = Path("/proc"),
+) -> bool:
+    pid = process.pid
+    visited: set[int] = set()
+    while pid > 1 and pid not in visited:
+        visited.add(pid)
+        proc_dir = proc_root / str(pid)
+        try:
+            command = _read_cmdline(proc_dir)
+            parent = _process_parent_pid(proc_dir)
+        except (FileNotFoundError, PermissionError, ProcessLookupError, ValueError):
+            return False
+        if pid != process.pid and (
+            "logres-verify-farm" in command
+            or "playwright test" in command
+            or "npm run test:e2e" in command
+        ):
+            return True
+        pid = parent
+    return False
+
 def discover_previews(
     proc_root: Path = Path("/proc"),
 ) -> list[PreviewProcess]:
@@ -170,6 +210,11 @@ def scan(
                 worktrees.get(process.worktree_path),
                 active,
                 min_age_seconds=min_age_seconds,
+                verify_farm_active=(
+                    verify_farm_ancestor_active(process, proc_root)
+                    if VERIFY_FARM_TEMP_RE.fullmatch(process.worktree_path)
+                    else None
+                ),
             ),
         )
         for process in discover_previews(proc_root)
@@ -222,6 +267,7 @@ def current_candidate_safe(
     *,
     min_age_seconds: float,
     now_epoch: float | None = None,
+    proc_root: Path = Path("/proc"),
 ) -> bool:
     conn = sqlite3.connect(db_path, timeout=30)
     conn.row_factory = sqlite3.Row
@@ -246,10 +292,19 @@ def current_candidate_safe(
             state,
             active_branches(conn, now_epoch),
             min_age_seconds=min_age_seconds,
+            verify_farm_active=(
+                verify_farm_ancestor_active(process, proc_root)
+                if VERIFY_FARM_TEMP_RE.fullmatch(process.worktree_path)
+                else None
+            ),
         )
     finally:
         conn.close()
-    return decision.eligible and git_worktree_safe(
+    if not decision.eligible:
+        return False
+    if VERIFY_FARM_TEMP_RE.fullmatch(process.worktree_path):
+        return process_still_matches(process, proc_root)
+    return git_worktree_safe(
         process.worktree_path,
         integration_repo,
     )
