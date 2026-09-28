@@ -2,6 +2,7 @@
   "permission_policy": {
     "allow": [
       "Read(**)",
+      "Exec(*)",
       "grep",
       "glob"
     ],
