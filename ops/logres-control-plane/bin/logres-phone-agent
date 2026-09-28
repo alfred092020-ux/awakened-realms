@@ -1,26 +1,60 @@
 #!/usr/bin/env python3
-import argparse, hashlib, hmac, json, os, subprocess, time, urllib.request
+import argparse, base64, hashlib, hmac, json, os, re, subprocess, time, urllib.request
 from pathlib import Path
 
 def sign(secret, body): return hmac.new(secret.encode(), body, hashlib.sha256).hexdigest()
 def request(url, secret, machine, payload):
     body=json.dumps(payload,separators=(',',':')).encode(); req=urllib.request.Request(url,data=body,method='POST',headers={'Content-Type':'application/json','X-Logres-Phone':machine,'X-Logres-Signature':sign(secret,body)})
     with urllib.request.urlopen(req,timeout=35) as r: return json.load(r)
-def run(cmd):
-    p=subprocess.run(cmd,shell=True,text=True,capture_output=True,timeout=120); return {'exitCode':p.returncode,'stdout':p.stdout[-1048576:],'stderr':p.stderr[-1048576:]}
+def run(argv, timeout=120, binary=False):
+    p=subprocess.run(argv,shell=False,capture_output=True,timeout=timeout)
+    if binary: return {'exitCode':p.returncode,'stdout_b64':base64.b64encode(p.stdout[-8*1048576:]).decode(),'stderr':p.stderr[-1048576:].decode(errors='replace')}
+    return {'exitCode':p.returncode,'stdout':p.stdout[-1048576:].decode(errors='replace'),'stderr':p.stderr[-1048576:].decode(errors='replace')}
+def clean(v, pattern=r'^[A-Za-z0-9._:/,@+%=-]+$', limit=512):
+    v=str(v or '');
+    if len(v)>limit or not re.fullmatch(pattern,v): raise ValueError('invalid argument')
+    return v
+def dispatch(op,args):
+    serial=args.get('serial') or os.environ.get('ANDROID_SERIAL')
+    adb=['adb']+(['-s',clean(serial)] if serial else [])
+    if op=='status': return run(adb+['devices','-l'])
+    if op=='device_info': return run(adb+['shell','getprop'])
+    if op=='screenshot': return run(adb+['exec-out','screencap','-p'],binary=True)
+    if op=='logcat': return run(adb+['logcat','-d','-v','threadtime'],timeout=60)
+    if op=='packages': return run(adb+['shell','pm','list','packages','-f'])
+    if op=='app_start': return run(adb+['shell','monkey','-p',clean(args['package']),'-c','android.intent.category.LAUNCHER','1'])
+    if op=='app_stop': return run(adb+['shell','am','force-stop',clean(args['package'])])
+    if op=='app_clear': return run(adb+['shell','pm','clear',clean(args['package'])])
+    if op=='app_info': return run(adb+['shell','dumpsys','package',clean(args['package'])])
+    if op=='input_key': return run(adb+['shell','input','keyevent',clean(args['key'],r'^[A-Za-z0-9_]+$',64)])
+    if op=='input_tap': return run(adb+['shell','input','tap',str(int(args['x'])),str(int(args['y']))])
+    if op=='input_swipe': return run(adb+['shell','input','swipe',str(int(args['x1'])),str(int(args['y1'])),str(int(args['x2'])),str(int(args['y2'])),str(min(max(int(args.get('duration_ms',300)),0),5000))])
+    if op=='ui_dump': return run(adb+['exec-out','uiautomator','dump','/dev/tty'])
+    if op=='perf': return run(adb+['shell','dumpsys',clean(args.get('service','gfxinfo'),r'^(gfxinfo|meminfo|cpuinfo|batterystats)$',32)]+([clean(args['package'])] if args.get('package') else []))
+    if op=='instrument': return run(adb+['shell','am','instrument','-w',clean(args['component'])],timeout=300)
+    if op=='screenrecord':
+        seconds=min(max(int(args.get('seconds',10)),1),30); remote='/sdcard/Download/nexus-screenrecord.mp4'
+        r=run(adb+['shell','screenrecord','--time-limit',str(seconds),remote],timeout=seconds+15); r['artifact']=remote; return r
+    if op=='pull_file':
+        path=clean(args['path'],r'^/storage/emulated/0/[A-Za-z0-9._/ @+%=-]+$',1024)
+        return run(adb+['exec-out','cat',path],binary=True,timeout=180)
+    if op=='push_file':
+        path=clean(args['path'],r'^/storage/emulated/0/[A-Za-z0-9._/ @+%=-]+$',1024); data=base64.b64decode(args['data_b64'],validate=True)
+        if len(data)>16*1048576: raise ValueError('payload too large')
+        p=subprocess.run(adb+['shell','sh','-c','cat > "$1"','nexus',path],input=data,capture_output=True,timeout=180)
+        return {'exitCode':p.returncode,'stdout':p.stdout.decode(errors='replace'),'stderr':p.stderr.decode(errors='replace')}
+    return {'exitCode':64,'stdout':'','stderr':'unsupported operation'}
 def main():
     ap=argparse.ArgumentParser(); ap.add_argument('--config',default=os.environ.get('LOGRES_PHONE_AGENT_CONFIG',str(Path.home()/'.config/logres/phone-agent.json'))); a=ap.parse_args()
     cfg=json.load(open(a.config)); secret=os.environ.get('LOGRES_PHONE_AGENT_SECRET') or open(cfg['secret_file']).read().strip(); machine=cfg['phone_id']; base=cfg['control_url'].rstrip('/')
+    caps=['adb-shell','device-info','screenshot','logcat','packages','app-lifecycle','input','ui-dump','performance','instrumentation','screenrecord','file-transfer']
     while True:
         try:
-            job=request(base+'/phone-agent/poll',secret,machine,{'ts':int(time.time()),'capabilities':['adb-local','screenshot','logcat']})
+            job=request(base+'/phone-agent/poll',secret,machine,{'ts':int(time.time()),'capabilities':caps})
             if job.get('job'):
-                j=job['job']; op=j.get('operation'); args=j.get('args',{})
-                if op=='status': result=run("adb devices; getprop ro.product.model 2>/dev/null || true")
-                elif op=='shell_read': result=run("adb shell "+str(args.get('command','getprop ro.product.model')))
-                elif op=='screenshot': result=run("adb exec-out screencap -p | base64 | tr -d '\\n'")
-                elif op=='logcat': result=run("adb logcat -d -v threadtime")
-                else: result={'exitCode':64,'stdout':'','stderr':'unsupported operation'}
+                j=job['job']
+                try: result=dispatch(j.get('operation'),j.get('args',{}))
+                except Exception as e: result={'exitCode':65,'stdout':'','stderr':str(e)}
                 request(base+'/phone-agent/result',secret,machine,{'job_id':j['id'],'result':result,'ts':int(time.time())})
         except Exception as e: print('phone-agent:',e,flush=True)
         time.sleep(float(cfg.get('poll_seconds',2)))
