@@ -113,14 +113,44 @@ else:
     except Exception as e:
         add("runtime_deployment","FAIL",f"invalid stamp: {e}")
 
-# Core services
+# Core services. Nexus Commander is the primary execution/control path.
+nexus=run(["/home/ubuntu/logres/bin/logres-nexus","status"])
+nexus_detail=(nexus.stdout or nexus.stderr).strip().splitlines()
+add(
+    "nexus_commander",
+    "PASS" if nexus.returncode==0 else "FAIL",
+    nexus_detail[0][:240] if nexus_detail else ("ready" if nexus.returncode==0 else "unavailable"),
+)
+for check_name,unit in [
+    ("nexus_agent","nexus-agent.service"),
+    ("nexus_control_plane","nexus-control-plane@ubuntu.service"),
+    ("nexus_privileged_executor","nexus-privileged-executor.service"),
+    ("nexus_secure_tunnel","nexus-tunnel@ubuntu.service"),
+]:
+    state=run(["systemctl","is-active",unit]).stdout.strip()
+    add(check_name,"PASS" if state=="active" else "FAIL",state or "unknown")
+
+# Desktop Commander remains an emergency bootstrap/recovery fallback. Its absence
+# must not make normal project health fail once Nexus is healthy.
 dc=run(["pgrep","-f","desktop-commander.*remote"])
-add("desktop_commander","PASS" if dc.returncode==0 else "FAIL","running" if dc.returncode==0 else "missing")
+add(
+    "desktop_commander_fallback",
+    "PASS" if dc.returncode==0 else "WARN",
+    "available (fallback-only)" if dc.returncode==0 else "not running; Nexus remains primary",
+)
 tm=run(["systemctl","is-active","logres-desktop-commander-watchdog.service"])
 tm_state=tm.stdout.strip()
-add("dc_watchdog","PASS" if tm_state=="active" else "FAIL",tm_state or "unknown")
+add(
+    "dc_watchdog_fallback",
+    "PASS" if tm_state=="active" else "WARN",
+    (tm_state or "unknown") + " (fallback-only)",
+)
 enabled=run(["systemctl","is-enabled","logres-desktop-commander-watchdog.service"]).stdout.strip()
-add("dc_watchdog_enabled","PASS" if enabled=="enabled" else "FAIL",enabled or "unknown")
+add(
+    "dc_watchdog_enabled_fallback",
+    "PASS" if enabled=="enabled" else "WARN",
+    (enabled or "unknown") + " (fallback-only)",
+)
 runner_unit="actions.runner.alfred092020-ux-awakened-realms.logres-oracle.service"
 runner=run(["systemctl","is-active",runner_unit]).stdout.strip()
 add("oracle_runner","PASS" if runner=="active" else "FAIL",runner or "unknown")
