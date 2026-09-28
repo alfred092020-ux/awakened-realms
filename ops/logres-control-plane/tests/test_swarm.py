@@ -731,11 +731,15 @@ class SwarmTests(unittest.TestCase):
         self.assertEqual(2, router["workers"])
         self.assertEqual(2, router["max_active"])
         self.assertEqual("swe-2-max", router["model"])
-        self.assertEqual("smart", router["permission_mode"])
+        self.assertEqual("autonomous", router["permission_mode"])
         self.assertEqual("unattended", router["execution_mode"])
         self.assertTrue(router["sandbox"])
         self.assertFalse(router["allow_paid"])
         self.assertTrue(router["require_production_certificate"])
+        script = (CONTROL_ROOT / "bin" / "logres-swarm").read_text()
+        self.assertIn('permission_mode == "autonomous"', script)
+        self.assertIn('not sandbox or execution_mode != "unattended"', script)
+        self.assertIn('"unsafe_autonomous_permission_mode"', script)
 
     def test_swarm_script_has_bounded_patch_lane(self):
         script = (CONTROL_ROOT / "bin" / "logres-swarm").read_text()

@@ -442,7 +442,13 @@ def dispatch_devin(
         result["blocked"] = "automatic_paid_devin_forbidden"
         return result
     permission_mode = str(router.get("permission_mode") or "smart")
-    if permission_mode != "smart":
+    sandbox = bool(router.get("sandbox", False))
+    execution_mode = str(router.get("execution_mode") or "interactive")
+    if permission_mode == "autonomous":
+        if not sandbox or execution_mode != "unattended":
+            result["blocked"] = "unsafe_autonomous_permission_mode"
+            return result
+    elif permission_mode != "smart":
         result["blocked"] = "unsupported_permission_mode"
         return result
 

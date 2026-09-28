@@ -31,7 +31,7 @@
     "execution_mode": "unattended",
     "max_active": 2,
     "model": "swe-2-max",
-    "permission_mode": "smart",
+    "permission_mode": "autonomous",
     "preflight_timeout_seconds": 120,
     "require_production_certificate": true,
     "sandbox": true,
