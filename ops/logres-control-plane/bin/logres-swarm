@@ -486,6 +486,19 @@ def dispatch_devin(
         if len(result["jobs"]) >= limit:
             break
         task_id = str(task["id"])
+        max_attempts = int(router.get("max_attempts", 2) or 2)
+        failures = prior_failures(conn, task_id, engine="devin")
+        if failures >= max_attempts:
+            post_once(
+                f"Devin retry ceiling: {task_id}",
+                (
+                    f"Automatic Devin implementation failed {failures} time(s); "
+                    "leaving task READY for bounded Lead/debug routing instead of redispatching it."
+                ),
+                f"devin-retry-ceiling:{task_id}:{failures}",
+                task_id,
+            )
+            continue
         worker = workers[len(result["jobs"])]
         register_worker(ROOT, worker)
         branch = acquire_task(ROOT, worker, task_id)

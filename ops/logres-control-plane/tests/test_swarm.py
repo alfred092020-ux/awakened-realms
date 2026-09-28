@@ -874,6 +874,33 @@ class SwarmTests(unittest.TestCase):
         self.conn.commit()
         self.assertIsNone(logres_swarm.active_structural_repair(self.conn))
 
+    def test_devin_dispatch_has_engine_specific_retry_ceiling(self):
+        script = (CONTROL_ROOT / "bin" / "logres-swarm").read_text()
+        start = script.index("def dispatch_devin(")
+        end = script.index("def dispatch_patch(", start)
+        block = script[start:end]
+        self.assertIn('prior_failures(conn, task_id, engine="devin")', block)
+        self.assertIn('router.get("max_attempts", 2)', block)
+        self.assertIn('Devin retry ceiling:', block)
+        self.assertIn('devin-retry-ceiling:', block)
+
+    def test_devin_retry_budget_counts_semantic_artifacts_not_infrastructure_failures(self):
+        seed_task(self.conn, task_id="D1", status="READY", work_type="implementation")
+        self.conn.execute(
+            """insert into swarm_jobs(
+                 task_id,worker_id,engine,state,pid,artifact_path,last_error
+               ) values('D1','auto-devin-1','devin','FAILED',101,null,
+                        'network provision failed')"""
+        )
+        self.conn.execute(
+            """insert into swarm_jobs(
+                 task_id,worker_id,engine,state,pid,artifact_path,last_error
+               ) values('D1','auto-devin-2','devin','FAILED',102,
+                        '/tmp/devin.json','devin child produced no repository diff')"""
+        )
+        self.conn.commit()
+        self.assertEqual(1, prior_failures(self.conn, "D1", engine="devin"))
+
     def test_swarm_dispatch_checks_structural_repair_gate_before_task_selection(self):
         script = (CONTROL_ROOT / "bin" / "logres-swarm").read_text()
         start = script.index("def dispatch_devin(")
