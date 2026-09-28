@@ -47,6 +47,8 @@ PRODUCTION_FILES = (
     "bin/logres-chat-watchdog",
     "bin/logres-chat-contract",
     "bin/logres-phone-local-ai",
+    "bin/logres-phone-agent",
+    "bin/logres-phone-agent-broker",
     "bin/logres-tool-broker",
     "bin/logres-chat-start",
     "bin/logres-worker-start",
