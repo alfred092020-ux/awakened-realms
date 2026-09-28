@@ -18,6 +18,8 @@ TERMINAL_JOB_STATES = {"DONE", "BLOCKED", "FAILED", "SUPERSEDED"}
 RESEARCH_WORK_TYPES = {"research", "evidence", "analysis"}
 IMPLEMENTATION_WORK_TYPES = {"implementation", "regression", "code"}
 CONTROL_PLANE_PREFIX = "ops/logres-control-plane/"
+RUNTIME_ONLY_ISOLATION_SURFACE = frozenset({"ops/logres-control-plane/bin/logres-swarm"})
+
 REQUIRED_ISOLATION_SURFACE = frozenset(
     {
         CONTROL_PLANE_PREFIX + "apparmor/usr.bin.bwrap.logres",
@@ -85,14 +87,18 @@ def isolation_certificate_gate(
     expected = _certified_isolation_surface(certificate)
     if not expected or not REQUIRED_ISOLATION_SURFACE.issubset(expected):
         return False, "isolation_certificate_surface_missing"
-    if dict(current_surface or {}) != expected:
+    current = dict(current_surface or {})
+    changed = {rel for rel, digest in expected.items() if current.get(rel) != digest}
+    security_changed = changed - RUNTIME_ONLY_ISOLATION_SURFACE
+    if security_changed:
         return False, "isolation_certificate_stale"
     deployed = (runtime_deployment or {}).get("files")
     if not isinstance(deployed, dict):
         return False, "isolation_runtime_stale"
-    for rel, digest in expected.items():
+    for rel, certified_digest in expected.items():
         runtime_rel = rel.removeprefix(CONTROL_PLANE_PREFIX)
-        if str(deployed.get(runtime_rel) or "").strip().lower() != digest:
+        required_digest = current.get(rel) if rel in RUNTIME_ONLY_ISOLATION_SURFACE else certified_digest
+        if str(deployed.get(runtime_rel) or "").strip().lower() != required_digest:
             return False, "isolation_runtime_stale"
     return True, None
 

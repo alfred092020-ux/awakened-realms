@@ -537,6 +537,19 @@ class SwarmTests(unittest.TestCase):
             },
         }
         self.assertEqual((True, None), gate(certificate, expected, runtime))
+        launcher_changed = dict(expected)
+        launcher_changed["ops/logres-control-plane/bin/logres-swarm"] = "8" * 64
+        launcher_runtime = json.loads(json.dumps(runtime))
+        launcher_runtime["files"]["bin/logres-swarm"] = "8" * 64
+        self.assertEqual(
+            (True, None),
+            gate(certificate, launcher_changed, launcher_runtime),
+        )
+        self.assertEqual(
+            (False, "isolation_runtime_stale"),
+            gate(certificate, launcher_changed, runtime),
+        )
+
         changed = dict(expected)
         changed["ops/logres-control-plane/bin/logres-devin-agent"] = "9" * 64
         self.assertEqual(
