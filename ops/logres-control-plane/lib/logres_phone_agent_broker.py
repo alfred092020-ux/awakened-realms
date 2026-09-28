@@ -8,7 +8,7 @@ class Broker:
  def _init(self):
   with self._db() as c: c.execute(SCHEMA)
  def enqueue(self,phone_id,operation,args=None):
-  if operation not in {'status','shell_read','screenshot','logcat'}: raise ValueError('operation not allowlisted')
+  if operation not in {'status','device_info','screenshot','logcat','packages','app_start','app_stop','app_clear','app_info','input_key','input_tap','input_swipe','ui_dump','perf','instrument','screenrecord','pull_file','push_file'}: raise ValueError('operation not allowlisted')
   jid=str(uuid.uuid4());
   with self._db() as c: c.execute('INSERT INTO phone_agent_jobs VALUES(?,?,?,?,?,?,NULL,NULL)',(jid,phone_id,operation,json.dumps(args or {}),'QUEUED',int(time.time())))
   return jid
