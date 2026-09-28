@@ -747,6 +747,29 @@ def select_implementation_tasks(
         require_scopes=True,
     )
 
+def _devin_infrastructure_failure(row: sqlite3.Row) -> bool:
+    artifact_path = str(row["artifact_path"] or "").strip()
+    if not artifact_path:
+        return True
+    if str(row["engine"] or "") != "devin":
+        return False
+    try:
+        artifact = json.loads(Path(artifact_path).read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return False
+    log_path = str(artifact.get("log") or "").strip()
+    if not log_path:
+        return False
+    try:
+        text = Path(log_path).read_text(encoding="utf-8", errors="replace")[-20000:].lower()
+    except OSError:
+        return False
+    return (
+        "rejected a tool call that requires confirmation" in text
+        and "non-interactive mode" in text
+    )
+
+
 def prior_failures(
     conn: sqlite3.Connection,
     task_id: str,
@@ -754,14 +777,14 @@ def prior_failures(
     engine: str | None = None,
 ) -> int:
     ensure_schema(conn)
-    sql = """select count(*) from swarm_jobs
-               where task_id=? and state='FAILED'
-                 and artifact_path is not null"""
+    sql = """select engine,artifact_path,last_error from swarm_jobs
+               where task_id=? and state='FAILED'"""
     params: list[str] = [task_id]
     if engine:
         sql += " and engine=?"
         params.append(engine)
-    return int(conn.execute(sql, tuple(params)).fetchone()[0])
+    rows = conn.execute(sql, tuple(params)).fetchall()
+    return sum(0 if _devin_infrastructure_failure(row) else 1 for row in rows)
 
 
 def worker_ids(config: dict) -> list[str]:

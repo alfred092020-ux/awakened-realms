@@ -904,6 +904,34 @@ class SwarmTests(unittest.TestCase):
         self.assertIn('Devin retry ceiling:', block)
         self.assertIn('devin-retry-ceiling:', block)
 
+    def test_devin_retry_budget_ignores_permission_rejection_no_diff_artifact(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as td:
+            log = Path(td) / "devin.log"
+            artifact = Path(td) / "artifact.json"
+            log.write_text(
+                "warning: rejected a tool call that requires confirmation. "
+                "Running in non-interactive mode.\n"
+            )
+            artifact.write_text(json.dumps({"log": str(log)}))
+            seed_task(self.conn, task_id="DPERM", status="READY", work_type="implementation")
+            self.conn.execute(
+                """insert into swarm_jobs(
+                     task_id,worker_id,engine,state,pid,artifact_path,last_error
+                   ) values(?,?,?,?,?,?,?)""",
+                (
+                    "DPERM",
+                    "auto-devin-1",
+                    "devin",
+                    "FAILED",
+                    103,
+                    str(artifact),
+                    "DevinAgentError: devin child produced no repository diff",
+                ),
+            )
+            self.conn.commit()
+            self.assertEqual(0, prior_failures(self.conn, "DPERM", engine="devin"))
+
     def test_devin_retry_budget_counts_semantic_artifacts_not_infrastructure_failures(self):
         seed_task(self.conn, task_id="D1", status="READY", work_type="implementation")
         self.conn.execute(
