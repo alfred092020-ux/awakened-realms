@@ -532,6 +532,8 @@ def build_devin_argv(
     if mode == "autonomous" and not sandbox:
         raise DevinAgentError("autonomous permission mode requires --sandbox")
     cli_mode = DEVIN_CLI_PERMISSION_MODE_MAP[mode]
+    if mode == "smart" and sandbox and str(execution_mode).strip().lower() == "unattended":
+        cli_mode = "autonomous"
     argv = [
         str(devin_bin),
         "-p",

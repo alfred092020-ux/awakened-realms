@@ -731,7 +731,7 @@ class SwarmTests(unittest.TestCase):
         self.assertEqual(2, router["workers"])
         self.assertEqual(2, router["max_active"])
         self.assertEqual("swe-2-max", router["model"])
-        self.assertEqual("autonomous", router["permission_mode"])
+        self.assertEqual("smart", router["permission_mode"])
         self.assertEqual("unattended", router["execution_mode"])
         self.assertTrue(router["sandbox"])
         self.assertFalse(router["allow_paid"])

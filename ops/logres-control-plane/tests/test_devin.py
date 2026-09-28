@@ -1120,7 +1120,7 @@ class PermissionManifestTests(unittest.TestCase):
         self.assertIn("--sandbox", argv)
         self.assertIn("--prefer-exec-tool", argv)
         self.assertEqual(
-            DEFAULT_PERMISSION_MODE, argv[argv.index("--permission-mode") + 1]
+            "autonomous", argv[argv.index("--permission-mode") + 1]
         )
         self.assertNotIn("dangerous", argv)
         self.assertNotIn("bypass", argv)
