@@ -139,6 +139,7 @@ class GoalContractTests(unittest.TestCase):
         self.assertEqual(100, sum(item["weight"] for item in milestone["criteria"]))
         soak = next(item for item in milestone["criteria"] if item["id"] == "closed-loop-soak")
         self.assertEqual("autonomy_soak", soak["check"]["type"])
+        self.assertEqual("AUTONOMY-CLOSED-LOOP-CANARY-002", soak["check"]["task_id"])
         self.assertTrue(soak["check"]["require_failed_attempt"])
         self.assertTrue(soak["check"]["require_next_dispatch"])
         self.assertEqual("full-e2e", soak["check"]["integration_verification_mode"])
