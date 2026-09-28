@@ -1,0 +1,20 @@
+#!/usr/bin/env python3
+import json,os,sys
+from http.server import BaseHTTPRequestHandler,ThreadingHTTPServer
+from pathlib import Path
+ROOT=Path(os.environ.get('LOGRES_ROOT','/home/ubuntu/logres')); sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'lib'))
+from logres_phone_agent_broker import Broker,valid_signature
+DB=os.environ.get('LOGRES_PHONE_AGENT_DB',str(ROOT/'control/phone-agent.sqlite')); SECRET=os.environ.get('LOGRES_PHONE_AGENT_SECRET',''); broker=Broker(DB)
+class H(BaseHTTPRequestHandler):
+ def log_message(self,*a): pass
+ def out(self,code,obj):
+  b=json.dumps(obj,separators=(',',':')).encode(); self.send_response(code); self.send_header('Content-Type','application/json'); self.send_header('Content-Length',str(len(b))); self.end_headers(); self.wfile.write(b)
+ def do_POST(self):
+  n=int(self.headers.get('Content-Length','0')); body=self.rfile.read(n); phone=self.headers.get('X-Logres-Phone',''); sig=self.headers.get('X-Logres-Signature','')
+  if not SECRET or not phone or not valid_signature(SECRET,body,sig): return self.out(401,{'error':'unauthorized'})
+  try: p=json.loads(body or b'{}')
+  except Exception:return self.out(400,{'error':'invalid json'})
+  if self.path=='/phone-agent/poll': return self.out(200,{'job':broker.poll(phone)})
+  if self.path=='/phone-agent/result': return self.out(200 if broker.complete(phone,str(p.get('job_id','')),p.get('result',{})) else 409,{'ok':True})
+  return self.out(404,{'error':'not found'})
+if __name__=='__main__': ThreadingHTTPServer((os.environ.get('LOGRES_PHONE_AGENT_BIND','127.0.0.1'),int(os.environ.get('LOGRES_PHONE_AGENT_PORT','8766'))),H).serve_forever()

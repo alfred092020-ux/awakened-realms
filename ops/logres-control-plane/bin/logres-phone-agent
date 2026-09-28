@@ -1,0 +1,27 @@
+#!/usr/bin/env python3
+import argparse, hashlib, hmac, json, os, subprocess, time, urllib.request
+from pathlib import Path
+
+def sign(secret, body): return hmac.new(secret.encode(), body, hashlib.sha256).hexdigest()
+def request(url, secret, machine, payload):
+    body=json.dumps(payload,separators=(',',':')).encode(); req=urllib.request.Request(url,data=body,method='POST',headers={'Content-Type':'application/json','X-Logres-Phone':machine,'X-Logres-Signature':sign(secret,body)})
+    with urllib.request.urlopen(req,timeout=35) as r: return json.load(r)
+def run(cmd):
+    p=subprocess.run(cmd,shell=True,text=True,capture_output=True,timeout=120); return {'exitCode':p.returncode,'stdout':p.stdout[-1048576:],'stderr':p.stderr[-1048576:]}
+def main():
+    ap=argparse.ArgumentParser(); ap.add_argument('--config',default=os.environ.get('LOGRES_PHONE_AGENT_CONFIG',str(Path.home()/'.config/logres/phone-agent.json'))); a=ap.parse_args()
+    cfg=json.load(open(a.config)); secret=os.environ.get('LOGRES_PHONE_AGENT_SECRET') or open(cfg['secret_file']).read().strip(); machine=cfg['phone_id']; base=cfg['control_url'].rstrip('/')
+    while True:
+        try:
+            job=request(base+'/phone-agent/poll',secret,machine,{'ts':int(time.time()),'capabilities':['adb-local','screenshot','logcat']})
+            if job.get('job'):
+                j=job['job']; op=j.get('operation'); args=j.get('args',{})
+                if op=='status': result=run("adb devices; getprop ro.product.model 2>/dev/null || true")
+                elif op=='shell_read': result=run("adb shell "+str(args.get('command','getprop ro.product.model')))
+                elif op=='screenshot': result=run("adb exec-out screencap -p | base64 | tr -d '\\n'")
+                elif op=='logcat': result=run("adb logcat -d -v threadtime")
+                else: result={'exitCode':64,'stdout':'','stderr':'unsupported operation'}
+                request(base+'/phone-agent/result',secret,machine,{'job_id':j['id'],'result':result,'ts':int(time.time())})
+        except Exception as e: print('phone-agent:',e,flush=True)
+        time.sleep(float(cfg.get('poll_seconds',2)))
+if __name__=='__main__': main()

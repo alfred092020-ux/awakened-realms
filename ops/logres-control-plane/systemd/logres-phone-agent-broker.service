@@ -1,0 +1,17 @@
+[Unit]
+Description=Logres authenticated phone agent broker
+After=network-online.target
+[Service]
+Type=simple
+User=ubuntu
+EnvironmentFile=-/home/ubuntu/logres/control/android-device/phone-agent-broker.env
+ExecStart=/home/ubuntu/logres/bin/logres-phone-agent-broker
+Restart=always
+RestartSec=3
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/home/ubuntu/logres/control
+[Install]
+WantedBy=multi-user.target
