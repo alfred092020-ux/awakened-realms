@@ -1186,7 +1186,7 @@
           "description": "Recent autonomous canary recovers a failure, completes, integrates through full-E2E, records zero-human continuation evidence, then selects the next job.",
           "check": {
             "type": "autonomy_soak",
-            "task_id": "DEVICE-PROOF-ORPHAN-RECONCILE-002",
+            "task_id": "AUTONOMY-CLOSED-LOOP-CANARY-003",
             "window_hours": 24,
             "min_zero_human_runs": 1,
             "min_span_seconds": 300,
