@@ -22,6 +22,52 @@ SATISFIED = {"DONE", "RESOLVED", "INTEGRATED"}
 ALLOWED_WORK_TYPES = {"implementation", "test", "refactor", "tooling", "review"}
 ACTIVE_COPILOT_STATES = {"ASSIGNING", "ACTIVE", "PR_READY", "VERIFYING"}
 SAME_TASK_LIVE_COPILOT_STATES = ACTIVE_COPILOT_STATES | {"QUEUED"}
+COPILOT_CREDIT_COOLDOWN_SECONDS = 6 * 60 * 60
+_COPILOT_CREDIT_ERROR_MARKERS = (
+    "don't have sufficient github ai credits",
+    "do not have sufficient github ai credits",
+    "insufficient github ai credits",
+)
+
+
+def _copilot_credit_error(job: CopilotJobRecord, gh_runner) -> str | None:
+    if job.issue_number is None:
+        return None
+    list_comments = getattr(gh_runner, "list_issue_comments", None)
+    if list_comments is None:
+        return None
+    try:
+        comments = list_comments(DEFAULT_REPO, int(job.issue_number))
+    except Exception:
+        return None
+    for comment in comments or []:
+        body = str(comment.get("body") or "")
+        actor = comment.get("author") or comment.get("user") or {}
+        login = str(actor.get("login") or "").lower()
+        lowered = body.lower()
+        if login and not login.startswith("copilot"):
+            continue
+        if any(marker in lowered for marker in _COPILOT_CREDIT_ERROR_MARKERS):
+            return body
+    return None
+
+
+def copilot_credit_cooldown_active(
+    conn: sqlite3.Connection,
+    *,
+    now_epoch: float | None = None,
+    cooldown_seconds: int = COPILOT_CREDIT_COOLDOWN_SECONDS,
+) -> bool:
+    row = conn.execute(
+        """select max(cast(strftime('%s',updated_at) as integer))
+             from copilot_jobs
+            where last_error like 'provider:github_ai_credits:%'"""
+    ).fetchone()
+    failed_epoch = int(row[0] or 0) if row is not None else 0
+    if failed_epoch <= 0:
+        return False
+    current = time.time() if now_epoch is None else float(now_epoch)
+    return current - failed_epoch < max(0, int(cooldown_seconds))
 
 
 @dataclass(frozen=True)
@@ -143,6 +189,12 @@ def copilot_eligibility(
         return Eligibility(False, "task not found")
     if task["status"] != "READY":
         return Eligibility(False, f"status is {task['status']}, expected READY")
+
+    if copilot_credit_cooldown_active(conn):
+        return Eligibility(
+            False,
+            "Copilot provider cooldown active after confirmed GitHub AI credit exhaustion",
+        )
 
     live_job = _same_task_live_job(conn, task_id)
     if live_job is not None:
@@ -594,6 +646,29 @@ def reconcile_copilot_job(
 ) -> ReconcileResult:
     ensure_route_schema(conn)
 
+    if job.state in {"ASSIGNING", "ACTIVE"}:
+        provider_error = _copilot_credit_error(job, gh_runner)
+        if provider_error is not None:
+            transition_route(
+                conn,
+                job.route_job_id,
+                job.state,
+                "FAILED_BOUNDED",
+            )
+            _set_copilot_job_state(
+                conn,
+                job.route_job_id,
+                "FAILED_BOUNDED",
+                last_error="provider:github_ai_credits:" + provider_error[:500],
+            )
+            return ReconcileResult(
+                state="FAILED_BOUNDED",
+                task_id=job.task_id,
+                route_job_id=job.route_job_id,
+                branch=job.branch or _safe_branch(job.task_id),
+                candidate_sha=job.candidate_sha,
+            )
+
     matched_pr = _matching_pr(job, gh_runner)
     if matched_pr is not None:
         job = _insert_pr_ready_job(
@@ -793,7 +868,7 @@ def active_copilot_jobs(conn: sqlite3.Connection) -> list[CopilotJobRecord]:
         _job_from_row(row)
         for row in conn.execute(
             """select cj.* from copilot_jobs cj
-                 where cj.state in ('ACTIVE','PR_READY')
+                 where cj.state in ('ASSIGNING','ACTIVE','PR_READY')
                     or (
                       cj.state='QUEUED'
                       and not exists (

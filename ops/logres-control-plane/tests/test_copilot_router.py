@@ -9,7 +9,12 @@ sys.path.insert(0, str(LIB_DIR))
 
 from fixtures import make_test_db, seed_active_lease, seed_task, test_config
 from logres_copilot import CopilotPacket, PolicyError, build_assignment, build_issue_body
-from logres_copilot_router import copilot_eligibility, dispatch_task
+from logres_copilot_router import (
+    copilot_credit_cooldown_active,
+    copilot_eligibility,
+    dispatch_task,
+    reconcile_copilot_job,
+)
 from logres_route_store import ensure_route_schema, transition_route
 
 
@@ -19,6 +24,7 @@ class FakeGitHub:
         self.assignment_calls = 0
         self.issues = []
         self.assignments = []
+        self.comments = {}
 
     def create_issue(self, repo, title, body):
         self.issue_create_calls += 1
@@ -31,6 +37,10 @@ class FakeGitHub:
         self.assignments.append(
             {"repo": repo, "issue_number": issue_number, "payload": payload}
         )
+
+    def list_issue_comments(self, repo, issue_number):
+        del repo
+        return list(self.comments.get(issue_number, []))
 def add_scope(conn, task_id, path):
     conn.execute(
         "insert into task_scopes(task_id,path_prefix) values(?,?)",
@@ -215,6 +225,75 @@ class CopilotRouterTests(unittest.TestCase):
         with self.assertRaises(PolicyError):
             dispatch_task(conn, "T1", "b" * 40, test_config(), github)
         self.assertEqual(0, github.issue_create_calls)
+
+    def test_credit_exhaustion_comment_fails_active_job_and_starts_cooldown(self):
+        conn = make_test_db()
+        ensure_route_schema(conn)
+        seed_task(conn, task_id="T1", work_type="implementation", status="READY")
+        add_scope(conn, "T1", "src/a.ts")
+        config = test_config()
+        config["routing"]["copilot_dispatch_enabled"] = True
+        config["routing"]["copilot_mode"] = "bounded_implementation"
+        github = FakeGitHub()
+
+        dispatched = dispatch_task(conn, "T1", "b" * 40, config, github)
+        github.comments[dispatched.job.issue_number] = [
+            {
+                "author": {"login": "Copilot"},
+                "body": (
+                    "The agent encountered an error and was unable to start working "
+                    "on this issue: You don't have sufficient GitHub AI Credits to "
+                    "start a session."
+                ),
+            }
+        ]
+
+        result = reconcile_copilot_job(
+            dispatched.job,
+            github,
+            object(),
+            "b" * 40,
+            conn,
+        )
+
+        self.assertEqual("FAILED_BOUNDED", result.state)
+        row = conn.execute(
+            "select state,last_error from copilot_jobs where route_job_id=?",
+            (dispatched.route_job_id,),
+        ).fetchone()
+        self.assertEqual("FAILED_BOUNDED", row["state"])
+        self.assertTrue(row["last_error"].startswith("provider:github_ai_credits:"))
+        self.assertTrue(copilot_credit_cooldown_active(conn))
+
+        seed_task(conn, task_id="T2", work_type="implementation", status="READY")
+        add_scope(conn, "T2", "src/b.ts")
+        eligibility = copilot_eligibility(conn, "T2", "b" * 40, config)
+        self.assertFalse(eligibility.allowed)
+        self.assertIn("provider cooldown", eligibility.reason)
+
+    def test_credit_cooldown_expires(self):
+        conn = make_test_db()
+        ensure_route_schema(conn)
+        conn.execute(
+            """insert into copilot_jobs(
+                 route_job_id,task_id,issue_number,pr_number,branch,base_sha,
+                 candidate_sha,state,last_error,created_at,updated_at
+               ) values(?,?,?,?,?,?,?,?,?,?,datetime('now','-7 hours'))""",
+            (
+                9001,
+                "OLD",
+                99,
+                None,
+                "copilot/old",
+                "b" * 40,
+                None,
+                "FAILED_BOUNDED",
+                "provider:github_ai_credits:exhausted",
+                "2026-09-29T00:00:00Z",
+            ),
+        )
+        conn.commit()
+        self.assertFalse(copilot_credit_cooldown_active(conn))
 
     def test_same_task_live_job_blocks_duplicate_even_with_free_capacity(self):
         conn = make_test_db()

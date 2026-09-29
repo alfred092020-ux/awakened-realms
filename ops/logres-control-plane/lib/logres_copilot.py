@@ -198,6 +198,21 @@ class SubprocessGitHubRunner:
         ]
         return matches[0] if len(matches) == 1 else None
 
+    def list_issue_comments(self, repo: str, issue_number: int) -> list[dict]:
+        result = subprocess.run(
+            [
+                "gh", "issue", "view", str(issue_number),
+                "--repo", repo,
+                "--json", "comments",
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        payload = json.loads(result.stdout or "{}")
+        comments = payload.get("comments", [])
+        return comments if isinstance(comments, list) else []
+
     def assign_copilot(self, repo: str, issue_number: int, payload: dict) -> None:
         with tempfile.NamedTemporaryFile("w", encoding="utf-8", delete=False) as handle:
             json.dump(payload, handle)
