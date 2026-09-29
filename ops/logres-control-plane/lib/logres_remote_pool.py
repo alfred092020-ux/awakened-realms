@@ -356,47 +356,59 @@ class RemotePool:
         sha = self.verify_local_sha(sha)
         verify_ref = verification_ref(sha)
         with exclusive_lock(self.lock_path):
-            self._run(
-                ["git", "-C", str(self.root), "update-ref", verify_ref, sha]
-            )
-            try:
-                with tempfile.TemporaryDirectory(
-                    prefix="logres-remote-pool-"
-                ) as tmp:
-                    bundle = Path(tmp) / "sync.bundle"
-                    self._run(
-                        [
-                            "git",
-                            "-C",
-                            str(self.root),
-                            "bundle",
-                            "create",
-                            str(bundle),
-                            "--all",
-                        ]
-                    )
-                    synced_roles: list[str] = []
-                    try:
-                        for role in ("heavy", "light"):
-                            self._sync_one(
-                                self.workers[role],
-                                bundle,
-                                sha,
-                                verify_ref,
-                            )
-                            synced_roles.append(role)
-                    except Exception:
-                        for role in synced_roles:
-                            self._cleanup_remote_verify_ref(
-                                self.workers[role],
-                                verify_ref,
-                            )
-                        raise
-            finally:
+            with tempfile.TemporaryDirectory(
+                prefix="logres-remote-pool-"
+            ) as tmp:
+                temp_repo = Path(tmp) / "source.git"
+                bundle = Path(tmp) / "sync.bundle"
                 self._run(
-                    ["git", "-C", str(self.root), "update-ref", "-d", verify_ref],
-                    check=False,
+                    [
+                        "git",
+                        "clone",
+                        "--bare",
+                        "--shared",
+                        str(self.root),
+                        str(temp_repo),
+                    ]
                 )
+                self._run(
+                    [
+                        "git",
+                        "--git-dir",
+                        str(temp_repo),
+                        "update-ref",
+                        verify_ref,
+                        sha,
+                    ]
+                )
+                self._run(
+                    [
+                        "git",
+                        "--git-dir",
+                        str(temp_repo),
+                        "bundle",
+                        "create",
+                        str(bundle),
+                        "--all",
+                    ]
+                )
+                synced_roles: list[str] = []
+                try:
+                    for role in ("heavy", "light"):
+                        self._sync_one(
+                            self.workers[role],
+                            bundle,
+                            sha,
+                            verify_ref,
+                        )
+                        synced_roles.append(role)
+                except Exception:
+                    for role in synced_roles:
+                        self._cleanup_remote_verify_ref(
+                            self.workers[role],
+                            verify_ref,
+                        )
+                    raise
         return sha
 
     def _run_one(self, role: str, job: str, script: str, sha: str) -> dict:
