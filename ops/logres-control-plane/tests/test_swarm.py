@@ -21,6 +21,7 @@ from logres_swarm import (
     available_devin_worker_ids,
     backfill_ready_task_scopes,
     classify_engine,
+    classify_worker_failure,
     create_job,
     devin_worker_ids,
     ensure_schema,
@@ -28,6 +29,8 @@ from logres_swarm import (
     ready_tasks,
     mark_job_running,
     reconcile_jobs,
+    reconcile_failure_repairs,
+    route_repeated_worker_failures,
     select_implementation_tasks,
     select_research_tasks,
     swarm_capacity,
@@ -906,6 +909,179 @@ class SwarmTests(unittest.TestCase):
         self.conn.execute("update tasks set status='DONE' where id=?", (repair,))
         self.conn.commit()
         self.assertIsNone(logres_swarm.active_structural_repair(self.conn))
+
+    def test_failure_classifier_distinguishes_repair_classes(self):
+        self.assertEqual(
+            "context",
+            classify_worker_failure("supplied contents are incomplete and truncated"),
+        )
+        self.assertEqual(
+            "permission_environment",
+            classify_worker_failure("permission denied by HUMAN_ONLY policy"),
+        )
+        self.assertEqual(
+            "infrastructure",
+            classify_worker_failure("network provision failed closed"),
+        )
+        self.assertEqual(
+            "verification",
+            classify_worker_failure("E2E assertion failed"),
+        )
+        self.assertEqual(
+            "task_ambiguity",
+            classify_worker_failure("ambiguous task, cannot safely edit"),
+        )
+        self.assertEqual(
+            "semantic",
+            classify_worker_failure("model changed the wrong behavior"),
+        )
+
+    def test_nonsemantic_failures_do_not_consume_semantic_retry_budget(self):
+        seed_task(
+            self.conn,
+            task_id="NONSEM",
+            status="READY",
+            work_type="implementation",
+        )
+        for error in (
+            "supplied contents are incomplete",
+            "network provision failed closed",
+            "permission denied by environment",
+        ):
+            self.conn.execute(
+                """insert into swarm_jobs(
+                     task_id,worker_id,engine,state,pid,last_error
+                   ) values('NONSEM','auto-patch-1','openai-patch','FAILED',1,?)""",
+                (error,),
+            )
+        self.conn.execute(
+            """insert into swarm_jobs(
+                 task_id,worker_id,engine,state,pid,last_error
+               ) values('NONSEM','auto-patch-1','openai-patch','FAILED',2,
+                        'model changed the wrong behavior')"""
+        )
+        self.conn.commit()
+        self.assertEqual(
+            1,
+            prior_failures(self.conn, "NONSEM", engine="openai-patch"),
+        )
+
+    def test_repeated_identical_failure_creates_one_scoped_repair_dependency(self):
+        seed_task(
+            self.conn,
+            task_id="ORIGINAL",
+            status="READY",
+            work_type="implementation",
+        )
+        self.conn.execute(
+            "insert into task_scopes(task_id,path_prefix) values('ORIGINAL','src/game.py')"
+        )
+        for pid in (11, 12):
+            self.conn.execute(
+                """insert into swarm_jobs(
+                     task_id,worker_id,engine,state,pid,last_error
+                   ) values('ORIGINAL','auto-patch-1','openai-patch','FAILED',?,
+                            'E2E assertion failed in battle flow')""",
+                (pid,),
+            )
+        self.conn.commit()
+
+        routed = route_repeated_worker_failures(self.conn, threshold=2)
+        self.assertEqual(1, len(routed))
+        repair = routed[0]["repair_task_id"]
+        self.assertEqual("verification", routed[0]["failure_class"])
+        original = self.conn.execute(
+            "select status from tasks where id='ORIGINAL'"
+        ).fetchone()
+        self.assertEqual("BLOCKED_DEP", original[0])
+        self.assertEqual(
+            1,
+            self.conn.execute(
+                "select count(*) from task_dependencies "
+                "where task_id='ORIGINAL' and depends_on=? and kind='hard'",
+                (repair,),
+            ).fetchone()[0],
+        )
+        repair_scope = self.conn.execute(
+            "select path_prefix from task_scopes where task_id=?",
+            (repair,),
+        ).fetchone()
+        self.assertEqual("src/game.py", repair_scope[0])
+
+        routed_again = route_repeated_worker_failures(self.conn, threshold=2)
+        self.assertEqual([], routed_again)
+        self.assertEqual(
+            1,
+            self.conn.execute(
+                "select count(*) from tasks where id=?",
+                (repair,),
+            ).fetchone()[0],
+        )
+
+    def test_context_repair_gets_control_plane_context_scopes(self):
+        seed_task(
+            self.conn,
+            task_id="CTX",
+            status="READY",
+            work_type="implementation",
+        )
+        for pid in (21, 22):
+            self.conn.execute(
+                """insert into swarm_jobs(
+                     task_id,worker_id,engine,state,pid,last_error
+                   ) values('CTX','auto-patch-1','openai-patch','FAILED',?,
+                            'supplied contents are incomplete and truncated')""",
+                (pid,),
+            )
+        self.conn.commit()
+        routed = route_repeated_worker_failures(self.conn, threshold=2)
+        repair = routed[0]["repair_task_id"]
+        scopes = {
+            row[0]
+            for row in self.conn.execute(
+                "select path_prefix from task_scopes where task_id=?",
+                (repair,),
+            )
+        }
+        self.assertIn(
+            "ops/logres-control-plane/lib/logres_patch_agent.py",
+            scopes,
+        )
+
+    def test_successful_repair_resumes_original_mission(self):
+        seed_task(
+            self.conn,
+            task_id="RESUME",
+            status="READY",
+            work_type="implementation",
+        )
+        self.conn.execute(
+            "insert into task_scopes(task_id,path_prefix) values('RESUME','src/a.py')"
+        )
+        for pid in (31, 32):
+            self.conn.execute(
+                """insert into swarm_jobs(
+                     task_id,worker_id,engine,state,pid,last_error
+                   ) values('RESUME','auto-patch-1','openai-patch','FAILED',?,
+                            'tests failed with assertion')""",
+                (pid,),
+            )
+        self.conn.commit()
+        routed = route_repeated_worker_failures(self.conn, threshold=2)
+        repair = routed[0]["repair_task_id"]
+        self.conn.execute(
+            "update tasks set status='DONE' where id=?",
+            (repair,),
+        )
+        self.conn.commit()
+        released = reconcile_failure_repairs(self.conn)
+        self.assertIn("RESUME", released)
+        self.assertEqual(
+            "READY",
+            self.conn.execute(
+                "select status from tasks where id='RESUME'"
+            ).fetchone()[0],
+        )
 
     def test_devin_dispatch_has_engine_specific_retry_ceiling(self):
         script = (CONTROL_ROOT / "bin" / "logres-swarm").read_text()

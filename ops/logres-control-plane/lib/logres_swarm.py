@@ -222,6 +222,19 @@ def ensure_schema(conn: sqlite3.Connection) -> None:
              primary key(fingerprint,generation,task_id)
            )"""
     )
+    conn.execute(
+        """create table if not exists swarm_failure_repairs(
+             task_id text not null,
+             fingerprint text not null,
+             failure_class text not null,
+             observation_count integer not null default 0,
+             repair_task_id text,
+             last_error text,
+             first_seen_at text not null default (datetime('now')),
+             last_seen_at text not null default (datetime('now')),
+             primary key(task_id,fingerprint)
+           )"""
+    )
     conn.commit()
 
 
@@ -871,12 +884,379 @@ def select_implementation_tasks(
         require_scopes=True,
     )
 
+NON_SEMANTIC_FAILURE_CLASSES = {
+    "context",
+    "permission_environment",
+    "infrastructure",
+    "task_ambiguity",
+}
+
+
+def classify_worker_failure(error: str) -> str:
+    value = str(error or "").strip().lower()
+    if not value:
+        return "infrastructure"
+
+    context_markers = (
+        "incomplete",
+        "truncat",
+        "outside the supplied file index",
+        "supplied contents",
+        "missing context",
+        "additional failure-log evidence",
+        "no attached failure-log",
+        "context path",
+        "context bundle",
+    )
+    if any(marker in value for marker in context_markers):
+        return "context"
+
+    permission_markers = (
+        "requires confirmation",
+        "permission denied",
+        "human_only",
+        "human-only",
+        "read-only",
+        "readonly",
+        "missing executable",
+        "no such file or directory",
+        "shell execution is unavailable",
+        "not approved",
+    )
+    if any(marker in value for marker in permission_markers):
+        return "permission_environment"
+
+    infrastructure_markers = (
+        "network provision",
+        "bootstrap failed",
+        "worker no longer owns",
+        "expected task lease",
+        "timed out",
+        "timeout",
+        "connection",
+        "service unavailable",
+        "process exited",
+        "stale lock",
+    )
+    if any(marker in value for marker in infrastructure_markers):
+        return "infrastructure"
+
+    ambiguity_markers = (
+        "ambiguous",
+        "underspecified",
+        "cannot be specified",
+        "cannot safely",
+        "inventing behavior",
+        "insufficient evidence",
+        "additional evidence is required",
+    )
+    if any(marker in value for marker in ambiguity_markers):
+        return "task_ambiguity"
+
+    verification_markers = (
+        "test failed",
+        "tests failed",
+        "build failed",
+        "e2e",
+        "verification failed",
+        "assertion",
+        "typecheck",
+        "lint failed",
+        "performance",
+    )
+    if any(marker in value for marker in verification_markers):
+        return "verification"
+    return "semantic"
+
+
+def worker_failure_fingerprint(error: str) -> dict:
+    failure_class = classify_worker_failure(error)
+    normalized = str(error or "").strip().lower()
+    normalized = re.sub(r"\b[0-9a-f]{7,64}\b", "<sha>", normalized)
+    normalized = re.sub(r"\b\d+\b", "<n>", normalized)
+    normalized = re.sub(r"\s+", " ", normalized)[:600]
+    encoded = f"{failure_class}:{normalized}"
+    return {
+        "failure_class": failure_class,
+        "normalized": normalized,
+        "fingerprint": hashlib.sha256(encoded.encode("utf-8")).hexdigest(),
+    }
+
+
+def _repair_scopes_for_failure(
+    conn: sqlite3.Connection,
+    task_id: str,
+    failure_class: str,
+) -> list[str]:
+    original = [
+        str(row[0])
+        for row in conn.execute(
+            "select path_prefix from task_scopes where task_id=? order by path_prefix",
+            (task_id,),
+        )
+    ]
+    if failure_class == "context":
+        return [
+            "ops/logres-control-plane/lib/logres_patch_agent.py",
+            "ops/logres-control-plane/bin/logres-patch-agent",
+            "ops/logres-control-plane/tests/test_patch_agent.py",
+        ]
+    if failure_class in {"permission_environment", "infrastructure"}:
+        return [
+            "ops/logres-control-plane/lib/logres_swarm.py",
+            "ops/logres-control-plane/bin/logres-swarm",
+            "ops/logres-control-plane/tests/test_swarm.py",
+        ]
+    return original
+
+
+def reconcile_failure_repairs(conn: sqlite3.Connection) -> list[str]:
+    ensure_schema(conn)
+    released: list[str] = []
+    rows = conn.execute(
+        """select r.task_id,r.repair_task_id,t.status
+             from swarm_failure_repairs r
+             join tasks t on t.id=r.repair_task_id
+            where r.repair_task_id is not null"""
+    ).fetchall()
+    satisfied = {"DONE", "RESOLVED", "INTEGRATED"}
+    terminal_bad = {"SUPERSEDED", "CANCELLED"}
+    for row in rows:
+        original = str(row["task_id"])
+        repair = str(row["repair_task_id"])
+        repair_status = str(row["status"])
+        if repair_status in satisfied:
+            unresolved = 0
+            if _table_exists(conn, "task_dependencies"):
+                unresolved = int(
+                    conn.execute(
+                        """select count(*)
+                             from task_dependencies d
+                             join tasks t on t.id=d.depends_on
+                            where d.task_id=? and d.kind='hard'
+                              and t.status not in ('DONE','RESOLVED','INTEGRATED')""",
+                        (original,),
+                    ).fetchone()[0]
+                )
+            if unresolved == 0:
+                conn.execute(
+                    """update tasks set status='READY',
+                           note=?,updated_at=datetime('now')
+                         where id=? and status='BLOCKED_DEP'""",
+                    (
+                        f"Autonomous repair {repair} satisfied; original mission resumed.",
+                        original,
+                    ),
+                )
+                if conn.total_changes:
+                    released.append(original)
+        elif repair_status in terminal_bad:
+            conn.execute(
+                """update tasks set note=?,updated_at=datetime('now')
+                     where id=? and status='BLOCKED_DEP'""",
+                (
+                    f"Autonomous repair {repair} ended {repair_status}; lead/debug review required.",
+                    original,
+                ),
+            )
+    conn.commit()
+    return released
+
+
+def route_repeated_worker_failures(
+    conn: sqlite3.Connection,
+    *,
+    threshold: int = 2,
+) -> list[dict]:
+    ensure_schema(conn)
+    reconcile_failure_repairs(conn)
+    threshold = max(2, int(threshold))
+    routed: list[dict] = []
+    tasks = conn.execute(
+        """select distinct t.id
+             from tasks t
+             join swarm_jobs j on j.task_id=t.id
+            where t.status='READY' and j.state='FAILED'
+            order by t.id"""
+    ).fetchall()
+    now = time.strftime("%Y-%m-%dT%H:%M:%S+00:00", time.gmtime())
+    for task_row in tasks:
+        task_id = str(task_row[0])
+        if task_id.startswith("REPAIR-AUTO-"):
+            continue
+        failures = conn.execute(
+            """select id,last_error,engine,artifact_path
+                 from swarm_jobs
+                where task_id=? and state='FAILED'
+                order by id desc limit 12""",
+            (task_id,),
+        ).fetchall()
+        groups: dict[str, list[sqlite3.Row]] = {}
+        signatures: dict[str, dict] = {}
+        for row in failures:
+            sig = worker_failure_fingerprint(str(row["last_error"] or ""))
+            signatures[sig["fingerprint"]] = sig
+            groups.setdefault(sig["fingerprint"], []).append(row)
+
+        for fingerprint, rows in groups.items():
+            if len(rows) < threshold:
+                continue
+            signature = signatures[fingerprint]
+            failure_class = signature["failure_class"]
+            existing = conn.execute(
+                """select repair_task_id from swarm_failure_repairs
+                    where task_id=? and fingerprint=?""",
+                (task_id, fingerprint),
+            ).fetchone()
+            repair_task_id = str(existing[0] or "") if existing else ""
+            if repair_task_id:
+                repair = conn.execute(
+                    "select status from tasks where id=?",
+                    (repair_task_id,),
+                ).fetchone()
+                if repair and str(repair[0]) not in {
+                    "DONE", "RESOLVED", "INTEGRATED",
+                    "SUPERSEDED", "CANCELLED",
+                }:
+                    continue
+
+            repair_task_id = (
+                f"REPAIR-AUTO-{task_id[:80]}-{fingerprint[:8].upper()}"
+            )[:150]
+            scopes = _repair_scopes_for_failure(
+                conn, task_id, failure_class
+            )
+            if not scopes:
+                continue
+
+            if not conn.execute(
+                "select 1 from tasks where id=?", (repair_task_id,)
+            ).fetchone():
+                title = (
+                    f"Diagnose and repair {failure_class} failure blocking {task_id}"
+                )[:240]
+                conn.execute(
+                    """insert into tasks(
+                         id,priority,lane,title,status,branch,owner,note,updated_at
+                       ) values(?,0,'control-plane',?,'READY',null,null,?,?)""",
+                    (
+                        repair_task_id,
+                        title,
+                        (
+                            "Auto-generated after repeated identical autonomous "
+                            f"failures. original={task_id} "
+                            f"class={failure_class} fingerprint={fingerprint}"
+                        ),
+                        now,
+                    ),
+                )
+                if _table_exists(conn, "task_metadata"):
+                    conn.execute(
+                        """insert or ignore into task_metadata(
+                             task_id,milestone,work_type,concurrency_key,
+                             expected_minutes,evidence_policy,created_at,updated_at
+                           ) values(?,'AUTONOMY-COMPLETION','implementation',
+                                    ?,45,?,?,?)""",
+                        (
+                            repair_task_id,
+                            "failure-repair:" + fingerprint,
+                            (
+                                "Diagnose root cause, reproduce the smallest failing "
+                                "case, repair it without weakening safety, rerun the "
+                                "failing check, then broader verification."
+                            ),
+                            now,
+                            now,
+                        ),
+                    )
+                for scope in scopes:
+                    conn.execute(
+                        """insert or ignore into task_scopes(task_id,path_prefix)
+                           values(?,?)""",
+                        (repair_task_id, scope),
+                    )
+                if _table_exists(conn, "task_acceptance"):
+                    criteria = (
+                        f"Classify and reproduce the {failure_class} failure for {task_id}.",
+                        "Repair the root cause rather than repeating the same worker attempt.",
+                        "Rerun the smallest failing check and the relevant broader verification gate.",
+                        f"Return {task_id} to autonomous eligibility after the repair integrates.",
+                    )
+                    for ordinal, criterion in enumerate(criteria, 1):
+                        conn.execute(
+                            "insert into task_acceptance(task_id,ordinal,criterion) values(?,?,?)",
+                            (repair_task_id, ordinal, criterion),
+                        )
+
+            conn.execute(
+                """insert into swarm_failure_repairs(
+                     task_id,fingerprint,failure_class,observation_count,
+                     repair_task_id,last_error,first_seen_at,last_seen_at
+                   ) values(?,?,?,?,?,?,?,?)
+                   on conflict(task_id,fingerprint) do update set
+                     failure_class=excluded.failure_class,
+                     observation_count=excluded.observation_count,
+                     repair_task_id=excluded.repair_task_id,
+                     last_error=excluded.last_error,
+                     last_seen_at=excluded.last_seen_at""",
+                (
+                    task_id,
+                    fingerprint,
+                    failure_class,
+                    len(rows),
+                    repair_task_id,
+                    str(rows[0]["last_error"] or "")[:2000],
+                    now,
+                    now,
+                ),
+            )
+            if _table_exists(conn, "task_dependencies"):
+                conn.execute(
+                    """insert or ignore into task_dependencies(
+                         task_id,depends_on,kind,rationale
+                       ) values(?,?,'hard',?)""",
+                    (
+                        task_id,
+                        repair_task_id,
+                        (
+                            "Repeated identical autonomous failure requires root-cause "
+                            f"repair first. class={failure_class} fingerprint={fingerprint}"
+                        ),
+                    ),
+                )
+            conn.execute(
+                """update tasks
+                      set status='BLOCKED_DEP',note=?,updated_at=?
+                    where id=? and status='READY'""",
+                (
+                    (
+                        f"Blocked on autonomous repair {repair_task_id} after "
+                        f"{len(rows)} repeated {failure_class} failures."
+                    ),
+                    now,
+                    task_id,
+                ),
+            )
+            routed.append(
+                {
+                    "task_id": task_id,
+                    "repair_task_id": repair_task_id,
+                    "failure_class": failure_class,
+                    "fingerprint": fingerprint,
+                    "observations": len(rows),
+                }
+            )
+            break
+    conn.commit()
+    return routed
+
+
 def _devin_infrastructure_failure(row: sqlite3.Row) -> bool:
+    if str(row["engine"] or "") != "devin":
+        return False
     artifact_path = str(row["artifact_path"] or "").strip()
     if not artifact_path:
         return True
-    if str(row["engine"] or "") != "devin":
-        return False
     try:
         artifact = json.loads(Path(artifact_path).read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
@@ -914,7 +1294,20 @@ def prior_failures(
         sql += " and engine=?"
         params.append(engine)
     rows = conn.execute(sql, tuple(params)).fetchall()
-    return sum(0 if _devin_infrastructure_failure(row) else 1 for row in rows)
+    count = 0
+    for row in rows:
+        if (
+            str(row["engine"] or "") == "research"
+            and not str(row["artifact_path"] or "").strip()
+        ):
+            continue
+        if _devin_infrastructure_failure(row):
+            continue
+        failure_class = classify_worker_failure(str(row["last_error"] or ""))
+        if failure_class in NON_SEMANTIC_FAILURE_CLASSES:
+            continue
+        count += 1
+    return count
 
 
 def worker_ids(config: dict) -> list[str]:

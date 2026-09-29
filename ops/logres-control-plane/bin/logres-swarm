@@ -36,6 +36,8 @@ from logres_swarm import (
     isolation_surface_hashes,
     privileged_network_preflight_ready,
     record_structural_preflight_failure,
+    route_repeated_worker_failures,
+    reconcile_failure_repairs,
     load_config,
     mark_job_running,
     prior_failures,
@@ -961,6 +963,8 @@ def tick(dry_run: bool = False) -> dict:
     stale = reconcile_jobs(conn)
     recovered = release_stale(conn, stale)
     terminal_devin_cleaned = cleanup_terminal_devin_jobs(conn)
+    resumed_after_repair = reconcile_failure_repairs(conn)
+    failure_repairs = route_repeated_worker_failures(conn)
 
     scope_backfill = backfill_ready_task_scopes(
         conn,
