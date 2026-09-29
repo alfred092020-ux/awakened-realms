@@ -1003,21 +1003,14 @@ def tick(dry_run: bool = False) -> dict:
         conn.close()
         return payload
 
+    implementation_candidates = select_implementation_tasks(conn, before.free_slots)
+    research_candidates = select_research_tasks(conn, before.free_slots)
+    project_work_available = bool(implementation_candidates or research_candidates)
+    payload["idle_evolution"] = {"eligible": not project_work_available, "triggered": False}
+
     if dry_run:
-        payload["implementation_candidates"] = [
-            task["id"]
-            for task in select_implementation_tasks(
-                conn,
-                before.free_slots,
-            )
-        ]
-        payload["research_candidates"] = [
-            task["id"]
-            for task in select_research_tasks(
-                conn,
-                before.free_slots,
-            )
-        ]
+        payload["implementation_candidates"] = [task["id"] for task in implementation_candidates]
+        payload["research_candidates"] = [task["id"] for task in research_candidates]
         payload["placement_hints"] = placement_hints(
             conn,
             [task["id"] for task in ready_tasks(conn)],
@@ -1025,6 +1018,13 @@ def tick(dry_run: bool = False) -> dict:
         payload["after"] = before.__dict__
         conn.close()
         return payload
+    # Idle evolution is opportunistic only; normal project work always wins.
+    if not project_work_available:
+        evolve_bin = ROOT / "bin/logres-devin-evolve"
+        if evolve_bin.is_file():
+            evolved = subprocess.run([str(evolve_bin), "tick"], text=True, capture_output=True, check=False, timeout=90)
+            payload["idle_evolution"] = {"eligible": True, "triggered": evolved.returncode == 0, "returncode": evolved.returncode, "output": (evolved.stdout or evolved.stderr)[-2000:]}
+
 
     # Cloud Devin is the preferred autonomous implementation lane, but it
     # remains fail-closed until an independent production isolation proof has

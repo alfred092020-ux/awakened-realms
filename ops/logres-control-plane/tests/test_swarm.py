@@ -1496,5 +1496,14 @@ class SwarmTests(unittest.TestCase):
         self.assertLess(main.index("if args.command == \"recertify-devin\":"), main.index("cfg = load_config(CONFIG)"))
 
 
+    def test_idle_evolution_is_preempted_by_project_work(self):
+        script = (CONTROL_ROOT / "bin" / "logres-swarm").read_text()
+        tick = script[script.index("def tick("):script.index("def recertify_devin(", script.index("def tick("))]
+        self.assertIn("project_work_available = bool(implementation_candidates or research_candidates)", tick)
+        self.assertIn("if not project_work_available:", tick)
+        self.assertIn("[str(evolve_bin), \"tick\"]", tick)
+        self.assertLess(tick.index("project_work_available = bool"), tick.index("if not project_work_available:"))
+
+
 if __name__ == "__main__":
     unittest.main()
