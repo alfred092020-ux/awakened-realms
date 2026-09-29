@@ -975,11 +975,19 @@ def worker_failure_fingerprint(error: str) -> dict:
     normalized = re.sub(r"\b[0-9a-f]{7,64}\b", "<sha>", normalized)
     normalized = re.sub(r"\b\d+\b", "<n>", normalized)
     normalized = re.sub(r"\s+", " ", normalized)[:600]
-    encoded = f"{failure_class}:{normalized}"
+    # Context, infrastructure, permission/environment, and ambiguity failures
+    # are operationally equivalent within a task: wording must not create a
+    # fresh redispatch bucket. Semantic and verification failures retain their
+    # detailed normalized-message fingerprints.
+    fingerprint_input = (
+        failure_class
+        if failure_class in NON_SEMANTIC_FAILURE_CLASSES
+        else f"{failure_class}:{normalized}"
+    )
     return {
         "failure_class": failure_class,
         "normalized": normalized,
-        "fingerprint": hashlib.sha256(encoded.encode("utf-8")).hexdigest(),
+        "fingerprint": hashlib.sha256(fingerprint_input.encode("utf-8")).hexdigest(),
     }
 
 

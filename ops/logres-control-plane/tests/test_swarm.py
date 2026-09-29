@@ -1000,6 +1000,48 @@ class SwarmTests(unittest.TestCase):
             prior_failures(self.conn, "NONSEM", engine="openai-patch"),
         )
 
+    def test_nonsemantic_failure_fingerprints_coalesce_by_class(self):
+        for failure_class, messages in (
+            ("context", ("supplied contents are incomplete", "context bundle is truncated")),
+            ("permission_environment", ("permission denied by environment", "read-only workspace")),
+            ("infrastructure", ("network provision failed", "worker connection timed out")),
+            ("task_ambiguity", ("ambiguous task", "insufficient evidence is available")),
+        ):
+            first = logres_swarm.worker_failure_fingerprint(messages[0])
+            second = logres_swarm.worker_failure_fingerprint(messages[1])
+            self.assertEqual(failure_class, first["failure_class"])
+            self.assertEqual(failure_class, second["failure_class"])
+            self.assertEqual(first["fingerprint"], second["fingerprint"])
+
+        semantic_a = logres_swarm.worker_failure_fingerprint("model changed behavior A")
+        semantic_b = logres_swarm.worker_failure_fingerprint("model changed behavior B")
+        verification_a = logres_swarm.worker_failure_fingerprint("tests failed in A")
+        verification_b = logres_swarm.worker_failure_fingerprint("tests failed in B")
+        self.assertNotEqual(semantic_a["fingerprint"], semantic_b["fingerprint"])
+        self.assertNotEqual(verification_a["fingerprint"], verification_b["fingerprint"])
+
+    def test_repeated_nonsemantic_failures_with_different_messages_create_one_repair(self):
+        seed_task(self.conn, task_id="NONSEM-COALESCE", status="READY", work_type="implementation")
+        for pid, error in ((41, "permission denied by environment"), (42, "read-only workspace")):
+            self.conn.execute(
+                """insert into swarm_jobs(
+                     task_id,worker_id,engine,state,pid,last_error
+                   ) values('NONSEM-COALESCE','auto-patch-1','openai-patch','FAILED',?,?)""",
+                (pid, error),
+            )
+        self.conn.commit()
+        routed = route_repeated_worker_failures(self.conn, threshold=2)
+        self.assertEqual(1, len(routed))
+        repair = routed[0]["repair_task_id"]
+        self.assertEqual("permission_environment", routed[0]["failure_class"])
+        self.assertEqual("BLOCKED_DEP", self.conn.execute(
+            "select status from tasks where id='NONSEM-COALESCE'"
+        ).fetchone()[0])
+        self.assertEqual(1, self.conn.execute(
+            "select count(*) from tasks where id=?", (repair,)
+        ).fetchone()[0])
+        self.assertEqual([], route_repeated_worker_failures(self.conn, threshold=2))
+
     def test_repeated_identical_failure_creates_one_scoped_repair_dependency(self):
         seed_task(
             self.conn,
