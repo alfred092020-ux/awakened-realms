@@ -83,7 +83,7 @@ if [[ "$existing_claims" == "0" ]]; then
   fi
 fi
 
-WT=$(git -C "$BASE" worktree list --porcelain | awk -v b="refs/heads/$BRANCH" '$1=="worktree"{p=$2} $1=="branch" && $2==b {print p; exit}')
+WT=$(git -C "$BASE" worktree list --porcelain | awk -v b="refs/heads/$BRANCH" '$1=="worktree"{p=$2} $1=="branch" && $2==b {print p}')
 if [[ -z "$WT" ]]; then
   SAFE=$(printf "%s" "$BRANCH" | tr "/:" "__")
   WT="$ROOT/$SAFE"

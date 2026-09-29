@@ -126,6 +126,29 @@ class WorkerStartToolBrokerTests(unittest.TestCase):
             self.assertIn("figma (Figma score=4.0)", text)
             self.assertIn("Do not force tool use", text)
 
+    def test_repeated_start_for_existing_branch_does_not_sigpipe(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            env, script = self.make_env(root, broker_success=True)
+            branch = "worker/repeated-start"
+            first = subprocess.run(
+                [str(script), "worker", "TASK-001", branch],
+                env=env,
+                text=True,
+                capture_output=True,
+                check=True,
+            )
+            second = subprocess.run(
+                [str(script), "worker", "TASK-001", branch],
+                env=env,
+                text=True,
+                capture_output=True,
+                check=True,
+            )
+            self.assertIn("WORKER_READY", first.stdout)
+            self.assertIn("WORKER_READY", second.stdout)
+            self.assertNotEqual(141, second.returncode)
+
     def test_broker_failure_is_fail_open_and_worker_still_ready(self):
         with tempfile.TemporaryDirectory() as td:
             root = Path(td)
