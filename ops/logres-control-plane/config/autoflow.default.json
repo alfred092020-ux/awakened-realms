@@ -1,6 +1,6 @@
 {
   "routing": {
-    "ai_dispatch_enabled": false,
+    "ai_dispatch_enabled": true,
     "copilot_dispatch_enabled": false,
     "copilot_mode": "report_only"
   },
@@ -52,7 +52,7 @@
     "local_e2e_authoritative": true
   },
   "implementation": {
-    "enabled": false,
+    "enabled": true,
     "model": "gpt-5.6-luna",
     "workers": 1,
     "max_active": 1,
