@@ -20,6 +20,19 @@ NEXUS_CONTROL_CENTER_FULL_POLL=10
 
 Then install/start the included user service and expose only through authenticated HTTPS/private access.
 
+
+## Android APK
+
+The `android/` directory contains a minimal native Android shell for Nexus Command Center. It uses the platform WebView, preserves the existing server-side authentication/session model, blocks cleartext HTTP, cancels TLS errors, and accepts only an `https://` Command Center address.
+
+Build a debug APK:
+
+```bash
+ops/logres-control-plane/nexus-command-center/android/build_apk.sh
+```
+
+The first launch asks for the private HTTPS Command Center URL. The URL is stored locally in app preferences. The Nexus access token is not persisted by the wrapper; authentication remains inside the Command Center's HttpOnly session. Long-press inside the app to reload or change the configured server.
+
 ## Controls
 
 Direct: force refresh, Wake Lead event, supervisor tick, bounded autonomy cycle, exact ref verification, guarded preflight (explicit typed confirmation + busy check).
