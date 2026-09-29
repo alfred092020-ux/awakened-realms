@@ -764,10 +764,16 @@ def _devin_infrastructure_failure(row: sqlite3.Row) -> bool:
         text = Path(log_path).read_text(encoding="utf-8", errors="replace")[-20000:].lower()
     except OSError:
         return False
-    return (
+    confirmation_denial = (
         "rejected a tool call that requires confirmation" in text
         and "non-interactive mode" in text
     )
+    legacy_sandbox_shell_denial = (
+        "devin child produced no repository diff" in str(row["last_error"] or "").lower()
+        and "--sandbox always uses the autonomous permission mode" in text
+        and "shell execution is unavailable" in text
+    )
+    return confirmation_denial or legacy_sandbox_shell_denial
 
 
 def prior_failures(
