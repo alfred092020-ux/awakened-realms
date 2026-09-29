@@ -1010,6 +1010,33 @@ def _repair_scopes_for_failure(
     return original
 
 
+MAX_AUTONOMOUS_REPAIR_GENERATION = 3
+
+
+def _repair_lineage(conn: sqlite3.Connection, task_id: str) -> tuple[str, int]:
+    """Return the root mission task and current autonomous repair generation."""
+    root_task = task_id
+    current = task_id
+    generation = 0
+    seen: set[str] = set()
+    while current.startswith("REPAIR-AUTO-") and current not in seen:
+        seen.add(current)
+        row = conn.execute(
+            """select task_id from swarm_failure_repairs
+                 where repair_task_id=?
+                 order by last_seen_at desc
+                 limit 1""",
+            (current,),
+        ).fetchone()
+        if row is None:
+            break
+        parent = str(row[0])
+        generation += 1
+        root_task = parent
+        current = parent
+    return root_task, generation
+
+
 def reconcile_failure_repairs(conn: sqlite3.Connection) -> list[str]:
     ensure_schema(conn)
     released: list[str] = []
@@ -1067,10 +1094,12 @@ def route_repeated_worker_failures(
     conn: sqlite3.Connection,
     *,
     threshold: int = 2,
+    max_repair_generation: int = MAX_AUTONOMOUS_REPAIR_GENERATION,
 ) -> list[dict]:
     ensure_schema(conn)
     reconcile_failure_repairs(conn)
     threshold = max(2, int(threshold))
+    max_repair_generation = max(1, int(max_repair_generation))
     routed: list[dict] = []
     tasks = conn.execute(
         """select distinct t.id
@@ -1082,8 +1111,7 @@ def route_repeated_worker_failures(
     now = time.strftime("%Y-%m-%dT%H:%M:%S+00:00", time.gmtime())
     for task_row in tasks:
         task_id = str(task_row[0])
-        if task_id.startswith("REPAIR-AUTO-"):
-            continue
+        root_task_id, current_generation = _repair_lineage(conn, task_id)
         failures = conn.execute(
             """select id,last_error,engine,artifact_path
                  from swarm_jobs
@@ -1120,8 +1148,29 @@ def route_repeated_worker_failures(
                 }:
                     continue
 
+            next_generation = current_generation + 1
+            if next_generation > max_repair_generation:
+                conn.execute(
+                    """update tasks
+                          set note=?,updated_at=datetime('now')
+                        where id=?""",
+                    (
+                        "Autonomous repair generation ceiling reached "
+                        f"({max_repair_generation}) for root mission {root_task_id}; "
+                        "no recursive repair task created.",
+                        task_id,
+                    ),
+                )
+                conn.commit()
+                continue
+
+            repair_base = (
+                f"REPAIR-AUTO-{root_task_id[:80]}-{fingerprint[:8].upper()}"
+            )
             repair_task_id = (
-                f"REPAIR-AUTO-{task_id[:80]}-{fingerprint[:8].upper()}"
+                repair_base
+                if next_generation == 1
+                else f"{repair_base}-G{next_generation}"
             )[:150]
             scopes = _repair_scopes_for_failure(
                 conn, task_id, failure_class
@@ -1144,7 +1193,8 @@ def route_repeated_worker_failures(
                         title,
                         (
                             "Auto-generated after repeated identical autonomous "
-                            f"failures. original={task_id} "
+                            f"failures. root={root_task_id} failed_task={task_id} "
+                            f"generation={next_generation}/{max_repair_generation} "
                             f"class={failure_class} fingerprint={fingerprint}"
                         ),
                         now,
@@ -1178,9 +1228,9 @@ def route_repeated_worker_failures(
                 if _table_exists(conn, "task_acceptance"):
                     criteria = (
                         f"Classify and reproduce the {failure_class} failure for {task_id}.",
-                        "Repair the root cause rather than repeating the same worker attempt.",
+                        f"Repair autonomous generation {next_generation} for root mission {root_task_id} rather than repeating the same worker attempt.",
                         "Rerun the smallest failing check and the relevant broader verification gate.",
-                        f"Return {task_id} to autonomous eligibility after the repair integrates.",
+                        f"Return {task_id} and root mission {root_task_id} to autonomous eligibility after the repair chain integrates.",
                     )
                     for ordinal, criterion in enumerate(criteria, 1):
                         conn.execute(
@@ -1211,32 +1261,42 @@ def route_repeated_worker_failures(
                 ),
             )
             if _table_exists(conn, "task_dependencies"):
-                conn.execute(
-                    """insert or ignore into task_dependencies(
-                         task_id,depends_on,kind,rationale
-                       ) values(?,?,'hard',?)""",
-                    (
-                        task_id,
-                        repair_task_id,
+                dependency_targets = [task_id]
+                if root_task_id != task_id:
+                    dependency_targets.append(root_task_id)
+                for dependency_task in dependency_targets:
+                    conn.execute(
+                        """insert or ignore into task_dependencies(
+                             task_id,depends_on,kind,rationale
+                           ) values(?,?,'hard',?)""",
                         (
-                            "Repeated identical autonomous failure requires root-cause "
-                            f"repair first. class={failure_class} fingerprint={fingerprint}"
+                            dependency_task,
+                            repair_task_id,
+                            (
+                                "Repeated identical autonomous failure requires root-cause "
+                                f"repair generation {next_generation} first. "
+                                f"class={failure_class} fingerprint={fingerprint}"
+                            ),
                         ),
+                    )
+            blocked_tasks = [task_id]
+            if root_task_id != task_id:
+                blocked_tasks.append(root_task_id)
+            for blocked_task in blocked_tasks:
+                conn.execute(
+                    """update tasks
+                          set status='BLOCKED_DEP',note=?,updated_at=?
+                        where id=? and status in ('READY','ACTIVE','BLOCKED_DEP')""",
+                    (
+                        (
+                            f"Blocked on autonomous repair {repair_task_id} generation "
+                            f"{next_generation}/{max_repair_generation} after "
+                            f"{len(rows)} repeated {failure_class} failures."
+                        ),
+                        now,
+                        blocked_task,
                     ),
                 )
-            conn.execute(
-                """update tasks
-                      set status='BLOCKED_DEP',note=?,updated_at=?
-                    where id=? and status='READY'""",
-                (
-                    (
-                        f"Blocked on autonomous repair {repair_task_id} after "
-                        f"{len(rows)} repeated {failure_class} failures."
-                    ),
-                    now,
-                    task_id,
-                ),
-            )
             routed.append(
                 {
                     "task_id": task_id,
@@ -1244,6 +1304,8 @@ def route_repeated_worker_failures(
                     "failure_class": failure_class,
                     "fingerprint": fingerprint,
                     "observations": len(rows),
+                    "root_task_id": root_task_id,
+                    "generation": next_generation,
                 }
             )
             break

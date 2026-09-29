@@ -1060,6 +1060,137 @@ class SwarmTests(unittest.TestCase):
             ).fetchone()[0],
         )
 
+    def test_failed_repair_escalates_to_bounded_next_generation(self):
+        seed_task(
+            self.conn,
+            task_id="ROOT-GEN",
+            status="READY",
+            work_type="implementation",
+        )
+        self.conn.execute(
+            "insert into task_scopes(task_id,path_prefix) values('ROOT-GEN','src/root.py')"
+        )
+        for pid in (41, 42):
+            self.conn.execute(
+                """insert into swarm_jobs(
+                     task_id,worker_id,engine,state,pid,last_error
+                   ) values('ROOT-GEN','auto-patch-1','openai-patch','FAILED',?,
+                            'model changed the wrong behavior')""",
+                (pid,),
+            )
+        self.conn.commit()
+        first = route_repeated_worker_failures(self.conn, threshold=2)[0]
+        generation_one = first["repair_task_id"]
+        self.assertEqual(1, first["generation"])
+
+        for pid in (43, 44):
+            self.conn.execute(
+                """insert into swarm_jobs(
+                     task_id,worker_id,engine,state,pid,last_error
+                   ) values(?,'auto-patch-1','openai-patch','FAILED',?,
+                            'model changed the wrong behavior')""",
+                (generation_one, pid),
+            )
+        self.conn.commit()
+        second = route_repeated_worker_failures(self.conn, threshold=2)[0]
+        generation_two = second["repair_task_id"]
+
+        self.assertEqual("ROOT-GEN", second["root_task_id"])
+        self.assertEqual(2, second["generation"])
+        self.assertTrue(generation_two.endswith("-G2"))
+        self.assertNotEqual(generation_one, generation_two)
+        scopes = {
+            row[0]
+            for row in self.conn.execute(
+                "select path_prefix from task_scopes where task_id=?",
+                (generation_two,),
+            )
+        }
+        self.assertEqual({"src/root.py"}, scopes)
+        for blocked in ("ROOT-GEN", generation_one):
+            self.assertEqual(
+                "BLOCKED_DEP",
+                self.conn.execute(
+                    "select status from tasks where id=?", (blocked,)
+                ).fetchone()[0],
+            )
+            self.assertEqual(
+                1,
+                self.conn.execute(
+                    """select count(*) from task_dependencies
+                         where task_id=? and depends_on=? and kind='hard'""",
+                    (blocked, generation_two),
+                ).fetchone()[0],
+            )
+        criteria = [
+            row[0]
+            for row in self.conn.execute(
+                "select criterion from task_acceptance where task_id=? order by ordinal",
+                (generation_two,),
+            )
+        ]
+        self.assertTrue(any("generation 2" in criterion for criterion in criteria))
+        self.assertTrue(any("ROOT-GEN" in criterion for criterion in criteria))
+
+    def test_repair_generation_ceiling_prevents_recursive_task_explosion(self):
+        seed_task(
+            self.conn,
+            task_id="ROOT-CAP",
+            status="READY",
+            work_type="implementation",
+        )
+        self.conn.execute(
+            "insert into task_scopes(task_id,path_prefix) values('ROOT-CAP','src/cap.py')"
+        )
+        current = "ROOT-CAP"
+        next_pid = 50
+        created = []
+        for expected_generation in (1, 2, 3):
+            for _ in range(2):
+                next_pid += 1
+                self.conn.execute(
+                    """insert into swarm_jobs(
+                         task_id,worker_id,engine,state,pid,last_error
+                       ) values(?,'auto-patch-1','openai-patch','FAILED',?,
+                                'model changed the wrong behavior')""",
+                    (current, next_pid),
+                )
+            self.conn.commit()
+            routed = route_repeated_worker_failures(
+                self.conn, threshold=2, max_repair_generation=3
+            )
+            self.assertEqual(1, len(routed))
+            self.assertEqual(expected_generation, routed[0]["generation"])
+            current = routed[0]["repair_task_id"]
+            created.append(current)
+
+        for _ in range(2):
+            next_pid += 1
+            self.conn.execute(
+                """insert into swarm_jobs(
+                     task_id,worker_id,engine,state,pid,last_error
+                   ) values(?,'auto-patch-1','openai-patch','FAILED',?,
+                            'model changed the wrong behavior')""",
+                (current, next_pid),
+            )
+        self.conn.commit()
+        self.assertEqual(
+            [],
+            route_repeated_worker_failures(
+                self.conn, threshold=2, max_repair_generation=3
+            ),
+        )
+        self.assertEqual(
+            3,
+            self.conn.execute(
+                "select count(*) from tasks where id like 'REPAIR-AUTO-ROOT-CAP-%'"
+            ).fetchone()[0],
+        )
+        note = self.conn.execute(
+            "select note from tasks where id=?", (current,)
+        ).fetchone()[0]
+        self.assertIn("generation ceiling reached (3)", note)
+
     def test_context_repair_gets_control_plane_context_scopes(self):
         seed_task(
             self.conn,
