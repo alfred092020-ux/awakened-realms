@@ -47,9 +47,9 @@ class CapacityTests(unittest.TestCase):
                 base[key] = value
         return base
 
-    def test_conservative_profile_scales_to_twelve_logical_four_heavy(self):
+    def test_conservative_profile_caps_at_ten_logical_four_heavy(self):
         plan = capacity.plan_capacity(self.signals(), self.policy())
-        self.assertEqual(12, plan["logical_workers"])
+        self.assertEqual(10, plan["logical_workers"])
         self.assertEqual(4, plan["heavy_local_workers"])
         self.assertEqual(6, plan["lane_caps"]["devin_cloud"])
         self.assertEqual(0, plan["lane_caps"]["copilot"])
@@ -95,19 +95,19 @@ class CapacityTests(unittest.TestCase):
             self.signals(verifier={"backlog": 10, "latency_seconds": 1200.0}),
             self.policy(),
         )
-        self.assertLess(plan["logical_workers"], 12)
+        self.assertLess(plan["logical_workers"], 10)
         self.assertEqual(4, plan["lane_caps"]["verifier"])
         self.assertIn("verifier_saturated", plan["reasons"])
 
     def test_old_independent_queue_scales_up_only_when_factory_is_healthy(self):
         policy = self.policy()
-        policy["logical_workers"]["target"] = 10
+        policy["logical_workers"]["target"] = 8
         plan = capacity.plan_capacity(self.signals(queue={"oldest_ready_age_seconds": 1200.0}), policy)
-        self.assertEqual(12, plan["logical_workers"])
+        self.assertEqual(10, plan["logical_workers"])
         blocked = capacity.plan_capacity(
             self.signals(verifier={"backlog": 9, "latency_seconds": 1000.0}), policy
         )
-        self.assertLess(blocked["logical_workers"], 12)
+        self.assertLess(blocked["logical_workers"], 10)
 
     def test_failure_rate_downshifts_capacity(self):
         plan = capacity.plan_capacity(
@@ -193,7 +193,8 @@ class CapacityTests(unittest.TestCase):
 
     def test_policy_file_matches_required_initial_profile(self):
         raw = json.loads((CONTROL_ROOT / "config" / "capacity_policy.json").read_text())
-        self.assertEqual(12, raw["logical_workers"]["target"])
+        self.assertEqual(10, raw["logical_workers"]["target"])
+        self.assertEqual(10, raw["logical_workers"]["max"])
         self.assertEqual(4, raw["heavy_local_workers"]["target"])
         self.assertFalse(raw["quota"]["allow_on_demand_default"])
         self.assertEqual(2, raw["quota"]["unknown_devin_cap"])
