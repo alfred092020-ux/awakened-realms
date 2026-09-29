@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "logical_workers": {"min": 6, "target": 12, "max": 16},
+  "logical_workers": {"min": 6, "target": 10, "max": 10},
   "heavy_local_workers": {"min": 1, "target": 4, "max": 4},
   "lane_caps": {"local": 4, "devin_cloud": 6, "chatgpt": 4, "copilot": 2, "research": 4, "verifier": 4},
   "pressure": {
