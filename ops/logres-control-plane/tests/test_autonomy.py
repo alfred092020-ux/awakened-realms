@@ -19,6 +19,7 @@ from logres_autonomy import (
     actionable_open_regressions,
     autonomy_apply_authorized,
     autonomy_decision,
+    classify_failed_system_units,
     doctor_failures,
     doctor_stability,
     dynamic_batch_limit,
@@ -28,6 +29,7 @@ from logres_autonomy import (
     parse_route_failures,
     process_ancestry_contains_marker,
     rank_ready_tasks,
+    recoverable_runtime_circuit,
     repo_progress_degraded_allowed,
     record_failure,
     record_success,
@@ -360,6 +362,73 @@ class AutonomyTests(unittest.TestCase):
                 cfg,
                 {"LOGRES_AUTONOMY_APPLY": "1"},
                 42,
+            )
+        )
+
+    def test_stale_promotion_unit_is_nonblocking_only_when_nexus_core_healthy(self):
+        blocking, ignored = classify_failed_system_units(
+            [
+                "nexus-post-promote-deadbeef-123.service",
+                "some-real-failure.service",
+            ],
+            nexus_core_active=True,
+        )
+        self.assertEqual(("some-real-failure.service",), blocking)
+        self.assertEqual(
+            ("nexus-post-promote-deadbeef-123.service",),
+            ignored,
+        )
+
+        blocking, ignored = classify_failed_system_units(
+            ["nexus-post-promote-deadbeef-123.service"],
+            nexus_core_active=False,
+        )
+        self.assertEqual(
+            ("nexus-post-promote-deadbeef-123.service",),
+            blocking,
+        )
+        self.assertEqual((), ignored)
+
+    def test_runtime_deployment_circuit_recovers_only_after_clean_doctor(self):
+        current = {
+            "tripped": True,
+            "last_failure_kind": "runtime_deployment",
+            "last_failure": "runtime deploy failed",
+        }
+        self.assertTrue(
+            recoverable_runtime_circuit(current, doctor_ok=True)
+        )
+        self.assertFalse(
+            recoverable_runtime_circuit(current, doctor_ok=False)
+        )
+        self.assertFalse(
+            recoverable_runtime_circuit(
+                {
+                    "tripped": True,
+                    "last_failure_kind": "apply",
+                    "last_failure": "apply failed",
+                },
+                doctor_ok=True,
+            )
+        )
+
+    def test_legacy_runtime_deploy_circuit_is_migratable_but_other_legacy_is_not(self):
+        self.assertTrue(
+            recoverable_runtime_circuit(
+                {
+                    "tripped": True,
+                    "last_failure": "RUNTIME_DEPLOY_REFUSED manifest drift",
+                },
+                doctor_ok=True,
+            )
+        )
+        self.assertFalse(
+            recoverable_runtime_circuit(
+                {
+                    "tripped": True,
+                    "last_failure": "integration apply failed",
+                },
+                doctor_ok=True,
             )
         )
 

@@ -1,9 +1,14 @@
 #!/usr/bin/env python3
 from __future__ import annotations
-import hashlib, json, os, shutil, sqlite3, subprocess, time
+import hashlib, json, os, shutil, sqlite3, subprocess, sys, time
 from pathlib import Path
 
 BASE=Path("/home/ubuntu/logres/src/awakened-realms")
+CONTROL_ROOT=Path(__file__).resolve().parents[1]
+LIB_DIR=CONTROL_ROOT/"lib"
+sys.path.insert(0,str(LIB_DIR))
+from logres_autonomy import classify_failed_system_units
+
 checks=[]
 fails=0
 warns=0
@@ -121,6 +126,7 @@ add(
     "PASS" if nexus.returncode==0 else "FAIL",
     nexus_detail[0][:240] if nexus_detail else ("ready" if nexus.returncode==0 else "unavailable"),
 )
+nexus_core_active=True
 for check_name,unit in [
     ("nexus_agent","nexus-agent.service"),
     ("nexus_control_plane","nexus-control-plane@ubuntu.service"),
@@ -128,7 +134,9 @@ for check_name,unit in [
     ("nexus_secure_tunnel","nexus-tunnel@ubuntu.service"),
 ]:
     state=run(["systemctl","is-active",unit]).stdout.strip()
-    add(check_name,"PASS" if state=="active" else "FAIL",state or "unknown")
+    active=(state=="active")
+    nexus_core_active=nexus_core_active and active
+    add(check_name,"PASS" if active else "FAIL",state or "unknown")
 
 # Desktop Commander remains an emergency bootstrap/recovery fallback. Its absence
 # must not make normal project health fail once Nexus is healthy.
@@ -160,8 +168,21 @@ add("oracle_runner_caches","PASS" if cache_ok else "WARN","shared caches" if cac
 
 failed_lines=[x for x in run(["systemctl","--failed","--no-legend","--plain"]).stdout.splitlines() if x.strip()]
 failed_names=[x.split()[0] for x in failed_lines if x.split()]
-add("failed_system_units","PASS" if not failed_names else "FAIL",
-    "0" if not failed_names else ",".join(failed_names[:8]))
+blocking_failed,ignored_promotions=classify_failed_system_units(
+    failed_names,
+    nexus_core_active=nexus_core_active,
+)
+if blocking_failed:
+    add("failed_system_units","FAIL",",".join(blocking_failed[:8]))
+elif ignored_promotions:
+    add(
+        "failed_system_units",
+        "WARN",
+        "stale promotion units ignored while Nexus core is healthy: "
+        + ",".join(ignored_promotions[:8]),
+    )
+else:
+    add("failed_system_units","PASS","0")
 
 # Snapshot/index freshness
 now=time.time()
