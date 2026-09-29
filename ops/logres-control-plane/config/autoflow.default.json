@@ -31,6 +31,7 @@
     "min_preflight_count": 1,
     "circuit_breaker_failures": 2,
     "block_on_open_regressions": false,
+    "allow_repo_progress_with_stale_runtime": false,
     "min_free_memory_gib": 12.0,
     "min_free_disk_gib": 30.0,
     "max_load_per_cpu": 1.25

@@ -19,6 +19,7 @@ sys.path.insert(0, str(LIB_DIR))
 from logres_autonomy import (
     actionable_open_regressions,
     autonomy_decision,
+    doctor_failures,
     doctor_stability,
     failed_preflight_isolation,
     integration_backlog,
@@ -28,6 +29,7 @@ from logres_autonomy import (
     load_state,
     normalize_runtime_environment,
     parse_route_failures,
+    repo_progress_degraded_allowed,
     record_failure,
     record_success,
     reset_circuit,
@@ -127,7 +129,12 @@ def trip_on_runtime_deploy_failure(
     detail = (
         (deployed.stderr or "") + "\n" + (deployed.stdout or "")
     )[-2000:]
-    state = record_failure(STATE, detail, 1)
+    state = record_failure(
+        STATE,
+        detail,
+        1,
+        kind="runtime_deployment",
+    )
     post(
         "AUTONOMY_FAILURE",
         "CRITICAL",
@@ -350,14 +357,30 @@ def cycle(*, dry_run: bool = False) -> int:
             doctor.returncode,
             doctor_retry.returncode if doctor_retry is not None else None,
         )
+        doctor_result = doctor_retry if doctor_retry is not None else doctor
+        doctor_output = (
+            (doctor_result.stdout or "") + "\n" + (doctor_result.stderr or "")
+        )
+        doctor_failure_names = doctor_failures(doctor_output)
+        degraded_repo_progress = repo_progress_degraded_allowed(
+            cfg,
+            state,
+            doctor_output,
+        )
+        decision_state = dict(state)
+        if (
+            degraded_repo_progress
+            and state.get("last_failure_kind") == "runtime_deployment"
+        ):
+            decision_state["tripped"] = False
         route_failures = parse_route_failures(
             (routes.stdout or "") + "\n" + (routes.stderr or "")
         )
         decision = autonomy_decision(
             cfg,
-            state,
+            decision_state,
             resources,
-            doctor_ok=doctor_state.ok,
+            doctor_ok=(doctor_state.ok or degraded_repo_progress),
             route_failures=route_failures,
             open_regressions=regressions,
             ready_count=backlog,
@@ -383,6 +406,8 @@ def cycle(*, dry_run: bool = False) -> int:
                 "ok": doctor_state.ok,
                 "recovered": doctor_state.recovered,
                 "attempts": doctor_state.attempts,
+                "failures": list(doctor_failure_names),
+                "degraded_repo_progress": degraded_repo_progress,
             },
             "preflight": None,
             "apply": None,
@@ -509,6 +534,7 @@ def cycle(*, dry_run: bool = False) -> int:
                 STATE,
                 ((applied.stderr or "") + "\n" + (applied.stdout or ""))[-2000:],
                 threshold,
+                kind="apply",
             )
             result["status"] = (
                 "CIRCUIT_TRIPPED"

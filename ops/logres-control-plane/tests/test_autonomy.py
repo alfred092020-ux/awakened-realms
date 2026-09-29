@@ -19,6 +19,7 @@ from logres_autonomy import (
     actionable_open_regressions,
     autonomy_apply_authorized,
     autonomy_decision,
+    doctor_failures,
     doctor_stability,
     dynamic_batch_limit,
     integration_backlog,
@@ -27,6 +28,7 @@ from logres_autonomy import (
     parse_route_failures,
     process_ancestry_contains_marker,
     rank_ready_tasks,
+    repo_progress_degraded_allowed,
     record_failure,
     record_success,
     supervisor_heartbeat_healthy,
@@ -199,6 +201,52 @@ class AutonomyTests(unittest.TestCase):
         self.assertFalse(state.ok)
         self.assertFalse(state.recovered)
         self.assertEqual(2, state.attempts)
+
+    def test_doctor_failures_extracts_only_fail_checks(self):
+        output = (
+            "PASS integration_clean clean\n"
+            "FAIL runtime_deployment sha deployed=old integration=new\n"
+            "WARN code_index stale\n"
+        )
+        self.assertEqual(("runtime_deployment",), doctor_failures(output))
+
+    def test_repo_progress_degraded_requires_explicit_flag_and_runtime_only(self):
+        cfg = config()
+        state = {
+            "tripped": True,
+            "last_failure_kind": "runtime_deployment",
+        }
+        doctor = "FAIL runtime_deployment sha deployed=old integration=new\n"
+        self.assertFalse(repo_progress_degraded_allowed(cfg, state, doctor))
+
+        cfg["autonomy"]["allow_repo_progress_with_stale_runtime"] = True
+        self.assertTrue(repo_progress_degraded_allowed(cfg, state, doctor))
+        self.assertFalse(
+            repo_progress_degraded_allowed(
+                cfg,
+                state,
+                doctor + "FAIL control_db corrupt\n",
+            )
+        )
+
+    def test_repo_progress_degraded_never_bypasses_unrelated_circuit(self):
+        cfg = config()
+        cfg["autonomy"]["allow_repo_progress_with_stale_runtime"] = True
+        doctor = "FAIL runtime_deployment sha deployed=old integration=new\n"
+        self.assertFalse(
+            repo_progress_degraded_allowed(
+                cfg,
+                {"tripped": True, "last_failure_kind": "apply"},
+                doctor,
+            )
+        )
+        self.assertTrue(
+            repo_progress_degraded_allowed(
+                cfg,
+                {"tripped": False, "last_failure_kind": None},
+                doctor,
+            )
+        )
 
     def test_fail_closed_default_blocks_automation(self):
         resources = ResourceState(

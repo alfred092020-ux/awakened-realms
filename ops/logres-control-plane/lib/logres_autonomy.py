@@ -39,6 +39,34 @@ class DoctorStability:
     attempts: int
 
 
+def doctor_failures(output: str) -> tuple[str, ...]:
+    failures = []
+    for raw in str(output or "").splitlines():
+        line = raw.strip()
+        if not line.startswith("FAIL "):
+            continue
+        parts = line.split(None, 2)
+        if len(parts) >= 2:
+            failures.append(parts[1])
+    return tuple(dict.fromkeys(failures))
+
+
+def repo_progress_degraded_allowed(
+    config: dict,
+    state: dict,
+    doctor_output: str,
+) -> bool:
+    auto = config.get("autonomy", {})
+    if not bool(auto.get("allow_repo_progress_with_stale_runtime", False)):
+        return False
+    if doctor_failures(doctor_output) != ("runtime_deployment",):
+        return False
+    return (
+        not bool(state.get("tripped", False))
+        or state.get("last_failure_kind") == "runtime_deployment"
+    )
+
+
 def doctor_stability(
     first_returncode: int,
     retry_returncode: int | None = None,
@@ -270,6 +298,7 @@ def load_state(path: Path) -> dict:
         "consecutive_failures": int(state.get("consecutive_failures", 0) or 0),
         "tripped": bool(state.get("tripped", False)),
         "last_failure": state.get("last_failure"),
+        "last_failure_kind": state.get("last_failure_kind"),
         "last_success": state.get("last_success"),
         "last_applied_preflight": state.get("last_applied_preflight"),
     }
@@ -282,10 +311,17 @@ def save_state(path: Path, state: dict) -> None:
     os.replace(tmp, path)
 
 
-def record_failure(path: Path, message: str, threshold: int) -> dict:
+def record_failure(
+    path: Path,
+    message: str,
+    threshold: int,
+    *,
+    kind: str | None = None,
+) -> dict:
     state = load_state(path)
     state["consecutive_failures"] += 1
     state["last_failure"] = message
+    state["last_failure_kind"] = kind
     if state["consecutive_failures"] >= max(1, threshold):
         state["tripped"] = True
     save_state(path, state)
@@ -297,6 +333,7 @@ def record_success(path: Path, *, preflight_id: int | None = None) -> dict:
     state["consecutive_failures"] = 0
     state["tripped"] = False
     state["last_failure"] = None
+    state["last_failure_kind"] = None
     state["last_success"] = "success"
     if preflight_id is not None:
         state["last_applied_preflight"] = int(preflight_id)
@@ -309,6 +346,7 @@ def reset_circuit(path: Path) -> dict:
     state["consecutive_failures"] = 0
     state["tripped"] = False
     state["last_failure"] = None
+    state["last_failure_kind"] = None
     save_state(path, state)
     return state
 
