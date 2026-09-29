@@ -1110,7 +1110,7 @@ class PermissionManifestTests(unittest.TestCase):
         )
         self.assertNotIn("dangerous", argv)
 
-    def test_sandboxed_unattended_smart_maps_to_cli_autonomous(self):
+    def test_sandboxed_unattended_smart_maps_to_cli_accept_edits(self):
         argv = build_devin_argv(
             prompt_file=Path("/p"),
             config_path=Path("/control/task-permission.json"),
@@ -1120,7 +1120,7 @@ class PermissionManifestTests(unittest.TestCase):
         self.assertIn("--sandbox", argv)
         self.assertIn("--prefer-exec-tool", argv)
         self.assertEqual(
-            "autonomous", argv[argv.index("--permission-mode") + 1]
+            "accept-edits", argv[argv.index("--permission-mode") + 1]
         )
         self.assertNotIn("bypass", argv)
 
