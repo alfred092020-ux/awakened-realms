@@ -11,6 +11,25 @@ mkdir -p /home/ubuntu/logres/logs
 {
   echo "=== $(date -Is) ==="
   "$STORAGE_GUARD" apply
+  PYTHONPATH=/home/ubuntu/logres/lib python3 - <<'PY'
+from pathlib import Path
+from logres_verify_temp import candidate_paths, sweep_verify_temp
+
+result = sweep_verify_temp(
+    candidate_paths(),
+    min_age_seconds=600,
+    max_remove=128,
+)
+print(
+    "verify-temp-sweep "
+    f"removed={len(result['removed'])} "
+    f"active={len(result['active'])} "
+    f"young={len(result['young'])} "
+    f"errors={len(result['errors'])}"
+)
+for error in result["errors"][:20]:
+    print("verify-temp-sweep error", error)
+PY
   git -C "$BASE" worktree prune
   git -C "$BASE" maintenance run --auto || git -C "$BASE" gc --auto
   git -C "$BASE" commit-graph write --reachable --changed-paths || true
