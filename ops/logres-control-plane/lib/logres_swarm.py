@@ -103,6 +103,20 @@ def isolation_certificate_gate(
     return True, None
 
 
+def isolation_surface_runtime_matches(surface_hashes: dict[str, str], runtime_deployment: dict) -> bool:
+    """Require every certified isolation file to match the deployed runtime."""
+    deployed = (runtime_deployment or {}).get("files")
+    if not isinstance(deployed, dict) or not REQUIRED_ISOLATION_SURFACE.issubset(surface_hashes):
+        return False
+    for rel, digest in surface_hashes.items():
+        if not re.fullmatch(r"[0-9a-f]{64}", str(digest or "").lower()):
+            return False
+        runtime_rel = rel.removeprefix(CONTROL_PLANE_PREFIX)
+        if str(deployed.get(runtime_rel) or "").lower() != str(digest).lower():
+            return False
+    return True
+
+
 REQUIRED_PREFLIGHT_CHECKS = frozenset(
     {
         "system_manager",

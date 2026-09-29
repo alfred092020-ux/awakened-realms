@@ -1477,5 +1477,20 @@ class SwarmTests(unittest.TestCase):
         self.assertIn('"structural_repair_pending"', block)
 
 
+    def test_recertification_requires_exact_runtime_surface_match(self):
+        surface = {p: "a" * 64 for p in logres_swarm.REQUIRED_ISOLATION_SURFACE}
+        deployed = {p.removeprefix(logres_swarm.CONTROL_PLANE_PREFIX): d for p, d in surface.items()}
+        self.assertTrue(logres_swarm.isolation_surface_runtime_matches(surface, {"files": deployed}))
+        deployed[next(iter(deployed))] = "b" * 64
+        self.assertFalse(logres_swarm.isolation_surface_runtime_matches(surface, {"files": deployed}))
+
+    def test_swarm_exposes_governed_devin_recertification_command(self):
+        script = (CONTROL_ROOT / "bin" / "logres-swarm").read_text()
+        self.assertIn("recertify-devin", script)
+        self.assertIn("nexus_logres_devin_network_provision", script)
+        self.assertIn("nexus_logres_devin_network_teardown", script)
+        self.assertIn("isolation_surface_runtime_matches", script)
+
+
 if __name__ == "__main__":
     unittest.main()

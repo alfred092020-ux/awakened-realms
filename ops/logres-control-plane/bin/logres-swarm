@@ -34,6 +34,7 @@ from logres_swarm import (
     ensure_schema,
     isolation_certificate_gate,
     isolation_surface_hashes,
+    isolation_surface_runtime_matches,
     privileged_network_preflight_ready,
     record_structural_preflight_failure,
     route_repeated_worker_failures,
@@ -957,6 +958,11 @@ def tick(dry_run: bool = False) -> dict:
                 "error": f"{type(exc).__name__}: {exc}",
             }
 
+    if args.command == "recertify-devin":
+        out = recertify_devin(args.task, args.worker, args.branch, args.worktree)
+        print(json.dumps(out, indent=2, sort_keys=True))
+        return 0 if out.get("ok") else 2
+
     cfg = load_config(CONFIG)
     swarm_cfg = cfg.get("swarm", {})
     conn = connect()
@@ -1085,12 +1091,65 @@ def tick(dry_run: bool = False) -> dict:
     return payload
 
 
+
+def recertify_devin(task_id: str, worker: str, branch: str, worktree: str) -> dict:
+    spec = ["--task", task_id, "--worker", worker, "--branch", branch, "--worktree", worktree]
+    prepared = run([DEVIN_ISOLATE, "prepare", *spec], timeout=60)
+    if prepared.returncode:
+        return {"ok": False, "blocked": "isolation_prepare_failed"}
+    identity = {"chatId": worker, "taskId": task_id, "branch": branch}
+    provision = nexus_tool("nexus_logres_devin_network_provision", identity, timeout=60)
+    if provision.returncode:
+        return {"ok": False, "blocked": "network_provision_failed"}
+    try:
+        preflight = run([DEVIN_ISOLATE, "preflight", *spec, "--json"], timeout=120)
+        try:
+            report = json.loads(preflight.stdout or "{}")
+        except json.JSONDecodeError:
+            return {"ok": False, "blocked": "isolation_preflight_invalid"}
+        ready, blocker = privileged_network_preflight_ready(report, True)
+        if not ready:
+            return {"ok": False, "blocked": blocker or "isolation_preflight_failed"}
+        smoke = run([str(ROOT / "bin/logres-devin-sandbox-setup"), "smoke", "--model", "swe-2-max"], timeout=180)
+        try:
+            smoke_report = json.loads(smoke.stdout or "{}")
+        except json.JSONDecodeError:
+            smoke_report = {}
+        smoke_keys = ("exec_reached", "credential_sentinel_hidden", "checkout_sentinel_hidden", "oci_metadata_blocked", "host_loopback_blocked")
+        if smoke.returncode or not smoke_report.get("ok") or any(not smoke_report.get(k) for k in smoke_keys):
+            return {"ok": False, "blocked": "native_sandbox_smoke_failed"}
+        old = load_json(DEVIN_CERTIFICATE)
+        surface = isolation_surface_hashes(INTEGRATION_CHECKOUT, old)
+        runtime = load_json(DEVIN_RUNTIME_DEPLOYMENT)
+        if not isolation_surface_runtime_matches(surface, runtime):
+            return {"ok": False, "blocked": "isolation_runtime_stale"}
+        sha = str(runtime.get("integration_sha") or "")
+        if not re.fullmatch(r"[0-9a-f]{40}", sha):
+            return {"ok": False, "blocked": "runtime_sha_missing"}
+        cert = dict(old)
+        cert.update({"integration_sha": sha, "production_ready": True, "proof_task": task_id, "proof_worker": worker, "proof_worktree": worktree, "sandbox_smoke": smoke_report})
+        recert = dict(cert.get("recertification") or {})
+        recert.update({"kind": "exact-runtime-recertification", "runtime_deployment_sha": sha, "isolation_surface_sha256": surface, "native_sandbox_smoke": "fresh bounded sentinel smoke passed", "root_nexus_network_smoke": "fresh typed Nexus provision passed"})
+        cert["recertification"] = recert
+        tmp = DEVIN_CERTIFICATE.with_suffix(".tmp")
+        tmp.write_text(json.dumps(cert, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        os.replace(tmp, DEVIN_CERTIFICATE)
+        return {"ok": True, "integration_sha": sha, "certificate": str(DEVIN_CERTIFICATE)}
+    finally:
+        teardown = nexus_tool("nexus_logres_devin_network_teardown", identity, timeout=60)
+        if teardown.returncode:
+            cleanup_devin_isolation(worker, task_id, branch)
 def main() -> int:
     ap = argparse.ArgumentParser(prog="logres-swarm")
     sub = ap.add_subparsers(dest="command", required=True)
     sub.add_parser("status")
     tick_p = sub.add_parser("tick")
     tick_p.add_argument("--dry-run", action="store_true")
+    recert_p = sub.add_parser("recertify-devin")
+    recert_p.add_argument("--task", required=True)
+    recert_p.add_argument("--worker", required=True)
+    recert_p.add_argument("--branch", required=True)
+    recert_p.add_argument("--worktree", required=True)
     args = ap.parse_args()
 
     cfg = load_config(CONFIG)
