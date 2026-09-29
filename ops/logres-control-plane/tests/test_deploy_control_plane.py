@@ -329,6 +329,18 @@ class DeployControlPlaneTests(unittest.TestCase):
                 all("openai_api_key" not in str(item.destination) for item in deployed)
             )
 
+    def test_autonomy_canary_module_is_deployed_privately(self):
+        self.assertIn("lib/logres_autonomy_canary.py", MANIFEST)
+        self.assertEqual(0o600, MANIFEST["lib/logres_autonomy_canary.py"][1])
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            source = make_source(root)
+            target = root / "target"
+            deploy(source, target, dry_run=False)
+            deployed = target / "lib" / "logres_autonomy_canary.py"
+            self.assertTrue(deployed.is_file())
+            self.assertEqual(0o600, stat.S_IMODE(deployed.stat().st_mode))
+
     def test_storage_guard_runtime_and_policy_are_deployed(self):
         expected = {
             "bin/logres-storage-guard": 0o755,
