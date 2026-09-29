@@ -1,0 +1,19 @@
+{
+    "logs": [
+        {
+            "outputFile": "com.nexuscore.commandcenter.app-mergeDebugResources-28:/values-v18/values-v18.xml",
+            "map": [
+                {
+                    "source": "/home/ubuntu/.gradle/caches/8.14.3/transforms/95ed4eb50903d0505f50cc9711d127d5/transformed/appcompat-1.7.1/res/values-v18/values-v18.xml",
+                    "from": {
+                        "startLines": "2",
+                        "startColumns": "4",
+                        "startOffsets": "55",
+                        "endColumns": "48",
+                        "endOffsets": "99"
+                    }
+                }
+            ]
+        }
+    ]
+}

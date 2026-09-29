@@ -1,0 +1,15 @@
+R_DEF: Internal format may change without notice
+local
+id configure
+id events
+id graph
+id metrics
+id pause
+id preflight
+id resume
+id signin
+id status
+id tasks
+id tree
+layout activity_main
+style AppTheme
