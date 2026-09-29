@@ -122,6 +122,42 @@ class PatchAgentTests(unittest.TestCase):
             self.assertIn("value = 3", bundle)
             self.assertNotIn("workflow.yml", bundle)
 
+    def test_context_bundle_keeps_large_scoped_file_complete(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            self.init_repo(root)
+            content = "x" * 35_000 + "\nEND-OF-FILE\n"
+            (root / "src" / "game.py").write_text(content, encoding="utf-8")
+            bundle = bounded_file_bundle(root, ["src/game.py"], ["src"])
+            self.assertIn(content, bundle)
+            self.assertTrue(bundle.endswith("END-OF-FILE\n"))
+
+    def test_context_bundle_rejects_oversized_file_instead_of_clipping(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            self.init_repo(root)
+            (root / "src" / "game.py").write_text("123456789", encoding="utf-8")
+            with self.assertRaisesRegex(PatchAgentError, "exceeds per-file limit"):
+                bounded_file_bundle(
+                    root,
+                    ["src/game.py"],
+                    ["src"],
+                    per_file_chars=8,
+                )
+
+    def test_context_bundle_rejects_total_overflow_instead_of_clipping(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            self.init_repo(root)
+            (root / "src" / "game.py").write_text("123456789", encoding="utf-8")
+            with self.assertRaisesRegex(PatchAgentError, "exceeds total limit"):
+                bounded_file_bundle(
+                    root,
+                    ["src/game.py"],
+                    ["src"],
+                    total_chars=20,
+                )
+
     def test_empty_scopes_fail_closed(self):
         with self.assertRaises(PatchAgentError):
             validate_paths(["src/game.py"], [])
