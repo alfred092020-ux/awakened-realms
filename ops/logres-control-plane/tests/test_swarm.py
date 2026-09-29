@@ -1,5 +1,6 @@
 import json
 import os
+import runpy
 import sqlite3
 import sys
 import time
@@ -55,6 +56,17 @@ class SwarmTests(unittest.TestCase):
             'payload["research"] = dispatch_research',
         ):
             self.assertLess(refusal, script.index(marker))
+
+    def test_legacy_swarm_cron_defers_to_healthy_supervisor(self):
+        namespace = runpy.run_path(
+            str(CONTROL_ROOT / "bin" / "logres-swarm"),
+            run_name="logres_swarm_bin",
+        )
+        tick_fn = namespace["tick"]
+        tick_fn.__globals__["legacy_swarm_cron_should_defer"] = lambda: True
+        result = tick_fn(False)
+        self.assertEqual("DEFERRED_SUPERVISOR_ACTIVE", result["status"])
+        self.assertIn("authoritative supervisor", result["reason"])
 
     def test_swarm_tick_keeps_user_supervisor_alive(self):
         script = (CONTROL_ROOT / "bin" / "logres-swarm").read_text()

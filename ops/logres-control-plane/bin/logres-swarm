@@ -14,6 +14,7 @@ CONTROL_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(CONTROL_ROOT / "lib"))
 
 from logres_ai_runner import automatic_api_allowed, budget_state
+from logres_autonomy import process_ancestry_contains_marker, supervisor_heartbeat_healthy
 from logres_devin import DevinAgentError, devin_models_report, select_model
 from logres_knowledge import graph_stats, refresh_graph
 from logres_optimizer import record_swarm_observations
@@ -95,6 +96,17 @@ INTEGRATION_CHECKOUT = Path(
 )
 WORKER_START = str(ROOT / "bin/logres-worker-start")
 SUPERVISOR = str(ROOT / "bin/logres-supervisor")
+SUPERVISOR_HEARTBEAT = ROOT / "control/supervisor-heartbeat.json"
+SWARM_CRON_ANCESTRY_MARKER = "LOGRES_SWARM_V1"
+
+
+def legacy_swarm_cron_should_defer() -> bool:
+    """Keep legacy cron as a bootstrap only while the supervisor is healthy."""
+    if not process_ancestry_contains_marker(SWARM_CRON_ANCESTRY_MARKER):
+        return False
+    return supervisor_heartbeat_healthy(SUPERVISOR_HEARTBEAT)
+
+
 STORAGE_POLICY = Path(
     os.environ.get(
         "LOGRES_STORAGE_POLICY",
@@ -890,6 +902,12 @@ def dispatch_copilot(limit: int) -> dict:
 
 
 def tick(dry_run: bool = False) -> dict:
+    if not dry_run and legacy_swarm_cron_should_defer():
+        return {
+            "status": "DEFERRED_SUPERVISOR_ACTIVE",
+            "reason": "legacy swarm cron deferred to healthy authoritative supervisor",
+            "dry_run": False,
+        }
     try:
         storage_gate = storage_fanout_guard(
             ROOT,
