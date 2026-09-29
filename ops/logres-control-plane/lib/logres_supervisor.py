@@ -4,6 +4,7 @@ import fcntl
 import json
 import os
 import signal
+import shutil
 import sqlite3
 import subprocess
 import tempfile
@@ -306,6 +307,8 @@ BATON_SUPPRESS_STATES = frozenset({"PAUSED", "WAITING_USER", "DONE"})
 BATON_STATES = BATON_RUN_STATES | BATON_SUPPRESS_STATES
 DEFAULT_BATON_STALE_SECONDS = 120.0
 DEFAULT_FAILOVER_COOLDOWN_SECONDS = 600.0
+VERIFY_CLEANUP_INTERVAL_SECONDS = 300.0
+VERIFY_CLEANUP_MIN_AGE_SECONDS = 3600.0
 STAGE2_REQUIRED_TASKS = (
     "DEVIN-OS-ISOLATION-001",
     "DEVIN-SWARM-ROUTER-001",
@@ -382,6 +385,111 @@ def write_baton(
     }
     atomic_json(path, baton)
     return baton
+
+
+def heartbeat_running_baton(
+    root: Path,
+    *,
+    now_epoch: float | None = None,
+) -> dict:
+    """Refresh a live coordinator baton without changing its fence generation."""
+    current = load_state(baton_path(root))
+    run_state = str(current.get("run_state") or "").upper()
+    if run_state not in BATON_RUN_STATES:
+        return {
+            "refreshed": False,
+            "run_state": run_state or None,
+            "generation": int(current.get("generation") or 0) or None,
+        }
+    baton = write_baton(
+        root,
+        run_state=run_state,
+        objective=str(current.get("objective") or ""),
+        task=str(current.get("task") or ""),
+        note=str(current.get("note") or ""),
+        generation=int(current.get("generation") or 0) or 1,
+        now_epoch=now_epoch,
+    )
+    return {
+        "refreshed": True,
+        "run_state": baton["run_state"],
+        "generation": baton["generation"],
+        "updated_epoch": baton["updated_epoch"],
+    }
+
+
+def _verification_path_in_use(path: Path, proc_root: Path = Path("/proc")) -> bool:
+    needle = str(path)
+    try:
+        processes = tuple(proc_root.iterdir())
+    except OSError:
+        return True
+    for proc in processes:
+        if not proc.name.isdigit():
+            continue
+        try:
+            cwd = os.readlink(proc / "cwd")
+        except OSError:
+            cwd = ""
+        try:
+            cmdline = (
+                (proc / "cmdline")
+                .read_bytes()
+                .replace(b"\0", b" ")
+                .decode(errors="replace")
+            )
+        except OSError:
+            cmdline = ""
+        if cwd == needle or cwd.startswith(needle + os.sep) or needle in cmdline:
+            return True
+    return False
+
+
+def cleanup_stale_verification_workspaces(
+    root: Path,
+    *,
+    now_epoch: float | None = None,
+    min_age_seconds: float = VERIFY_CLEANUP_MIN_AGE_SECONDS,
+    proc_root: Path = Path("/proc"),
+    shm_root: Path | None = None,
+) -> dict:
+    """Remove only old inactive verifier temp workspaces."""
+    root = Path(root)
+    now_epoch = time.time() if now_epoch is None else float(now_epoch)
+    shm_root = Path("/dev/shm/logres") if shm_root is None else Path(shm_root)
+    candidates = (
+        list((root / "tmp").glob("verify-once.*"))
+        + list((root / "tmp").glob("verify-all-once.*"))
+        + list(shm_root.glob("verify-farm-*"))
+    )
+    removed: list[str] = []
+    active: list[str] = []
+    fresh: list[str] = []
+    rejected: list[str] = []
+    for path in candidates:
+        try:
+            info = path.lstat()
+        except OSError:
+            continue
+        if not path.is_dir() or path.is_symlink():
+            rejected.append(str(path))
+            continue
+        age = max(0.0, now_epoch - info.st_mtime)
+        if age < max(0.0, float(min_age_seconds)):
+            fresh.append(str(path))
+            continue
+        if _verification_path_in_use(path, proc_root):
+            active.append(str(path))
+            continue
+        shutil.rmtree(path)
+        removed.append(str(path))
+    return {
+        "removed": removed,
+        "removed_count": len(removed),
+        "active_count": len(active),
+        "fresh_count": len(fresh),
+        "rejected_count": len(rejected),
+    }
 
 
 def live_brain_leases(root: Path, now_epoch: float) -> list[dict]:
@@ -1107,6 +1215,33 @@ def tick(
     state.setdefault("last_runs", {})
     state["updated_epoch"] = now_epoch
     state["updated_at"] = utc_now()
+
+    try:
+        state["baton_heartbeat"] = heartbeat_running_baton(
+            root,
+            now_epoch=now_epoch,
+        )
+    except Exception as exc:
+        state["baton_heartbeat"] = {
+            "refreshed": False,
+            "error": f"{type(exc).__name__}: {exc}",
+        }
+
+    last_cleanup = float(state.get("last_verify_cleanup_epoch") or 0.0)
+    if (
+        now_epoch - last_cleanup >= VERIFY_CLEANUP_INTERVAL_SECONDS
+        or now_epoch < last_cleanup
+    ):
+        try:
+            state["verification_cleanup"] = cleanup_stale_verification_workspaces(
+                root,
+                now_epoch=now_epoch,
+            )
+        except Exception as exc:
+            state["verification_cleanup"] = {
+                "error": f"{type(exc).__name__}: {exc}",
+            }
+        state["last_verify_cleanup_epoch"] = now_epoch
 
     for job in jobs:
         if not job.background:

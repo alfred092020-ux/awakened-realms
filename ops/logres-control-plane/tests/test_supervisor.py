@@ -31,8 +31,10 @@ from logres_supervisor import (
     failover_state_path,
     failover_tick,
     handback_path,
+    heartbeat_running_baton,
     launch_background_job,
     live_brain_leases,
+    cleanup_stale_verification_workspaces,
     refresh_background_run,
     reload_if_idle,
     should_run_job,
@@ -1113,6 +1115,120 @@ class ChatGptFailoverTests(unittest.TestCase):
             self.assertEqual(2, bumped["generation"])
             with self.assertRaises(ValueError):
                 write_baton(root, run_state="exploding")
+
+    def test_live_supervisor_refreshes_running_baton_without_generation_bump(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = self._root(td)
+            heartbeat = root / "heartbeat.json"
+            original = write_baton(
+                root,
+                run_state="RUNNING",
+                objective="multi-day autonomy",
+                task="AUTONOMY-COMPLETION",
+                note="preserve me",
+                now_epoch=100.0,
+            )
+            result = tick(
+                root,
+                heartbeat,
+                jobs=(),
+                now_epoch=400.0,
+                baton_stale_seconds=120.0,
+            )
+            saved = json.loads(baton_path(root).read_text())
+            self.assertEqual(original["generation"], saved["generation"])
+            self.assertEqual(400.0, saved["updated_epoch"])
+            self.assertEqual("multi-day autonomy", saved["objective"])
+            self.assertEqual("AUTONOMY-COMPLETION", saved["task"])
+            self.assertEqual("preserve me", saved["note"])
+            self.assertTrue(result["state"]["baton_heartbeat"]["refreshed"])
+            self.assertEqual("fresh", result["state"]["devin_failover"]["action"])
+
+    def test_live_supervisor_never_resumes_suppressed_baton(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = self._root(td)
+            heartbeat = root / "heartbeat.json"
+            write_baton(root, run_state="PAUSED", now_epoch=100.0)
+            result = tick(
+                root,
+                heartbeat,
+                jobs=(),
+                now_epoch=500.0,
+            )
+            saved = json.loads(baton_path(root).read_text())
+            self.assertEqual("PAUSED", saved["run_state"])
+            self.assertEqual(100.0, saved["updated_epoch"])
+            self.assertFalse(result["state"]["baton_heartbeat"]["refreshed"])
+            self.assertEqual("suppressed", result["state"]["devin_failover"]["action"])
+
+    def test_stale_verification_cleanup_is_bounded_and_process_aware(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = self._root(td)
+            tmp = root / "tmp"
+            shm = root / "shm"
+            proc = root / "proc"
+            tmp.mkdir()
+            shm.mkdir()
+            proc.mkdir()
+
+            stale = tmp / "verify-once.old"
+            fresh = tmp / "verify-all-once.fresh"
+            worker = tmp / "worker_never_touch"
+            active = shm / "verify-farm-active"
+            stale.mkdir()
+            fresh.mkdir()
+            worker.mkdir()
+            active.mkdir()
+            os.utime(stale, (100.0, 100.0))
+            os.utime(fresh, (3900.0, 3900.0))
+            os.utime(active, (100.0, 100.0))
+
+            p = proc / "123"
+            p.mkdir()
+            os.symlink(active, p / "cwd")
+            (p / "cmdline").write_bytes(b"node\0verify\0")
+
+            cleanup = cleanup_stale_verification_workspaces(
+                root,
+                now_epoch=4000.0,
+                min_age_seconds=3600.0,
+                proc_root=proc,
+                shm_root=shm,
+            )
+            self.assertEqual(1, cleanup["removed_count"])
+            self.assertFalse(stale.exists())
+            self.assertTrue(fresh.exists())
+            self.assertTrue(active.exists())
+            self.assertTrue(worker.exists())
+            self.assertEqual(1, cleanup["active_count"])
+            self.assertEqual(1, cleanup["fresh_count"])
+
+    def test_verification_cleanup_is_rate_limited_in_supervisor_tick(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = self._root(td)
+            heartbeat = root / "heartbeat.json"
+            first = tick(
+                root,
+                heartbeat,
+                jobs=(),
+                now_epoch=1000.0,
+                failover_enabled=False,
+            )
+            self.assertEqual(
+                1000.0,
+                first["state"]["last_verify_cleanup_epoch"],
+            )
+            second = tick(
+                root,
+                heartbeat,
+                jobs=(),
+                now_epoch=1100.0,
+                failover_enabled=False,
+            )
+            self.assertEqual(
+                1000.0,
+                second["state"]["last_verify_cleanup_epoch"],
+            )
 
     def test_stale_running_baton_launches_one_fenced_generation(self):
         with tempfile.TemporaryDirectory() as td:
