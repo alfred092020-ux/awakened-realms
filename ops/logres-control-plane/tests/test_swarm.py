@@ -1490,6 +1490,8 @@ class SwarmTests(unittest.TestCase):
         self.assertIn("nexus_logres_devin_network_provision", script)
         self.assertIn("nexus_logres_devin_network_teardown", script)
         self.assertIn("isolation_surface_runtime_matches", script)
+        self.assertIn('smoke_checks = smoke_report.get("checks")', script)
+        self.assertIn('any(not smoke_checks.get(k) for k in smoke_keys)', script)
         main = script[script.index("def main() -> int:"):]
         self.assertLess(main.index("if args.command == \"recertify-devin\":"), main.index("cfg = load_config(CONFIG)"))
 

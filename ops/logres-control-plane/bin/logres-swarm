@@ -1111,7 +1111,8 @@ def recertify_devin(task_id: str, worker: str, branch: str, worktree: str) -> di
         except json.JSONDecodeError:
             smoke_report = {}
         smoke_keys = ("exec_reached", "credential_sentinel_hidden", "checkout_sentinel_hidden", "oci_metadata_blocked", "host_loopback_blocked")
-        if smoke.returncode or not smoke_report.get("ok") or any(not smoke_report.get(k) for k in smoke_keys):
+        smoke_checks = smoke_report.get("checks") if isinstance(smoke_report.get("checks"), dict) else {}
+        if smoke.returncode or not smoke_report.get("ok") or any(not smoke_checks.get(k) for k in smoke_keys):
             return {"ok": False, "blocked": "native_sandbox_smoke_failed"}
         old = load_json(DEVIN_CERTIFICATE)
         surface = isolation_surface_hashes(INTEGRATION_CHECKOUT, old)
