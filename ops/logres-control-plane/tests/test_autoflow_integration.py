@@ -52,6 +52,19 @@ def ensure_coordinator_runtime_tables(conn):
     conn.commit()
 
 
+class AutoflowDefaultConfigTests(unittest.TestCase):
+    def test_autonomous_default_keeps_bounded_copilot_lane_available(self):
+        config_path = TEST_DIR.parent / "config" / "autoflow.default.json"
+        config = __import__("json").loads(config_path.read_text(encoding="utf-8"))
+        self.assertTrue(config["routing"]["copilot_dispatch_enabled"])
+        self.assertEqual(
+            "bounded_implementation",
+            config["routing"]["copilot_mode"],
+        )
+        self.assertGreaterEqual(int(config["copilot"]["max_active"]), 1)
+        self.assertGreaterEqual(int(config["copilot"]["max_queued"]), 1)
+
+
 class FakeAIRunner:
     def __init__(self, result):
         self.calls = 0
