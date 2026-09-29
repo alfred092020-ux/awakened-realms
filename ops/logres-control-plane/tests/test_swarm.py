@@ -19,6 +19,7 @@ import logres_swarm
 from logres_swarm import (
     ACTIVE_COPILOT_STATES,
     available_devin_worker_ids,
+    backfill_ready_task_scopes,
     classify_engine,
     create_job,
     devin_worker_ids,
@@ -943,6 +944,88 @@ class SwarmTests(unittest.TestCase):
             )
             self.conn.commit()
             self.assertEqual(0, prior_failures(self.conn, "DPERM", engine="devin"))
+
+    def test_scope_backfill_uses_latest_task_packet_planned_scopes(self):
+        import tempfile
+        seed_task(
+            self.conn,
+            task_id="SCOPE-PACKET",
+            status="READY",
+            work_type="implementation",
+        )
+        with tempfile.TemporaryDirectory() as td:
+            packets = Path(td)
+            old = packets / "SCOPE-PACKET-old.txt"
+            old.write_text(
+                "WORK PACKAGE\n- planned file scopes:\n"
+                "  - src/old.py\n\nTASK NOTES\n"
+            )
+            time.sleep(0.001)
+            latest = packets / "SCOPE-PACKET-new.txt"
+            latest.write_text(
+                "CURRENT CLAIMS\n"
+                "- other.py :: OTHER / worker / branch\n\n"
+                "WORK PACKAGE\n- planned file scopes:\n"
+                "  - src/new.py\n"
+                "  - tests/test_new.py\n\nTASK NOTES\n"
+            )
+            result = backfill_ready_task_scopes(self.conn, packets)
+
+        self.assertEqual(1, result["tasks"])
+        scopes = [
+            row[0]
+            for row in self.conn.execute(
+                "select path_prefix from task_scopes "
+                "where task_id='SCOPE-PACKET' order by path_prefix"
+            )
+        ]
+        self.assertEqual(["src/new.py", "tests/test_new.py"], scopes)
+        selected = select_implementation_tasks(self.conn, 1)
+        self.assertEqual(["SCOPE-PACKET"], [task["id"] for task in selected])
+
+    def test_scope_backfill_uses_only_same_task_live_claims(self):
+        import tempfile
+        seed_task(
+            self.conn,
+            task_id="SCOPE-CLAIM",
+            status="READY",
+            work_type="implementation",
+        )
+        self.conn.execute(
+            "insert into claims(path_prefix,task_id,owner,branch) values(?,?,?,?)",
+            ("src/claimed.py", "SCOPE-CLAIM", "worker", "worker/scope-claim"),
+        )
+        self.conn.commit()
+        with tempfile.TemporaryDirectory() as td:
+            result = backfill_ready_task_scopes(self.conn, Path(td))
+        self.assertEqual(1, result["tasks"])
+        row = self.conn.execute(
+            "select path_prefix from task_scopes where task_id='SCOPE-CLAIM'"
+        ).fetchone()
+        self.assertEqual("src/claimed.py", row[0])
+
+    def test_scope_backfill_rejects_unsafe_or_ambiguous_packet_scopes(self):
+        import tempfile
+        seed_task(
+            self.conn,
+            task_id="SCOPE-UNSAFE",
+            status="READY",
+            work_type="implementation",
+        )
+        with tempfile.TemporaryDirectory() as td:
+            packets = Path(td)
+            (packets / "SCOPE-UNSAFE-worker.txt").write_text(
+                "WORK PACKAGE\n- planned file scopes:\n"
+                "  - ../outside.py\n\nTASK NOTES\n"
+            )
+            result = backfill_ready_task_scopes(self.conn, packets)
+        self.assertEqual(0, result["tasks"])
+        self.assertGreaterEqual(result["skipped_ambiguous"], 1)
+        self.assertIsNone(
+            self.conn.execute(
+                "select 1 from task_scopes where task_id='SCOPE-UNSAFE'"
+            ).fetchone()
+        )
 
     def test_patch_selection_backfills_past_retry_exhausted_high_rank_tasks(self):
         from logres_swarm import select_implementation_tasks

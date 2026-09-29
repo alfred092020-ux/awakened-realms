@@ -651,6 +651,127 @@ def classify_engine(task: dict) -> str:
     return "manual"
 
 
+def normalize_task_scope(raw: str) -> str | None:
+    scope = str(raw or "").strip().replace("\\", "/")
+    if not scope or scope in {".", "*", "/"}:
+        return None
+    path = Path(scope)
+    if path.is_absolute() or ".." in path.parts:
+        return None
+    normalized = "/".join(part for part in path.parts if part not in {"", "."})
+    if not normalized or normalized in {"*", "."}:
+        return None
+    if any(part in {"*", "**"} for part in Path(normalized).parts):
+        return None
+    return normalized.rstrip("/")
+
+
+def planned_scopes_from_packet(text: str) -> list[str]:
+    scopes: list[str] = []
+    in_scopes = False
+    for raw in str(text or "").splitlines():
+        stripped = raw.strip()
+        if stripped in {"planned file scopes:", "- planned file scopes:"}:
+            in_scopes = True
+            continue
+        if not in_scopes:
+            continue
+        if not stripped:
+            if scopes:
+                break
+            continue
+        if not stripped.startswith("- "):
+            break
+        scope = normalize_task_scope(stripped[2:])
+        if scope is None:
+            return []
+        if scope not in scopes:
+            scopes.append(scope)
+    return scopes
+
+
+def _latest_task_packet(packet_root: Path, task_id: str) -> Path | None:
+    if not packet_root.is_dir():
+        return None
+    prefix = f"{task_id}-"
+    candidates = []
+    for path in packet_root.iterdir():
+        if not path.is_file() or not path.name.startswith(prefix) or path.suffix != ".txt":
+            continue
+        try:
+            stamp = path.stat().st_mtime_ns
+        except OSError:
+            continue
+        candidates.append((stamp, path.name, path))
+    if not candidates:
+        return None
+    return max(candidates)[2]
+
+
+def backfill_ready_task_scopes(
+    conn: sqlite3.Connection,
+    packet_root: Path,
+) -> dict:
+    ready = [
+        task
+        for task in ready_tasks(conn)
+        if str(task.get("work_type") or "").lower() in IMPLEMENTATION_WORK_TYPES
+    ]
+    filled_tasks = 0
+    inserted_scopes = 0
+    skipped_ambiguous = 0
+    for task in ready:
+        task_id = str(task["id"])
+        existing = conn.execute(
+            "select 1 from task_scopes where task_id=? limit 1",
+            (task_id,),
+        ).fetchone()
+        if existing is not None:
+            continue
+
+        scopes = []
+        for row in conn.execute(
+            "select path_prefix from claims where task_id=? order by path_prefix",
+            (task_id,),
+        ):
+            scope = normalize_task_scope(str(row[0]))
+            if scope is None:
+                scopes = []
+                skipped_ambiguous += 1
+                break
+            if scope not in scopes:
+                scopes.append(scope)
+
+        if not scopes:
+            packet = _latest_task_packet(packet_root, task_id)
+            if packet is None:
+                continue
+            try:
+                scopes = planned_scopes_from_packet(
+                    packet.read_text(encoding="utf-8", errors="replace")
+                )
+            except OSError:
+                scopes = []
+            if not scopes:
+                skipped_ambiguous += 1
+                continue
+
+        for scope in scopes:
+            conn.execute(
+                "insert or ignore into task_scopes(task_id,path_prefix) values(?,?)",
+                (task_id, scope),
+            )
+            inserted_scopes += 1
+        filled_tasks += 1
+
+    conn.commit()
+    return {
+        "tasks": filled_tasks,
+        "scopes": inserted_scopes,
+        "skipped_ambiguous": skipped_ambiguous,
+    }
+
+
 def _select_tasks(
     conn: sqlite3.Connection,
     limit: int,

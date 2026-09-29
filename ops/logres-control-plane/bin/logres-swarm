@@ -29,6 +29,7 @@ from logres_swarm import (
     available_devin_worker_ids,
     available_patch_worker_ids,
     available_worker_ids,
+    backfill_ready_task_scopes,
     create_job,
     ensure_schema,
     isolation_certificate_gate,
@@ -961,6 +962,10 @@ def tick(dry_run: bool = False) -> dict:
     recovered = release_stale(conn, stale)
     terminal_devin_cleaned = cleanup_terminal_devin_jobs(conn)
 
+    scope_backfill = backfill_ready_task_scopes(
+        conn,
+        ROOT / "control/packets",
+    )
     knowledge_refresh = refresh_graph(conn)
     observations = record_swarm_observations(conn)
     knowledge = graph_stats(conn)
@@ -975,6 +980,7 @@ def tick(dry_run: bool = False) -> dict:
         "before": before.__dict__,
         "stale_recovered": recovered,
         "terminal_devin_cleaned": terminal_devin_cleaned,
+        "scope_backfill": scope_backfill,
         "devin": {"dispatched": 0, "jobs": []},
         "copilot": {"dispatched": 0, "jobs": []},
         "implementation": [],
