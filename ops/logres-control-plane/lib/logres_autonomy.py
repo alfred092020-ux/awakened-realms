@@ -39,6 +39,41 @@ class DoctorStability:
     attempts: int
 
 
+def classify_failed_system_units(
+    failed_names: list[str] | tuple[str, ...],
+    *,
+    nexus_core_active: bool,
+) -> tuple[tuple[str, ...], tuple[str, ...]]:
+    blocking: list[str] = []
+    ignored: list[str] = []
+    for raw in failed_names:
+        name = str(raw or "").strip()
+        if not name:
+            continue
+        stale_promotion = (
+            nexus_core_active
+            and name.startswith("nexus-post-promote-")
+            and name.endswith(".service")
+        )
+        if stale_promotion:
+            ignored.append(name)
+        else:
+            blocking.append(name)
+    return tuple(blocking), tuple(ignored)
+
+
+def recoverable_runtime_circuit(state: dict, *, doctor_ok: bool) -> bool:
+    if not doctor_ok or not bool(state.get("tripped", False)):
+        return False
+    kind = str(state.get("last_failure_kind") or "").strip()
+    if kind == "runtime_deployment":
+        return True
+    if kind:
+        return False
+    legacy = str(state.get("last_failure") or "").lstrip()
+    return legacy.startswith("RUNTIME_DEPLOY")
+
+
 def doctor_failures(output: str) -> tuple[str, ...]:
     failures = []
     for raw in str(output or "").splitlines():

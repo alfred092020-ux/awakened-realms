@@ -30,6 +30,7 @@ from logres_autonomy import (
     normalize_runtime_environment,
     parse_route_failures,
     repo_progress_degraded_allowed,
+    recoverable_runtime_circuit,
     record_failure,
     record_success,
     reset_circuit,
@@ -362,6 +363,20 @@ def cycle(*, dry_run: bool = False) -> int:
             (doctor_result.stdout or "") + "\n" + (doctor_result.stderr or "")
         )
         doctor_failure_names = doctor_failures(doctor_output)
+        if recoverable_runtime_circuit(
+            state,
+            doctor_ok=doctor_state.ok,
+        ):
+            state = reset_circuit(STATE)
+            post(
+                "INFO",
+                "NORMAL",
+                "Autonomy runtime-deployment circuit recovered",
+                "Doctor is clean after a runtime-deployment circuit trip. "
+                "Resetting only the runtime-deployment circuit and resuming "
+                "normal fail-closed autonomy policy.",
+                f"autonomy-runtime-circuit-recovered:{current_base}",
+            )
         degraded_repo_progress = repo_progress_degraded_allowed(
             cfg,
             state,
