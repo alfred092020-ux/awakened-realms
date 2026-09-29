@@ -1,88 +1,14 @@
 package com.nexuscore.awakenedrealms;
-
-import android.os.Build;
-import android.os.Bundle;
-import android.view.View;
-import android.view.WindowInsets;
-import android.view.WindowInsetsController;
-import android.webkit.WebSettings;
-import com.getcapacitor.BridgeActivity;
-
-public class MainActivity extends BridgeActivity {
-    private static final int IMMERSIVE_UI_FLAGS =
-        View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
-            | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-            | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
-            | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
-            | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
-            | View.SYSTEM_UI_FLAG_FULLSCREEN;
-
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        enterImmersiveMode();
-
-        if (bridge != null && bridge.getWebView() != null) {
-            bridge.getWebView().getSettings().setCacheMode(WebSettings.LOAD_NO_CACHE);
-            bridge.getWebView().clearCache(true);
-            bridge.getWebView().clearHistory();
-            bridge.getWebView().reload();
-        }
-    }
-
-    @Override
-    public void onResume() {
-        super.onResume();
-        enterImmersiveMode();
-    }
-
-    @Override
-    public void onPause() {
-        restoreSystemBars();
-        super.onPause();
-    }
-
-    @Override
-    public void onWindowFocusChanged(boolean hasFocus) {
-        super.onWindowFocusChanged(hasFocus);
-
-        if (hasFocus) {
-            enterImmersiveMode();
-        }
-    }
-
-    private void enterImmersiveMode() {
-        View decorView = getWindow().getDecorView();
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            WindowInsetsController controller = getWindow().getInsetsController();
-            if (controller != null) {
-                controller.setSystemBarsBehavior(
-                    WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-                );
-                controller.hide(
-                    WindowInsets.Type.statusBars() | WindowInsets.Type.navigationBars()
-                );
-            }
-            return;
-        }
-
-        decorView.setSystemUiVisibility(IMMERSIVE_UI_FLAGS);
-    }
-
-    private void restoreSystemBars() {
-        View decorView = getWindow().getDecorView();
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            WindowInsetsController controller = getWindow().getInsetsController();
-            if (controller != null) {
-                controller.show(
-                    WindowInsets.Type.statusBars() | WindowInsets.Type.navigationBars()
-                );
-            }
-            return;
-        }
-
-        decorView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_VISIBLE);
-    }
+import android.app.Activity;import android.os.*;import android.widget.*;import java.io.*;import java.net.*;import org.json.*;
+public final class MainActivity extends Activity{
+ private final Handler ui=new Handler(Looper.getMainLooper()); private TextView status,metrics,tasks,events; private volatile boolean running; private final String endpoint="https://control.nexuscore.example";
+ @Override public void onCreate(Bundle b){super.onCreate(b);setContentView(R.layout.activity_main);status=findViewById(R.id.status);metrics=findViewById(R.id.metrics);tasks=findViewById(R.id.tasks);events=findViewById(R.id.events);findViewById(R.id.refresh).setOnClickListener(v->snapshot());findViewById(R.id.pause).setOnClickListener(v->control("pause-autonomy"));findViewById(R.id.resume).setOnClickListener(v->control("resume-autonomy"));findViewById(R.id.preflight).setOnClickListener(v->control("run-preflight"));}
+ @Override protected void onStart(){super.onStart();running=true;snapshot();stream();} @Override protected void onStop(){running=false;super.onStop();}
+ private HttpURLConnection open(String p)throws Exception{HttpURLConnection c=(HttpURLConnection)new URL(endpoint+p).openConnection();c.setConnectTimeout(8000);c.setReadTimeout(30000);c.setRequestProperty("Accept","application/json");return c;}
+ private String read(HttpURLConnection c)throws Exception{BufferedReader r=new BufferedReader(new InputStreamReader(c.getInputStream()));StringBuilder b=new StringBuilder();String x;while((x=r.readLine())!=null)b.append(x);return b.toString();}
+ private void snapshot(){new Thread(()->{try{JSONObject j=new JSONObject(read(open("/api/snapshot")));ui.post(()->render(j));}catch(Exception e){ui.post(()->status.setText("OFFLINE • "+e.getClass().getSimpleName()));}}).start();}
+ private void render(JSONObject j){JSONObject in=j.optJSONObject("integration"),c=j.optJSONObject("counts");JSONArray w=j.optJSONArray("workers");status.setText("LIVE • "+(in==null?"unknown":in.optString("short")));metrics.setText("Active "+(c==null?0:c.optInt("active_workers"))+"   Working "+(c==null?0:c.optInt("working"))+"   Workers "+(w==null?0:w.length()));StringBuilder b=new StringBuilder();JSONObject a=j.optJSONObject("tasks");if(a!=null){add(b,"ACTIVE",a.optJSONArray("active"));add(b,"READY",a.optJSONArray("ready"));add(b,"BLOCKED",a.optJSONArray("blocked"));}tasks.setText(b.length()==0?"No task telemetry":b.toString());}
+ private void add(StringBuilder b,String n,JSONArray a){if(a==null)return;b.append(n).append('\n');for(int i=0;i<a.length();i++){JSONObject x=a.optJSONObject(i);if(x!=null)b.append("• ").append(x.optString("task")).append("  ").append(x.optString("progress",x.optString("status"))).append('\n');}}
+ private void stream(){new Thread(()->{while(running){try{HttpURLConnection c=open("/api/events");c.setRequestProperty("Accept","text/event-stream");BufferedReader r=new BufferedReader(new InputStreamReader(c.getInputStream()));String x;while(running&&(x=r.readLine())!=null)if(x.startsWith("data:")){String d=x.substring(5).trim();ui.post(()->{events.setText(d+'\n'+events.getText().toString());snapshot();});}}catch(Exception e){try{Thread.sleep(2000);}catch(InterruptedException ignored){}}}}).start();}
+ private void control(String action){new Thread(()->{try{HttpURLConnection c=open("/api/control");c.setRequestMethod("POST");c.setDoOutput(true);c.setRequestProperty("Content-Type","application/json");c.getOutputStream().write(new JSONObject().put("action",action).toString().getBytes());String out=read(c);ui.post(()->events.setText("ADMIN "+action+": "+out+'\n'+events.getText().toString()));}catch(Exception e){ui.post(()->events.setText("ADMIN FAILED: "+e.getClass().getSimpleName()+'\n'+events.getText().toString()));}}).start();}
 }
