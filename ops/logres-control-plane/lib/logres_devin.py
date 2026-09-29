@@ -867,6 +867,8 @@ def run_child_with_lease(
 def _prepare_model_discovery_home(home: Path, original_home: Path) -> Path:
     home = Path(home)
     original_home = Path(original_home)
+    home.mkdir(parents=True, exist_ok=True)
+    home.chmod(0o700)
     for rel in (Path('.config/devin'), Path('.local/share/devin'), Path('.cache')):
         path = home / rel
         path.mkdir(parents=True, exist_ok=True)
