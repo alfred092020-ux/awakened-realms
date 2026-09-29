@@ -254,6 +254,30 @@ class ModelPolicyTests(unittest.TestCase):
         self.assertEqual(["initial", "retry"], [item[0] for item in calls])
         self.assertEqual(str(fallback), calls[1][2]["env"]["HOME"])
 
+    def test_model_discovery_prepares_missing_fallback_home(self):
+        calls = []
+
+        def run(argv, **kwargs):
+            calls.append(("initial", argv, kwargs))
+            return SimpleNamespace(returncode=101, stdout="", stderr="Read-only file system")
+
+        def retry_run(argv, **kwargs):
+            calls.append(("retry", argv, kwargs))
+            return SimpleNamespace(returncode=0, stdout=MODELS_REPORT, stderr="")
+
+        with tempfile.TemporaryDirectory() as tmp:
+            original = Path(tmp) / "original"
+            fallback = Path(tmp) / "missing" / "fallback"
+            original.mkdir()
+            with patch.dict(os.environ, {"HOME": str(original)}, clear=False):
+                report = devin_models_report(
+                    run, "devin", retry_run=retry_run, fallback_home=fallback
+                )
+            self.assertTrue(fallback.is_dir())
+            self.assertEqual(0o700, fallback.stat().st_mode & 0o777)
+            self.assertEqual(str(fallback), calls[1][2]["env"]["HOME"])
+        self.assertIn("swe-2-max", report["variants"])
+
     def test_devin_models_report_does_not_retry_non_readonly_failure(self):
         retries = []
         def run(argv, **kwargs):
