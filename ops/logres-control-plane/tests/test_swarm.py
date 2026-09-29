@@ -944,6 +944,47 @@ class SwarmTests(unittest.TestCase):
             self.conn.commit()
             self.assertEqual(0, prior_failures(self.conn, "DPERM", engine="devin"))
 
+    def test_patch_selection_backfills_past_retry_exhausted_high_rank_tasks(self):
+        from logres_swarm import select_implementation_tasks
+        for idx in range(20):
+            task_id = f"PSTARVE{idx:02d}"
+            seed_task(
+                self.conn,
+                task_id=task_id,
+                status="READY",
+                priority=0 if idx < 19 else 1,
+                work_type="implementation",
+            )
+            self.conn.execute(
+                "insert into task_scopes(task_id,path_prefix) values(?,?)",
+                (task_id, f"src/starve/{idx}.py"),
+            )
+            if idx < 19:
+                for attempt in range(2):
+                    artifact = Path("/tmp") / f"{task_id}-{attempt}.json"
+                    self.conn.execute(
+                        """insert into swarm_jobs(
+                             task_id,worker_id,engine,state,pid,artifact_path,last_error
+                           ) values(?,?,?,?,?,?,?)""",
+                        (
+                            task_id,
+                            f"auto-patch-{attempt + 1}",
+                            "openai-patch",
+                            "FAILED",
+                            900 + idx * 10 + attempt,
+                            str(artifact),
+                            "semantic failure",
+                        ),
+                    )
+        self.conn.commit()
+        exhausted = {f"PSTARVE{idx:02d}" for idx in range(19)}
+        selected = select_implementation_tasks(
+            self.conn,
+            1,
+            skip_task_ids=exhausted,
+        )
+        self.assertEqual(["PSTARVE19"], [task["id"] for task in selected])
+
     def test_devin_retry_budget_ignores_legacy_sandbox_shell_denial_no_diff(self):
         import tempfile
         with tempfile.TemporaryDirectory() as td:

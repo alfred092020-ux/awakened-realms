@@ -672,7 +672,10 @@ def _select_tasks(
     task_map = {task["id"]: task for task in ready_tasks(conn)}
     ranked_ids = rank_task_ids(
         conn,
-        limit=max(16, max(1, limit) * 4),
+        # Rank the full READY set before applying scope, claim, concurrency,
+        # and retry-exhaustion filters. A small ranking window lets a few
+        # high-ranked but ineligible tasks starve healthy lower-ranked work.
+        limit=max(16, len(task_map), max(1, limit) * 4),
         work_type_filter=work_types,
     )
     for task_id in ranked_ids:

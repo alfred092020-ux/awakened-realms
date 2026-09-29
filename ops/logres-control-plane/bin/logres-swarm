@@ -730,7 +730,16 @@ def dispatch_patch(
     )
     max_attempts = int(impl.get("max_attempts", 2) or 2)
     timeout_seconds = int(impl.get("timeout_seconds", 1800) or 1800)
-    candidates = select_implementation_tasks(conn, max(1, limit) * 4)
+    exhausted = {
+        str(task["id"])
+        for task in ready_tasks(conn)
+        if prior_failures(conn, str(task["id"]), engine="openai-patch") >= max_attempts
+    }
+    candidates = select_implementation_tasks(
+        conn,
+        max(1, limit) * 4,
+        skip_task_ids=exhausted,
+    )
     dispatched: list[dict] = []
 
     for task in candidates:
