@@ -148,6 +148,7 @@ PRODUCTION_FILES = (
     "lib/logres_ai_router.py",
     "lib/logres_ai_runner.py",
     "lib/logres_autonomy.py",
+    "lib/logres_autonomy_canary.py",
     "lib/logres_claims_reconcile.py",
     "lib/logres_copilot.py",
     "lib/logres_copilot_router.py",

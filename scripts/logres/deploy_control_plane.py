@@ -164,6 +164,7 @@ MANIFEST: dict[str, tuple[str, int]] = {
     "lib/logres_ai_router.py": ("lib/logres_ai_router.py", 0o600),
     "lib/logres_ai_runner.py": ("lib/logres_ai_runner.py", 0o600),
     "lib/logres_autonomy.py": ("lib/logres_autonomy.py", 0o600),
+    "lib/logres_autonomy_canary.py": ("lib/logres_autonomy_canary.py", 0o600),
     "lib/logres_claims_reconcile.py": ("lib/logres_claims_reconcile.py", 0o600),
     "lib/logres_copilot.py": ("lib/logres_copilot.py", 0o600),
     "lib/logres_copilot_router.py": ("lib/logres_copilot_router.py", 0o600),
