@@ -95,6 +95,14 @@ class SwarmTests(unittest.TestCase):
         )
         self.assertEqual("manual", classify_engine({"work_type": "manual"}))
 
+    def test_ten_local_worker_capacity_ceiling(self):
+        cap = swarm_capacity(
+            self.conn,
+            {"swarm": {"max_workers": 10}},
+        )
+        self.assertEqual(10, cap.max_workers)
+        self.assertEqual(10, cap.free_slots)
+
     def test_capacity_counts_human_leases_and_copilot_jobs(self):
         now = time.time()
         seed_task(self.conn, task_id="R1", status="ACTIVE", work_type="research")
