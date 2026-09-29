@@ -958,11 +958,6 @@ def tick(dry_run: bool = False) -> dict:
                 "error": f"{type(exc).__name__}: {exc}",
             }
 
-    if args.command == "recertify-devin":
-        out = recertify_devin(args.task, args.worker, args.branch, args.worktree)
-        print(json.dumps(out, indent=2, sort_keys=True))
-        return 0 if out.get("ok") else 2
-
     cfg = load_config(CONFIG)
     swarm_cfg = cfg.get("swarm", {})
     conn = connect()
@@ -1151,6 +1146,11 @@ def main() -> int:
     recert_p.add_argument("--branch", required=True)
     recert_p.add_argument("--worktree", required=True)
     args = ap.parse_args()
+
+    if args.command == "recertify-devin":
+        out = recertify_devin(args.task, args.worker, args.branch, args.worktree)
+        print(json.dumps(out, indent=2, sort_keys=True))
+        return 0 if out.get("ok") else 2
 
     cfg = load_config(CONFIG)
     conn = connect()
