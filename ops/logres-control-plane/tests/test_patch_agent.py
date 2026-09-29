@@ -158,6 +158,20 @@ class PatchAgentTests(unittest.TestCase):
                     total_chars=20,
                 )
 
+    def test_patch_cli_always_includes_exact_file_scopes_before_planner_choices(self):
+        script = (TEST_DIR.parent / "bin" / "logres-patch-agent").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn(
+            'exact_scoped_files = [scope for scope in scopes if scope in available]',
+            script,
+        )
+        self.assertIn('read_paths = list(exact_scoped_files)', script)
+        self.assertIn(
+            'if path not in read_paths and len(read_paths) < 14:',
+            script,
+        )
+
     def test_empty_scopes_fail_closed(self):
         with self.assertRaises(PatchAgentError):
             validate_paths(["src/game.py"], [])

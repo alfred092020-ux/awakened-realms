@@ -936,6 +936,40 @@ class SwarmTests(unittest.TestCase):
             classify_worker_failure("model changed the wrong behavior"),
         )
 
+    def test_repair_context_failures_count_against_patch_retry_ceiling_only(self):
+        seed_task(
+            self.conn,
+            task_id="REPAIR-AUTO-CTX-1234",
+            status="READY",
+            work_type="implementation",
+        )
+        for pid in (201, 202):
+            self.conn.execute(
+                """insert into swarm_jobs(
+                     task_id,worker_id,engine,state,pid,last_error
+                   ) values('REPAIR-AUTO-CTX-1234','auto-patch-1',
+                            'openai-patch','FAILED',?,
+                            'supplied contents are incomplete and truncated')""",
+                (pid,),
+            )
+        self.conn.commit()
+        self.assertEqual(
+            2,
+            prior_failures(
+                self.conn,
+                "REPAIR-AUTO-CTX-1234",
+                engine="openai-patch",
+            ),
+        )
+        self.assertEqual(
+            0,
+            prior_failures(
+                self.conn,
+                "REPAIR-AUTO-CTX-1234",
+                engine="devin",
+            ),
+        )
+
     def test_nonsemantic_failures_do_not_consume_semantic_retry_budget(self):
         seed_task(
             self.conn,

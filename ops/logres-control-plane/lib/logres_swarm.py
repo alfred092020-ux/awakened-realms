@@ -1305,6 +1305,11 @@ def prior_failures(
             continue
         failure_class = classify_worker_failure(str(row["last_error"] or ""))
         if failure_class in NON_SEMANTIC_FAILURE_CLASSES:
+            if (
+                engine == "openai-patch"
+                and task_id.startswith("REPAIR-AUTO-")
+            ):
+                count += 1
             continue
         count += 1
     return count

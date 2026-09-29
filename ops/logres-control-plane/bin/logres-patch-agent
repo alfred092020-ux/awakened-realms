@@ -379,10 +379,20 @@ def main() -> int:
             max_output_tokens=min(3000, max_output),
         )
         usage_records.append(usage)
-        read_paths = [str(path) for path in plan.get("read_paths", [])][:14]
+        planner_paths = [str(path) for path in plan.get("read_paths", [])][:14]
         available = {item["path"] for item in index}
-        if any(path not in available for path in read_paths):
+        if any(path not in available for path in planner_paths):
             raise PatchAgentError("planner requested a path outside the supplied file index")
+        exact_scoped_files = [scope for scope in scopes if scope in available]
+        if len(exact_scoped_files) > 14:
+            raise PatchAgentError(
+                f"task declares too many exact file scopes for bounded context: "
+                f"{len(exact_scoped_files)} > 14"
+            )
+        read_paths = list(exact_scoped_files)
+        for path in planner_paths:
+            if path not in read_paths and len(read_paths) < 14:
+                read_paths.append(path)
         if plan.get("blocker") and not read_paths:
             raise PatchAgentError("planner blocked: " + str(plan["blocker"]))
         context = bounded_file_bundle(worktree, read_paths, scopes)
