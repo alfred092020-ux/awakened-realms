@@ -943,6 +943,10 @@ class SwarmTests(unittest.TestCase):
             "semantic",
             classify_worker_failure("model changed the wrong behavior"),
         )
+        self.assertEqual(
+            "no_diff",
+            classify_worker_failure("DevinAgentError: devin child produced no repository diff"),
+        )
 
     def test_repair_context_failures_count_against_patch_retry_ceiling_only(self):
         seed_task(

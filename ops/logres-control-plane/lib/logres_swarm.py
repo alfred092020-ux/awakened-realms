@@ -910,6 +910,9 @@ def classify_worker_failure(error: str) -> str:
     value = str(error or "").strip().lower()
     if not value:
         return "infrastructure"
+    if "devin child produced no repository diff" in value:
+        return "no_diff"
+
 
     context_markers = (
         "incomplete",
