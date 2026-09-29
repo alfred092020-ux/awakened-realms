@@ -110,7 +110,7 @@ def bounded_file_bundle(
     scopes: list[str] | tuple[str, ...],
     *,
     total_chars: int = 120_000,
-    per_file_chars: int = 30_000,
+    per_file_chars: int = 60_000,
 ) -> str:
     validate_paths(paths, scopes)
     chunks: list[str] = []
@@ -121,16 +121,21 @@ def bounded_file_bundle(
         if not full.is_file():
             raise PatchAgentError(f"selected context path is not a file: {rel}")
         text = full.read_text(encoding="utf-8", errors="replace")
-        clipped = text[:per_file_chars]
+        if len(text) > per_file_chars:
+            raise PatchAgentError(
+                f"selected context file exceeds per-file limit: {rel} "
+                f"({len(text)} > {per_file_chars} chars)"
+            )
         marker = f"\n===== FILE {rel} ({len(text)} chars) =====\n"
-        room = total_chars - used - len(marker)
-        if room <= 0:
-            break
-        clipped = clipped[:room]
-        chunks.append(marker + clipped)
-        used += len(marker) + len(clipped)
-        if used >= total_chars:
-            break
+        required = len(marker) + len(text)
+        remaining = total_chars - used
+        if required > remaining:
+            raise PatchAgentError(
+                f"selected context bundle exceeds total limit at {rel}: "
+                f"need {required} chars with {remaining} remaining"
+            )
+        chunks.append(marker + text)
+        used += required
     return "".join(chunks)
 
 
