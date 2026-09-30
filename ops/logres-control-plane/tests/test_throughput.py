@@ -73,9 +73,3 @@ class ThroughputTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-
-class CoordinatorSelfAuditTests(unittest.TestCase):
-    def test_self_audit_metrics_are_explicit_and_safe(self):
-        from logres_throughput import coordinator_self_audit, SELF_AUDIT_METRICS
-        out=coordinator_self_audit(verified_candidates=4,window_hours=2,verification_latencies=[10,20],integration_latencies=[2,4],dispatches=10,failed_dispatches=2,failures=4,repeated_failures=1,attempts=8,no_diff=1,stale_workers=2,unnecessary_repairs=1,used_slots=3,total_slots=10,recoveries=2,successful_recoveries=1,integrations=5,escaped_regressions=1,human_interventions=2)
-        self.assertEqual(set(SELF_AUDIT_METRICS),set(out)); self.assertEqual(2,out['useful_verified_candidates_per_hour']); self.assertEqual(.3,out['resource_saturation'])

@@ -105,28 +105,3 @@ def summarize_recent(
             "metrics": metrics,
         }
     return result
-
-SELF_AUDIT_METRICS=(
- 'useful_verified_candidates_per_hour','verification_latency_seconds','integration_latency_seconds',
- 'failed_dispatch_rate','repeated_failure_rate','no_diff_rate','stale_worker_count',
- 'unnecessary_repair_tasks','resource_saturation','autonomous_recovery_success_rate',
- 'escaped_regression_rate','human_interventions_required')
-
-def coordinator_self_audit(*, verified_candidates, window_hours, verification_latencies=(), integration_latencies=(), dispatches=0, failed_dispatches=0, failures=0, repeated_failures=0, attempts=0, no_diff=0, stale_workers=0, unnecessary_repairs=0, used_slots=0, total_slots=1, recoveries=0, successful_recoveries=0, integrations=0, escaped_regressions=0, human_interventions=0):
-    def rate(n,d): return float(n)/float(d) if d else 0.0
-    def median(xs):
-        xs=list(xs); return statistics.median(xs) if xs else None
-    return {
-      'useful_verified_candidates_per_hour': rate(verified_candidates,max(float(window_hours),1e-9)),
-      'verification_latency_seconds': median(verification_latencies),
-      'integration_latency_seconds': median(integration_latencies),
-      'failed_dispatch_rate': rate(failed_dispatches,dispatches),
-      'repeated_failure_rate': rate(repeated_failures,failures),
-      'no_diff_rate': rate(no_diff,attempts),
-      'stale_worker_count': int(stale_workers),
-      'unnecessary_repair_tasks': int(unnecessary_repairs),
-      'resource_saturation': rate(used_slots,total_slots),
-      'autonomous_recovery_success_rate': rate(successful_recoveries,recoveries),
-      'escaped_regression_rate': rate(escaped_regressions,integrations),
-      'human_interventions_required': int(human_interventions),
-    }
