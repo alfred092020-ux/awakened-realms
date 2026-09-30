@@ -165,10 +165,12 @@ def capture_integration_conflict(task_id,branch,candidate,detail,base_sha):
         "--log",str(log),
     ],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,check=False)
 
-def refresh(c):
-    # Refresh remote refs before classifying queue state so local branch pointers
-    # cannot hide a moved or missing pushed candidate.
-    fetch_origin()
+def refresh(c, fetch=True):
+    # Mutating/integration callers refresh remote refs. Observational status may
+    # classify from already-synchronized local/origin refs in governed runtimes
+    # where Git metadata is intentionally read-only.
+    if fetch:
+        fetch_origin()
     # Durable scopes are reconciled from explicit historical claim events before
     # evaluating scope safety, preventing stale metadata from creating false
     # integration blockers.
@@ -263,7 +265,7 @@ def rows_ready(c):
       order by coalesce(t.priority,99),q.queued_at,q.task_id"""))
 
 def cmd_status(c,args):
-    n=refresh(c)
+    n=refresh(c,fetch=False)
     print(f"LOGRES MERGE TRAIN refreshed={n}")
     history="" if getattr(args,"history",False) else "where q.status not in ('INTEGRATED','SUPERSEDED','QUARANTINED')"
     rows=list(c.execute(f"""select q.*,t.priority,t.title,t.status as task_status from integration_queue q

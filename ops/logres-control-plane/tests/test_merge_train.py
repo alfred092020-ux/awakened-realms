@@ -102,6 +102,26 @@ class MergeTrainQuarantineTests(unittest.TestCase):
         subprocess_run.assert_not_called()
         self.assertEqual(1,changed)
 
+    def test_status_refresh_skips_git_fetch_in_readonly_runtime(self):
+        conn = make_db()
+        with mock.patch.object(merge_train, "fetch_origin") as fetch, \
+             mock.patch.object(merge_train, "run") as run, \
+             mock.patch.object(merge_train, "sha", return_value="f" * 40), \
+             mock.patch.object(merge_train, "supersede_repaired_conflicts", return_value=0):
+            run.return_value = mock.Mock(returncode=0, stdout="", stderr="")
+            merge_train.refresh(conn, fetch=False)
+        fetch.assert_not_called()
+
+    def test_mutating_refresh_still_fetches_origin(self):
+        conn = make_db()
+        with mock.patch.object(merge_train, "fetch_origin") as fetch, \
+             mock.patch.object(merge_train, "run") as run, \
+             mock.patch.object(merge_train, "sha", return_value="f" * 40), \
+             mock.patch.object(merge_train, "supersede_repaired_conflicts", return_value=0):
+            run.return_value = mock.Mock(returncode=0, stdout="", stderr="")
+            merge_train.refresh(conn)
+        fetch.assert_called_once_with()
+
     def test_refresh_does_not_touch_quarantined_fast_pass_row(self):
         conn = make_db()
         sha = self._seed(conn, "QUARANTINED", verification_mode="fast")
