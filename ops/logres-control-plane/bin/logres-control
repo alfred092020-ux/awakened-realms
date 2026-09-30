@@ -1,0 +1,476 @@
+#!/usr/bin/env python3
+from __future__ import annotations
+import json, os, sqlite3, subprocess, sys, time
+from datetime import datetime, timezone
+from pathlib import Path
+
+BASE = Path("/home/ubuntu/logres/src/awakened-realms")
+DB = Path(os.environ.get("LOGRES_CONTROL_DB","/home/ubuntu/logres/control/control.sqlite"))
+INTEGRATION = "origin/feat/logres-reconstruction"
+BLOCKED_REFS = {
+    "main", "origin/main",
+    "agent/logres-playable-slice-core-001",
+    "origin/agent/logres-playable-slice-core-001",
+}
+DEFAULT_TASKS = [
+    ("G17-TUT-001",0,"tutorial","Identify Millennium Tree static map ID without conflating quest state","READY"),
+    ("G17-ONB-001",0,"onboarding","Resolve Global onboarding order before changing scene sequence","BLOCKED_EVIDENCE"),
+    ("G17-BTL-001",0,"battle","Resolve five-weapon vs three-normal-skill-slot semantics","BLOCKED_EVIDENCE"),
+    ("G17-QST-001",0,"quest","Build reconstructed quest-instance authority with nullable historical values","READY"),
+    ("BATTLE-PROTOCOL",0,"protocol","Reconstruct current-JP battle protocol state machine without gameplay-semantics assumptions","READY"),
+    ("FIELD-STATIC",0,"field","Complete authentic static terrain proof and atlas binding","READY"),
+    ("FIELD-DEPTH",0,"field","Resolve Z producer, texture orientation, camera/depth behavior","READY"),
+    ("FIELD-NAV",0,"movement","Bind authentic field navigation to identified map","BLOCKED_DEP"),
+    ("NPC-ENCOUNTER",1,"npc","Add NPC interaction and encounter state after authentic field","BLOCKED_DEP"),
+    ("BATTLE-SLICE",1,"battle","Integrate battle, victory, reward after encounter path","BLOCKED_DEP"),
+]
+def sh(*args: str, check: bool=True) -> str:
+    p=subprocess.run(args,cwd=BASE,text=True,stdout=subprocess.PIPE,
+                     stderr=subprocess.DEVNULL,check=False)
+    if check and p.returncode:
+        raise RuntimeError("command failed: "+" ".join(args))
+    return p.stdout.strip()
+
+def now() -> str:
+    return datetime.now(timezone.utc).isoformat(timespec="seconds")
+
+def brain_event(c: sqlite3.Connection, event_type: str, subject: str,
+                body: str="", task_id: str|None=None, priority: int=5,
+                sender: str="system", recipient: str="ALL") -> None:
+    exists=c.execute("""select 1 from sqlite_master
+                        where type='table' and name='brain_events'""").fetchone()
+    if not exists:
+        return
+    c.execute("""insert into brain_events
+      (ts_epoch,ts,sender,recipient,event_type,priority,task_id,subject,body,meta_json)
+      values(?,?,?,?,?,?,?,?,?,'{}')""",
+      (time.time(),now(),sender,recipient,event_type,priority,task_id,subject,body))
+
+def db() -> sqlite3.Connection:
+    DB.parent.mkdir(parents=True,exist_ok=True)
+    c=sqlite3.connect(DB,timeout=30)
+    c.row_factory=sqlite3.Row
+    c.execute("pragma journal_mode=WAL")
+    c.execute("pragma busy_timeout=30000")
+    c.executescript("""
+    create table if not exists meta(key text primary key,value text not null);
+    create table if not exists branches(
+      ref text primary key, sha text, ahead integer, behind integer,
+      subject text, commit_time integer, blocked integer, patch_state text,
+      changed_count integer, refreshed_at text);
+    create table if not exists branch_files(
+      ref text, path text, status text, primary key(ref,path));
+    create table if not exists worktrees(
+      path text primary key, branch text, head text, dirty_count integer,
+      merged_into_integration integer, lock_matches integer,
+      last_commit_time integer, refreshed_at text);
+    create table if not exists worktree_files(
+      worktree text, path text, status text, primary key(worktree,path));
+    """)
+    return c
+def ensure_schema(c: sqlite3.Connection) -> None:
+    c.executescript("""
+    create table if not exists tasks(
+      id text primary key, priority integer, lane text, title text,
+      status text, branch text, owner text, note text, updated_at text);
+    create table if not exists claims(
+      path_prefix text primary key, task_id text, owner text, branch text,
+      created_at text, note text);
+    create table if not exists overlaps(
+      ref_a text, ref_b text, overlap_count integer, files_json text,
+      primary key(ref_a,ref_b));
+    create table if not exists verification(
+      ref text primary key, sha text, mode text, status text,
+      duration_sec real, ran_at text, details text);
+    create table if not exists events(
+      id integer primary key autoincrement, ts text, kind text, message text);
+    create table if not exists oracle_jobs(
+      branch text primary key, job_id text, source_sha text, status text,
+      exit_code integer, duration_sec real, error text, result_sha text,
+      commit_time integer, summary_path text, refreshed_at text);
+    """)
+    for tid,prio,lane,title,status in DEFAULT_TASKS:
+        c.execute("""insert into tasks(id,priority,lane,title,status,updated_at)
+                     values(?,?,?,?,?,?)
+                     on conflict(id) do update set priority=excluded.priority,
+                     lane=excluded.lane,title=excluded.title""",
+                  (tid,prio,lane,title,status,now()))
+    c.commit()
+
+def parse_name_status(text: str):
+    out=[]
+    for line in text.splitlines():
+        if not line.strip(): continue
+        parts=line.split("\t")
+        status=parts[0]
+        path=parts[-1]
+        out.append((status,path))
+    return out
+def refresh(c: sqlite3.Connection, fetch: bool=True) -> None:
+    if fetch:
+        sh("git","fetch","origin","--prune",check=False)
+    old_row=c.execute("select value from meta where key='integration_sha'").fetchone()
+    old_integ=old_row["value"] if old_row else None
+    integ=sh("git","rev-parse",INTEGRATION)
+    c.execute("insert or replace into meta(key,value) values('integration_sha',?)",(integ,))
+    c.execute("insert or replace into meta(key,value) values('last_refresh',?)",(now(),))
+    if old_integ and old_integ!=integ:
+        brain_event(c,"INFO","Integration advanced",
+                    f"{old_integ[:12]} -> {integ[:12]}",priority=1)
+    refs=sh("git","for-each-ref","--format=%(refname:short)",
+            "refs/remotes/origin/agent/logres-*",check=False).splitlines()
+    live=set()
+    for ref in refs:
+        if not ref: continue
+        live.add(ref)
+        sha=sh("git","rev-parse",ref)
+        ahead=int(sh("git","rev-list","--count",f"{INTEGRATION}..{ref}") or 0)
+        behind=int(sh("git","rev-list","--count",f"{ref}..{INTEGRATION}") or 0)
+        subject=sh("git","log","-1","--format=%s",ref)
+        ctime=int(sh("git","log","-1","--format=%ct",ref) or 0)
+        blocked=1 if ref in BLOCKED_REFS else 0
+        cherry=sh("git","cherry",INTEGRATION,ref,check=False)
+        patch_state="upstream-equivalent" if ahead and cherry and all(
+            x.startswith("-") for x in cherry.splitlines()) else "unique"
+        files=parse_name_status(sh("git","diff","--name-status",f"{INTEGRATION}...{ref}",check=False))
+        c.execute("""insert or replace into branches
+          (ref,sha,ahead,behind,subject,commit_time,blocked,patch_state,changed_count,refreshed_at)
+          values(?,?,?,?,?,?,?,?,?,?)""",
+          (ref,sha,ahead,behind,subject,ctime,blocked,patch_state,len(files),now()))
+        c.execute("delete from branch_files where ref=?",(ref,))
+        c.executemany("insert into branch_files(ref,path,status) values(?,?,?)",
+                      [(ref,p,s) for s,p in files])
+    if live:
+        q="delete from branches where ref not in (%s)"%(",".join("?"*len(live)))
+        c.execute(q,tuple(live))
+    c.execute("delete from branch_files where ref not in (select ref from branches)")
+    # Worktrees: preserve dirty state; never mutate here.
+    porcelain=sh("git","worktree","list","--porcelain")
+    paths=[line[9:] for line in porcelain.splitlines() if line.startswith("worktree ")]
+    live_wt=set(paths)
+    base_lock=(BASE/"package-lock.json").read_bytes() if (BASE/"package-lock.json").exists() else b""
+    import hashlib
+    base_hash=hashlib.sha256(base_lock).hexdigest()
+    for wp in paths:
+        p=Path(wp); live_wt.add(wp)
+        branch=sh("git","-C",wp,"symbolic-ref","--short","HEAD",check=False) or "(detached)"
+        head=sh("git","-C",wp,"rev-parse","HEAD")
+        stat=sh("git","-C",wp,"status","--porcelain",check=False)
+        dirty=[x for x in stat.splitlines() if x.strip()]
+        merged=1 if subprocess.run(["git","merge-base","--is-ancestor",head,integ],
+                 cwd=BASE,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL).returncode==0 else 0
+        lock=p/"package-lock.json"
+        lock_match=0
+        if lock.exists():
+            lock_match=1 if hashlib.sha256(lock.read_bytes()).hexdigest()==base_hash else 0
+        lct=int(sh("git","-C",wp,"log","-1","--format=%ct",check=False) or 0)
+        c.execute("""insert or replace into worktrees
+          (path,branch,head,dirty_count,merged_into_integration,lock_matches,last_commit_time,refreshed_at)
+          values(?,?,?,?,?,?,?,?)""",
+          (wp,branch,head,len(dirty),merged,lock_match,lct,now()))
+        c.execute("delete from worktree_files where worktree=?",(wp,))
+        rows=[]
+        for line in dirty:
+            status=line[:2].strip() or "?"
+            path=line[3:].strip()
+            rows.append((wp,path,status))
+        c.executemany("insert into worktree_files(worktree,path,status) values(?,?,?)",rows)
+    if live_wt:
+        q="delete from worktrees where path not in (%s)"%(",".join("?"*len(live_wt)))
+        c.execute(q,tuple(live_wt))
+    c.execute("delete from worktree_files where worktree not in (select path from worktrees)")
+    # Ahead-branch overlap matrix.
+    c.execute("delete from overlaps")
+    ahead_refs=[r["ref"] for r in c.execute(
+        "select ref from branches where ahead>0 and blocked=0 order by ref")]
+    filemap={}
+    for ref in ahead_refs:
+        filemap[ref]={r["path"] for r in c.execute(
+            "select path from branch_files where ref=?",(ref,))}
+    for i,a in enumerate(ahead_refs):
+        for b in ahead_refs[i+1:]:
+            ov=sorted(filemap[a] & filemap[b])
+            if ov:
+                c.execute("insert into overlaps values(?,?,?,?)",
+                          (a,b,len(ov),json.dumps(ov)))
+
+    # Oracle result branches: index summaries so completed research is discoverable.
+    oracle_refs=sh("git","for-each-ref","--format=%(refname:short)",
+                   "refs/remotes/origin/agent/oracle-job-*",check=False).splitlines()
+    live_oracle=set()
+    for ref in oracle_refs:
+        if not ref: continue
+        live_oracle.add(ref)
+        result_sha=sh("git","rev-parse",ref)
+        ctime=int(sh("git","log","-1","--format=%ct",ref,check=False) or 0)
+        prior=c.execute("select result_sha from oracle_jobs where branch=?",(ref,)).fetchone()
+        if prior and prior["result_sha"]==result_sha:
+            c.execute("update oracle_jobs set commit_time=?,refreshed_at=? where branch=?",
+                      (ctime,now(),ref))
+            continue
+        names=sh("git","ls-tree","-r","--name-only",ref,".oracle-results",check=False).splitlines()
+        summary_paths=[x for x in names if x.endswith("/summary.json")]
+        if summary_paths:
+            sp=summary_paths[-1]
+            raw=sh("git","show",f"{ref}:{sp}",check=False)
+            try:
+                data=json.loads(raw)
+            except json.JSONDecodeError:
+                data={}
+            c.execute("""insert or replace into oracle_jobs
+              (branch,job_id,source_sha,status,exit_code,duration_sec,error,
+               result_sha,commit_time,summary_path,refreshed_at)
+              values(?,?,?,?,?,?,?,?,?,?,?)""",
+              (ref,data.get("job_id"),data.get("source_sha"),data.get("status","unknown"),
+               data.get("exit_code"),data.get("duration_seconds"),data.get("error"),
+               result_sha,ctime,sp,now()))
+            job_id=data.get("job_id") or ref.rsplit("/",1)[-1]
+            status=data.get("status","unknown")
+            brain_event(c,"DONE" if status=="success" else "WARNING",
+                        f"Oracle job {status}: {job_id}",
+                        f"source={(data.get('source_sha') or '')[:12]} result={result_sha[:12]} branch={ref}",
+                        priority=5 if status=="success" else 1,sender="oracle")
+        else:
+            c.execute("""insert or replace into oracle_jobs
+              (branch,status,result_sha,commit_time,refreshed_at)
+              values(?,?,?,?,?)""",(ref,"no-result",result_sha,ctime,now()))
+            brain_event(c,"WARNING",f"Oracle result missing: {ref.rsplit('/',1)[-1]}",
+                        f"branch={ref} result={result_sha[:12]}",priority=1,sender="oracle")
+    if live_oracle:
+        q="delete from oracle_jobs where branch not in (%s)"%(",".join("?"*len(live_oracle)))
+        c.execute(q,tuple(live_oracle))
+    c.commit()
+
+def fmt_age(ts: int) -> str:
+    if not ts: return "?"
+    sec=max(0,int(time.time())-ts)
+    if sec<3600: return f"{sec//60}m"
+    if sec<86400: return f"{sec//3600}h"
+    return f"{sec//86400}d"
+
+def dashboard(c: sqlite3.Connection) -> None:
+    integ=c.execute("select value from meta where key='integration_sha'").fetchone()
+    refreshed=c.execute("select value from meta where key='last_refresh'").fetchone()
+    print("=== LEAD CONTROL PLANE ===")
+    print("integration", (integ[0][:12] if integ else "unknown"))
+    print("refreshed", refreshed[0] if refreshed else "never")
+    print("\n=== OPERATIONAL FRONTIER ===")
+    actionable=("ACTIVE","READY","BLOCKED_DEP","BLOCKED_EVIDENCE")
+    counts={r["status"]:r["n"] for r in c.execute(
+        "select status,count(*) n from tasks group by status")}
+    print("actionable="+str(sum(counts.get(s,0) for s in actionable))
+          +" active="+str(counts.get("ACTIVE",0))
+          +" ready="+str(counts.get("READY",0))
+          +" blocked="+str(counts.get("BLOCKED_DEP",0)+counts.get("BLOCKED_EVIDENCE",0))
+          +" historical="+str(sum(n for s,n in counts.items() if s not in actionable)))
+    rows=list(c.execute("""select id,priority,lane,status,branch,owner,title from tasks
+                          where status in ('ACTIVE','READY','BLOCKED_DEP','BLOCKED_EVIDENCE')
+                          order by case status when 'ACTIVE' then 0 when 'READY' then 1 else 2 end,
+                                   priority,updated_at desc,id limit 40"""))
+    for r in rows:
+        who="/".join(x for x in [r["owner"],r["branch"]] if x)
+        print(f"P{r['priority']} {r['id']} [{r['status']}] {r['lane']} {r['title']}"
+              + (f" :: {who}" if who else ""))
+    remaining=max(0,sum(counts.get(s,0) for s in actionable)-len(rows))
+    if remaining: print(f"... {remaining} additional actionable tasks omitted; use Brain task queries for detail")
+    print("\n=== AHEAD AGENT BRANCHES ===")
+    rows=list(c.execute("""select b.*,
+      (select count(*) from overlaps o where o.ref_a=b.ref or o.ref_b=b.ref) overlap_peers
+      from branches b where ahead>0 order by blocked desc, overlap_peers, changed_count, ref"""))
+    for r in rows:
+        flags=[]
+        if r["blocked"]: flags.append("BLOCKED")
+        if r["patch_state"]=="upstream-equivalent": flags.append("PATCH_EQUIV")
+        f=(" "+",".join(flags)) if flags else ""
+        print(f"{r['ref']} ahead={r['ahead']} behind={r['behind']} files={r['changed_count']} "
+              f"overlaps={r['overlap_peers']} age={fmt_age(r['commit_time'])}{f}")
+    print("\n=== CONFLICT CLUSTERS ===")
+    ovs=list(c.execute("select * from overlaps order by overlap_count desc,ref_a,ref_b limit 30"))
+    if not ovs: print("none")
+    for r in ovs:
+        files=json.loads(r["files_json"])
+        short=", ".join(files[:4])+(" ..." if len(files)>4 else "")
+        print(f"{r['overlap_count']} files :: {r['ref_a']} <> {r['ref_b']} :: {short}")
+    print("\n=== WORKTREES ===")
+    for r in c.execute("""select * from worktrees
+                          order by dirty_count desc, merged_into_integration desc, path"""):
+        state="DIRTY" if r["dirty_count"] else ("CLEAN+MERGED" if r["merged_into_integration"] else "CLEAN")
+        print(f"{state:12} files={r['dirty_count']:2} lock={'same' if r['lock_matches'] else 'diff'} "
+              f"{r['branch']} :: {r['path']}")
+    print("\n=== FILE CLAIMS ===")
+    claims=list(c.execute("select * from claims order by path_prefix"))
+    if not claims: print("none")
+    for r in claims:
+        print(f"{r['path_prefix']} :: task={r['task_id']} owner={r['owner']} branch={r['branch']}")
+    print("\n=== ORACLE RESULTS ===")
+    oj=list(c.execute("""select * from oracle_jobs order by commit_time desc limit 18"""))
+    if not oj: print("none")
+    for r in oj:
+        err=f" err={r['error']}" if r["error"] else ""
+        dur=f" {r['duration_sec']:.1f}s" if r["duration_sec"] is not None else ""
+        print(f"{r['status']:9} {r['job_id'] or r['branch']} source={(r['source_sha'] or '')[:10]}{dur} age={fmt_age(r['commit_time'])}{err}")
+    incomplete=c.execute("select count(*) from oracle_jobs where status!='success'").fetchone()[0]
+    print(f"oracle_non_success_count={incomplete}")
+    print("\n=== VERIFICATION CACHE ===")
+    for r in c.execute("select * from verification order by ran_at desc limit 12"):
+        print(f"{r['status']} {r['mode']} {r['ref']} {r['sha'][:10]} {r['duration_sec']:.2f}s {r['ran_at']}")
+
+def show_branch(c: sqlite3.Connection, ref: str) -> None:
+    r=c.execute("select * from branches where ref=?",(ref,)).fetchone()
+    if not r:
+        print("unknown branch",ref,file=sys.stderr); raise SystemExit(2)
+    print(dict(r))
+    print("FILES")
+    for f in c.execute("select status,path from branch_files where ref=? order by path",(ref,)):
+        print(f["status"],f["path"])
+    print("OVERLAPS")
+    for o in c.execute("""select * from overlaps where ref_a=? or ref_b=?
+                          order by overlap_count desc""",(ref,ref)):
+        other=o["ref_b"] if o["ref_a"]==ref else o["ref_a"]
+        print(o["overlap_count"],other,*json.loads(o["files_json"])[:8])
+def new_task(c: sqlite3.Connection,args):
+    if len(args)<4:
+        raise SystemExit("new-task <ID> <priority> <lane> <title...>")
+    tid,prio_raw,lane,*title_parts=args
+    try:
+        priority=int(prio_raw)
+    except ValueError:
+        raise SystemExit("priority must be an integer")
+    if priority < 0 or priority > 9:
+        raise SystemExit("priority must be 0..9")
+    if not tid or any(not (ch.isalnum() or ch in "-_.") for ch in tid):
+        raise SystemExit("task ID contains unsupported characters")
+    lane=lane.strip()
+    title=" ".join(title_parts).strip()
+    if not lane or not title:
+        raise SystemExit("lane and title must be non-empty")
+    if c.execute("select 1 from tasks where id=?",(tid,)).fetchone():
+        raise SystemExit("task already exists "+tid)
+    c.execute("""insert into tasks
+      (id,priority,lane,title,status,branch,owner,note,updated_at)
+      values(?,?,?,?,?,'','','',?)""",
+      (tid,priority,lane,title,"READY",now()))
+    c.execute("insert into events(ts,kind,message) values(?,?,?)",
+              (now(),"task-new",f"{tid} P{priority} lane={lane} {title}"))
+    brain_event(c,"INFO",f"Task created: {tid}",
+                f"P{priority} lane={lane} title={title}",task_id=tid,priority=5)
+    c.commit()
+
+def set_task(c: sqlite3.Connection,args):
+    if len(args)<2:
+        raise SystemExit("task <ID> <STATUS> [branch] [owner]")
+    tid,status=args[0],args[1]
+    branch=args[2] if len(args)>2 and args[2]!="-" else None
+    owner=args[3] if len(args)>3 and args[3]!="-" else None
+    if not c.execute("select 1 from tasks where id=?",(tid,)).fetchone():
+        raise SystemExit("unknown task "+tid)
+    c.execute("""update tasks set status=?,branch=coalesce(?,branch),
+                 owner=coalesce(?,owner),updated_at=? where id=?""",
+              (status,branch,owner,now(),tid))
+    c.execute("insert into events(ts,kind,message) values(?,?,?)",
+              (now(),"task",f"{tid} -> {status} branch={branch} owner={owner}"))
+    brain_event(c,"INFO",f"Task {tid} -> {status}",
+                f"branch={branch or '-'} owner={owner or '-'}",task_id=tid,
+                priority=1 if status.startswith("BLOCKED") else 5)
+    c.commit()
+
+def claim(c: sqlite3.Connection,args):
+    if len(args)<4:
+        raise SystemExit("claim <task> <owner> <branch> <path-prefix> [more-prefixes...]")
+    task,owner,branch,*paths=args
+    if not c.execute("select 1 from tasks where id=?",(task,)).fetchone():
+        raise SystemExit("unknown task "+task)
+    if branch in BLOCKED_REFS or branch.endswith("/main") or branch=="main":
+        raise SystemExit("blocked branch "+branch)
+    for p in paths:
+        parts=Path(p).parts
+        if not p or p.startswith("/") or ".." in parts or p==".":
+            raise SystemExit("claims must be safe repo-relative paths: "+p)
+    conflicts=[]
+    for p in paths:
+        for r in c.execute("select * from claims"):
+            a=r["path_prefix"].rstrip("/")+"/"; b=p.rstrip("/")+"/"
+            if a.startswith(b) or b.startswith(a):
+                conflicts.append(("explicit",p,r["path_prefix"],r["owner"],r["task_id"]))
+        for r in c.execute("""select wf.path,w.path worktree,w.branch
+                              from worktree_files wf join worktrees w on w.path=wf.worktree
+                              where w.dirty_count>0"""):
+            if r["branch"]==branch:
+                continue
+            dirty=r["path"].rstrip("/")+"/"; wanted=p.rstrip("/")+"/"
+            if dirty.startswith(wanted) or wanted.startswith(dirty):
+                conflicts.append(("dirty-worktree",p,r["path"],r["worktree"],r["branch"]))
+    if conflicts:
+        for x in conflicts: print("CONFLICT",*x)
+        raise SystemExit(3)
+    for p in paths:
+        c.execute("insert into claims values(?,?,?,?,?,?)",
+                  (p,task,owner,branch,now(),""))
+        # A dynamically expanded claim becomes part of the task's durable scope.
+        # This keeps later handoff/merge-train scope verification valid after
+        # ephemeral claims are released.
+        c.execute("""insert or ignore into task_scopes(task_id,path_prefix)
+                     values(?,?)""",(task,p))
+    c.execute("update tasks set status='ACTIVE',branch=?,owner=?,updated_at=? where id=?",
+              (branch,owner,now(),task))
+    brain_event(c,"ASSIGNMENT",f"{task} files claimed by {owner}",
+                f"branch={branch} paths={', '.join(paths)}",task_id=task,priority=1)
+    c.commit()
+
+def release(c: sqlite3.Connection,args):
+    if not args: raise SystemExit("release <task-or-owner>")
+    key=args[0]
+    affected={r["task_id"] for r in c.execute(
+        "select task_id from claims where task_id=? or owner=?",(key,key))}
+    c.execute("delete from claims where task_id=? or owner=?",(key,key))
+    for tid in affected:
+        remaining=c.execute("select count(*) from claims where task_id=?",(tid,)).fetchone()[0]
+        if remaining==0:
+            c.execute("""update tasks set status='READY',branch=null,owner=null,updated_at=?
+                         where id=? and status='ACTIVE'""",(now(),tid))
+    c.execute("insert into events(ts,kind,message) values(?,?,?)",
+              (now(),"release",f"released {key} tasks={sorted(affected)}"))
+    if affected:
+        brain_event(c,"INFO",f"Claims released: {key}",
+                    f"tasks={sorted(affected)}",priority=5)
+    c.commit()
+def record_verify(c: sqlite3.Connection,args):
+    if len(args)<6:
+        raise SystemExit("record-verify <ref> <sha> <mode> <status> <duration> <details>")
+    ref,sha,mode,status,duration=args[:5]
+    details=" ".join(args[5:])
+    c.execute("""insert or replace into verification(ref,sha,mode,status,duration_sec,ran_at,details)
+                 values(?,?,?,?,?,?,?)""",
+              (ref,sha,mode,status,float(duration),now(),details))
+    event_type="BUILD_PASS" if status=="PASS" else "BUILD_FAIL"
+    brain_event(c,event_type,f"Verification {status}: {ref}",
+                f"mode={mode} sha={sha[:12]} duration={duration}s {details}",
+                priority=1 if status!="PASS" else 5)
+    c.commit()
+
+def main():
+    cmd=sys.argv[1] if len(sys.argv)>1 else "dashboard"
+    c=db(); ensure_schema(c)
+    if cmd=="refresh":
+        refresh(c,fetch="--no-fetch" not in sys.argv[2:])
+        dashboard(c)
+    elif cmd=="dashboard":
+        refresh(c,fetch=False); dashboard(c)
+    elif cmd=="branch":
+        refresh(c,fetch=False); show_branch(c,sys.argv[2])
+    elif cmd=="new-task":
+        new_task(c,sys.argv[2:])
+    elif cmd=="task":
+        set_task(c,sys.argv[2:])
+    elif cmd=="claim":
+        claim(c,sys.argv[2:])
+    elif cmd=="release":
+        release(c,sys.argv[2:])
+    elif cmd=="record-verify":
+        record_verify(c,sys.argv[2:])
+    else:
+        raise SystemExit("commands: refresh dashboard branch new-task task claim release record-verify")
+    c.close()
+
+if __name__=="__main__":
+    main()

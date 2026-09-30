@@ -80,6 +80,8 @@ PRODUCTION_FILES = (
     "bin/logres-integration",
     "bin/logres-preview-reaper",
     "bin/logres-patch-agent",
+    "bin/logres-brain-hygiene",
+    "bin/logres-control",
     "bin/logres-regression-capture",
     "bin/logres-regression-dedupe",
     "bin/logres-recon-loop",
