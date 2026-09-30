@@ -8,6 +8,7 @@ from pathlib import Path
 from logres_finish_loop import active_milestone_id
 from logres_knowledge import ensure_schema as ensure_knowledge_schema
 from logres_knowledge import task_knowledge
+from nexus_verified_progress import DecisionInput, decide
 
 
 SATISFIED = {"DONE", "RESOLVED", "INTEGRATED"}
@@ -347,14 +348,20 @@ def score_ready_tasks(
         engine = "research" if work_type in {"research", "evidence", "analysis", "verification"} else "copilot"
         success = engine_success_rate(conn, engine=engine, work_type=work_type)
 
-        # Priority is a hard strategic axis. Within a priority band, favor
-        # work that shortens the longest dependency chain, unlocks descendants,
-        # closes high-value evidence gaps, has a reliable engine, and is cheap.
+        # Priority remains an operator constraint. Within that band optimize
+        # for expected *verified* progress, not raw activity. Critical-path
+        # minutes and downstream descendants form transparent unlock value;
+        # engine outcomes estimate success; knowledge support bounds confidence.
+        unlock_value = max(1.0, float(downstream + 1) * (1.0 + critical / 60.0))
+        verification_confidence = max(0.25, min(1.0, 1.0 - gap * 0.25))
+        receipt = decide([DecisionInput(
+            task_id=task_id, priority=priority, work_type=work_type,
+            unlock_value=unlock_value, success_likelihood=success,
+            verification_confidence=verification_confidence,
+            expected_minutes=expected, resource_cost=1.0,
+        )])[0]
         score = 1_000_000.0 - priority * 100_000.0
-        score += critical * 180.0
-        score += downstream * 8_000.0
-        score += success * 10_000.0
-        score -= expected * 35.0
+        score += receipt.expected_verified_progress * 1_000_000.0
 
         rationale = [
             f"P{priority}",
@@ -362,6 +369,9 @@ def score_ready_tasks(
             f"unlocks={downstream}",
             f"expected={expected}m",
             f"engine_success={success:.2f}",
+            f"evp={receipt.expected_verified_progress:.6f}",
+            f"verification_confidence={verification_confidence:.2f}",
+            f"capability={receipt.capability}",
         ]
         if task_id in active_milestone_tasks:
             rationale.append("active-milestone")
