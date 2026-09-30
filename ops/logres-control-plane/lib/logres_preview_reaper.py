@@ -14,6 +14,7 @@ from typing import Callable
 VITE_PREVIEW_RE = re.compile(
     r"(?:^|\s)node\s+(?P<root>/[^\s]+?)/node_modules/\.bin/vite\s+preview(?:\s|$)"
 )
+VERIFY_FARM_PREVIEW_RE = re.compile(r"^/dev/shm/logres/verify-farm-[0-9]{8}T[0-9]{6}-(?:e2e|performance)$")
 
 
 @dataclass(frozen=True)
@@ -52,6 +53,10 @@ def decide_preview(
     min_age_seconds: float,
 ) -> ReaperDecision:
     if worktree is None:
+        if VERIFY_FARM_PREVIEW_RE.fullmatch(process.worktree_path):
+            if process.age_seconds < min_age_seconds:
+                return ReaperDecision(False, "young-verify-farm")
+            return ReaperDecision(True, "abandoned-verify-farm")
         return ReaperDecision(False, "unknown-worktree")
     if process.worktree_path != worktree.path:
         return ReaperDecision(False, "path-mismatch")
@@ -249,10 +254,11 @@ def current_candidate_safe(
         )
     finally:
         conn.close()
-    return decision.eligible and git_worktree_safe(
-        process.worktree_path,
-        integration_repo,
-    )
+    if not decision.eligible:
+        return False
+    if decision.reason == "abandoned-verify-farm":
+        return VERIFY_FARM_PREVIEW_RE.fullmatch(process.worktree_path) is not None
+    return git_worktree_safe(process.worktree_path, integration_repo)
 
 
 def process_still_matches(

@@ -109,6 +109,30 @@ class PreviewReaperDecisionTests(unittest.TestCase):
         self.assertFalse(decision.eligible)
         self.assertEqual("active", decision.reason)
 
+    def test_old_verify_farm_preview_is_eligible_without_worktree_row(self):
+        root = "/dev/shm/logres/verify-farm-20260928T232550-performance"
+        decision = decide_preview(
+            process(root=root), None, set(), min_age_seconds=7200
+        )
+        self.assertTrue(decision.eligible)
+        self.assertEqual("abandoned-verify-farm", decision.reason)
+
+    def test_young_verify_farm_preview_is_protected(self):
+        root = "/dev/shm/logres/verify-farm-20260930T004500-e2e"
+        decision = decide_preview(
+            process(root=root, age=600), None, set(), min_age_seconds=7200
+        )
+        self.assertFalse(decision.eligible)
+        self.assertEqual("young-verify-farm", decision.reason)
+
+    def test_similar_unknown_dev_shm_path_is_protected(self):
+        root = "/dev/shm/logres/not-verify-farm-performance"
+        decision = decide_preview(
+            process(root=root), None, set(), min_age_seconds=7200
+        )
+        self.assertFalse(decision.eligible)
+        self.assertEqual("unknown-worktree", decision.reason)
+
     def test_unknown_worktree_is_protected(self):
         decision = decide_preview(
             process(),
