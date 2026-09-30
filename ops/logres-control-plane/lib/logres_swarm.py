@@ -647,6 +647,24 @@ def swarm_capacity(conn: sqlite3.Connection, config: dict) -> SwarmCapacity:
     )
 
 
+def current_autonomy_scope(conn: sqlite3.Connection) -> str:
+    if not _table_exists(conn, "project_decisions"):
+        return ""
+    row = conn.execute(
+        "select selected from project_decisions where scope='autonomy-scope' order by id desc limit 1"
+    ).fetchone()
+    return str(row[0] or "").strip().upper() if row else ""
+
+
+def task_allowed_by_autonomy_scope(conn: sqlite3.Connection, task: dict) -> bool:
+    scope = current_autonomy_scope(conn)
+    if scope != "OCI_ONLY":
+        return True
+    material = f"{task.get('id','')} {task.get('title','')}".upper()
+    deferred = ("UPCLOUD", "REMOTE-POOL", "REMOTE_POOL")
+    return not any(token in material for token in deferred)
+
+
 def ready_tasks(conn: sqlite3.Connection) -> list[dict]:
     owned = active_copilot_task_ids(conn) | active_swarm_task_ids(conn)
     rows = conn.execute(
@@ -666,6 +684,7 @@ def ready_tasks(conn: sqlite3.Connection) -> list[dict]:
         dict(row)
         for row in rows
         if str(row["id"]) not in owned
+        and task_allowed_by_autonomy_scope(conn, dict(row))
     ]
 
 

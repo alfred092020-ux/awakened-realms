@@ -1142,7 +1142,7 @@ class ChatGptFailoverTests(unittest.TestCase):
             self.assertEqual("AUTONOMY-COMPLETION", saved["task"])
             self.assertEqual("preserve me", saved["note"])
             self.assertTrue(result["state"]["baton_heartbeat"]["refreshed"])
-            self.assertEqual("fresh", result["state"]["devin_failover"]["action"])
+            self.assertEqual("advisory-only", result["state"]["devin_failover"]["action"])
 
     def test_live_supervisor_never_resumes_suppressed_baton(self):
         with tempfile.TemporaryDirectory() as td:
@@ -1159,7 +1159,7 @@ class ChatGptFailoverTests(unittest.TestCase):
             self.assertEqual("PAUSED", saved["run_state"])
             self.assertEqual(100.0, saved["updated_epoch"])
             self.assertFalse(result["state"]["baton_heartbeat"]["refreshed"])
-            self.assertEqual("suppressed", result["state"]["devin_failover"]["action"])
+            self.assertEqual("advisory-only", result["state"]["devin_failover"]["action"])
 
     def test_stale_verification_cleanup_is_bounded_and_process_aware(self):
         with tempfile.TemporaryDirectory() as td:
@@ -1560,7 +1560,7 @@ class ChatGptFailoverTests(unittest.TestCase):
             )
             self.assertEqual(["probe"], result["ran"])
             self.assertEqual(
-                "suppressed",
+                "advisory-only",
                 result["state"]["devin_failover"]["action"],
             )
 
