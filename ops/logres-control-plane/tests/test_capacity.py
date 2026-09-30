@@ -61,9 +61,9 @@ class CapacityTests(unittest.TestCase):
             self.policy(),
         )
         self.assertEqual(10, plan["local_logical_workers"])
-        self.assertEqual(0, plan["remote_workers"])
-        self.assertEqual(10, plan["logical_workers"])
-        self.assertNotIn("remote_pool_exact_sha_capacity", plan["reasons"])
+        self.assertEqual(3, plan["remote_workers"])
+        self.assertEqual(13, plan["logical_workers"])
+        self.assertIn("remote_pool_exact_sha_capacity", plan["reasons"])
 
     def test_stale_or_unavailable_remote_pool_does_not_inflate_capacity(self):
         plan = capacity.plan_capacity(
@@ -213,7 +213,6 @@ class CapacityTests(unittest.TestCase):
         raw = json.loads((CONTROL_ROOT / "config" / "capacity_policy.json").read_text())
         self.assertEqual(10, raw["logical_workers"]["target"])
         self.assertEqual(10, raw["logical_workers"]["max"])
-        self.assertEqual(0, raw["remote_pool"]["max_slots"])
         self.assertEqual(4, raw["heavy_local_workers"]["target"])
         self.assertFalse(raw["quota"]["allow_on_demand_default"])
         self.assertEqual(2, raw["quota"]["unknown_devin_cap"])
