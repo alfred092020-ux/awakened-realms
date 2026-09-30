@@ -323,12 +323,12 @@ def dispatch_research(
         budget = budget_state(
             conn,
             cfg,
-            int(task.get("priority") or 9),
+            int(9 if task.get("priority") is None else task.get("priority")),
             model,
         )
         if not automatic_api_allowed(
             budget,
-            int(task.get("priority") or 9),
+            int(9 if task.get("priority") is None else task.get("priority")),
         ):
             continue
 
@@ -763,7 +763,7 @@ def dispatch_patch(
             )
             continue
 
-        priority = int(task.get("priority") or 9)
+        priority = int(9 if task.get("priority") is None else task.get("priority"))
         budget = budget_state(conn, cfg, priority, model)
         if not automatic_api_allowed(budget, priority):
             continue

@@ -1142,7 +1142,8 @@ def claim_pending_wakes(
             if len(claimed) >= limit:
                 break
             payload = _wake_payload(conn, row)
-            priority = int(payload["event"].get("priority") or 9)
+            raw_priority = payload["event"].get("priority")
+            priority = int(9 if raw_priority is None else raw_priority)
             is_paid = payload["cost_class"].lower() in PAID_COST_CLASSES
             # Subscription rows are untrusted policy inputs: they may describe
             # delivery metadata but can never authorize spend. Only the
