@@ -47,8 +47,8 @@
     "research_max_attempts": 2
   },
   "remote_pool": {
-    "enabled": true,
-    "hybrid_verify_enabled": true,
+    "enabled": false,
+    "hybrid_verify_enabled": false,
     "remote_unit_test_role": "auto",
     "local_e2e_authoritative": true
   },

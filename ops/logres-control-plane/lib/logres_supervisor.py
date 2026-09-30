@@ -1287,7 +1287,9 @@ def tick(
         atomic_json(heartbeat_path, state)
         ran.append(job.name)
 
-    if failover_enabled:
+    # Baton is advisory continuity metadata only. Scheduler health and Brain state
+    # are authoritative; stale Baton state must never launch or block work.
+    if failover_enabled and os.environ.get("LOGRES_BATON_FAILOVER_ENABLED", "0") == "1":
         try:
             failover = failover_tick(
                 root,
@@ -1303,6 +1305,9 @@ def tick(
                 "error": f"{type(exc).__name__}: {exc}",
             }
         state["devin_failover"] = failover
+        atomic_json(heartbeat_path, state)
+    else:
+        state["devin_failover"] = {"action": "advisory-only", "authoritative": False}
         atomic_json(heartbeat_path, state)
     return {"ran": ran, "state": state}
 

@@ -583,7 +583,7 @@ class GateFarmIntegrationTests(unittest.TestCase):
         self.assertIn('--aux-db "$VISUAL_TRUTH_DB"', text)
         # existing gates preserved
         for needle in (
-            'exec 9>/tmp/logres-verify-farm.lock',
+            'LOGRES_VERIFY_FARM_SLOTS:-2',
             'SHA=$(git -C "$BASE" rev-parse "$REF")',
             'hydrate "$E2E_WT"',
             'npm run test:e2e -- "${shared_e2e_specs[@]}" --workers="$E2E_WORKERS"',
