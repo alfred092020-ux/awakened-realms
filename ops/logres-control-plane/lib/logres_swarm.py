@@ -15,7 +15,7 @@ from logres_optimizer import rank_task_ids
 
 
 TERMINAL_JOB_STATES = {"DONE", "BLOCKED", "FAILED", "SUPERSEDED"}
-RESEARCH_WORK_TYPES = {"research", "evidence", "analysis"}
+RESEARCH_WORK_TYPES = {"research", "evidence", "analysis", "verification"}
 IMPLEMENTATION_WORK_TYPES = {"implementation", "regression", "code"}
 CONTROL_PLANE_PREFIX = "ops/logres-control-plane/"
 RUNTIME_ONLY_ISOLATION_SURFACE = frozenset({"ops/logres-control-plane/bin/logres-swarm"})
