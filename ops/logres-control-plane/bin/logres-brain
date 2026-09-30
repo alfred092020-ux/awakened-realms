@@ -384,6 +384,8 @@ def lease_task(c,chat_id,task_id,minutes:int,branch:str|None,note:str,
             "Assign development work to another chat. "
             "LOGRES_ALLOW_LEAD_DEV=1 is emergency recovery only."
         )
+    if t["status"] in {"DONE", "CANCELLED", "SUPERSEDED"}:
+        raise SystemExit(f"{task_id} is terminal ({t['status']}); terminal tasks cannot be leased or reactivated")
     if t["status"].startswith("BLOCKED") and not force:
         raise SystemExit(f"{task_id} is {t['status']}; Lead may use --force only if intentionally overriding")
     now=time.time(); until=now+max(5,minutes)*60
