@@ -23,8 +23,8 @@ REPO = Path(
 )
 SSH_KEY = Path(
     os.environ.get(
-        "LOGRES_UPCLOUD_SSH_KEY",
-        "/home/ubuntu/.ssh/logres_upcloud",
+        "LOGRES_REMOTE_SSH_KEY",
+        "/home/ubuntu/.ssh/logres_remote",
     )
 )
 ARTIFACT_ROOT = Path(
@@ -95,7 +95,7 @@ def build_parser() -> argparse.ArgumentParser:
         prog="logres-remote-pool",
         description=(
             "Exact-SHA verification/build execution across the bounded "
-            "Logres UpCloud compute pool."
+            "Legacy remote compute pool (disabled under OCI-only production policy)."
         ),
     )
     sub = parser.add_subparsers(dest="command", required=True)
