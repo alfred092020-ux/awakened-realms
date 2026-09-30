@@ -310,6 +310,15 @@ cp "$BUILT_APK" "$APK_OUT"
 APK_SHA256="$(sha256sum "$APK_OUT" | awk '{print $1}')"
 APK_BYTES="$(stat -c '%s' "$APK_OUT")"
 KEYSTORE_SHA256="$(sha256sum "$KEYSTORE" | awk '{print $1}')"
+EXPECTED_CERT_SHA256="$(keytool -list -v -keystore "$KEYSTORE" -alias androiddebugkey -storepass android -keypass android 2>/dev/null | sed -n 's/^[[:space:]]*SHA256: //p' | tr -d ':' | tr '[:upper:]' '[:lower:]' | head -1)"
+if [[ -z "$EXPECTED_CERT_SHA256" ]]; then
+  echo "Unable to derive androiddebugkey certificate from selected keystore: $KEYSTORE" >&2
+  exit 1
+fi
+if [[ "$CERT_SHA256" != "$EXPECTED_CERT_SHA256" ]]; then
+  echo "APK signing certificate mismatch: selected keystore=$EXPECTED_CERT_SHA256 apk=$CERT_SHA256" >&2
+  exit 1
+fi
 BUILD_FINISHED="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
 python3 -   "$MANIFEST_OUT" "$SOURCE_REF" "$SHA" "$SHORT_SHA" "$LABEL"   "$VERIFICATION_STATUS" "$VERIFICATION_REF" "$VERIFICATION_RAN_AT" "$VERIFICATION_DETAIL"   "$APK_OUT" "$APK_SHA256" "$APK_BYTES" "$PACKAGE_NAME" "$VERSION_CODE" "$VERSION_NAME"   "$CERT_SHA256" "$KEYSTORE_SHA256" "$DEPS_MODE" "$BUILD_STARTED" "$BUILD_FINISHED"   "$HYDRATION_DIR" "$WT" <<'PY'
