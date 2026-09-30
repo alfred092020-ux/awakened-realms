@@ -41,7 +41,14 @@ def refresh_integration_sha(c:sqlite3.Connection)->None:
     except Exception:
         pass
 
-def conn()->sqlite3.Connection:
+def conn(readonly:bool=False)->sqlite3.Connection:
+    if readonly:
+        c=sqlite3.connect(f"file:{DB}?mode=ro",uri=True,timeout=5,isolation_level=None)
+        c.row_factory=sqlite3.Row
+        c.execute("pragma query_only=ON")
+        c.execute("pragma busy_timeout=5000")
+        c.execute("pragma foreign_keys=ON")
+        return c
     DB.parent.mkdir(parents=True,exist_ok=True)
     c=sqlite3.connect(DB,timeout=30,isolation_level=None)
     c.row_factory=sqlite3.Row
@@ -756,7 +763,6 @@ def cmd_who(c,args):
         )
 
 def cmd_digest(c,args):
-    expire_leases(c)
     print("=== BRAIN DIGEST ===")
     cmd_who(c,args)
     print("\n=== ACTIVE TASK LEASES ===")
@@ -1001,9 +1007,11 @@ def build_parser():
 def main():
     p=build_parser()
     args=p.parse_args()
-    c=conn()
+    readonly=args.cmd in {"who","digest","history","health"}
+    c=conn(readonly=readonly)
     try:
-        expire_leases(c)
+        if not readonly:
+            expire_leases(c)
         args.func(c,args)
     except RuntimeError as e:
         print(str(e),file=sys.stderr)

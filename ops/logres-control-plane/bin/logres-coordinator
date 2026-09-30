@@ -39,7 +39,13 @@ def configured_max_active():
 def effective_max_active(args):
     return args.max_active if args.max_active is not None else configured_max_active()
 
-def conn():
+def conn(readonly=False):
+    if readonly:
+        c=sqlite3.connect(f"file:{DB}?mode=ro",uri=True,timeout=5)
+        c.row_factory=sqlite3.Row
+        c.execute("pragma query_only=ON")
+        c.execute("pragma busy_timeout=5000")
+        return c
     c=sqlite3.connect(DB,timeout=30)
     c.row_factory=sqlite3.Row
     c.execute("pragma journal_mode=WAL")
@@ -640,7 +646,6 @@ def reconcile(c,verbose=True):
         for x in changed: print(" ",x[0],"->",x[1])
 
 def cmd_plan(c,args):
-    reconcile(c,False)
     head=git_sha("feat/logres-reconstruction") or "unknown"
     print("LOGRES COORDINATION PLAN")
     print("integration="+head[:12])
@@ -687,7 +692,6 @@ def cmd_plan(c,args):
               f"verify={x['verification_mode'] or '-'}")
 
 def cmd_brief(c,args):
-    reconcile(c,False)
     mine=[r for r in active_leases(c) if r["chat_id"]==args.chat]
     print("LOGRES CHAT BRIEF")
     print("chat="+args.chat+" integration="+(git_sha("feat/logres-reconstruction") or "unknown")[:12])
@@ -857,7 +861,6 @@ def cmd_acquire(c,args):
     print(f"ACQUIRED task={task_id} branch={branch} until_epoch={until:.0f}")
 
 def cmd_next(c,args):
-    reconcile(c,False)
     mine=[r for r in active_leases(c) if r["chat_id"]==args.chat]
     if mine:
         task=mine[0]["task_id"]
@@ -1024,7 +1027,7 @@ def build():
     return p
 
 def main():
-    p=build(); args=p.parse_args(); c=conn()
+    p=build(); args=p.parse_args(); c=conn(readonly=args.cmd in {"plan","brief","next","queue"})
     try: args.fn(c,args)
     finally: c.close()
 
