@@ -55,6 +55,24 @@ class CapacityTests(unittest.TestCase):
         self.assertEqual(0, plan["lane_caps"]["copilot"])
         self.assertLessEqual(plan["heavy_local_workers"], plan["lane_caps"]["local"])
 
+    def test_exact_sha_remote_pool_adds_three_slots_to_ten_local_workers(self):
+        plan = capacity.plan_capacity(
+            self.signals(remote_pool={"exact_sha_available_slots": 3}),
+            self.policy(),
+        )
+        self.assertEqual(10, plan["local_logical_workers"])
+        self.assertEqual(3, plan["remote_workers"])
+        self.assertEqual(13, plan["logical_workers"])
+        self.assertIn("remote_pool_exact_sha_capacity", plan["reasons"])
+
+    def test_stale_or_unavailable_remote_pool_does_not_inflate_capacity(self):
+        plan = capacity.plan_capacity(
+            self.signals(remote_pool={"exact_sha_available_slots": 0}),
+            self.policy(),
+        )
+        self.assertEqual(10, plan["logical_workers"])
+        self.assertEqual(0, plan["remote_workers"])
+
     def test_high_host_pressure_downshifts_heavy_local_without_killing_cloud(self):
         signals = self.signals(host={
             "cpu_psi_avg10": 12.0,

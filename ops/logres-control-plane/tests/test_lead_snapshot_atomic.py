@@ -143,6 +143,11 @@ class LeadSnapshotAtomicTests(unittest.TestCase):
             self.assertEqual("previous\n", target.read_text())
             self.assertEqual([], temp_outputs(root))
 
+    def test_code_index_falls_back_to_control_when_index_is_not_writable(self):
+        text = SCRIPT.read_text()
+        self.assertIn('CODE_INDEX_LOG="$ROOT/index/code-index.log"', text)
+        self.assertIn('CODE_INDEX_LOG="$ROOT/control/code-index.log"', text)
+
     def test_no_fixed_publication_tmp_names_remain(self):
         text = SCRIPT.read_text()
         for name in OUTPUTS:

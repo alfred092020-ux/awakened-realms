@@ -5,6 +5,7 @@ import argparse
 import json
 import os
 import sqlite3
+import subprocess
 import sys
 import tempfile
 import time
@@ -47,11 +48,32 @@ def write_state(payload: dict) -> None:
             pass
 
 
+def remote_pool_signals() -> dict:
+    remote_bin = ROOT / "bin/logres-remote-pool"
+    repo = ROOT / "src/awakened-realms"
+    try:
+        sha = subprocess.run(["git", "-C", str(repo), "rev-parse", "HEAD"], text=True, capture_output=True, check=True, timeout=10).stdout.strip()
+        result = subprocess.run([str(remote_bin), "status", "--json"], text=True, capture_output=True, check=False, timeout=30)
+        rows = json.loads(result.stdout) if result.returncode == 0 else []
+    except (OSError, subprocess.SubprocessError, json.JSONDecodeError):
+        rows = []
+        sha = ""
+    healthy = [row for row in rows if row.get("reachable")]
+    # RemotePool.run() performs a guarded exact-SHA sync before every job, so a
+    # reachable slot is exact-SHA capable even when its persistent checkout is stale.
+    return {
+        "canonical_sha": sha,
+        "exact_sha_available_slots": sum(max(0, int(row.get("available_slots") or 0)) for row in healthy),
+        "exact_sha_max_slots": sum(max(0, int(row.get("max_slots") or 0)) for row in healthy),
+        "reachable_workers": len(healthy),
+    }
+
 def compute() -> dict:
     policy = load_policy(POLICY)
     conn = connect_readonly()
     try:
         signals = collect_signals(conn)
+        signals["remote_pool"] = remote_pool_signals()
     finally:
         conn.close()
     plan = plan_capacity(signals, policy)

@@ -160,6 +160,12 @@ def plan_capacity(signals: dict, policy: dict | None = None) -> dict:
         reasons.append("independent_queue_scale_up")
 
     logical = max(_i(logical_cfg["min"]), min(_i(logical_cfg["max"]), logical))
+    remote_slots = max(0, _i((signals.get("remote_pool") or {}).get("exact_sha_available_slots")))
+    remote_limit = max(0, _i(policy.get("remote_pool", {}).get("max_slots", 0)))
+    remote_workers = min(remote_slots, remote_limit)
+    logical += remote_workers
+    if remote_workers:
+        reasons.append("remote_pool_exact_sha_capacity")
     heavy = max(_i(heavy_cfg["min"]), min(_i(heavy_cfg["max"]), heavy))
 
     devin_cap, quota_reasons = _devin_cap(signals, policy)
@@ -182,6 +188,8 @@ def plan_capacity(signals: dict, policy: dict | None = None) -> dict:
     on_demand = bool((signals.get("devin") or {}).get("on_demand_authorized", policy["quota"]["allow_on_demand_default"]))
     return {
         "logical_workers": logical,
+        "local_logical_workers": logical - remote_workers,
+        "remote_workers": remote_workers,
         "heavy_local_workers": heavy,
         "pressure": pressure,
         "lane_caps": lane_caps,

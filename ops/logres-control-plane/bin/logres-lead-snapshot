@@ -26,7 +26,11 @@ atomic_capture() {
   fi
 }
 
-"$ROOT/bin/logres-code-index" >"$ROOT/index/code-index.log" 2>&1 || true
+CODE_INDEX_LOG="$ROOT/index/code-index.log"
+if ! ( : >>"$CODE_INDEX_LOG" ) 2>/dev/null; then
+  CODE_INDEX_LOG="$ROOT/control/code-index.log"
+fi
+"$ROOT/bin/logres-code-index" >"$CODE_INDEX_LOG" 2>&1 || true
 atomic_capture "$ROOT/control/LEAD_SNAPSHOT.txt" "$ROOT/bin/logres-control" refresh
 atomic_capture "$ROOT/control/LEAD_SNAPSHOT.json" "$ROOT/bin/logres-lead-json"
 atomic_capture "$ROOT/control/WORKTREE_AUDIT.txt" "$ROOT/bin/logres-worktree-audit"
