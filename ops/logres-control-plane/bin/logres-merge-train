@@ -177,7 +177,7 @@ def refresh(c):
     integ=sha("origin/"+INTEGRATION) or sha(INTEGRATION)
     changed=supersede_repaired_conflicts(c)
     conflict_routes=[]
-    rows=list(c.execute("""select q.*,t.priority,t.title from integration_queue q
+    rows=list(c.execute("""select q.*,t.priority,t.title,t.status as task_status from integration_queue q
       left join tasks t on t.id=q.task_id
       where q.status not in ('INTEGRATED','SUPERSEDED','QUARANTINED')
       order by coalesce(t.priority,99),q.queued_at"""))
@@ -186,7 +186,9 @@ def refresh(c):
         live=sha(branch)
         remote_candidate=sha("origin/"+branch)
         status=q["status"]; note=q["note"] or ""
-        if live!=candidate or remote_candidate!=candidate:
+        if q['task_status'] in ('DONE','SUPERSEDED','FAILED','BLOCKED_DEP'):
+            new='SUPERSEDED'; new_note=f"Owning task is terminal ({q['task_status']}); skip scope enforcement/reporting."
+        elif live!=candidate or remote_candidate!=candidate:
             new="CANDIDATE_MOVED"
             new_note=(
                 f"branch moved/missing after queueing: queued={candidate[:12]} "
@@ -255,7 +257,7 @@ def refresh(c):
     return changed
 
 def rows_ready(c):
-    return list(c.execute("""select q.*,t.priority,t.title from integration_queue q
+    return list(c.execute("""select q.*,t.priority,t.title,t.status as task_status from integration_queue q
       left join tasks t on t.id=q.task_id
       where q.status='READY_FOR_INTEGRATION'
       order by coalesce(t.priority,99),q.queued_at,q.task_id"""))
@@ -264,7 +266,7 @@ def cmd_status(c,args):
     n=refresh(c)
     print(f"LOGRES MERGE TRAIN refreshed={n}")
     history="" if getattr(args,"history",False) else "where q.status not in ('INTEGRATED','SUPERSEDED','QUARANTINED')"
-    rows=list(c.execute(f"""select q.*,t.priority,t.title from integration_queue q
+    rows=list(c.execute(f"""select q.*,t.priority,t.title,t.status as task_status from integration_queue q
       left join tasks t on t.id=q.task_id
       {history}
       order by case q.status
