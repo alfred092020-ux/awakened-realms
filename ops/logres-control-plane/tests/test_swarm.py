@@ -112,6 +112,16 @@ class SwarmTests(unittest.TestCase):
         selected = select_research_tasks(self.conn, 4)
         self.assertIn("VERIFY-LANE-READY", [t["id"] for t in selected])
 
+    def test_oci_only_decision_excludes_deferred_upcloud_tasks(self):
+        self.conn.execute("create table if not exists project_decisions(id integer primary key autoincrement, scope text, selected text)")
+        self.conn.execute("insert into project_decisions(scope,selected) values('autonomy-scope','OCI_ONLY')")
+        seed_task(self.conn, "AUTONOMY-UPCLOUD-CAPACITY-RESTORE-033", status="READY", priority=0, work_type="implementation")
+        seed_task(self.conn, "OCI-USEFUL-WORK", status="READY", priority=1, work_type="implementation")
+        self.conn.commit()
+        ids = [task["id"] for task in ready_tasks(self.conn)]
+        self.assertNotIn("AUTONOMY-UPCLOUD-CAPACITY-RESTORE-033", ids)
+        self.assertIn("OCI-USEFUL-WORK", ids)
+
     def test_ten_local_worker_capacity_ceiling(self):
         cap = swarm_capacity(
             self.conn,
