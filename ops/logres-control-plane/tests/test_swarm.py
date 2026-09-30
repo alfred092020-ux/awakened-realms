@@ -86,6 +86,11 @@ class SwarmTests(unittest.TestCase):
         self.assertIn('"placement_hints"', script)
         self.assertIn('"selected_lane": plan.selected_lane', script)
 
+    def test_priority_zero_is_not_coerced_to_nine_in_budget_gating(self):
+        script = (CONTROL_ROOT / "bin" / "logres-swarm").read_text()
+        self.assertNotIn('task.get("priority") or 9', script)
+        self.assertIn('9 if task.get("priority") is None else task.get("priority")', script)
+
     def test_classifies_research_and_implementation_engines(self):
         self.assertEqual("research", classify_engine({"work_type": "research"}))
         self.assertEqual("research", classify_engine({"work_type": "verification"}))
