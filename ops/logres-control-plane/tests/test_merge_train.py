@@ -81,26 +81,33 @@ class MergeTrainQuarantineTests(unittest.TestCase):
         conn.commit()
         return sha
 
-    def test_terminal_owner_is_superseded_before_scope_check_or_brain_report(self):
+    def test_terminal_done_owner_keeps_verified_candidate_without_brain_report(self):
         conn = make_db()
         sha = self._seed(conn, "READY_FOR_PREFLIGHT")
         conn.execute("update tasks set status='DONE' where id='T1'")
+        conn.execute("insert into verification(ref,sha,mode,status,duration_sec,ran_at,details) values('worker/t1',?,'fast','PASS',1,'now','ok')",(sha,))
         conn.commit()
         with mock.patch.object(merge_train, "fetch_origin"), \
              mock.patch.object(merge_train, "run") as run, \
              mock.patch.object(merge_train, "sha", return_value=sha), \
              mock.patch.object(merge_train, "ancestor", return_value=False), \
              mock.patch.object(merge_train, "patch_equivalent", return_value=False), \
+             mock.patch.object(merge_train, "clean_merge_possible", return_value=(True,"")), \
              mock.patch.object(merge_train, "supersede_repaired_conflicts", return_value=0), \
              mock.patch.object(merge_train.subprocess, "run") as subprocess_run:
-            run.return_value = mock.Mock(returncode=1, stdout="scope violation", stderr="")
-            changed = merge_train.refresh(conn)
-        row=conn.execute("select status,note from integration_queue where task_id='T1'").fetchone()
-        self.assertEqual('SUPERSEDED',row['status'])
-        self.assertIn('terminal (DONE)',row['note'])
-        self.assertFalse(any('logres-scope-check' in str(c) for c in run.call_args_list))
+            run.return_value = mock.Mock(returncode=0, stdout="", stderr="")
+            merge_train.refresh(conn)
+        row=conn.execute("select status from integration_queue where task_id='T1'").fetchone()
+        self.assertEqual('READY_FOR_PREFLIGHT',row['status'])
         subprocess_run.assert_not_called()
-        self.assertEqual(1,changed)
+
+    def test_terminal_owner_scope_failure_is_retained_without_brain_report(self):
+        conn = make_db(); sha=self._seed(conn,"READY_FOR_PREFLIGHT")
+        conn.execute("update tasks set status='DONE' where id='T1'"); conn.commit()
+        with mock.patch.object(merge_train,"fetch_origin"), mock.patch.object(merge_train,"run") as run, mock.patch.object(merge_train,"sha",return_value=sha), mock.patch.object(merge_train,"ancestor",return_value=False), mock.patch.object(merge_train,"patch_equivalent",return_value=False), mock.patch.object(merge_train,"supersede_repaired_conflicts",return_value=0), mock.patch.object(merge_train.subprocess,"run") as subprocess_run:
+            run.return_value=mock.Mock(returncode=1,stdout="scope violation",stderr=""); merge_train.refresh(conn)
+        row=conn.execute("select status,note from integration_queue where task_id='T1'").fetchone()
+        self.assertEqual('SCOPE_VIOLATION',row['status']); self.assertIn('terminal (DONE)',row['note']); subprocess_run.assert_not_called()
 
     def test_refresh_does_not_touch_quarantined_fast_pass_row(self):
         conn = make_db()
