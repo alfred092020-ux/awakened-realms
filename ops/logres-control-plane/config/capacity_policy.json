@@ -60,6 +60,6 @@
     "Release": 0.12
   },
   "remote_pool": {
-    "max_slots": 3
+    "max_slots": 0
   }
 }
