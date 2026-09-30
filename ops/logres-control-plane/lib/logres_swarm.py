@@ -651,7 +651,7 @@ def ready_tasks(conn: sqlite3.Connection) -> list[dict]:
     owned = active_copilot_task_ids(conn) | active_swarm_task_ids(conn)
     rows = conn.execute(
         """select t.id,t.priority,t.title,t.lane,t.status,
-                  coalesce(m.work_type,'implementation') work_type,
+                  coalesce(nullif(m.work_type,''), nullif(t.lane,''), 'implementation') work_type,
                   coalesce(m.expected_minutes,60) expected_minutes,
                   coalesce(m.concurrency_key,'') concurrency_key,
                   coalesce(m.evidence_policy,'') evidence_policy

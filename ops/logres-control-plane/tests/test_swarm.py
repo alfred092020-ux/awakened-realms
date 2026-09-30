@@ -101,6 +101,17 @@ class SwarmTests(unittest.TestCase):
         selected=select_research_tasks(self.conn, 4)
         self.assertIn("VERIFY-READY", [t["id"] for t in selected])
 
+    def test_verification_lane_fills_missing_work_type_for_autonomous_routing(self):
+        seed_task(self.conn, "VERIFY-LANE-READY", status="READY", priority=1, work_type="")
+        self.conn.execute("update tasks set lane='verification' where id='VERIFY-LANE-READY'")
+        self.conn.commit()
+
+        task = next(t for t in ready_tasks(self.conn) if t["id"] == "VERIFY-LANE-READY")
+        self.assertEqual("verification", task["work_type"])
+        self.assertEqual("research", classify_engine(task))
+        selected = select_research_tasks(self.conn, 4)
+        self.assertIn("VERIFY-LANE-READY", [t["id"] for t in selected])
+
     def test_ten_local_worker_capacity_ceiling(self):
         cap = swarm_capacity(
             self.conn,

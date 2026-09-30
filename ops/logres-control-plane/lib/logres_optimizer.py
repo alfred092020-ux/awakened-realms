@@ -321,7 +321,7 @@ def score_ready_tasks(
     active_milestone_tasks = _active_milestone_task_ids(conn)
     rows = conn.execute(
         """select t.id,t.priority,t.title,
-                  coalesce(m.work_type,'implementation') work_type,
+                  coalesce(nullif(m.work_type,''), nullif(t.lane,''), 'implementation') work_type,
                   coalesce(m.expected_minutes,60) expected_minutes,
                   coalesce(m.evidence_policy,'') evidence_policy
              from tasks t
@@ -344,7 +344,7 @@ def score_ready_tasks(
         support = knowledge.support_score
         gap = 1.0 - support
 
-        engine = "research" if work_type in {"research", "evidence", "analysis"} else "copilot"
+        engine = "research" if work_type in {"research", "evidence", "analysis", "verification"} else "copilot"
         success = engine_success_rate(conn, engine=engine, work_type=work_type)
 
         # Priority is a hard strategic axis. Within a priority band, favor
