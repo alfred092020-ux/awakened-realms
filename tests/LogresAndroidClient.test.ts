@@ -12,63 +12,29 @@ function readRepoFile(...segments: string[]) {
 }
 
 describe('logres android client hardening smoke', () => {
-  it('keeps deterministic bridge lifecycle initialization in MainActivity', () => {
+  it('uses a native Android command-center activity without a WebView bridge', () => {
     const mainActivity = readRepoFile(
-      'android',
-      'app',
-      'src',
-      'main',
-      'java',
-      'com',
-      'nexuscore',
-      'awakenedrealms',
-      'MainActivity.java',
+      'android', 'app', 'src', 'main', 'java', 'com', 'nexuscore', 'awakenedrealms', 'MainActivity.java',
     )
 
-    expect(mainActivity).toContain('extends BridgeActivity')
-    expect(mainActivity).toContain('super.onCreate(savedInstanceState);')
-    expect(mainActivity).toContain('if (bridge != null && bridge.getWebView() != null)')
-    expect(mainActivity).toContain('setCacheMode(WebSettings.LOAD_NO_CACHE);')
-    expect(mainActivity).toContain('clearCache(true);')
-    expect(mainActivity).toContain('clearHistory();')
-    expect(mainActivity).toContain('reload();')
-
-    const superOnCreateAt = mainActivity.indexOf('super.onCreate(savedInstanceState);')
-    const bridgeGuardAt = mainActivity.indexOf('if (bridge != null && bridge.getWebView() != null)')
-    expect(superOnCreateAt).toBeGreaterThanOrEqual(0)
-    expect(bridgeGuardAt).toBeGreaterThan(superOnCreateAt)
+    expect(mainActivity).toContain('extends Activity')
+    expect(mainActivity).toContain('setContentView(R.layout.activity_main)')
+    expect(mainActivity).toContain('CredentialManager.create(this)')
+    expect(mainActivity).toContain('/api/events')
+    expect(mainActivity).toContain('/api/snapshot')
+    expect(mainActivity).not.toContain('BridgeActivity')
+    expect(mainActivity).not.toContain('getWebView()')
   })
 
-  it('keeps gameplay immersive while restoring system bars when backgrounded', () => {
+  it('keeps native admin controls gated behind authenticated Nexus access', () => {
     const mainActivity = readRepoFile(
-      'android',
-      'app',
-      'src',
-      'main',
-      'java',
-      'com',
-      'nexuscore',
-      'awakenedrealms',
-      'MainActivity.java',
+      'android', 'app', 'src', 'main', 'java', 'com', 'nexuscore', 'awakenedrealms', 'MainActivity.java',
     )
 
-    expect(mainActivity).toContain('private void enterImmersiveMode()')
-    expect(mainActivity).toContain('private void restoreSystemBars()')
-    expect(mainActivity).toContain('WindowInsets.Type.statusBars() | WindowInsets.Type.navigationBars()')
-    expect(mainActivity).toContain('WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE')
-    expect(mainActivity).toContain('View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY')
-    expect(mainActivity).toContain('View.SYSTEM_UI_FLAG_HIDE_NAVIGATION')
-    expect(mainActivity).toContain('View.SYSTEM_UI_FLAG_FULLSCREEN')
-    expect(mainActivity).toContain('public void onResume()')
-    expect(mainActivity).toContain('public void onPause()')
-    expect(mainActivity).toContain('public void onWindowFocusChanged(boolean hasFocus)')
-
-    const onResumeAt = mainActivity.indexOf('public void onResume()')
-    const resumeImmersiveAt = mainActivity.indexOf('enterImmersiveMode();', onResumeAt)
-    const onPauseAt = mainActivity.indexOf('public void onPause()')
-    const restoreAt = mainActivity.indexOf('restoreSystemBars();', onPauseAt)
-    expect(resumeImmersiveAt).toBeGreaterThan(onResumeAt)
-    expect(restoreAt).toBeGreaterThan(onPauseAt)
+    expect(mainActivity).toContain('if(token.isEmpty())')
+    expect(mainActivity).toContain('ADMIN LOCKED')
+    expect(mainActivity).toContain('Authorization')
+    expect(mainActivity).toContain('Bearer ')
   })
 
   it('uses a no-action-bar post-splash theme with dark transparent system bar surfaces', () => {
