@@ -407,6 +407,15 @@ def reconcile(c,verbose=True):
       left join brain_members m on m.chat_id=l.chat_id
       join tasks t on t.id=l.task_id
       where l.lease_until_epoch>?""",(now,)))
+    # Terminal tasks must not be resurrected by a lease renewed after finish.
+    # Such leases are stale ownership state and would otherwise make reconcile
+    # delete a valid integration candidate because only DONE tasks may queue.
+    terminal_lease_tasks={r["task_id"] for r in live_rows if r["task_status"]=="DONE"}
+    for task_id in terminal_lease_tasks:
+        c.execute("delete from brain_task_leases where task_id=?",(task_id,))
+        c.execute("delete from claims where task_id=?",(task_id,))
+        changed.append((task_id,"DONE(stale-lease-cleared)"))
+    live_rows=[r for r in live_rows if r["task_id"] not in terminal_lease_tasks]
     live_by_task={r["task_id"]:r for r in live_rows}
     live_tasks=set(live_by_task)
 

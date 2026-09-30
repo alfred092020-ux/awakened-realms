@@ -242,6 +242,24 @@ class CoordinatorQuarantineTests(unittest.TestCase):
         self.assertEqual("READY_FOR_PREFLIGHT", new["status"])
         self.assertEqual("fast", new["verification_mode"])
 
+
+    def test_reconcile_clears_stale_lease_without_resurrecting_done_task(self):
+        conn = make_scheduler_db()
+        conn.execute("update tasks set status='DONE',branch='worker/done' where id='T1'")
+        conn.execute("create table integration_queue(task_id text,sha text,branch text,status text,verification_mode text,queued_at text,updated_at text,ready_at text,integrated_at text,note text, primary key(task_id,sha))")
+        conn.execute("create table verification(ref text,sha text,mode text,status text,ran_at text)")
+        conn.execute("insert into brain_task_leases values(?,?,?,?,?,?,?,?)", ("T1","worker-1","worker/done",time.time()+3600,"now","now",100,"late renewal"))
+        conn.commit()
+        with mock.patch.object(coordinator, "run", return_value=SimpleNamespace(returncode=0, stdout="", stderr="")), \
+             mock.patch.object(coordinator, "git_sha", return_value=None), \
+             mock.patch.object(coordinator, "reconcile_regression_states", return_value=None), \
+             mock.patch.object(coordinator, "repair_task_regression_terminal", return_value=False):
+            coordinator.reconcile(conn, verbose=False)
+        task=conn.execute("select status from tasks where id='T1'").fetchone()
+        lease=conn.execute("select 1 from brain_task_leases where task_id='T1'").fetchone()
+        self.assertEqual("DONE", task["status"])
+        self.assertIsNone(lease)
+
     def test_coordinator_source_preserves_terminal_rows_during_reconcile(self):
         source = (CONTROL_ROOT / "bin" / "logres-coordinator").read_text()
         self.assertIn(
