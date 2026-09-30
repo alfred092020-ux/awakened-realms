@@ -88,12 +88,18 @@ class SwarmTests(unittest.TestCase):
 
     def test_classifies_research_and_implementation_engines(self):
         self.assertEqual("research", classify_engine({"work_type": "research"}))
+        self.assertEqual("research", classify_engine({"work_type": "verification"}))
         self.assertEqual("research", classify_engine({"work_type": "evidence"}))
         self.assertEqual(
             "copilot",
             classify_engine({"work_type": "implementation"}),
         )
         self.assertEqual("manual", classify_engine({"work_type": "manual"}))
+
+    def test_verification_work_is_autonomously_selectable_by_openai_research_lane(self):
+        seed_task(self.conn, "VERIFY-READY", status="READY", priority=1, work_type="verification")
+        selected=select_research_tasks(self.conn, 4)
+        self.assertIn("VERIFY-READY", [t["id"] for t in selected])
 
     def test_ten_local_worker_capacity_ceiling(self):
         cap = swarm_capacity(
