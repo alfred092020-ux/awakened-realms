@@ -495,12 +495,16 @@ PY
 
 # Full browser verification remains single-flight locally. Remote unit tests do
 # not get merge authority and cannot bypass the local private-hydrated E2E gate.
-exec 9>/tmp/logres-verify-farm.lock
-if ! flock -w "${LOGRES_VERIFY_FARM_WAIT_SEC:-900}" 9; then
-  echo "VERIFY_FARM BUSY: timed out waiting for global verification slot" >&2
-  exit 75
-fi
-
+# Bounded-parallel verification; canonical apply remains single-writer.
+VERIFY_SLOTS="${LOGRES_VERIFY_FARM_SLOTS:-2}"
+[[ "$VERIFY_SLOTS" =~ ^[1-9][0-9]*$ ]] || VERIFY_SLOTS=2
+VERIFY_SLOT=""
+for slot in $(seq 1 "$VERIFY_SLOTS"); do
+  fd=$((20 + slot)); eval "exec ${fd}>/tmp/logres-verify-farm-slot-${slot}.lock"
+  if flock -n "$fd"; then VERIFY_SLOT="$slot"; break; fi
+done
+[[ -n "$VERIFY_SLOT" ]] || { echo "VERIFY_FARM BUSY: bounded slots exhausted" >&2; exit 75; }
+export LOGRES_VERIFY_FARM_SLOT="$VERIFY_SLOT"
 mkdir -p "$ROOT" /home/ubuntu/logres/logs
 SHA=$(git -C "$BASE" rev-parse "$REF")
 [[ "$SHA" =~ ^[0-9a-f]{40}$ ]] || {

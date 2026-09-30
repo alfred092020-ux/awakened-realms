@@ -120,7 +120,7 @@ class VerifyFarmE2EPolicyTests(unittest.TestCase):
     def test_parallelism_changes_scheduling_not_authority(self):
         text = SCRIPT.read_text()
         self.assertIn(
-            'exec 9>/tmp/logres-verify-farm.lock',
+            'LOGRES_VERIFY_FARM_SLOTS:-2',
             text,
         )
         self.assertIn(
