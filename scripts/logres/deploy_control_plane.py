@@ -84,6 +84,7 @@ MANIFEST: dict[str, tuple[str, int]] = {
     "bin/logres-integration": ("bin/logres-integration", 0o755),
     "bin/logres-preview-reaper": ("bin/logres-preview-reaper", 0o755),
     "bin/logres-patch-agent": ("bin/logres-patch-agent", 0o755),
+    "bin/logres-control": ("bin/logres-control", 0o755),
     "bin/logres-regression-capture": ("bin/logres-regression-capture", 0o755),
     "bin/logres-regression-dedupe": ("bin/logres-regression-dedupe", 0o755),
     "bin/logres-recon-loop": ("bin/logres-recon-loop", 0o755),
