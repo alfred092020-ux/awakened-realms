@@ -28,7 +28,7 @@ def make_db():
     conn.executescript(
         """
         create table tasks(
-          id text primary key, priority integer, title text
+          id text primary key, priority integer, title text, status text
         );
         create table integration_queue(
           task_id text not null,
@@ -63,7 +63,7 @@ def make_db():
         """
     )
     conn.execute(
-        "insert into tasks(id,priority,title) values('T1',0,'T1')"
+        "insert into tasks(id,priority,title,status) values('T1',0,'T1','ACTIVE')"
     )
     return conn
 
@@ -80,6 +80,27 @@ class MergeTrainQuarantineTests(unittest.TestCase):
         )
         conn.commit()
         return sha
+
+    def test_terminal_owner_is_superseded_before_scope_check_or_brain_report(self):
+        conn = make_db()
+        sha = self._seed(conn, "READY_FOR_PREFLIGHT")
+        conn.execute("update tasks set status='DONE' where id='T1'")
+        conn.commit()
+        with mock.patch.object(merge_train, "fetch_origin"), \
+             mock.patch.object(merge_train, "run") as run, \
+             mock.patch.object(merge_train, "sha", return_value=sha), \
+             mock.patch.object(merge_train, "ancestor", return_value=False), \
+             mock.patch.object(merge_train, "patch_equivalent", return_value=False), \
+             mock.patch.object(merge_train, "supersede_repaired_conflicts", return_value=0), \
+             mock.patch.object(merge_train.subprocess, "run") as subprocess_run:
+            run.return_value = mock.Mock(returncode=1, stdout="scope violation", stderr="")
+            changed = merge_train.refresh(conn)
+        row=conn.execute("select status,note from integration_queue where task_id='T1'").fetchone()
+        self.assertEqual('SUPERSEDED',row['status'])
+        self.assertIn('terminal (DONE)',row['note'])
+        self.assertFalse(any('logres-scope-check' in str(c) for c in run.call_args_list))
+        subprocess_run.assert_not_called()
+        self.assertEqual(1,changed)
 
     def test_refresh_does_not_touch_quarantined_fast_pass_row(self):
         conn = make_db()
