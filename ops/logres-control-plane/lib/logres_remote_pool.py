@@ -45,13 +45,13 @@ class WorkerSpec:
 DEFAULT_WORKERS = {
     "heavy": WorkerSpec(
         role="heavy",
-        host=os.environ.get("LOGRES_UPCLOUD_HEAVY_HOST", "209.50.63.78"),
+        host=os.environ.get("LOGRES_REMOTE_HEAVY_HOST", ""),
         label="SJO heavy",
         max_slots=2,
     ),
     "light": WorkerSpec(
         role="light",
-        host=os.environ.get("LOGRES_UPCLOUD_LIGHT_HOST", "194.113.74.97"),
+        host=os.environ.get("LOGRES_REMOTE_LIGHT_HOST", ""),
         label="NYC light",
         max_slots=1,
     ),

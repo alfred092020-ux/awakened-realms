@@ -104,13 +104,13 @@ logres-lead optimizer plan --limit 12
 logres-lead swarm status
 ```
 
-## Hybrid local + UpCloud verification
+## Legacy remote verification (disabled)
 
 The remote pool can offload the unit-test lane while the canonical VM keeps the private-hydrated browser E2E lane authoritative. The remote worker receives only an immutable 40-character source SHA and an allow-listed verification/build npm script. It has no deploy, merge, publish, push, release, tag, or version authority.
 
-Committed defaults keep hybrid verification disabled. Runtime `remote_pool.hybrid_verify_enabled=true` enables the optimization after both UpCloud workers pass health/canary checks.
+Committed defaults keep hybrid verification disabled. Runtime `remote_pool.hybrid_verify_enabled=true` enables the optimization after both remote workers pass health/canary checks.
 
-When enabled, `logres-verify-farm` starts the exact-SHA unit suite on the heavy UpCloud worker while the local VM performs build + private-hydrated Playwright E2E. If the remote lane is unreachable, times out, or fails, the farm automatically runs the original local hydrated unit-test lane. A remote outage therefore cannot weaken the authoritative gate or strand integration.
+When enabled, `logres-verify-farm` starts the exact-SHA unit suite on the heavy remote worker while the local VM performs build + private-hydrated Playwright E2E. If the remote lane is unreachable, times out, or fails, the farm automatically runs the original local hydrated unit-test lane. A remote outage therefore cannot weaken the authoritative gate or strand integration.
 
 `logres-lead pool status` shows remote worker health and capacity. `logres-remote-pool run` remains restricted to safe verification/build scripts and can fail over only when the caller explicitly marks verification work reassignable.
 
@@ -155,7 +155,7 @@ logres-supervisor tick
 
 `logres-resource-broker` is the placement layer between the task optimizer and the available execution engines. It keeps authority and provenance policy separate from compute choice.
 
-For exact-SHA verification, the broker scores the Heavy and Light UpCloud workers using live reachability, free slots, CPU, available memory, observed success rate, and script-specific median runtime. New remote results persist the npm script that produced them, so placement improves from real workload history instead of static machine labels. Legacy results remain a weak role-level prior.
+For exact-SHA verification, the broker scores the Heavy and Light remote workers using live reachability, free slots, CPU, available memory, observed success rate, and script-specific median runtime. New remote results persist the npm script that produced them, so placement improves from real workload history instead of static machine labels. Legacy results remain a weak role-level prior.
 
 `logres-verify-farm` now asks the remote pool for `auto` placement. The selected machine may change as capacity and measured performance change. Local private-hydrated build/E2E remains authoritative, and any remote failure still falls back to the local unit-test lane. Remote workers retain no merge/deploy/push authority.
 
