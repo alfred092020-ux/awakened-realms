@@ -16,6 +16,7 @@ DB=Path(os.environ.get("LOGRES_CONTROL_DB",str(ROOT/"control/control.sqlite")))
 REPO=Path(os.environ.get("LOGRES_REPO_ROOT",str(ROOT/"src/awakened-realms")))
 BRAIN=os.environ.get("LOGRES_BRAIN",str(ROOT/"bin/logres-brain"))
 CONTROL=os.environ.get("LOGRES_CONTROL",str(ROOT/"bin/logres-control"))
+AUTOFLOW_CONFIG=Path(os.environ.get("LOGRES_AUTOFLOW_CONFIG",str(ROOT/"control/autoflow.json")))
 SATISFIED={"DONE","RESOLVED","INTEGRATED"}
 PRESERVED_QUEUE_STATES={"INTEGRATED","SUPERSEDED","QUARANTINED"}
 LIVE_COPILOT_STATES=("ASSIGNING","ACTIVE","PR_READY","VERIFYING")
@@ -26,6 +27,17 @@ def iso():
 
 def run(cmd):
     return subprocess.run(cmd,text=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE,check=False)
+
+def configured_max_active():
+    try:
+        cfg=json.loads(AUTOFLOW_CONFIG.read_text())
+        value=int(cfg.get("swarm",{}).get("max_workers",6) or 6)
+        return max(1,value)
+    except (OSError, ValueError, TypeError, json.JSONDecodeError):
+        return 6
+
+def effective_max_active(args):
+    return args.max_active if args.max_active is not None else configured_max_active()
 
 def conn():
     c=sqlite3.connect(DB,timeout=30)
@@ -739,9 +751,10 @@ def cmd_acquire(c,args):
             "select count(*) from brain_task_leases where lease_until_epoch>? and chat_id<>'lead'",
             (now,),
         ).fetchone()[0]
-        if active_count>=args.max_active:
+        max_active=effective_max_active(args)
+        if active_count>=max_active:
             c.rollback()
-            raise SystemExit(f"WORK_POOL_FULL active={active_count} max={args.max_active}")
+            raise SystemExit(f"WORK_POOL_FULL active={active_count} max={max_active}")
 
         candidates=ready_rows(c)
         if args.task:
@@ -852,9 +865,10 @@ def cmd_next(c,args):
         else: print("CONTINUE "+task)
         return
     active=active_leases(c)
-    if len(active)>=args.max_active:
+    max_active=effective_max_active(args)
+    if len(active)>=max_active:
         if args.id_only: return
-        print(f"WAIT active={len(active)} max={args.max_active}")
+        print(f"WAIT active={len(active)} max={max_active}")
         return
     rows=ready_rows(c)
     if not rows:
@@ -991,9 +1005,9 @@ def build():
     x=s.add_parser("plan"); x.add_argument("--limit",type=int,default=8); x.set_defaults(fn=cmd_plan)
     x=s.add_parser("brief"); x.add_argument("chat"); x.set_defaults(fn=cmd_brief)
     x=s.add_parser("next"); x.add_argument("chat"); x.add_argument("--id-only",action="store_true")
-    x.add_argument("--max-active",type=int,default=6); x.set_defaults(fn=cmd_next)
+    x.add_argument("--max-active",type=int,default=None); x.set_defaults(fn=cmd_next)
     x=s.add_parser("acquire"); x.add_argument("chat"); x.add_argument("--task")
-    x.add_argument("--minutes",type=int,default=120); x.add_argument("--max-active",type=int,default=6)
+    x.add_argument("--minutes",type=int,default=120); x.add_argument("--max-active",type=int,default=None)
     x.set_defaults(fn=cmd_acquire)
     x=s.add_parser("reconcile"); x.set_defaults(fn=cmd_reconcile)
     x=s.add_parser("wave"); x.add_argument("--count",type=int,default=5); x.add_argument("--json",action="store_true")

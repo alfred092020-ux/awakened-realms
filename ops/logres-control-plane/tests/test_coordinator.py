@@ -311,6 +311,15 @@ class CoordinatorCopilotOwnershipTests(unittest.TestCase):
         with mock.patch.object(coordinator, "git_sha", return_value="a" * 40):
             self.assertIn("T1", [row["id"] for row in coordinator.ready_rows(conn)])
 
+    def test_configured_max_active_reads_authoritative_swarm_capacity(self):
+        with tempfile.TemporaryDirectory() as td:
+            config = Path(td) / "autoflow.json"
+            config.write_text('{"swarm":{"max_workers":13}}')
+            with mock.patch.object(coordinator, "AUTOFLOW_CONFIG", config):
+                self.assertEqual(13, coordinator.configured_max_active())
+                self.assertEqual(13, coordinator.effective_max_active(SimpleNamespace(max_active=None)))
+                self.assertEqual(7, coordinator.effective_max_active(SimpleNamespace(max_active=7)))
+
     def test_explicit_task_acquire_respects_copilot_route_reservation(self):
         conn = make_scheduler_db()
         conn.execute(
