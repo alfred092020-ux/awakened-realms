@@ -1533,10 +1533,3 @@ class SwarmTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-
-class AdaptiveCoordinatorContractTest(unittest.TestCase):
-    def test_execution_mode_routes_verification_away_from_patch_workers(self):
-        from logres_swarm import classify_execution_mode
-        self.assertEqual("deterministic-verification", classify_execution_mode({"work_type": "verification", "title": "certify sha"}))
-        self.assertEqual("patch-implementation", classify_execution_mode({"work_type": "implementation", "title": "fix battle"}))
-        self.assertEqual("evidence-research", classify_execution_mode({"work_type": "research", "title": "historical evidence"}))

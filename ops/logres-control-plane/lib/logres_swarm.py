@@ -1599,34 +1599,3 @@ def coordinator_reality_snapshot(conn: sqlite3.Connection) -> dict:
     running_jobs = int(conn.execute("select count(*) from swarm_jobs where state in ('STARTING','RUNNING')").fetchone()[0])
     failed_jobs = int(conn.execute("select count(*) from swarm_jobs where state='FAILED'").fetchone()[0])
     return {"active_leases": active_leases, "running_jobs": running_jobs, "failed_jobs": failed_jobs, "claim_job_delta": active_leases-running_jobs, "requires_reconciliation": active_leases > 0 and running_jobs == 0}
-
-# Decide the execution contract before choosing a provider/model.
-def classify_execution_mode(task: dict) -> str:
-    work_type = str(task.get("work_type") or task.get("lane") or "").strip().lower()
-    title = str(task.get("title") or "").lower()
-    if work_type in {"verification", "regression"} or "verify" in title or "certif" in title:
-        return "deterministic-verification"
-    if work_type in {"research", "evidence", "analysis"}:
-        return "evidence-research"
-    if work_type in {"device", "device-qa", "android-qa"} or "device qa" in title:
-        return "device-qa"
-    if work_type in {"integration", "preflight"} or "merge preflight" in title:
-        return "governed-integration"
-    if work_type in {"privileged", "host-operation"}:
-        return "privileged-operation"
-    if work_type in {"investigation", "debug", "diagnostic"} or "diagnos" in title:
-        return "diagnostic"
-    if work_type in IMPLEMENTATION_WORK_TYPES:
-        return "patch-implementation"
-    return "manual-review"
-
-
-def repeated_failure_strategy(conn: sqlite3.Connection, task_id: str) -> dict:
-    rows = conn.execute("select last_error,engine from swarm_jobs where task_id=? and state='FAILED' order by id desc limit 3", (task_id,)).fetchall()
-    if not rows:
-        return {"action": "dispatch", "reason": "no_prior_failure"}
-    newest = worker_failure_fingerprint(str(rows[0][0] or ""))
-    equivalent = [row for row in rows if worker_failure_fingerprint(str(row[0] or ""))["fingerprint"] == newest["fingerprint"]]
-    if len(equivalent) >= 2:
-        return {"action": "diagnose", "reason": "repeated_equivalent_failure", "failure_class": newest["failure_class"], "fingerprint": newest["fingerprint"], "previous_engine": str(rows[0][1] or "")}
-    return {"action": "retry_with_diagnosis", "reason": "first_failure_requires_classification", "failure_class": newest["failure_class"], "fingerprint": newest["fingerprint"]}
