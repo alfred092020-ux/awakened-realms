@@ -221,6 +221,13 @@ class HardwareQaTests(unittest.TestCase):
         self.assertEqual(["python", "-c"], argv[:2])
         compile(argv[2], "<phone-atomic-tap>", "exec")
 
+    def test_runner_never_clears_or_uninstalls_protected_package(self):
+        text = SCRIPT.read_text()
+        self.assertNotIn(f"pm clear {qa.PKG}", text)
+        self.assertNotIn(f"pm uninstall {qa.PKG}", text)
+        self.assertNotIn(f"uninstall {qa.PKG}", text)
+        self.assertIn("Install exact APK in place", text)
+
     def test_runner_targets_panel_not_enemy(self):
         text = SCRIPT.read_text()
         self.assertNotIn('stage=registry.get("logres.battle.stagePresentation")', text)

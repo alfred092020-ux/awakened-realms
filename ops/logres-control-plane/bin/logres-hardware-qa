@@ -441,10 +441,9 @@ adb -s "$DEV" shell dumpsys battery | grep -E "AC powered:|USB powered:|level:|t
 adb -s "$DEV" shell dumpsys thermalservice | grep -m1 "Thermal Status:"''')
         (proof/"health.txt").write_text(health+"\n")
 
-        # Install exact APK, then clear only this app for a true first-run launch.
+        # Install exact APK in place. Protected package data must never be cleared by QA.
         run([str(PHONE_QA),"install",str(apk)],timeout=120)
         adb_shell(f"am force-stop {PKG}",check=False)
-        adb_shell(f"pm clear {PKG}")
         adb_shell("logcat -c",check=False)
 
         start_recording(); recording=True
