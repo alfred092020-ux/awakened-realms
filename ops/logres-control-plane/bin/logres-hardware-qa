@@ -17,6 +17,7 @@ QA_LOCK_FD=None
 PKG="com.nexuscore.awakenedrealms"
 ACTIVITY=f"{PKG}/.MainActivity"
 APK_DIR=ROOT/"artifacts/apk"
+STABLE_DEBUG_KEYSTORE=Path(os.environ.get("LOGRES_ANDROID_DEBUG_KEYSTORE", str(Path.home()/".android/debug.keystore.pre-unity-20260927T051045Z")))
 PROOFS=PHONE_DIR/"proofs"
 LOCK=Path("/tmp/logres-phone-hardware-qa.lock")
 DEVICE_PROOF_BIN=Path(os.environ.get(
@@ -66,9 +67,24 @@ def verified(sha):
 
 def ensure_apk(sha):
     apk=APK_DIR/f"Awakened-Realms-demo-0.2-canonical-{sha[:12]}.apk"
-    if apk.exists(): return apk
-    run([str(REPO/"scripts/logres/build_android_checkpoint.sh"),
-         "--ref",sha,"--label","demo-0.2-canonical"],capture=False,timeout=900)
+    manifest=apk.with_suffix(".manifest.json")
+    if not STABLE_DEBUG_KEYSTORE.is_file():
+        raise QAError(f"stable Android debug keystore unavailable: {STABLE_DEBUG_KEYSTORE}")
+    expected_keystore_sha=sha256(STABLE_DEBUG_KEYSTORE)
+    if apk.exists() and manifest.exists():
+        try:
+            payload=json.loads(manifest.read_text())
+            if payload.get("apk",{}).get("debug_keystore_sha256") == expected_keystore_sha:
+                return apk
+        except Exception:
+            pass
+        apk.unlink(missing_ok=True); manifest.unlink(missing_ok=True)
+    child_env=os.environ.copy(); child_env["LOGRES_ANDROID_DEBUG_KEYSTORE"]=str(STABLE_DEBUG_KEYSTORE)
+    pass_fds=()
+    if QA_LOCK_FD is not None:
+        child_env["LOGRES_PHONE_QA_LOCK_FD"]=str(QA_LOCK_FD); pass_fds=(QA_LOCK_FD,)
+    p=subprocess.run([str(REPO/"scripts/logres/build_android_checkpoint.sh"),"--ref",sha,"--label","demo-0.2-canonical"],env=child_env,pass_fds=pass_fds,timeout=900)
+    if p.returncode: raise QAError(f"Android checkpoint build failed rc={p.returncode}")
     if not apk.exists(): raise QAError(f"expected APK missing after build: {apk}")
     return apk
 
