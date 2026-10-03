@@ -350,6 +350,28 @@ def claim_frontier(
     normalized = normalize_predicate(predicate_text, parent_task_id)
     psha = hashlib.sha256(normalized.encode("utf-8")).hexdigest()
 
+    # A retired parent/root is authoritative lifecycle truth.  Never create or
+    # reopen generated research beneath work that was explicitly superseded or
+    # cancelled during operator-intent/hygiene reconciliation.
+    parent_row = task_row(conn, parent_task_id)
+    root_row = task_row(conn, root)
+    retired = {"SUPERSEDED", "CANCELLED"}
+    parent_status = str(parent_row["status"] or "") if parent_row else ""
+    root_status = str(root_row["status"] or "") if root_row else ""
+    if parent_status in retired or root_status in retired:
+        return FrontierClaim(
+            root_task_id=root,
+            parent_task_id=parent_task_id,
+            predicate_sha=psha,
+            predicate=normalized,
+            frontier_id=None,
+            child_task_id=None,
+            state="RESOLVED",
+            create_allowed=False,
+            reason="retired parent/root cannot generate research descendants",
+            parent_depth=parent_depth,
+        )
+
     if parent_depth >= MAX_GENERATED_DEPTH:
         return FrontierClaim(
             root_task_id=root,
@@ -593,7 +615,11 @@ def reconcile(
             line["parent_task_id"],
         )
         child_status = str(child["status"] or "")
-        if child_status in {"DONE", "RESOLVED"}:
+        root_row = task_row(conn, str(line["root_task_id"]))
+        root_status = str(root_row["status"] or "") if root_row else ""
+        if root_status in TERMINAL:
+            frontier_state = "RESOLVED"
+        elif child_status in {"DONE", "RESOLVED"}:
             frontier_state = "RESOLVED"
         elif child_status in SATURATED_CHILD_STATES:
             frontier_state = "SATURATED"

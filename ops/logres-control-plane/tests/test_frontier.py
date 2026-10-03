@@ -105,6 +105,38 @@ class FrontierTests(unittest.TestCase):
         self.assertEqual("CHILD", second.child_task_id)
         self.assertIn("already open", second.reason)
 
+    def test_superseded_parent_cannot_create_frontier(self):
+        self.conn.execute("update tasks set status='SUPERSEDED' where id='ROOT'")
+        self.conn.commit()
+        claim = claim_frontier(
+            self.conn,
+            parent_task_id="ROOT",
+            predicate_text="obsolete work must not resurrect",
+            origin_kind="BRAIN_BLOCKER",
+            origin_id=12,
+        )
+        self.assertFalse(claim.create_allowed)
+        self.assertEqual("RESOLVED", claim.state)
+        self.assertIn("retired parent/root", claim.reason)
+        self.assertEqual(0, self.conn.execute("select count(*) from research_frontier").fetchone()[0])
+
+    def test_cancelled_root_blocks_generated_child_reopen(self):
+        first = claim_frontier(
+            self.conn, parent_task_id="ROOT", predicate_text="bounded search",
+            origin_kind="AI_ROUTE", origin_id=13,
+        )
+        seed_task(self.conn, task_id="CHILD_CANCEL", work_type="research", status="BLOCKED_DEP")
+        mark_generated(self.conn, "CHILD_CANCEL", note="Autoflow research child from ai evidence routing")
+        register_child(self.conn, first, child_task_id="CHILD_CANCEL", origin_kind="AI_ROUTE", origin_id=13)
+        self.conn.execute("update tasks set status='CANCELLED' where id='ROOT'")
+        self.conn.commit()
+        again = claim_frontier(
+            self.conn, parent_task_id="CHILD_CANCEL", predicate_text="must stay retired",
+            origin_kind="BRAIN_BLOCKER", origin_id=14,
+        )
+        self.assertFalse(again.create_allowed)
+        self.assertEqual("RESOLVED", again.state)
+
     def test_blocked_child_saturates_frontier_after_single_attempt(self):
         first = claim_frontier(
             self.conn,
