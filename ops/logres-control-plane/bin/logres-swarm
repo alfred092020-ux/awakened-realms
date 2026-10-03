@@ -960,6 +960,15 @@ def tick(dry_run: bool = False) -> dict:
 
     cfg = load_config(CONFIG)
     swarm_cfg = cfg.get("swarm", {})
+    if not dry_run and not bool(swarm_cfg.get("enabled", False)):
+        return {
+            "status": "DISABLED",
+            "enabled": False,
+            "dry_run": False,
+            "supervisor": supervisor,
+            "storage": storage_gate,
+            "reason": "swarm disabled; no reconciliation, repair routing, graph mutation, or dispatch performed",
+        }
     conn = connect()
     stale = reconcile_jobs(conn)
     recovered = release_stale(conn, stale)
