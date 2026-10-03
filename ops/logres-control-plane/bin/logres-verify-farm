@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+VERIFY_PYTHON_BIN_DIR="${LOGRES_VERIFY_PYTHON_BIN_DIR:-/home/ubuntu/logres/envs/research/bin}"
+if [[ -x "$VERIFY_PYTHON_BIN_DIR/python3" ]]; then
+  export PATH="$VERIFY_PYTHON_BIN_DIR:$PATH"
+fi
+
 BASE="${LOGRES_REPO_ROOT:-/home/ubuntu/logres/src/awakened-realms}"
 CONTROL="${LOGRES_CONTROL_BIN:-/home/ubuntu/logres/bin/logres-control}"
 POOL_BIN="${LOGRES_REMOTE_POOL_BIN:-/home/ubuntu/logres/bin/logres-remote-pool}"
