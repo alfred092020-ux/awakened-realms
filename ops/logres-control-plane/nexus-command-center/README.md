@@ -23,7 +23,29 @@ Then install/start the included user service and expose only through authenticat
 
 ## Android APK
 
-The `android/` directory contains a minimal native Android shell for Nexus Command Center. It uses the platform WebView, preserves the existing server-side authentication/session model, blocks cleartext HTTP, cancels TLS errors, and accepts only an `https://` Command Center address.
+The `android/` directory contains the **fully native** Nexus Command Center
+Android app — no WebView, no browser wrapper. It talks to the sibling
+`../nexus-native-command-api` backend over Bearer-authenticated HTTPS and a
+Server-Sent Events realtime stream.
+
+Surfaces: an animated *Live Nexus* system map (parallel authority/worker/task/
+verification/approval lanes driven only by authoritative snapshot events, with
+a reduced-motion static fallback), the task board with plain-language
+summaries + live elapsed timers + dependency edges, the Approval Required
+inbox (action/reason/scope/risk/evidence/rollback + Approve/Decline), the
+activity + audit + certification-evidence timeline, and governed admin
+controls including typed-confirmation emergency stop and lease revoke. All
+control paths are requests to Lead governance — the app is an owner surface,
+never root authority. Explicit states: AUTONOMOUS, APPROVAL_REQUIRED, BLOCKED,
+VERIFYING, FAILED, DONE. Missing backend capabilities render *unavailable*,
+never fabricated.
+
+Sign-in: Google identity via Android Credential Manager, exchanged for a
+backend session at `POST /api/session/google` (server verifies the ID token
+with Google when `NEXUS_NATIVE_API_GOOGLE_CLIENT_ID` is configured). Control
+requests additionally require the Nexus access token unless the operator sets
+`NEXUS_NATIVE_API_ALLOW_GOOGLE_AUTH=1`. Cleartext is allowed only to
+loopback/emulator hosts; all other traffic requires HTTPS.
 
 Build a debug APK:
 
@@ -31,7 +53,7 @@ Build a debug APK:
 ops/logres-control-plane/nexus-command-center/android/build_apk.sh
 ```
 
-The first launch asks for the private HTTPS Command Center URL. The URL is stored locally in app preferences. The Nexus access token is not persisted by the wrapper; authentication remains inside the Command Center's HttpOnly session. Long-press inside the app to reload or change the configured server.
+The first launch asks for the private backend address and the access token.
 
 ## Controls
 
