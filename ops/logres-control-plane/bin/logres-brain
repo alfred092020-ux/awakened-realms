@@ -481,8 +481,8 @@ def cmd_progress(c,args):
 def cmd_release(c,args):
     get_member(c,args.chat_id)
     final=args.status.upper()
-    if final not in {"READY","DONE","BLOCKED_DEP","BLOCKED_EVIDENCE"}:
-        raise SystemExit("release status must be READY, DONE, BLOCKED_DEP, or BLOCKED_EVIDENCE")
+    if final not in {"READY","DONE","BLOCKED_DEP","BLOCKED_EVIDENCE","SUPERSEDED","CANCELLED"}:
+        raise SystemExit("release status must be READY, DONE, BLOCKED_DEP, BLOCKED_EVIDENCE, SUPERSEDED, or CANCELLED")
     c.execute("begin immediate")
     try:
         r=c.execute("select * from brain_task_leases where task_id=?",(args.task_id,)).fetchone()
