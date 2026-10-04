@@ -319,6 +319,18 @@ class DevinLeadLifecycleTests(unittest.TestCase):
         self.assertGreater(conn.execute("select count(*) from task_scopes where task_id=?",(child,)).fetchone()[0],0)
         self.assertEqual([],lead.decompose_active_mission_root(conn,{},lead.default_policy(),execute=True,now=101.0))
 
+    def test_active_mission_fence_rejects_unrelated_frontier_task(self):
+        conn=self.proposal_connection()
+        conn.execute("create table brain_decisions(id integer primary key,scope text,subject text,status text)")
+        conn.execute("insert into tasks values('ROOT',9,'acceptance','root','ACTIVE',null,'owner','','now')")
+        conn.execute("insert into tasks values('CHILD',0,'research','child','READY',null,null,'','now')")
+        conn.execute("insert into tasks values('STALE',0,'research','stale','READY',null,null,'','now')")
+        conn.execute("insert into brain_decisions values(1,'MISSION_FENCE','ROOT','ACTIVE')")
+        conn.execute("insert into task_dependencies values('CHILD','ROOT','mission','lineage')")
+        self.assertTrue(lead._task_allowed_by_active_mission(conn,'ROOT'))
+        self.assertTrue(lead._task_allowed_by_active_mission(conn,'CHILD'))
+        self.assertFalse(lead._task_allowed_by_active_mission(conn,'STALE'))
+
     def test_dry_run_decomposition_has_no_subprocess_side_effects(self):
         with tempfile.TemporaryDirectory() as td:
             root=Path(td)

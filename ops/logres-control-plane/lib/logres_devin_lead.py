@@ -722,6 +722,20 @@ def _active_mission_root(conn):
     if not r or str(r[2] or "").upper()!="ACTIVE": return None
     return {"id":str(r[0]),"title":str(r[1] or r[0])}
 
+def _task_allowed_by_active_mission(conn, task_id):
+    root=_active_mission_root(conn)
+    if not root: return True
+    task_id=str(task_id or "").strip()
+    if task_id==root["id"]: return True
+    try:
+        row=conn.execute("""with recursive ancestors(id) as (
+            select depends_on from task_dependencies where task_id=?
+            union select d.depends_on from task_dependencies d join ancestors a on d.task_id=a.id
+        ) select 1 from ancestors where id=? limit 1""",(task_id,root["id"])).fetchone()
+    except sqlite3.Error:
+        return False
+    return row is not None
+
 def decompose_active_mission_root(conn,snapshot,policy,*,execute,now=None):
     root=_active_mission_root(conn)
     if not root: return []
@@ -853,7 +867,7 @@ def lead_tick(
         snapshot = collect_planning_snapshot(conn, root, policy)
         pause = read_pause(root)
         if pause.get("paused"):
-            frontier = select_frontier(snapshot, policy)
+            frontier = [task for task in select_frontier(snapshot, policy) if _task_allowed_by_active_mission(conn, task.get("id"))]
             snapshot["metrics_input"] = _metrics_input(conn, snapshot)
             metrics = compute_lead_metrics(conn, snapshot)
             payload = {
