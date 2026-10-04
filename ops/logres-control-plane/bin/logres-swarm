@@ -42,6 +42,7 @@ from logres_swarm import (
     load_config,
     mark_job_running,
     prior_failures,
+    openai_patch_quota_exhausted,
     ready_tasks,
     reconcile_jobs,
     register_worker,
@@ -712,6 +713,8 @@ def dispatch_patch(
 ) -> list[dict]:
     impl = cfg.get("implementation", {})
     if not bool(impl.get("enabled", False)) or limit <= 0:
+        return []
+    if openai_patch_quota_exhausted(conn, cooldown_seconds=int(impl.get("quota_cooldown_seconds",3600) or 3600)):
         return []
     if not Path(PATCH_AGENT).is_file() or not Path(WORKER_START).is_file():
         return []

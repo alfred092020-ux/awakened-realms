@@ -7,6 +7,7 @@ import re
 import sqlite3
 import subprocess
 import time
+from datetime import datetime, timezone
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -957,6 +958,7 @@ def select_implementation_tasks(
     )
 
 NON_SEMANTIC_FAILURE_CLASSES = {
+    "provider_quota",
     "context",
     "permission_environment",
     "infrastructure",
@@ -970,7 +972,8 @@ def classify_worker_failure(error: str) -> str:
         return "infrastructure"
     if "devin child produced no repository diff" in value:
         return "no_diff"
-
+    if "credit_balance_exhausted" in value or "insufficient_quota" in value or "no credits remaining" in value:
+        return "provider_quota"
 
     context_markers = (
         "incomplete",
@@ -1415,6 +1418,20 @@ def _devin_infrastructure_failure(row: sqlite3.Row) -> bool:
         and "shell execution is unavailable" in text
     )
     return confirmation_denial or legacy_sandbox_shell_denial
+
+
+def openai_patch_quota_exhausted(conn: sqlite3.Connection, *, cooldown_seconds: int = 3600) -> bool:
+    try:
+        row=conn.execute("select last_error,finished_at from swarm_jobs where engine='openai-patch' and state='FAILED' order by id desc limit 1").fetchone()
+    except sqlite3.Error:
+        return False
+    if not row or classify_worker_failure(str(row[0] or '')) != 'provider_quota': return False
+    try:
+        finished=datetime.fromisoformat(str(row[1]).replace('Z','+00:00'))
+        if finished.tzinfo is None: finished=finished.replace(tzinfo=timezone.utc)
+        return (datetime.now(timezone.utc)-finished).total_seconds() < max(60,int(cooldown_seconds))
+    except (TypeError,ValueError):
+        return True
 
 
 def prior_failures(
