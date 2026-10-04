@@ -695,6 +695,28 @@ def _metrics_input(conn, snapshot: dict) -> dict:
 
 
 
+def _active_mission_root(conn):
+    try:
+        r=conn.execute("select d.subject,t.title,t.status from brain_decisions d join tasks t on t.id=d.subject where upper(d.scope)='MISSION_FENCE' and d.status='ACTIVE' order by d.id desc limit 1").fetchone()
+    except sqlite3.Error:
+        return None
+    if not r or str(r[2] or "").upper()!="ACTIVE": return None
+    return {"id":str(r[0]),"title":str(r[1] or r[0])}
+
+def decompose_active_mission_root(conn,snapshot,policy,*,execute,now=None):
+    root=_active_mission_root(conn)
+    if not root: return []
+    try: child=conn.execute("select 1 from task_dependencies where depends_on=? limit 1",(root["id"],)).fetchone()
+    except sqlite3.Error: return []
+    if child: return []
+    digest=hashlib.sha256(root["id"].encode()).hexdigest()[:10].upper(); tid=f"AUTO-MISSION-PLAN-{digest}"
+    proposal={"id":tid,"priority":0,"lane":"research","title":f"Autonomously decompose active mission: {root['title']}","work_type":"research","concurrency_key":f"mission-plan:{root['id']}","expected_minutes":45,"evidence_policy":"Evidence-first mission bootstrap. Inspect objective and live repo/runtime state, produce a gap matrix and concrete next-task proposals with explicit scopes and acceptance. Do not implement product code here.","acceptance":["Produce an evidence-backed mission decomposition artifact tied to the active root.","Identify concrete next tasks with explicit scope, acceptance, dependencies, and verification.","Preserve licensing, provenance, and original-IP constraints from the mission."],"dependencies":[],"scopes":[f"artifacts/mission-planning/{root['id']}"],"milestone":root["id"]}
+    if not execute: return [{"mission_root":root["id"],"status":"planned","task_id":tid,"proposal":proposal}]
+    made=create_bounded_task(conn,proposal,policy=policy,now=time.time() if now is None else float(now),cycle_id=f"mission:{root['id']}")
+    if not made: return [{"mission_root":root["id"],"status":"noop","task_id":None}]
+    conn.execute("insert into task_dependencies(task_id,depends_on,kind,rationale) values(?,?,?,?)",(made,root["id"],"mission","Active mission fence lineage"));conn.commit()
+    return [{"mission_root":root["id"],"status":"created","task_id":made}]
+
 def decompose_unmet_milestones(
     root: Path,
     snapshot: dict,
@@ -826,6 +848,8 @@ def lead_tick(
             return payload
 
         decomposition = decompose_unmet_milestones(root, snapshot, policy, execute=execute)
+        if not any(item.get("task_id") for item in decomposition):
+            decomposition.extend(decompose_active_mission_root(conn,snapshot,policy,execute=execute,now=now))
         if execute and any(item.get("task_id") for item in decomposition):
             snapshot = collect_planning_snapshot(conn, root, policy)
         frontier = select_frontier(snapshot, policy)

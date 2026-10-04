@@ -289,6 +289,21 @@ class DevinLeadLifecycleTests(unittest.TestCase):
             self.assertTrue(all('--apply' in argv and '--json' in argv for argv in seen))
             self.assertEqual(['M1','M2'],[item['milestone_id'] for item in out])
 
+    def test_active_mission_root_bootstraps_nonblocking_research_child(self):
+        conn=self.proposal_connection()
+        conn.execute("create table brain_decisions(id integer primary key,scope text,subject text,status text)")
+        conn.execute("insert into tasks values('MISSION',9,'acceptance','Build original game','ACTIVE',null,'owner','','now')")
+        conn.execute("insert into brain_decisions values(1,'MISSION_FENCE','MISSION','ACTIVE')")
+        out=lead.decompose_active_mission_root(conn,{'tasks':[]},lead.default_policy(),execute=True,now=100.0)
+        self.assertEqual('created',out[0]['status'])
+        child=out[0]['task_id']; self.assertTrue(child.startswith('AUTO-MISSION-PLAN-'))
+        dep=conn.execute("select depends_on,kind from task_dependencies where task_id=?",(child,)).fetchone()
+        self.assertEqual(('MISSION','mission'),tuple(dep))
+        self.assertEqual('research',conn.execute("select work_type from task_metadata where task_id=?",(child,)).fetchone()[0])
+        self.assertGreater(conn.execute("select count(*) from task_acceptance where task_id=?",(child,)).fetchone()[0],0)
+        self.assertGreater(conn.execute("select count(*) from task_scopes where task_id=?",(child,)).fetchone()[0],0)
+        self.assertEqual([],lead.decompose_active_mission_root(conn,{},lead.default_policy(),execute=True,now=101.0))
+
     def test_dry_run_decomposition_has_no_subprocess_side_effects(self):
         with tempfile.TemporaryDirectory() as td:
             root=Path(td)
