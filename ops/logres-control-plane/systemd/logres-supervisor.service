@@ -8,6 +8,7 @@ Type=simple
 User=ubuntu
 WorkingDirectory=/home/ubuntu/logres
 Environment=LOGRES_ROOT=/home/ubuntu/logres
+Environment=PATH=/home/ubuntu/.local/bin:/home/ubuntu/logres/bin:/usr/local/bin:/usr/bin:/bin
 ExecStart=/home/ubuntu/logres/bin/logres-supervisor run
 Restart=always
 RestartSec=5
