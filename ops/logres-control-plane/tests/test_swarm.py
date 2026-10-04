@@ -28,6 +28,7 @@ from logres_swarm import (
     devin_worker_ids,
     ensure_schema,
     prior_failures,
+    openai_patch_quota_exhausted,
     ready_tasks,
     mark_job_running,
     reconcile_jobs,
@@ -1046,6 +1047,14 @@ class SwarmTests(unittest.TestCase):
                 engine="devin",
             ),
         )
+
+    def test_provider_quota_is_nonsemantic_and_opens_patch_circuit(self):
+        seed_task(self.conn,task_id="QUOTA",status="READY",work_type="implementation")
+        self.conn.execute("insert into swarm_jobs(task_id,worker_id,engine,state,pid,last_error,finished_at) values('QUOTA','auto-patch-1','openai-patch','FAILED',99,'RateLimitError: insufficient_quota credit_balance_exhausted no credits remaining',datetime('now'))")
+        self.conn.commit()
+        self.assertEqual('provider_quota',classify_worker_failure('insufficient_quota'))
+        self.assertEqual(0,prior_failures(self.conn,'QUOTA',engine='openai-patch'))
+        self.assertTrue(openai_patch_quota_exhausted(self.conn,cooldown_seconds=3600))
 
     def test_nonsemantic_failures_do_not_consume_semantic_retry_budget(self):
         seed_task(
