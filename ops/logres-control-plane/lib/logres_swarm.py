@@ -942,6 +942,25 @@ def select_research_tasks(
     )
 
 
+def task_has_tracked_context(conn: sqlite3.Connection, task_id: str, checkout: Path) -> bool:
+    scopes=[str(row[0]) for row in conn.execute("select path_prefix from task_scopes where task_id=? order by path_prefix",(task_id,))]
+    if not scopes: return False
+    try:
+        proc=subprocess.run(["git","-C",str(checkout),"ls-files","-z"],capture_output=True,check=False,timeout=30)
+    except (OSError,subprocess.TimeoutExpired):
+        return False
+    if proc.returncode:
+        return False
+    normalized=[scope.strip().strip("/") for scope in scopes if str(scope).strip()]
+    for raw in proc.stdout.split(b"\0"):
+        if not raw: continue
+        rel=raw.decode(errors="replace").strip().strip("/")
+        for scope in normalized:
+            if rel==scope or rel.startswith(scope+"/") or scope.startswith(rel+"/"):
+                return True
+    return False
+
+
 def select_implementation_tasks(
     conn: sqlite3.Connection,
     limit: int,
@@ -981,6 +1000,8 @@ def classify_worker_failure(error: str) -> str:
         "outside the supplied file index",
         "supplied contents",
         "missing context",
+        "no tracked context files",
+        "declared scopes contain no tracked context files",
         "additional failure-log evidence",
         "no attached failure-log",
         "context path",

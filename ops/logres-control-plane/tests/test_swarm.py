@@ -35,6 +35,7 @@ from logres_swarm import (
     reconcile_failure_repairs,
     route_repeated_worker_failures,
     select_implementation_tasks,
+    task_has_tracked_context,
     select_research_tasks,
     swarm_capacity,
 )
@@ -1047,6 +1048,12 @@ class SwarmTests(unittest.TestCase):
                 engine="devin",
             ),
         )
+
+    def test_new_file_only_scope_has_no_patch_context(self):
+        self.conn.execute("insert into task_scopes(task_id,path_prefix) values('NEWFILE','artifacts/new/plan.md')")
+        self.conn.commit()
+        self.assertFalse(task_has_tracked_context(self.conn,'NEWFILE',Path(__file__).resolve().parents[3]))
+        self.assertEqual('context',classify_worker_failure('PatchAgentError: declared scopes contain no tracked context files'))
 
     def test_provider_quota_is_nonsemantic_and_opens_patch_circuit(self):
         seed_task(self.conn,task_id="QUOTA",status="READY",work_type="implementation")

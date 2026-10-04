@@ -47,6 +47,7 @@ from logres_swarm import (
     reconcile_jobs,
     register_worker,
     select_implementation_tasks,
+    task_has_tracked_context,
     select_research_tasks,
     status_dict,
     swarm_capacity,
@@ -742,11 +743,14 @@ def dispatch_patch(
         for task in ready_tasks(conn)
         if prior_failures(conn, str(task["id"]), engine="openai-patch") >= max_attempts
     }
-    candidates = select_implementation_tasks(
-        conn,
-        max(1, limit) * 4,
-        skip_task_ids=exhausted,
-    )
+    candidates = [
+        task for task in select_implementation_tasks(
+            conn,
+            max(1, limit) * 4,
+            skip_task_ids=exhausted,
+        )
+        if task_has_tracked_context(conn, str(task["id"]), INTEGRATION_CHECKOUT)
+    ]
     dispatched: list[dict] = []
 
     for task in candidates:
