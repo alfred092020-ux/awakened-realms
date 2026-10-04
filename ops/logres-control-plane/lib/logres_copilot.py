@@ -16,6 +16,14 @@ INTEGRATION_BRANCH = "feat/logres-reconstruction"
 DEFAULT_REPO = "alfred092020-ux/awakened-realms"
 
 
+def _run(*args, **kwargs):
+    local_bin = str(Path.home() / ".local" / "bin")
+    parts = os.environ.get("PATH", "").split(os.pathsep)
+    if local_bin not in parts:
+        os.environ["PATH"] = local_bin + os.pathsep + os.environ.get("PATH", "")
+    return subprocess.run(*args, **kwargs)
+
+
 class PolicyError(RuntimeError):
     pass
 
@@ -140,7 +148,7 @@ class SubprocessGitHubRunner:
             handle.write(body)
             body_path = Path(handle.name)
         try:
-            result = subprocess.run(
+            result = _run(
                 [
                     "gh", "issue", "create",
                     "--repo", repo,
@@ -160,7 +168,7 @@ class SubprocessGitHubRunner:
             raise RuntimeError(f"could not parse issue number from gh output: {output!r}")
         return int(match.group(1))
     def list_prs(self, repo: str) -> list[dict]:
-        result = subprocess.run(
+        result = _run(
             [
                 "gh", "pr", "list",
                 "--repo", repo,
@@ -174,7 +182,7 @@ class SubprocessGitHubRunner:
         return json.loads(result.stdout or "[]")
 
     def search_issue(self, task_id: str, repo: str = DEFAULT_REPO) -> dict | None:
-        result = subprocess.run(
+        result = _run(
             [
                 "gh", "issue", "list",
                 "--repo", repo,
@@ -199,7 +207,7 @@ class SubprocessGitHubRunner:
         return matches[0] if len(matches) == 1 else None
 
     def list_issue_comments(self, repo: str, issue_number: int) -> list[dict]:
-        result = subprocess.run(
+        result = _run(
             [
                 "gh", "issue", "view", str(issue_number),
                 "--repo", repo,
@@ -218,7 +226,7 @@ class SubprocessGitHubRunner:
             json.dump(payload, handle)
             payload_path = Path(handle.name)
         try:
-            subprocess.run(
+            _run(
                 [
                     "gh", "api",
                     "--method", "POST",
@@ -241,7 +249,7 @@ class SubprocessCommandRunner:
 
     @staticmethod
     def _run(argv: list[str], **kwargs):
-        return subprocess.run(
+        return _run(
             argv,
             check=False,
             capture_output=True,
