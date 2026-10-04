@@ -1293,18 +1293,12 @@ class SwarmTests(unittest.TestCase):
             )
         self.conn.commit()
         routed = route_repeated_worker_failures(self.conn, threshold=2)
-        repair = routed[0]["repair_task_id"]
-        scopes = {
-            row[0]
-            for row in self.conn.execute(
-                "select path_prefix from task_scopes where task_id=?",
-                (repair,),
-            )
-        }
-        self.assertIn(
-            "ops/logres-control-plane/lib/logres_patch_agent.py",
-            scopes,
+        self.assertEqual([], routed)
+        self.assertEqual(
+            0,
+            self.conn.execute("select count(*) from tasks where id like 'REPAIR-AUTO-CTX-%'").fetchone()[0],
         )
+        self.assertEqual('READY', self.conn.execute("select status from tasks where id='CTX'").fetchone()[0])
 
     def test_successful_repair_resumes_original_mission(self):
         seed_task(

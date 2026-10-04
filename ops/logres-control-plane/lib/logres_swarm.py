@@ -1230,6 +1230,8 @@ def route_repeated_worker_failures(
                 continue
             signature = signatures[fingerprint]
             failure_class = signature["failure_class"]
+            if failure_class in NON_SEMANTIC_FAILURE_CLASSES:
+                continue
             existing = conn.execute(
                 """select repair_task_id from swarm_failure_repairs
                     where task_id=? and fingerprint=?""",
