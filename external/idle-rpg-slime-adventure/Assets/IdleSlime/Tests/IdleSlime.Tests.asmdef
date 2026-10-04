@@ -1,5 +1,6 @@
 {
   "name": "IdleSlime.Tests",
+  "references": ["IdleSlime.Core"],
   "optionalUnityReferences": ["TestAssemblies"],
   "includePlatforms": ["Editor"],
   "autoReferenced": false,
