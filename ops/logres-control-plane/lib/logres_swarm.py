@@ -665,6 +665,44 @@ def task_allowed_by_autonomy_scope(conn: sqlite3.Connection, task: dict) -> bool
     return not any(token in material for token in deferred)
 
 
+def active_mission_fence(conn: sqlite3.Connection) -> str:
+    """Return the root task for the latest active operator mission fence."""
+    if not _table_exists(conn, "brain_decisions"):
+        return ""
+    row = conn.execute(
+        """select subject from brain_decisions
+             where upper(scope)='MISSION_FENCE' and status='ACTIVE'
+             order by id desc limit 1"""
+    ).fetchone()
+    root = str(row[0] or "").strip() if row else ""
+    if not root:
+        return ""
+    exists = conn.execute("select 1 from tasks where id=?", (root,)).fetchone()
+    return root if exists else ""
+
+
+def task_allowed_by_mission_fence(conn: sqlite3.Connection, task_id: str) -> bool:
+    """Allow only the fenced mission root or explicit dependency descendants."""
+    root = active_mission_fence(conn)
+    task_id = str(task_id or "").strip()
+    if not root:
+        return True
+    if task_id == root:
+        return True
+    row = conn.execute(
+        """with recursive ancestors(id) as (
+               select depends_on from task_dependencies where task_id=?
+               union
+               select d.depends_on
+                 from task_dependencies d
+                 join ancestors a on d.task_id=a.id
+           )
+           select 1 from ancestors where id=? limit 1""",
+        (task_id, root),
+    ).fetchone()
+    return row is not None
+
+
 def ready_tasks(conn: sqlite3.Connection) -> list[dict]:
     owned = active_copilot_task_ids(conn) | active_swarm_task_ids(conn)
     rows = conn.execute(
@@ -685,6 +723,7 @@ def ready_tasks(conn: sqlite3.Connection) -> list[dict]:
         for row in rows
         if str(row["id"]) not in owned
         and task_allowed_by_autonomy_scope(conn, dict(row))
+        and task_allowed_by_mission_fence(conn, str(row["id"]))
     ]
 
 

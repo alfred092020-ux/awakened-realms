@@ -508,6 +508,44 @@ class CoordinatorCopilotOwnershipTests(unittest.TestCase):
             ).fetchone()[0],
         )
 
+    def test_ready_rows_enforces_active_mission_fence(self):
+        conn = make_scheduler_db()
+        conn.execute(
+            "create table brain_decisions(id integer primary key, scope text, subject text, status text)"
+        )
+        conn.execute(
+            "insert into tasks values(?,?,?,?,?,?,?,?,?)",
+            ("STALE",0,"core","STALE","READY",None,None,"","now"),
+        )
+        conn.execute(
+            "insert into task_metadata values(?,?,?,?,?,?,?,?)",
+            ("STALE","M","implementation","stale-key",30,"","now","now"),
+        )
+        conn.execute(
+            "insert into brain_decisions values(1,'MISSION_FENCE','T1','ACTIVE')"
+        )
+        conn.commit()
+
+        planned = [row["id"] for row in coordinator.ready_rows(conn)]
+        self.assertEqual(["T1"], planned)
+
+        conn.execute("update tasks set status='DONE' where id='T1'")
+        conn.execute(
+            "insert into tasks values(?,?,?,?,?,?,?,?,?)",
+            ("CHILD",0,"core","CHILD","READY",None,None,"","now"),
+        )
+        conn.execute(
+            "insert into task_metadata values(?,?,?,?,?,?,?,?)",
+            ("CHILD","M","implementation","child-key",30,"","now","now"),
+        )
+        conn.execute(
+            "insert into task_dependencies values('CHILD','T1','hard','mission child')"
+        )
+        conn.commit()
+
+        planned = [row["id"] for row in coordinator.ready_rows(conn)]
+        self.assertEqual(["CHILD"], planned)
+
 
 if __name__ == "__main__":
     unittest.main()
