@@ -181,6 +181,7 @@ def collect_planning_snapshot(conn, root: Path, policy: dict) -> dict:
         "regressions": _table_rows(conn, "regressions"),
         "milestones": _table_rows(conn, "milestones"),
         "goal_snapshots": _table_rows(conn, "goal_snapshots"),
+        "brain_decisions": _table_rows(conn, "brain_decisions"),
         "capacity": _load_json_file(root / "control" / "capacity-state.json"),
         "swarm": _load_json_file(root / "control" / "swarm-state.json"),
         "learned_routing": learned_routing,
@@ -213,11 +214,29 @@ def score_ready_task(task: dict, snapshot: dict, policy: dict) -> tuple:
     return (class_rank, priority, -learned_score, str(task.get("id") or ""))
 
 
+def _mission_fence_eligible_ids(snapshot: dict) -> set[str] | None:
+    active=[d for d in snapshot.get("brain_decisions",[]) if str(d.get("scope") or "").upper()=="MISSION_FENCE" and str(d.get("status") or "ACTIVE").upper()=="ACTIVE"]
+    if not active: return None
+    active.sort(key=lambda d:int(d.get("id") or 0),reverse=True)
+    root=str(active[0].get("subject") or "").strip()
+    if not root: return None
+    eligible={root}; changed=True
+    deps=snapshot.get("dependencies",[])
+    while changed:
+        changed=False
+        for d in deps:
+            parent=str(d.get("depends_on") or ""); child=str(d.get("task_id") or "")
+            if parent in eligible and child and child not in eligible:
+                eligible.add(child); changed=True
+    return eligible
+
 def select_frontier(snapshot: dict, policy: dict) -> list[dict]:
+    mission_ids=_mission_fence_eligible_ids(snapshot)
     candidates = [
         dict(task)
         for task in snapshot.get("tasks", [])
         if str(task.get("status") or "") == "READY" and not task.get("owner")
+        and (mission_ids is None or str(task.get("id") or "") in mission_ids)
     ]
     candidates.sort(key=lambda item: score_ready_task(item, snapshot, policy))
     capacity = snapshot.get("capacity", {}) if isinstance(snapshot.get("capacity"), dict) else {}

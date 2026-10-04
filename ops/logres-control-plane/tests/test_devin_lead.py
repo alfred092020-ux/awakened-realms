@@ -96,6 +96,21 @@ class DevinLeadLifecycleTests(unittest.TestCase):
             'capacity':{'plan':{'pressure':'normal','logical_workers':12},'signals':{'verifier':{'backlog':0}}}}
         self.assertEqual(['A'], [x['id'] for x in lead.select_frontier(snap, lead.default_policy())])
 
+    def test_frontier_honors_active_mission_fence_transitively(self):
+        snap={"tasks":[
+            {"id":"ROOT","priority":9,"lane":"acceptance","title":"Root","status":"ACTIVE","owner":"lead"},
+            {"id":"CHILD","priority":0,"lane":"research","title":"Plan","status":"READY","owner":None},
+            {"id":"GRAND","priority":0,"lane":"game","title":"Build game","status":"READY","owner":None},
+            {"id":"STALE","priority":0,"lane":"research","title":"Old backlog","status":"READY","owner":None}],
+            "dependencies":[{"task_id":"CHILD","depends_on":"ROOT","kind":"mission"},{"task_id":"GRAND","depends_on":"CHILD","kind":"hard"}],
+            "brain_decisions":[{"id":7,"scope":"MISSION_FENCE","subject":"ROOT","status":"ACTIVE"}],
+            "capacity":{"plan":{"pressure":"normal","logical_workers":4},"signals":{"verifier":{"backlog":0}}}}
+        self.assertEqual(["GRAND","CHILD"],[x["id"] for x in lead.select_frontier(snap,lead.default_policy())])
+
+    def test_frontier_without_mission_fence_preserves_ready_set(self):
+        snap={"tasks":[{"id":"A","priority":0,"lane":"game","title":"A","status":"READY","owner":None},{"id":"B","priority":1,"lane":"game","title":"B","status":"READY","owner":None}],"dependencies":[],"brain_decisions":[],"capacity":{"plan":{"pressure":"normal","logical_workers":4},"signals":{"verifier":{"backlog":0}}}}
+        self.assertEqual(["A","B"],[x["id"] for x in lead.select_frontier(snap,lead.default_policy())])
+
     def test_resource_pressure_reduces_frontier_size(self):
         tasks=[{'id':f'G{i}','priority':0,'lane':'game','title':f'Game {i}','status':'READY','owner':None} for i in range(8)]
         normal={'tasks':tasks,'capacity':{'plan':{'pressure':'normal','logical_workers':12},'signals':{'verifier':{'backlog':0}}}}
