@@ -265,6 +265,31 @@ def critical_path_minutes(c,task,memo=None,visiting=None):
     memo[task]=own+downstream
     return memo[task]
 
+def active_mission_fence(c):
+    try:
+        row=c.execute("""select subject from brain_decisions
+          where upper(scope)='MISSION_FENCE' and status='ACTIVE'
+          order by id desc limit 1""").fetchone()
+    except sqlite3.OperationalError:
+        return ""
+    root=str(row[0] or "").strip() if row else ""
+    if not root:
+        return ""
+    return root if c.execute("select 1 from tasks where id=?",(root,)).fetchone() else ""
+
+def task_allowed_by_mission_fence(c,task_id):
+    root=active_mission_fence(c)
+    if not root:
+        return True
+    if task_id==root:
+        return True
+    row=c.execute("""with recursive ancestors(id) as (
+      select depends_on from task_dependencies where task_id=?
+      union
+      select d.depends_on from task_dependencies d join ancestors a on d.task_id=a.id
+    ) select 1 from ancestors where id=? limit 1""",(task_id,root)).fetchone()
+    return row is not None
+
 def ready_rows(c):
     active=active_leases(c)
     leased={r["task_id"] for r in active}
@@ -275,6 +300,8 @@ def ready_rows(c):
       m.evidence_policy from tasks t left join task_metadata m on m.task_id=t.id
       where t.status='READY' order by t.priority,t.id"""):
         if r["id"] in leased or not hard_deps_ok(c,r["id"]):
+            continue
+        if not task_allowed_by_mission_fence(c,r["id"]):
             continue
         if live_copilot_owner(c,r["id"]) is not None:
             continue

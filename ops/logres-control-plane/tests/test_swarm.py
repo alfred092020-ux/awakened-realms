@@ -23,6 +23,8 @@ from logres_swarm import (
     classify_engine,
     classify_worker_failure,
     create_job,
+    active_mission_fence,
+    task_allowed_by_mission_fence,
     devin_worker_ids,
     ensure_schema,
     prior_failures,
@@ -46,6 +48,37 @@ class SwarmTests(unittest.TestCase):
 
     def tearDown(self):
         self.conn.close()
+
+    def test_active_mission_fence_allows_only_root_and_dependency_descendants(self):
+        self.conn.execute(
+            "create table brain_decisions(id integer primary key, scope text, subject text, status text)"
+        )
+        seed_task(self.conn, "MISSION", concurrency_key="mission")
+        seed_task(self.conn, "CHILD", concurrency_key="child")
+        seed_task(self.conn, "GRANDCHILD", concurrency_key="grandchild")
+        seed_task(self.conn, "STALE", concurrency_key="stale")
+        self.conn.execute(
+            "insert into task_dependencies(task_id,depends_on,kind,rationale) values(?,?,?,?)",
+            ("CHILD", "MISSION", "hard", "derived mission work"),
+        )
+        self.conn.execute(
+            "insert into task_dependencies(task_id,depends_on,kind,rationale) values(?,?,?,?)",
+            ("GRANDCHILD", "CHILD", "hard", "derived mission work"),
+        )
+        self.conn.execute(
+            "insert into brain_decisions(id,scope,subject,status) values(1,'MISSION_FENCE','MISSION','ACTIVE')"
+        )
+        self.conn.commit()
+
+        self.assertEqual("MISSION", active_mission_fence(self.conn))
+        self.assertTrue(task_allowed_by_mission_fence(self.conn, "MISSION"))
+        self.assertTrue(task_allowed_by_mission_fence(self.conn, "CHILD"))
+        self.assertTrue(task_allowed_by_mission_fence(self.conn, "GRANDCHILD"))
+        self.assertFalse(task_allowed_by_mission_fence(self.conn, "STALE"))
+        self.assertEqual(
+            {"MISSION", "CHILD", "GRANDCHILD"},
+            {task["id"] for task in ready_tasks(self.conn)},
+        )
 
     def test_swarm_storage_gate_precedes_every_new_fanout_lane(self):
         script = (CONTROL_ROOT / "bin" / "logres-swarm").read_text()
