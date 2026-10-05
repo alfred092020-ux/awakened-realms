@@ -1003,6 +1003,10 @@ initialize_behavior_trace_isolation
 initialize_visual_truth_isolation
 
 export PLAYWRIGHT_BROWSERS_PATH=/home/ubuntu/logres/cache/playwright
+PLAYWRIGHT_LOCAL_LIBS=/home/ubuntu/logres/cache/playwright-libs/root/usr/lib/x86_64-linux-gnu
+if [[ -d "$PLAYWRIGHT_LOCAL_LIBS" ]]; then
+  export LD_LIBRARY_PATH="$PLAYWRIGHT_LOCAL_LIBS${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+fi
 export LOGRES_VERIFY_SHA="$SHA"
 export LOGRES_RECORD_VISUAL_TRUTH=1
 export LOGRES_REQUIRE_VISUAL_TRUTH_RECORD=1

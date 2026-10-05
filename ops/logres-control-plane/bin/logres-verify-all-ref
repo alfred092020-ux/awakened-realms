@@ -70,6 +70,10 @@ PY
 echo "[port] final verification Playwright port $E2E_PORT"
 
 export PLAYWRIGHT_BROWSERS_PATH=/home/ubuntu/logres/cache/playwright
+PLAYWRIGHT_LOCAL_LIBS=/home/ubuntu/logres/cache/playwright-libs/root/usr/lib/x86_64-linux-gnu
+if [[ -d "$PLAYWRIGHT_LOCAL_LIBS" ]]; then
+  export LD_LIBRARY_PATH="$PLAYWRIGHT_LOCAL_LIBS${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+fi
 
 # Hydrate the same canonical private runtime bundle used by verify-farm and
 # Android packaging. This includes the playable Millennium Tree package,
