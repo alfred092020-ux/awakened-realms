@@ -13,7 +13,7 @@ namespace IdleSlime.Editor
         public static void BuildReleaseAab()
         {
             Configure();
-            var output = Path.GetFullPath("Builds/Android/AwakenedRealms-1.0.0.aab");
+            var output = Path.GetFullPath($"Builds/Android/AwakenedRealms-{PlayerSettings.bundleVersion}.aab");
             Directory.CreateDirectory(Path.GetDirectoryName(output));
             EditorUserBuildSettings.buildAppBundle = true;
             var scenes = EditorBuildSettings.scenes
@@ -46,15 +46,13 @@ namespace IdleSlime.Editor
             PlayerSettings.SetScriptingBackend(BuildTargetGroup.Android, ScriptingImplementation.IL2CPP);
             PlayerSettings.defaultInterfaceOrientation = UIOrientation.Portrait;
 
-            var ks = Environment.GetEnvironmentVariable("AWAKENED_KEYSTORE");
-            if (!string.IsNullOrWhiteSpace(ks)) {
-                if (!File.Exists(ks)) throw new FileNotFoundException("Upload keystore not found", ks);
-                PlayerSettings.Android.useCustomKeystore = true;
-                PlayerSettings.Android.keystoreName = ks;
-                PlayerSettings.Android.keystorePass = Require("AWAKENED_KEYSTORE_PASS");
-                PlayerSettings.Android.keyaliasName = Require("AWAKENED_KEY_ALIAS");
-                PlayerSettings.Android.keyaliasPass = Require("AWAKENED_KEY_ALIAS_PASS");
-            }
+            var ks = Require("AWAKENED_KEYSTORE");
+            if (!File.Exists(ks)) throw new FileNotFoundException("Upload keystore not found", ks);
+            PlayerSettings.Android.useCustomKeystore = true;
+            PlayerSettings.Android.keystoreName = ks;
+            PlayerSettings.Android.keystorePass = Require("AWAKENED_KEYSTORE_PASS");
+            PlayerSettings.Android.keyaliasName = Require("AWAKENED_KEY_ALIAS");
+            PlayerSettings.Android.keyaliasPass = Require("AWAKENED_KEY_ALIAS_PASS");
         }
 
         private static string Require(string name)
