@@ -19,7 +19,7 @@ public static class CampaignCatalog{
   int chapter=(i-1)/10;
   int step=(i-1)%10;
   bool boss=i%10==0;
-  int power=1450+(i-1)*285+chapter*700+step*step*11+(boss?950:0);
+  int power=1450+(i-1)*350+chapter*250+step*20+(boss?200:0);
   int gold=120+i*42+chapter*85+(boss?600:0);
   int xp=45+i*14+chapter*25+(boss?120:0);
   int gems=boss?150:(i%5==0?60:15);
