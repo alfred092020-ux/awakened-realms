@@ -31,6 +31,27 @@ namespace IdleSlime.Editor
             Debug.Log("AWAKENED_REALMS_AAB=" + output);
         }
 
+        public static void BuildReleaseApk()
+        {
+            Configure();
+            var output = Path.GetFullPath($"Builds/Android/AwakenedRealms-{PlayerSettings.bundleVersion}.apk");
+            Directory.CreateDirectory(Path.GetDirectoryName(output));
+            EditorUserBuildSettings.buildAppBundle = false;
+            var scenes = EditorBuildSettings.scenes
+                .Where(s => s.enabled && !string.IsNullOrWhiteSpace(s.path))
+                .Select(s => s.path).ToArray();
+            if (scenes.Length == 0) throw new InvalidOperationException("No enabled build scenes found.");
+            var report = BuildPipeline.BuildPlayer(new BuildPlayerOptions {
+                scenes = scenes,
+                locationPathName = output,
+                target = BuildTarget.Android,
+                options = BuildOptions.None
+            });
+            if (report.summary.result != BuildResult.Succeeded)
+                throw new Exception("Android APK build failed: " + report.summary.result);
+            Debug.Log("AWAKENED_REALMS_APK=" + output);
+        }
+
         private static void Configure()
         {
             PlayerSettings.companyName = "Nexus Core Inc.";
