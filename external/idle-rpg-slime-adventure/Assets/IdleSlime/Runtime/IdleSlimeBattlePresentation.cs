@@ -6,10 +6,14 @@ using IdleSlime.Core;
 namespace IdleSlime.Runtime {
 public sealed class BattleBeat {
  public string ActorName;
+ public string HeroId;
  public bool AllyTurn;
  public bool Skill;
  public float DamagePercent;
  public HeroFaction? Faction;
+ /// <summary>Lore-bound ultimate set piece bound to this beat's skill, or null for
+ /// normal attacks/enemy turns. Presentation only; never affects combat outcomes.</summary>
+ public UltimatePresentation Ultimate;
 }
 
 public sealed class BattlePresentationPlan {
@@ -42,7 +46,7 @@ public sealed class BattlePresentationPlan {
     if(result.Victory&&round==1&&i==heroes.Length-1)damage=enemyRemaining;
     damage=Math.Min(enemyRemaining,damage);
     enemyRemaining=Math.Max(0f,enemyRemaining-damage);
-    plan.Beats.Add(new BattleBeat{ActorName=h.Def.Name,AllyTurn=true,Skill=skill,DamagePercent=damage,Faction=h.Def.Faction});
+    plan.Beats.Add(new BattleBeat{ActorName=h.Def.Name,HeroId=h.Def.Id,AllyTurn=true,Skill=skill,DamagePercent=damage,Faction=h.Def.Faction,Ultimate=skill?AwakenedRealmsUltimatePresentation.ForHero(h.Def.Id):null});
     if(enemyRemaining<=0f)break;
 
     if(i%2==1){
@@ -61,7 +65,7 @@ public sealed class BattlePresentationPlan {
 
   if(result.Victory&&enemyRemaining>0f){
    var finisher=heroes[0];
-   plan.Beats.Add(new BattleBeat{ActorName=finisher.Def.Name,AllyTurn=true,Skill=true,DamagePercent=enemyRemaining,Faction=finisher.Def.Faction});
+   plan.Beats.Add(new BattleBeat{ActorName=finisher.Def.Name,HeroId=finisher.Def.Id,AllyTurn=true,Skill=true,DamagePercent=enemyRemaining,Faction=finisher.Def.Faction,Ultimate=AwakenedRealmsUltimatePresentation.ForHero(finisher.Def.Id)});
   }else if(!result.Victory&&allyRemaining>0f){
    plan.Beats.Add(new BattleBeat{ActorName=plan.EnemyName,AllyTurn=false,Skill=true,DamagePercent=allyRemaining,Faction=null});
   }
