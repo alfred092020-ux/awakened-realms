@@ -7,10 +7,10 @@ using UnityEngine;
 
 namespace IdleSlime.Runtime {
 public static class IdleSlimeSave {
- const int Version=2;
+ const int Version=3;
  const string Key="awakened_realms_idle_rpg_save_v1";
 
- [Serializable] sealed class HeroSave { public string id; public int level; public int ascension; }
+ [Serializable] sealed class HeroSave { public string id; public int level; public int ascension; public int stars; }
  [Serializable] sealed class KeyInt { public string key; public int value; }
  [Serializable] sealed class KeyString { public string key; public string value; }
 
@@ -19,6 +19,8 @@ public static class IdleSlimeSave {
   public int gold;
   public int gems;
   public int ascensionShards;
+  public KeyInt[] duplicateHeroCopies;
+  public KeyInt[] fodderInventory;
   public int highestStage;
   public int highestTowerFloor;
   public int dailyRewardDay;
@@ -46,7 +48,11 @@ public static class IdleSlimeSave {
 
    var s=new IdleSlimeSession(now);
    s.Heroes.Clear();
-   foreach(var h in d.heroes)s.Heroes[h.id]=new HeroState(h.id){Level=h.level,Ascension=h.ascension};
+   foreach(var h in d.heroes){
+    var definition=HeroCatalog.Get(h.id);
+    int migratedStars=d.version>=3?h.stars:StarRules.StartingStars(definition.Rarity)+Math.Max(0,h.ascension);
+    s.Heroes[h.id]=new HeroState(h.id){Level=h.level,Stars=StarRules.ClampStars(definition.Rarity,migratedStars)};
+   }
    s.SetFormation(d.formation);
 
    Set(s,"Gold",d.gold);
@@ -68,6 +74,10 @@ public static class IdleSlimeSave {
     RestoreSet(s.ClaimedBossIds,d.claimedBossIds);
     RestoreKeyInts(s.Metrics,d.metrics,_=>true);
    }
+   if(d.version>=3){
+    RestoreKeyInts(s.DuplicateHeroCopies,d.duplicateHeroCopies,id=>HeroCatalog.Get(id)!=null);
+    RestoreKeyInts(s.FodderInventory,d.fodderInventory,IsValidFodderKey);
+   }
    return s;
   }catch(Exception e){
    Debug.LogWarning("[AwakenedRealms] Save rejected; starting fresh: "+e.Message);
@@ -82,12 +92,14 @@ public static class IdleSlimeSave {
    gold=s.Gold,
    gems=s.Gems,
    ascensionShards=s.AscensionShards,
+   duplicateHeroCopies=s.DuplicateHeroCopies.Select(p=>new KeyInt{key=p.Key,value=p.Value}).ToArray(),
+   fodderInventory=s.FodderInventory.Select(p=>new KeyInt{key=p.Key,value=p.Value}).ToArray(),
    highestStage=s.HighestStage,
    highestTowerFloor=s.HighestTowerFloor,
    dailyRewardDay=s.DailyRewardDay,
    lastSeenTicks=s.LastSeenUtc.Ticks,
    lastDailyClaimTicks=s.LastDailyClaimUtc==DateTime.MinValue?0:s.LastDailyClaimUtc.Ticks,
-   heroes=s.Heroes.Values.Select(h=>new HeroSave{id=h.HeroId,level=h.Level,ascension=h.Ascension}).ToArray(),
+   heroes=s.Heroes.Values.Select(h=>new HeroSave{id=h.HeroId,level=h.Level,ascension=0,stars=h.Stars}).ToArray(),
    formation=s.Formation.Slots.ToArray(),
    equipmentInventory=s.EquipmentInventory.Select(p=>new KeyInt{key=p.Key,value=p.Value}).ToArray(),
    equippedItems=s.EquippedItems.Select(p=>new KeyString{key=p.Key,value=p.Value}).ToArray(),
@@ -102,9 +114,9 @@ public static class IdleSlimeSave {
  }
 
  static void Validate(SaveData d){
-  if(d==null||(d.version!=1&&d.version!=Version))throw new InvalidOperationException("unsupported save version");
+  if(d==null||(d.version!=1&&d.version!=2&&d.version!=Version))throw new InvalidOperationException("unsupported save version");
   if(d.gold<0||d.gems<0||d.highestStage<1||d.highestStage>CampaignCatalog.MaxStage)throw new InvalidOperationException("invalid progression values");
-  if(d.heroes==null||d.heroes.Length<5||d.heroes.Any(h=>h==null||HeroCatalog.Get(h.id)==null||h.level<1||h.level>10000||h.ascension<0||h.ascension>AscensionRules.MaxAscension))throw new InvalidOperationException("invalid hero roster");
+  if(d.heroes==null||d.heroes.Length<5||d.heroes.Any(h=>h==null||HeroCatalog.Get(h.id)==null||h.level<1||h.level>10000||!ValidHeroProgression(d.version,h)))throw new InvalidOperationException("invalid hero roster");
   if(d.heroes.Select(h=>h.id).Distinct().Count()!=d.heroes.Length)throw new InvalidOperationException("duplicate hero state");
   if(d.formation==null||d.formation.Length!=5||d.formation.Distinct().Count()!=5||d.formation.Any(id=>!d.heroes.Any(h=>h.id==id)))throw new InvalidOperationException("invalid formation");
   if(d.lastSeenTicks<=0||d.lastSeenTicks>DateTime.UtcNow.AddMinutes(5).Ticks)throw new InvalidOperationException("invalid timestamp");
@@ -116,6 +128,22 @@ public static class IdleSlimeSave {
    if(d.equippedItems!=null&&d.equippedItems.Any(x=>x==null||string.IsNullOrEmpty(x.key)||EquipmentCatalog.Get(x.value)==null))throw new InvalidOperationException("invalid equipped item");
    if(d.metrics!=null&&d.metrics.Any(x=>x==null||string.IsNullOrEmpty(x.key)||x.value<0))throw new InvalidOperationException("invalid metrics");
   }
+ }
+
+ static bool ValidHeroProgression(int version,HeroSave h){
+  var definition=HeroCatalog.Get(h.id);
+  if(definition==null)return false;
+  if(version<3)return h.ascension>=0&&h.ascension<=AscensionRules.MaxAscension;
+  return h.stars>=StarRules.StartingStars(definition.Rarity)&&h.stars<=StarRules.MaxStars(definition.Rarity);
+ }
+
+ static bool IsValidFodderKey(string key){
+  if(string.IsNullOrEmpty(key))return false;
+  var parts=key.Split('|');
+  if(parts.Length!=3)return false;
+  HeroFaction faction;HeroRarity rarity;int stars;
+  if(!Enum.TryParse(parts[0],out faction)||!Enum.TryParse(parts[1],out rarity)||!int.TryParse(parts[2],out stars))return false;
+  return stars>=StarRules.StartingStars(rarity)&&stars<=StarRules.MaxStars(rarity);
  }
 
  static void RestoreKeyInts(IDictionary<string,int> target,KeyInt[] values,Func<string,bool> keyAllowed){

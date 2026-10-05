@@ -12,6 +12,8 @@ public sealed class IdleSlimeSession {
  public readonly HashSet<string> ClaimedMailIds=new HashSet<string>();
  public readonly HashSet<string> ClaimedBossIds=new HashSet<string>();
  public readonly Dictionary<string,int> Metrics=new Dictionary<string,int>();
+ public readonly Dictionary<string,int> DuplicateHeroCopies=new Dictionary<string,int>();
+ public readonly Dictionary<string,int> FodderInventory=new Dictionary<string,int>();
 
  public Formation Formation{get;private set;}
  public int Gold{get;private set;}
@@ -61,33 +63,63 @@ public sealed class IdleSlimeSession {
   return true;
  }
 
- public bool TryAscend(string id){
+ public bool TryStarUp(string id){
   HeroState hero;
   if(!Heroes.TryGetValue(id,out hero))return false;
-  if(hero.Ascension>=AscensionRules.MaxAscension)return false;
-  int levelGate=10+(hero.Ascension*10);
-  if(hero.Level<levelGate)return false;
-  int gold=AscensionRules.GoldCost(hero.Ascension);
-  int shards=AscensionRules.ShardCost(hero.Ascension);
-  if(Gold<gold||AscensionShards<shards)return false;
-  Gold-=gold;
-  AscensionShards-=shards;
-  hero.Ascension++;
+  var definition=HeroCatalog.Get(id);
+  if(definition==null||StarRules.IsMaxed(definition.Rarity,hero.Stars))return false;
+  var requirement=StarRules.Requirement(definition.Rarity,hero.Stars);
+  if(requirement==null)return false;
+  if(DuplicateCopies(id)<requirement.SameHeroCopies)return false;
+  if(CountFodder(definition.Faction,requirement)<requirement.FodderCount)return false;
+  ConsumeDuplicateCopies(id,requirement.SameHeroCopies);
+  ConsumeFodder(definition.Faction,requirement);
+  hero.Stars=StarRules.ClampStars(definition.Rarity,hero.Stars+1);
+  IncrementMetric("total_star_ups");
   IncrementMetric("total_ascensions");
   return true;
+ }
+
+ [Obsolete("Use TryStarUp. Ascension was replaced by rarity-based star progression.")]
+ public bool TryAscend(string id){return TryStarUp(id);}
+
+ public int DuplicateCopies(string heroId){
+  int count;
+  return DuplicateHeroCopies.TryGetValue(heroId,out count)?Math.Max(0,count):0;
+ }
+
+ public void GrantDuplicateCopies(string heroId,int count){
+  if(HeroCatalog.Get(heroId)==null||count<=0)return;
+  int current=DuplicateCopies(heroId);
+  DuplicateHeroCopies[heroId]=current+count;
+ }
+
+ public int FodderCopies(HeroFaction faction,HeroRarity rarity,int stars){
+  int count;
+  return FodderInventory.TryGetValue(StarRules.FodderKey(faction,rarity,stars),out count)?Math.Max(0,count):0;
+ }
+
+ public void GrantFodder(HeroFaction faction,HeroRarity rarity,int stars,int count){
+  if(count<=0||stars<StarRules.StartingStars(rarity)||stars>StarRules.MaxStars(rarity))return;
+  string key=StarRules.FodderKey(faction,rarity,stars);
+  int current;
+  FodderInventory.TryGetValue(key,out current);
+  FodderInventory[key]=Math.Max(0,current)+count;
  }
 
  public HeroDefinition Summon(IRandomSource rng){
   if(Gems<Summoning.SingleCost)return null;
   Gems-=Summoning.SingleCost;
   var hero=Summoning.Roll(rng);
-  if(!Heroes.ContainsKey(hero.Id)){
-   Heroes[hero.Id]=new HeroState(hero.Id);
-  }else{
-   AscensionShards+=DuplicateShardValue(hero.Rarity);
-  }
+  ApplySummonResult(hero);
   IncrementMetric("summons");
   return hero;
+ }
+
+ public void ApplySummonResult(HeroDefinition hero){
+  if(hero==null)return;
+  if(!Heroes.ContainsKey(hero.Id))Heroes[hero.Id]=new HeroState(hero.Id);
+  else GrantDuplicateCopies(hero.Id,1);
  }
 
  public void SetFormation(IEnumerable<string> ids){
@@ -233,7 +265,39 @@ public sealed class IdleSlimeSession {
  }
 
  int Metric(string metric){int value;return Metrics.TryGetValue(metric,out value)?value:0;}
- static int DuplicateShardValue(HeroRarity rarity){return rarity==HeroRarity.Legendary?25:rarity==HeroRarity.Epic?12:5;}
+ int CountFodder(HeroFaction heroFaction,StarUpRequirement requirement){
+  if(requirement==null||requirement.FodderCount<=0)return requirement==null?0:requirement.FodderCount;
+  if(requirement.SameFactionFodder)return FodderCopies(heroFaction,requirement.FodderRarity,requirement.FodderStars);
+  int total=0;
+  foreach(HeroFaction faction in Enum.GetValues(typeof(HeroFaction)))total+=FodderCopies(faction,requirement.FodderRarity,requirement.FodderStars);
+  return total;
+ }
+
+ void ConsumeDuplicateCopies(string heroId,int count){
+  if(count<=0)return;
+  int current=DuplicateCopies(heroId);
+  DuplicateHeroCopies[heroId]=Math.Max(0,current-count);
+ }
+
+ void ConsumeFodder(HeroFaction heroFaction,StarUpRequirement requirement){
+  int remaining=requirement.FodderCount;
+  if(remaining<=0)return;
+  if(requirement.SameFactionFodder){
+   string key=StarRules.FodderKey(heroFaction,requirement.FodderRarity,requirement.FodderStars);
+   FodderInventory[key]=Math.Max(0,FodderCopies(heroFaction,requirement.FodderRarity,requirement.FodderStars)-remaining);
+   return;
+  }
+  foreach(HeroFaction faction in Enum.GetValues(typeof(HeroFaction))){
+   if(remaining<=0)break;
+   int available=FodderCopies(faction,requirement.FodderRarity,requirement.FodderStars);
+   if(available<=0)continue;
+   int used=Math.Min(available,remaining);
+   string key=StarRules.FodderKey(faction,requirement.FodderRarity,requirement.FodderStars);
+   FodderInventory[key]=available-used;
+   remaining-=used;
+  }
+ }
+
  static string EquipmentKey(string heroId,EquipmentSlot slot){return heroId+"|"+slot;}
 }
 }

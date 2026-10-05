@@ -129,6 +129,7 @@ namespace IdleSlime.Core {
    new RarityVisualToken(HeroRarity.Rare,"bound","Bound Echo","ECHO","◆","#6C8DFF","#182036","#5D6FAE",3,1,0f),
    new RarityVisualToken(HeroRarity.Epic,"awakened","Awakened Echo","ECHO RESONANT","◈","#B06CFF","#1D1633","#8D5DE0",4,2,0.02f),
    new RarityVisualToken(HeroRarity.Legendary,"sovereign","Sovereign Echo","SOVEREIGN ECHO","♛","#F0B44C","#2A1F0C","#E0A63C",5,3,0.035f),
+   new RarityVisualToken(HeroRarity.Mythic,"mythic","Mythic Echo","MYTHIC SOVEREIGN","✦","#FF5FD2","#2D1230","#F0B44C",6,3,0.035f),
   };
 
   static readonly PanelStyle[] panelStyles={

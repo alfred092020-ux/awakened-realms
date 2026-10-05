@@ -96,7 +96,7 @@ public sealed class IdleSlimeUI : MonoBehaviour {
    var rim=Rect("FactionRim",row,new Vector2(0,0),new Vector2(.014f,1f),Vector2.zero,Vector2.zero);
    Image(rim,C(p.FactionToken.Core));
    var sig=Text(row,p.FactionToken.Sigil,34,TextAnchor.MiddleCenter,C(p.FactionToken.Aura),FontStyle.Bold);Set(sig.rectTransform,new Vector2(.015f,.1f),new Vector2(.09f,.9f),Vector2.zero,Vector2.zero);
-   var t=Text(row,d.Name.ToUpper()+"   "+Stars(p.RarityToken)+"   "+p.RarityToken.EchoLabel+"\n"+p.FactionToken.DisplayName+" / "+d.Role+"   Lv."+hsState.Level+"   Power "+BattleSimulator.HeroPower(hsState).ToString("N0")+"\n"+p.BannerTitle,21,TextAnchor.MiddleLeft,Color.white,FontStyle.Normal);
+   var t=Text(row,d.Name.ToUpper()+"   "+new string('★',hsState.Stars)+"   "+p.RarityToken.EchoLabel+"\n"+p.FactionToken.DisplayName+" / "+d.Role+"   Lv."+hsState.Level+"   Power "+BattleSimulator.HeroPower(hsState).ToString("N0")+"\n"+p.BannerTitle,21,TextAnchor.MiddleLeft,Color.white,FontStyle.Normal);
    Set(t.rectTransform,new Vector2(.10f,0),new Vector2(.68f,1),Vector2.zero,Vector2.zero);
    string id=hsState.HeroId;int cost=Progression.GoldToLevel(hsState.Level);
    var b=Button(row,"AWAKEN\n"+cost+" G",()=>{if(s.Upgrade(id))Motion.Punch(row,MotionTokens.RarityPulseScale*2f,.22f);Show(View.Heroes);});
@@ -119,13 +119,16 @@ public sealed class IdleSlimeUI : MonoBehaviour {
   var mono=Text(stage,p.Monogram,150,TextAnchor.MiddleCenter,C(p.FactionToken.Core),FontStyle.Bold);Set(mono.rectTransform,new Vector2(0,.15f),new Vector2(.42f,.85f),Vector2.zero,Vector2.zero);
   var plate=Rect("RarityPlate",stage,new Vector2(.06f,.06f),new Vector2(.60f,.20f),Vector2.zero,Vector2.zero);
   Image(plate,C(p.RarityToken.Plate));
-  var pr=Text(plate,Stars(p.RarityToken)+"  "+p.RarityToken.EchoLabel,24,TextAnchor.MiddleCenter,C(p.RarityToken.Glow),FontStyle.Bold);Set(pr.rectTransform,Vector2.zero,Vector2.one,Vector2.zero,Vector2.zero);
+  var pr=Text(plate,new string('★',hs.Stars)+"  "+p.RarityToken.EchoLabel,24,TextAnchor.MiddleCenter,C(p.RarityToken.Glow),FontStyle.Bold);Set(pr.rectTransform,Vector2.zero,Vector2.one,Vector2.zero,Vector2.zero);
   var motto=Text(stage,"\""+p.FactionToken.Motto+"\"",22,TextAnchor.MiddleRight,C(p.FactionToken.Thread),FontStyle.Italic);Set(motto.rectTransform,new Vector2(.40f,.02f),new Vector2(.96f,.16f),Vector2.zero,Vector2.zero);
-  var statsBlock=Text(content,"LV."+hs.Level+"   POWER "+BattleSimulator.HeroPower(hs).ToString("N0")+"   ASCENSION "+hs.Ascension+"\n"+p.FactionToken.DisplayName+"  "+EchoLanguage.Divider+"  "+d.Role,26,TextAnchor.MiddleLeft,Color.white,FontStyle.Normal);
+  var statsBlock=Text(content,"LV."+hs.Level+"   POWER "+BattleSimulator.HeroPower(hs).ToString("N0")+"   STARS "+hs.Stars+"/"+StarRules.MaxStars(d.Rarity)+"\n"+p.FactionToken.DisplayName+"  "+EchoLanguage.Divider+"  "+d.Role,26,TextAnchor.MiddleLeft,Color.white,FontStyle.Normal);
   Set(statsBlock.rectTransform,new Vector2(.06f,.37f),new Vector2(.94f,.45f),Vector2.zero,Vector2.zero);
   var destinyBlock=Text(content,p.Destiny==null?"":"FIRST TIMELINE: "+p.Destiny.FirstTimelineFate+"\n\n"+p.SignatureLine+"\n\n"+EchoLanguage.FractureMark+" "+p.Destiny.Secret,21,TextAnchor.UpperLeft,C(AwakenedRealmsVisualTheme.RealmSilver),FontStyle.Normal);
   Set(destinyBlock.rectTransform,new Vector2(.06f,.18f),new Vector2(.94f,.36f),Vector2.zero,Vector2.zero);
-  var back=Button(content,"BACK TO ROSTER",()=>Show(View.Heroes));Set(back.GetComponent<RectTransform>(),new Vector2(.18f,.04f),new Vector2(.82f,.14f),Vector2.zero,Vector2.zero);
+  var starUp=Button(content,StarUpLabel(detailHeroId),()=>{if(s.TryStarUp(detailHeroId))Motion.Punch(stage,MotionTokens.RarityPulseScale*3f,.30f);Show(View.HeroDetail);});
+  Set(starUp.GetComponent<RectTransform>(),new Vector2(.08f,.04f),new Vector2(.46f,.14f),Vector2.zero,Vector2.zero);
+  starUp.GetComponent<Image>().color=C(p.RarityToken.Plate);
+  var back=Button(content,"BACK TO ROSTER",()=>Show(View.Heroes));Set(back.GetComponent<RectTransform>(),new Vector2(.54f,.04f),new Vector2(.92f,.14f),Vector2.zero,Vector2.zero);
   back.GetComponent<Image>().color=C(p.FactionToken.Core);
   Motion.RevealLayers(stage.GetComponentsInChildren<RectTransform>(true).Where(x=>x!=stage&&x.parent==stage).ToList());
  }
@@ -254,6 +257,16 @@ public sealed class IdleSlimeUI : MonoBehaviour {
  }
 
  int TeamPower(){int p=0;foreach(string id in s.Formation.Slots)p+=BattleSimulator.HeroPower(s.Heroes[id]);return p;}
+ string StarUpLabel(string heroId){
+  HeroState hs;
+  if(!s.Heroes.TryGetValue(heroId,out hs))return "STAR UP";
+  var d=HeroCatalog.Get(heroId);
+  if(d==null)return "STAR UP";
+  if(StarRules.IsMaxed(d.Rarity,hs.Stars))return "MAX STARS\n"+hs.Stars+"★";
+  var r=StarRules.Requirement(d.Rarity,hs.Stars);
+  if(r==null)return "STAR UP";
+  return "STAR UP  "+hs.Stars+"→"+(hs.Stars+1)+"★\n"+r.SameHeroCopies+" COPY  +  "+r.FodderCount+"x "+r.FodderStars+"★ "+r.FodderRarity+" FODDER";
+ }
  static string Stars(RarityVisualToken r){return new string('★',r.StarCount);}
  void Card(int order,float ymin,float ymax,string a,string b,Color c){
   var r=Rect(a,content,new Vector2(.05f,ymin),new Vector2(.95f,ymax),Vector2.zero,Vector2.zero);Panel(r,"card_standard");
