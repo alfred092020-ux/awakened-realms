@@ -930,11 +930,11 @@ PlayerSettings:
   captureStartupLogs: {}
   activeInputHandler: 0
   windowsGamepadBackendHint: 0
-  cloudProjectId: b0e15099-57b0-445f-a5e9-623caa21f79f
+  cloudProjectId: 8a9f4d9a-7dc9-4f16-8ed3-fc5e97f88dff
   framebufferDepthMemorylessMode: 0
   qualitySettingsNames: []
-  projectName: 
-  organizationId: 
+  projectName: idle-rpg-slime-adventure
+  organizationId: 22326b1f-d695-40ed-0000-12405d9a6105
   cloudEnabled: 0
   legacyClampBlendShapeWeights: 0
   hmiLoadingImage: {fileID: 0}
