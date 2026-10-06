@@ -1,0 +1,795 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5fc3143f36bf48019eb35f739fedd29d, type: 3}
+  m_Name: VisualCatalog
+  m_EditorClassIdentifier: Assembly-CSharp::AwakenedRealm.Presentation.GeneratedVisualCatalog
+  entries:
+  - key: badge.achievement
+    kind: 8
+    sprite: {fileID: 21300000, guid: 7abaaa60574b2efe5b98fab107db64f3, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/meta-ui/badge_achievement_1.png
+    isConceptReferenceOnly: 0
+  - key: badge.daily
+    kind: 8
+    sprite: {fileID: 21300000, guid: caed2ec695e8956968b58d1f0f5df7bf, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/meta-ui/badge_daily_1.png
+    isConceptReferenceOnly: 0
+  - key: badge.event
+    kind: 8
+    sprite: {fileID: 21300000, guid: d83621180be136bd1ba6458ee92f18de, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/meta-ui/badge_event_1.png
+    isConceptReferenceOnly: 0
+  - key: badge.quest
+    kind: 8
+    sprite: {fileID: 21300000, guid: 8aaed9ff57df8cc3fbd1687735401759, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/meta-ui/badge_quest_1.png
+    isConceptReferenceOnly: 0
+  - key: boss.eclipse_sovereign
+    kind: 2
+    sprite: {fileID: 21300000, guid: 086614e3487f547c9b8ac6a04d9197ee, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/bosses/eclipse_sovereign_3.png
+    isConceptReferenceOnly: 0
+  - key: boss.ember_titan
+    kind: 2
+    sprite: {fileID: 21300000, guid: df7193bd9c2282335bb686c555e69fa7, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/bosses/ember_titan_3.png
+    isConceptReferenceOnly: 0
+  - key: boss.fallen_seraph
+    kind: 2
+    sprite: {fileID: 21300000, guid: c1a059097a3506bf6b3197501a94cb60, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/bosses/boss_fallen_seraph_2.png
+    isConceptReferenceOnly: 0
+  - key: boss.tide_leviathan
+    kind: 2
+    sprite: {fileID: 21300000, guid: 8081c696681402b1494ba040689f035b, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/bosses/tide_leviathan_1.png
+    isConceptReferenceOnly: 0
+  - key: boss.worldroot_guardian
+    kind: 2
+    sprite: {fileID: 21300000, guid: 07b159cb51150a5a1afff54f5e4d196c, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/bosses/worldroot_guardian_2.png
+    isConceptReferenceOnly: 0
+  - key: campaign.node.boss
+    kind: 7
+    sprite: {fileID: 21300000, guid: 72430a3b597a82d50889f271f900efe1, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/meta-ui/node_boss_1.png
+    isConceptReferenceOnly: 0
+  - key: campaign.node.elite
+    kind: 7
+    sprite: {fileID: 21300000, guid: b6e0d4ca8700144b8a367cfd7ba73d13, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/meta-ui/node_elite_2.png
+    isConceptReferenceOnly: 0
+  - key: campaign.node.locked
+    kind: 7
+    sprite: {fileID: 21300000, guid: 0b41925fda887d94c9c7deda45da1470, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/meta-ui/node_locked_2.png
+    isConceptReferenceOnly: 0
+  - key: campaign.node.normal
+    kind: 7
+    sprite: {fileID: 21300000, guid: 895b07abb90d71f49bc48d98b1b79f38, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/meta-ui/node_normal_1.png
+    isConceptReferenceOnly: 0
+  - key: ceremony.chapter_clear
+    kind: 10
+    sprite: {fileID: 21300000, guid: f00c71bf891ef34db89f3c6b29be23a9, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/progression/chapter_clear_2.png
+    isConceptReferenceOnly: 0
+  - key: ceremony.duplicate_convert
+    kind: 10
+    sprite: {fileID: 21300000, guid: 367506fd63e5874f39eeedd51c0fdb05, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/progression/duplicate_convert_2.png
+    isConceptReferenceOnly: 0
+  - key: ceremony.fodder_merge
+    kind: 10
+    sprite: {fileID: 21300000, guid: d957a18fbba11436099dae45e59945af, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/progression/fodder_merge_2.png
+    isConceptReferenceOnly: 0
+  - key: ceremony.gear_upgrade
+    kind: 10
+    sprite: {fileID: 21300000, guid: 41da9c1d451e63abb998218bee962d6e, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/progression/gear_upgrade_2.png
+    isConceptReferenceOnly: 0
+  - key: ceremony.idle_claim
+    kind: 10
+    sprite: {fileID: 21300000, guid: d29dfea756baed77498aeab5697264e2, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/progression/idle_claim_2.png
+    isConceptReferenceOnly: 0
+  - key: ceremony.levelup
+    kind: 10
+    sprite: {fileID: 21300000, guid: 2f4c3069ca0f6632db9f27fbead3dd31, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/progression/levelup_2.png
+    isConceptReferenceOnly: 0
+  - key: ceremony.powerup
+    kind: 10
+    sprite: {fileID: 21300000, guid: 3eb24cc4d7af582fcaa2c39fa681eab5, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/progression/powerup_2.png
+    isConceptReferenceOnly: 0
+  - key: ceremony.skill_unlock
+    kind: 10
+    sprite: {fileID: 21300000, guid: 1b2a19b290e1dff5eb7f58abb751b754, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/progression/skill_unlock_2.png
+    isConceptReferenceOnly: 0
+  - key: chapter.01.background
+    kind: 1
+    sprite: {fileID: 21300000, guid: 93b76cbadbcb565198686e2cd354ac46, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/world/chapter01_dawnreach_2.png
+    isConceptReferenceOnly: 0
+  - key: chapter.02.background
+    kind: 1
+    sprite: {fileID: 21300000, guid: e25ed4cfe4e25f4c79a21d23d5264040, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/world/chapter02_verdant_2.png
+    isConceptReferenceOnly: 0
+  - key: chapter.03.background
+    kind: 1
+    sprite: {fileID: 21300000, guid: 66393f79888591afe8057214d34c6166, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/world/chapter03_ember_2.png
+    isConceptReferenceOnly: 0
+  - key: chapter.04.background
+    kind: 1
+    sprite: {fileID: 21300000, guid: a33057d640bc89d59914246208e55a6f, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/world/chapter04_tide_2.png
+    isConceptReferenceOnly: 0
+  - key: chapter.05.background
+    kind: 1
+    sprite: {fileID: 21300000, guid: dbffc033332d758a9a60b2c92ba16a04, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/world/chapter05_frost_2.png
+    isConceptReferenceOnly: 0
+  - key: chapter.06.background
+    kind: 1
+    sprite: {fileID: 21300000, guid: c04f30415fa73d208882b06c1f9c806b, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/world/chapter06_umbral_2.png
+    isConceptReferenceOnly: 0
+  - key: chapter.07.background
+    kind: 1
+    sprite: {fileID: 21300000, guid: 8a8e0adbb392d342c9e09ebb11f1e5b4, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/world/chapter07_desert_1.png
+    isConceptReferenceOnly: 0
+  - key: chapter.08.background
+    kind: 1
+    sprite: {fileID: 21300000, guid: a7b5101f090c8bc35b6b4dfc94e99c47, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/world/chapter08_crystal_2.png
+    isConceptReferenceOnly: 0
+  - key: chapter.09.background
+    kind: 1
+    sprite: {fileID: 21300000, guid: 121c8ef8c0c2ea5729951af19f7b2a72, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/world/chapter09_celestial_2.png
+    isConceptReferenceOnly: 0
+  - key: chapter.10.background
+    kind: 1
+    sprite: {fileID: 21300000, guid: 5eb9a8ee474004ae7adb83ff600c71dc, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/world/chapter10_rift_2.png
+    isConceptReferenceOnly: 0
+  - key: enemy.ember_golem_2
+    kind: 3
+    sprite: {fileID: 21300000, guid: 8763f58a1fdad65f5b2821d39fdaf706, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/enemies/ember_golem_2.png
+    isConceptReferenceOnly: 0
+  - key: enemy.ember_hound_2
+    kind: 3
+    sprite: {fileID: 21300000, guid: 87bb2c1349a9859a0a4a0f00261dd7d9, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/enemies/ember_hound_2.png
+    isConceptReferenceOnly: 0
+  - key: enemy.ember_raider_2
+    kind: 3
+    sprite: {fileID: 21300000, guid: ec0a049b84101a4d89863f1550556722, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/enemies/ember_raider_2.png
+    isConceptReferenceOnly: 0
+  - key: enemy.radiant_knight_2
+    kind: 3
+    sprite: {fileID: 21300000, guid: 557cc8e9d8e3bf242a926888a8b98c81, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/enemies/radiant_knight_2.png
+    isConceptReferenceOnly: 0
+  - key: enemy.radiant_sentinel_1
+    kind: 3
+    sprite: {fileID: 21300000, guid: 9a14680e264021b7b9bf262c6dc3a2e9, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/enemies/radiant_sentinel_1.png
+    isConceptReferenceOnly: 0
+  - key: enemy.radiant_wisp_2
+    kind: 3
+    sprite: {fileID: 21300000, guid: 3bda37c4b4189a7a68a00c2744443cdb, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/enemies/radiant_wisp_2.png
+    isConceptReferenceOnly: 0
+  - key: enemy.tide_guard_2
+    kind: 3
+    sprite: {fileID: 21300000, guid: a787c0c696f04478db7b4a5f96c22e25, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/enemies/tide_guard_2.png
+    isConceptReferenceOnly: 0
+  - key: enemy.tide_serpent_2
+    kind: 3
+    sprite: {fileID: 21300000, guid: 7e1422d5d623abaf899617a2bd983b96, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/enemies/tide_serpent_2.png
+    isConceptReferenceOnly: 0
+  - key: enemy.tide_wisp_1
+    kind: 3
+    sprite: {fileID: 21300000, guid: 370d1d62e97a3dd05923f4ca61b87495, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/enemies/tide_wisp_1.png
+    isConceptReferenceOnly: 0
+  - key: enemy.umbral_acolyte_1
+    kind: 3
+    sprite: {fileID: 21300000, guid: 50a9db1fbfc32c16c8578c4b8f742b1d, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/enemies/umbral_acolyte_1.png
+    isConceptReferenceOnly: 0
+  - key: enemy.umbral_construct_2
+    kind: 3
+    sprite: {fileID: 21300000, guid: 97282cccefa579cb5ba320b4a293cc80, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/enemies/umbral_construct_2.png
+    isConceptReferenceOnly: 0
+  - key: enemy.umbral_stalker_1
+    kind: 3
+    sprite: {fileID: 21300000, guid: 003a5c0dc435386dbb80a0c89f57665e, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/enemies/umbral_stalker_1.png
+    isConceptReferenceOnly: 0
+  - key: enemy.verdant_dryad_2
+    kind: 3
+    sprite: {fileID: 21300000, guid: 6f71648118e3394d8bfb4080cbacb1ed, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/enemies/verdant_dryad_2.png
+    isConceptReferenceOnly: 0
+  - key: enemy.verdant_golem_2
+    kind: 3
+    sprite: {fileID: 21300000, guid: e2f8ac6f040c0ebbbb356369be528769, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/enemies/verdant_golem_2.png
+    isConceptReferenceOnly: 0
+  - key: enemy.verdant_wolf_2
+    kind: 3
+    sprite: {fileID: 21300000, guid: 5fb796438ff56398eae69bdafc159baf, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/enemies/verdant_wolf_2.png
+    isConceptReferenceOnly: 0
+  - key: equipment.ember_armor_2
+    kind: 4
+    sprite: {fileID: 21300000, guid: 4d4440ce6f560414b9705bcc6b140694, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/equipment/ember_armor_2.png
+    isConceptReferenceOnly: 0
+  - key: equipment.ember_boots_1
+    kind: 4
+    sprite: {fileID: 21300000, guid: aae8c87887421a5c88a6c41a6e2ea6ae, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/equipment/ember_boots_1.png
+    isConceptReferenceOnly: 0
+  - key: equipment.ember_helm_1
+    kind: 4
+    sprite: {fileID: 21300000, guid: fd8d0790d6fbe35c8a594e700aa342ab, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/equipment/ember_helm_1.png
+    isConceptReferenceOnly: 0
+  - key: equipment.ember_relic_2
+    kind: 4
+    sprite: {fileID: 21300000, guid: b1bbd15320fa8e502853486284afeedb, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/equipment/ember_relic_2.png
+    isConceptReferenceOnly: 0
+  - key: equipment.ember_weapon_2
+    kind: 4
+    sprite: {fileID: 21300000, guid: d8b43f56e8863252d8568022eb7eef8e, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/equipment/ember_weapon_2.png
+    isConceptReferenceOnly: 0
+  - key: equipment.radiant_armor_2
+    kind: 4
+    sprite: {fileID: 21300000, guid: f067ea71c6b07f9229326b84deefa675, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/equipment/radiant_armor_2.png
+    isConceptReferenceOnly: 0
+  - key: equipment.radiant_boots_1
+    kind: 4
+    sprite: {fileID: 21300000, guid: 104e01334652d22a08e287b54de25eb5, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/equipment/radiant_boots_1.png
+    isConceptReferenceOnly: 0
+  - key: equipment.radiant_helm_2
+    kind: 4
+    sprite: {fileID: 21300000, guid: 549f16fe8c7eca423b3c83ebe29c9dcc, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/equipment/radiant_helm_2.png
+    isConceptReferenceOnly: 0
+  - key: equipment.radiant_relic_1
+    kind: 4
+    sprite: {fileID: 21300000, guid: 12aa29c2cda934f6c99ee1718a2cc851, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/equipment/radiant_relic_1.png
+    isConceptReferenceOnly: 0
+  - key: equipment.radiant_weapon_2
+    kind: 4
+    sprite: {fileID: 21300000, guid: a91a6fca2ab501fd59910af3b450a4c4, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/equipment/radiant_weapon_2.png
+    isConceptReferenceOnly: 0
+  - key: equipment.tide_armor_2
+    kind: 4
+    sprite: {fileID: 21300000, guid: 92789a5557b09380697da673dace61b2, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/equipment/tide_armor_2.png
+    isConceptReferenceOnly: 0
+  - key: equipment.tide_boots_2
+    kind: 4
+    sprite: {fileID: 21300000, guid: 926bf923ca17d32fa98dc83928d336f0, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/equipment/tide_boots_2.png
+    isConceptReferenceOnly: 0
+  - key: equipment.tide_helm_2
+    kind: 4
+    sprite: {fileID: 21300000, guid: 9bce280c4155b29d3ac049c2edbad0a3, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/equipment/tide_helm_2.png
+    isConceptReferenceOnly: 0
+  - key: equipment.tide_relic_2
+    kind: 4
+    sprite: {fileID: 21300000, guid: 20f6d3de4440d3e64bee242e9baf645b, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/equipment/tide_relic_2.png
+    isConceptReferenceOnly: 0
+  - key: equipment.tide_weapon_1
+    kind: 4
+    sprite: {fileID: 21300000, guid: c66d503bc6bfc9535a28850c56b39424, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/equipment/tide_weapon_1.png
+    isConceptReferenceOnly: 0
+  - key: equipment.umbral_armor_2
+    kind: 4
+    sprite: {fileID: 21300000, guid: 6f3326fdde4f7fd0c901cb90d5095220, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/equipment/umbral_armor_2.png
+    isConceptReferenceOnly: 0
+  - key: equipment.umbral_boots_2
+    kind: 4
+    sprite: {fileID: 21300000, guid: c6ee61ccf9b34fe7da8f1279c6538a9b, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/equipment/umbral_boots_2.png
+    isConceptReferenceOnly: 0
+  - key: equipment.umbral_helm_2
+    kind: 4
+    sprite: {fileID: 21300000, guid: bb9c6b2c1ba314d14ad4d358abb06cd7, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/equipment/umbral_helm_2.png
+    isConceptReferenceOnly: 0
+  - key: equipment.umbral_relic_2
+    kind: 4
+    sprite: {fileID: 21300000, guid: 8aee9490289c9cd12b3f2f27d4db42f3, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/equipment/umbral_relic_2.png
+    isConceptReferenceOnly: 0
+  - key: equipment.umbral_weapon_1
+    kind: 4
+    sprite: {fileID: 21300000, guid: fa82e597fdb788a2f94740fc7e670d5d, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/equipment/umbral_weapon_1.png
+    isConceptReferenceOnly: 0
+  - key: equipment.verdant_armor_1
+    kind: 4
+    sprite: {fileID: 21300000, guid: 2a7234d5659fc743a83d038d561e10e8, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/equipment/verdant_armor_1.png
+    isConceptReferenceOnly: 0
+  - key: equipment.verdant_boots_2
+    kind: 4
+    sprite: {fileID: 21300000, guid: 039bb3ac86f5e591a817ea7435ab526c, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/equipment/verdant_boots_2.png
+    isConceptReferenceOnly: 0
+  - key: equipment.verdant_helm_2
+    kind: 4
+    sprite: {fileID: 21300000, guid: e9960c1d1d9ce8a3ba9cc9e090d1085e, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/equipment/verdant_helm_2.png
+    isConceptReferenceOnly: 0
+  - key: equipment.verdant_relic_2
+    kind: 4
+    sprite: {fileID: 21300000, guid: eb41ed735d3925b758cdb6394b3f6e67, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/equipment/verdant_relic_2.png
+    isConceptReferenceOnly: 0
+  - key: equipment.verdant_weapon_1
+    kind: 4
+    sprite: {fileID: 21300000, guid: 2326a51b7f3897e5983fb3399c9c102d, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/equipment/verdant_weapon_1.png
+    isConceptReferenceOnly: 0
+  - key: evolution.aura.ember.11
+    kind: 9
+    sprite: {fileID: 21300000, guid: 892bb214c1b48328584e71564cb65f0c, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/evolution-auras/ember_evo11_2.png
+    isConceptReferenceOnly: 0
+  - key: evolution.aura.ember.13
+    kind: 9
+    sprite: {fileID: 21300000, guid: 03eb65cdd0e667c9a868b96461e6b5d2, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/evolution-auras/ember_evo13_2.png
+    isConceptReferenceOnly: 0
+  - key: evolution.aura.ember.15
+    kind: 9
+    sprite: {fileID: 21300000, guid: 3b2f5944a2afcbb61888f81f83362570, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/evolution-auras/ember_evo15_2.png
+    isConceptReferenceOnly: 0
+  - key: evolution.aura.ember.8
+    kind: 9
+    sprite: {fileID: 21300000, guid: b0909bcec13d85066969c1dee6363c97, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/evolution-auras/ember_evo8_2.png
+    isConceptReferenceOnly: 0
+  - key: evolution.aura.radiant.11
+    kind: 9
+    sprite: {fileID: 21300000, guid: c0cc61d5184307bff93a7d2f8b67d609, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/evolution-auras/radiant_evo11_2.png
+    isConceptReferenceOnly: 0
+  - key: evolution.aura.radiant.13
+    kind: 9
+    sprite: {fileID: 21300000, guid: 51eb0fb76d95e5109b9cade4ceea9f5b, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/evolution-auras/radiant_evo13_2.png
+    isConceptReferenceOnly: 0
+  - key: evolution.aura.radiant.15
+    kind: 9
+    sprite: {fileID: 21300000, guid: 05ea70b4f0ed468bbbb5f60241f19985, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/evolution-auras/radiant_evo15_2.png
+    isConceptReferenceOnly: 0
+  - key: evolution.aura.radiant.8
+    kind: 9
+    sprite: {fileID: 21300000, guid: 97f4a9e23087090b9ab5c7aed489d8a7, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/evolution-auras/radiant_evo8_2.png
+    isConceptReferenceOnly: 0
+  - key: evolution.aura.tide.11
+    kind: 9
+    sprite: {fileID: 21300000, guid: 2e1f0968351d3f5b7957a5db14dd30ba, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/evolution-auras/tide_evo11_2.png
+    isConceptReferenceOnly: 0
+  - key: evolution.aura.tide.13
+    kind: 9
+    sprite: {fileID: 21300000, guid: 2263d1aab731f41888e31dfe6af1d8a5, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/evolution-auras/tide_evo13_2.png
+    isConceptReferenceOnly: 0
+  - key: evolution.aura.tide.15
+    kind: 9
+    sprite: {fileID: 21300000, guid: 3fe92691f628f40e097ce0688988c44b, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/evolution-auras/tide_evo15_2.png
+    isConceptReferenceOnly: 0
+  - key: evolution.aura.tide.8
+    kind: 9
+    sprite: {fileID: 21300000, guid: 4ed04d9bb4cb4152ebfc4d5d4159c050, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/evolution-auras/tide_evo8_2.png
+    isConceptReferenceOnly: 0
+  - key: evolution.aura.umbral.11
+    kind: 9
+    sprite: {fileID: 21300000, guid: c730eac164218dc9c91940fed5d11ce8, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/evolution-auras/umbral_evo11_2.png
+    isConceptReferenceOnly: 0
+  - key: evolution.aura.umbral.13
+    kind: 9
+    sprite: {fileID: 21300000, guid: a1a5812ed3e2e0eb190cd45701010e3f, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/evolution-auras/umbral_evo13_2.png
+    isConceptReferenceOnly: 0
+  - key: evolution.aura.umbral.15
+    kind: 9
+    sprite: {fileID: 21300000, guid: cfc4803d66fe8bc18a9eee705d91d74f, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/evolution-auras/umbral_evo15_2.png
+    isConceptReferenceOnly: 0
+  - key: evolution.aura.umbral.8
+    kind: 9
+    sprite: {fileID: 21300000, guid: a04c3856304db9eb199c84ecc72d7e2d, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/evolution-auras/umbral_evo8_2.png
+    isConceptReferenceOnly: 0
+  - key: evolution.aura.verdant.11
+    kind: 9
+    sprite: {fileID: 21300000, guid: ebfff39a65d1469caa34ae1499d027da, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/evolution-auras/verdant_evo11_2.png
+    isConceptReferenceOnly: 0
+  - key: evolution.aura.verdant.13
+    kind: 9
+    sprite: {fileID: 21300000, guid: 685d6ebf109e18218ad076108d6d44c3, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/evolution-auras/verdant_evo13_2.png
+    isConceptReferenceOnly: 0
+  - key: evolution.aura.verdant.15
+    kind: 9
+    sprite: {fileID: 21300000, guid: 33e73c1fbe8471cec821425d6ececcfc, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/evolution-auras/verdant_evo15_2.png
+    isConceptReferenceOnly: 0
+  - key: evolution.aura.verdant.8
+    kind: 9
+    sprite: {fileID: 21300000, guid: ac12415239562137f89a7568ffec45e2, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/evolution-auras/verdant_evo8_2.png
+    isConceptReferenceOnly: 0
+  - key: icon.achievement
+    kind: 8
+    sprite: {fileID: 21300000, guid: bd89b10a7d77ccfc79015b204d7c2824, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/ui-icons/achievement_1.png
+    isConceptReferenceOnly: 0
+  - key: icon.arena_token
+    kind: 8
+    sprite: {fileID: 21300000, guid: 8bfad18488debd53fafcbae1d71c4c72, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/ui-icons/arena_token_2.png
+    isConceptReferenceOnly: 0
+  - key: icon.ascension
+    kind: 8
+    sprite: {fileID: 21300000, guid: 25ac1028730cc5864aaacc829a942092, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/ui-icons/ascension_2.png
+    isConceptReferenceOnly: 0
+  - key: icon.boss
+    kind: 8
+    sprite: {fileID: 21300000, guid: 07592121b96e7ea4d84899fed9f4913d, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/ui-icons/boss_2.png
+    isConceptReferenceOnly: 0
+  - key: icon.daily
+    kind: 8
+    sprite: {fileID: 21300000, guid: b99f6255a9e10802baf4a13023d866a1, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/ui-icons/daily_2.png
+    isConceptReferenceOnly: 0
+  - key: icon.energy
+    kind: 8
+    sprite: {fileID: 21300000, guid: 4c54ee87d80fab856ad8a0988ee8b27a, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/ui-icons/energy_1.png
+    isConceptReferenceOnly: 0
+  - key: icon.friends
+    kind: 8
+    sprite: {fileID: 21300000, guid: caf31eda50c8052249058efffcddf440, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/ui-icons/friends_2.png
+    isConceptReferenceOnly: 0
+  - key: icon.gems
+    kind: 8
+    sprite: {fileID: 21300000, guid: 5be97f0aa0e116602a684bbbe359f61c, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/ui-icons/gems_1.png
+    isConceptReferenceOnly: 0
+  - key: icon.gold
+    kind: 8
+    sprite: {fileID: 21300000, guid: 099b17dda7d7ee3d3b4747cc66ecf017, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/ui-icons/gold_2.png
+    isConceptReferenceOnly: 0
+  - key: icon.guild_coin
+    kind: 8
+    sprite: {fileID: 21300000, guid: ee442e12508e74182b5c9fee53a5a81e, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/ui-icons/guild_coin_2.png
+    isConceptReferenceOnly: 0
+  - key: icon.hero_xp
+    kind: 8
+    sprite: {fileID: 21300000, guid: ed7bc72d45a65cc6ba0e73c4aa04fdff, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/ui-icons/hero_xp_1.png
+    isConceptReferenceOnly: 0
+  - key: icon.inventory
+    kind: 8
+    sprite: {fileID: 21300000, guid: 8cada28c35e9aff8fb7093c72c2c6e97, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/ui-icons/inventory_2.png
+    isConceptReferenceOnly: 0
+  - key: icon.mail
+    kind: 8
+    sprite: {fileID: 21300000, guid: caba487e909b7dcb39755680f847ad74, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/ui-icons/mail_1.png
+    isConceptReferenceOnly: 0
+  - key: icon.quest
+    kind: 8
+    sprite: {fileID: 21300000, guid: 31e61c583509fd484969426a3d0fec23, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/ui-icons/quest_2.png
+    isConceptReferenceOnly: 0
+  - key: icon.raid_token
+    kind: 8
+    sprite: {fileID: 21300000, guid: f61b1fcbaa3f4d4c29d46c641f56bc30, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/ui-icons/raid_token_1.png
+    isConceptReferenceOnly: 0
+  - key: icon.settings
+    kind: 8
+    sprite: {fileID: 21300000, guid: e26d082377a3aa15d8744752fba48cd7, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/ui-icons/settings_2.png
+    isConceptReferenceOnly: 0
+  - key: icon.shop
+    kind: 8
+    sprite: {fileID: 21300000, guid: e82ddc9424024b9469a4f7ec49c7dd1f, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/ui-icons/shop_1.png
+    isConceptReferenceOnly: 0
+  - key: icon.ticket.advanced
+    kind: 8
+    sprite: {fileID: 21300000, guid: f12532e33c8edf293a762683c9bba8c6, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/ui-icons/advanced_ticket_1.png
+    isConceptReferenceOnly: 0
+  - key: icon.ticket.basic
+    kind: 8
+    sprite: {fileID: 21300000, guid: 1854dd5a5747e0b2ab068d669022cad5, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/ui-icons/basic_ticket_2.png
+    isConceptReferenceOnly: 0
+  - key: icon.tower
+    kind: 8
+    sprite: {fileID: 21300000, guid: 38993a6d5250dfe3695d4ea024137c01, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/ui-icons/tower_1.png
+    isConceptReferenceOnly: 0
+  - key: meta.power_rating
+    kind: 8
+    sprite: {fileID: 21300000, guid: 982ca1cb99e487d4b88788602aaf1ee4, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/meta-ui/power_rating_2.png
+    isConceptReferenceOnly: 0
+  - key: rarity.frame.epic
+    kind: 5
+    sprite: {fileID: 21300000, guid: ff479a58a6211fefea789d9ba9f5794a, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/meta-ui/frame_epic_1.png
+    isConceptReferenceOnly: 0
+  - key: rarity.frame.legendary
+    kind: 5
+    sprite: {fileID: 21300000, guid: b79c75a6914e34c1882f4d9672b11a77, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/meta-ui/frame_legendary_2.png
+    isConceptReferenceOnly: 0
+  - key: rarity.frame.mythic
+    kind: 5
+    sprite: {fileID: 21300000, guid: 9b81963a1e34900aa91a38e6e87f4811, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/meta-ui/frame_mythic_2.png
+    isConceptReferenceOnly: 0
+  - key: rarity.frame.rare
+    kind: 5
+    sprite: {fileID: 21300000, guid: 7d983caf52bcf30198135c368728bc55, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/meta-ui/frame_rare_1.png
+    isConceptReferenceOnly: 0
+  - key: role.attacker
+    kind: 6
+    sprite: {fileID: 21300000, guid: d77758422f9f60ba9b28d0ee0f1487fa, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/meta-ui/role_attacker_2.png
+    isConceptReferenceOnly: 0
+  - key: role.defender
+    kind: 6
+    sprite: {fileID: 21300000, guid: df5f940af614c1c3f92108ebe33ba93d, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/meta-ui/role_defender_1.png
+    isConceptReferenceOnly: 0
+  - key: role.support
+    kind: 6
+    sprite: {fileID: 21300000, guid: da2539c396b7a52e79b92fc54f0d7fa5, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/meta-ui/role_support_1.png
+    isConceptReferenceOnly: 0
+  - key: screen.arena
+    kind: 0
+    sprite: {fileID: 21300000, guid: 965e29882b68408de8d21f0501d24260, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/backgrounds/arena_v2_2.png
+    isConceptReferenceOnly: 0
+  - key: screen.battle
+    kind: 0
+    sprite: {fileID: 21300000, guid: 0193289148d1f45eeb7cd0c3201266b1, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/backgrounds/battle_v1_2.png
+    isConceptReferenceOnly: 0
+  - key: screen.campaign
+    kind: 0
+    sprite: {fileID: 21300000, guid: 6dc712fb2061236d6a2202808d204123, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/backgrounds/campaign_v1_2.png
+    isConceptReferenceOnly: 0
+  - key: screen.coop
+    kind: 0
+    sprite: {fileID: 21300000, guid: 08f0766884b93a0c8a2a999c10b790b5, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/backgrounds/coop_v2_1.png
+    isConceptReferenceOnly: 0
+  - key: screen.guild
+    kind: 0
+    sprite: {fileID: 21300000, guid: fe46ca5e9cad90932a7b58d30e2144d2, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/backgrounds/guild_v2_1.png
+    isConceptReferenceOnly: 0
+  - key: screen.inventory
+    kind: 0
+    sprite: {fileID: 21300000, guid: a3c88b624fd3f44f5b2f0e25ac4b9af0, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/backgrounds/inventory_v2_2.png
+    isConceptReferenceOnly: 0
+  - key: screen.leaderboard
+    kind: 0
+    sprite: {fileID: 21300000, guid: 950329de2801fb06ab73b95376ad6d77, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/backgrounds/leaderboard_v2_1.png
+    isConceptReferenceOnly: 0
+  - key: screen.loading
+    kind: 0
+    sprite: {fileID: 21300000, guid: c3c3abb09c6091397b7d1df78cf351eb, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/backgrounds/loading_v2_2.png
+    isConceptReferenceOnly: 0
+  - key: screen.lobby.alt
+    kind: 0
+    sprite: {fileID: 21300000, guid: cd5bcc099aaa6fd9b89425aeb82d8223, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/backgrounds/lobby_v1_2.png
+    isConceptReferenceOnly: 0
+  - key: screen.lobby.day
+    kind: 0
+    sprite: {fileID: 21300000, guid: aefa4946ff2c0ef3b96cd7ec3ab4189d, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/backgrounds/lobby_day_v2_1.png
+    isConceptReferenceOnly: 0
+  - key: screen.lobby.night
+    kind: 0
+    sprite: {fileID: 21300000, guid: 6844ba8165a85612fbbde010e645102d, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/backgrounds/lobby_night_v2_1.png
+    isConceptReferenceOnly: 0
+  - key: screen.login
+    kind: 0
+    sprite: {fileID: 21300000, guid: 38ee70bda747ea19890eab39fa7e474a, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/backgrounds/login_v1_2.png
+    isConceptReferenceOnly: 0
+  - key: screen.login.night
+    kind: 0
+    sprite: {fileID: 21300000, guid: 743efb7cbfab43fe788a2579c6c8a93e, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/backgrounds/login_night_v2_2.png
+    isConceptReferenceOnly: 0
+  - key: screen.mail
+    kind: 0
+    sprite: {fileID: 21300000, guid: 45673e04697dc02afab50f6e1419ab5e, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/backgrounds/mail_v2_2.png
+    isConceptReferenceOnly: 0
+  - key: screen.roster
+    kind: 0
+    sprite: {fileID: 21300000, guid: bb0894ba988d1ecd0985dcccbf08311c, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/backgrounds/hero_roster_v2_1.png
+    isConceptReferenceOnly: 0
+  - key: screen.shop
+    kind: 0
+    sprite: {fileID: 21300000, guid: 47a00beb35ac4ca778bcd8e1e816c8f2, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/backgrounds/shop_v2_2.png
+    isConceptReferenceOnly: 0
+  - key: screen.splash
+    kind: 0
+    sprite: {fileID: 21300000, guid: 1ad21511a8beb9d4d80ca3d357656f17, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/backgrounds/splash_v1_2.png
+    isConceptReferenceOnly: 0
+  - key: screen.summon
+    kind: 0
+    sprite: {fileID: 21300000, guid: fc14259e4d0270b719fb4d090c612535, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/backgrounds/summon_v1_2.png
+    isConceptReferenceOnly: 0
+  - key: screen.tower
+    kind: 0
+    sprite: {fileID: 21300000, guid: c597578260df63a66a9ed2f55101a0c9, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/backgrounds/tower_v2_1.png
+    isConceptReferenceOnly: 0
+  - key: starup.ceremony.epic
+    kind: 10
+    sprite: {fileID: 21300000, guid: afe6bbd8598140bb093d4011902108ea, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/progression/epic_starup_2.png
+    isConceptReferenceOnly: 0
+  - key: starup.ceremony.legendary
+    kind: 10
+    sprite: {fileID: 21300000, guid: 2c5b46a2866b368a8b543a68da8b6c99, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/progression/legendary_starup_2.png
+    isConceptReferenceOnly: 0
+  - key: starup.ceremony.mythic
+    kind: 10
+    sprite: {fileID: 21300000, guid: 37f417b912f268f8db49517acfdffdd5, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/progression/mythic_starup_2.png
+    isConceptReferenceOnly: 0
+  - key: starup.ceremony.rare
+    kind: 10
+    sprite: {fileID: 21300000, guid: fcbb8563b69f3dbe7b7c2a3f1acf4e8d, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/progression/rare_starup_2.png
+    isConceptReferenceOnly: 0
+  - key: summon.portal.epic
+    kind: 11
+    sprite: {fileID: 21300000, guid: d37e75cfdea47edc5aa5505014a5191e, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/meta-ui/summon_portal_epic_1.png
+    isConceptReferenceOnly: 0
+  - key: summon.portal.legendary
+    kind: 11
+    sprite: {fileID: 21300000, guid: 1472cb2a9d1abf551bf020a72211a211, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/meta-ui/summon_portal_legendary_1.png
+    isConceptReferenceOnly: 0
+  - key: summon.portal.mythic
+    kind: 11
+    sprite: {fileID: 21300000, guid: 96abfe2548c229ad0a9c180b31d7361f, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/meta-ui/summon_portal_mythic_1.png
+    isConceptReferenceOnly: 0
+  - key: summon.portal.rare
+    kind: 11
+    sprite: {fileID: 21300000, guid: 4ada07ed2ec4dc592bf5bbb23343ad1c, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/meta-ui/summon_portal_rare_1.png
+    isConceptReferenceOnly: 0
+  - key: summon.reveal.epic
+    kind: 10
+    sprite: {fileID: 21300000, guid: f43b953eb74f3e45e97c841c102c50c5, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/progression/summon_epic_2.png
+    isConceptReferenceOnly: 0
+  - key: summon.reveal.legendary
+    kind: 10
+    sprite: {fileID: 21300000, guid: 501c8e27f03a3e93a97e01eb39f277cc, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/progression/summon_legendary_2.png
+    isConceptReferenceOnly: 0
+  - key: summon.reveal.mythic
+    kind: 10
+    sprite: {fileID: 21300000, guid: 1ff33a8f1300c7cd3900965ea90a7109, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/progression/summon_mythic_2.png
+    isConceptReferenceOnly: 0
+  - key: summon.reveal.rare
+    kind: 10
+    sprite: {fileID: 21300000, guid: ed95aa17252abed44aa5f20eb85211dc, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/progression/summon_rare_2.png
+    isConceptReferenceOnly: 0
+  - key: world.event.festival
+    kind: 1
+    sprite: {fileID: 21300000, guid: 2ff38f77dd6f17d9193b897a4904cf4d, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/world/event_festival_2.png
+    isConceptReferenceOnly: 0
+  - key: world.guild_raid_hall
+    kind: 1
+    sprite: {fileID: 21300000, guid: 652fd426cd7289075a61ef21e4c00342, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/world/guild_raid_hall_1.png
+    isConceptReferenceOnly: 0
+  - key: world.pvp_arena
+    kind: 1
+    sprite: {fileID: 21300000, guid: cd592e92bf1f5f89eb19a5a77c0bcaed, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/world/pvp_arena_2.png
+    isConceptReferenceOnly: 0
+  - key: world.raid_dragon
+    kind: 1
+    sprite: {fileID: 21300000, guid: bb29dd3e21dd094df9179ea7d4cd871c, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/world/raid_dragon_1.png
+    isConceptReferenceOnly: 0
+  - key: world.raid_titan
+    kind: 1
+    sprite: {fileID: 21300000, guid: 396cf3ecb0ae51c9f93174dae082adaa, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/world/raid_titan_1.png
+    isConceptReferenceOnly: 0
+  - key: world.tutorial
+    kind: 1
+    sprite: {fileID: 21300000, guid: 89861ea9d7c8799abbfafdc363a6e374, type: 3}
+    sourceAssetPath: Assets/AwakenedRealmsGenerated/Concepts/world/tutorial_1.png
+    isConceptReferenceOnly: 0

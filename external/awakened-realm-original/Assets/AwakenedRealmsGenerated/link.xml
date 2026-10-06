@@ -1,0 +1,5 @@
+<linker>
+  <assembly fullname="Unity.2D.Animation.Runtime">
+    <type fullname="UnityEngine.U2D.Animation.SpriteSkin" preserve="all"/>
+  </assembly>
+</linker>

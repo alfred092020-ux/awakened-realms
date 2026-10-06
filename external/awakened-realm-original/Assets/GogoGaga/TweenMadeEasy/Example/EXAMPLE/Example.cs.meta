@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: 97b922f7cb7fea94e908ccfda329e77f
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 228711
+  packageName: Tween Animations Made Easy || Visual Editor For Leantween
+  packageVersion: 1.1.2
+  assetPath: Assets/GogoGaga/TweenMadeEasy/Example/EXAMPLE/Example.cs
+  uploadId: 571333
