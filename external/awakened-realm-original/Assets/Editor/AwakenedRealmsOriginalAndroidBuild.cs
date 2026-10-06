@@ -21,6 +21,19 @@ public static class AwakenedRealmsOriginalAndroidBuild
         Debug.Log("AWAKENED_REALMS_ORIGINAL_DEV_APK=" + output);
     }
 
+    public static void BuildQaSideBySideApk()
+    {
+        ConfigureCommon();
+        PlayerSettings.SetApplicationIdentifier(BuildTargetGroup.Android, "com.nexuscoreinc.awakenedrealms.qa");
+        PlayerSettings.Android.useCustomKeystore = false;
+        EditorUserBuildSettings.buildAppBundle = false;
+
+        var output = Path.GetFullPath("Builds/Android/AwakenedRealms-QA-SideBySide.apk");
+        Directory.CreateDirectory(Path.GetDirectoryName(output));
+        Build(output, BuildOptions.Development);
+        Debug.Log("AWAKENED_REALMS_QA_SIDEBYSIDE_APK=" + output);
+    }
+
     public static void ConfigureProductionProject()
     {
         ConfigureCommon();
@@ -40,11 +53,11 @@ public static class AwakenedRealmsOriginalAndroidBuild
         PlayerSettings.Android.targetArchitectures = AndroidArchitecture.ARM64;
         PlayerSettings.SetScriptingBackend(BuildTargetGroup.Android, ScriptingImplementation.IL2CPP);
 
-        PlayerSettings.defaultInterfaceOrientation = UIOrientation.LandscapeLeft;
-        PlayerSettings.allowedAutorotateToPortrait = false;
+        PlayerSettings.defaultInterfaceOrientation = UIOrientation.Portrait;
+        PlayerSettings.allowedAutorotateToPortrait = true;
         PlayerSettings.allowedAutorotateToPortraitUpsideDown = false;
-        PlayerSettings.allowedAutorotateToLandscapeLeft = true;
-        PlayerSettings.allowedAutorotateToLandscapeRight = true;
+        PlayerSettings.allowedAutorotateToLandscapeLeft = false;
+        PlayerSettings.allowedAutorotateToLandscapeRight = false;
     }
 
     static void Build(string output, BuildOptions options)
