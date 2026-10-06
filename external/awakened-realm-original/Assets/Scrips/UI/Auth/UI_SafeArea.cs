@@ -12,6 +12,8 @@ namespace AwakenedRealm.UI
     {
         private RectTransform _rect;
         private Rect _lastSafeArea;
+        private bool _isApplying;
+        private const float LayoutEpsilon = 0.0001f;
 
         private void Awake()
         {
@@ -20,7 +22,10 @@ namespace AwakenedRealm.UI
 
         private void OnEnable() => Apply();
 
-        private void OnRectTransformDimensionsChange() => Apply();
+        private void OnRectTransformDimensionsChange()
+        {
+            if (!_isApplying) Apply();
+        }
 
         private void Update()
         {
@@ -29,7 +34,7 @@ namespace AwakenedRealm.UI
 
         private void Apply()
         {
-            if (_rect == null || _rect.parent == null) return;
+            if (_isApplying || _rect == null || _rect.parent == null) return;
 
             _lastSafeArea = Screen.safeArea;
             Rect safe = _lastSafeArea;
@@ -40,10 +45,18 @@ namespace AwakenedRealm.UI
             Vector2 anchorMin = new Vector2(safe.xMin / sw, safe.yMin / sh);
             Vector2 anchorMax = new Vector2(safe.xMax / sw, safe.yMax / sh);
 
-            _rect.anchorMin = anchorMin;
-            _rect.anchorMax = anchorMax;
-            _rect.offsetMin = Vector2.zero;
-            _rect.offsetMax = Vector2.zero;
+            _isApplying = true;
+            try
+            {
+                if ((_rect.anchorMin - anchorMin).sqrMagnitude > LayoutEpsilon * LayoutEpsilon) _rect.anchorMin = anchorMin;
+                if ((_rect.anchorMax - anchorMax).sqrMagnitude > LayoutEpsilon * LayoutEpsilon) _rect.anchorMax = anchorMax;
+                if (_rect.offsetMin.sqrMagnitude > LayoutEpsilon * LayoutEpsilon) _rect.offsetMin = Vector2.zero;
+                if (_rect.offsetMax.sqrMagnitude > LayoutEpsilon * LayoutEpsilon) _rect.offsetMax = Vector2.zero;
+            }
+            finally
+            {
+                _isApplying = false;
+            }
         }
     }
 }

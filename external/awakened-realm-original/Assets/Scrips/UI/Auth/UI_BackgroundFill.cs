@@ -16,6 +16,8 @@ namespace AwakenedRealm.UI
 
         private RectTransform _rect;
         private Sprite _lastSprite;
+        private bool _isApplying;
+        private const float LayoutEpsilon = 0.01f;
 
         private void Awake()
         {
@@ -25,11 +27,14 @@ namespace AwakenedRealm.UI
 
         private void OnEnable() => Apply();
 
-        private void OnRectTransformDimensionsChange() => Apply();
+        private void OnRectTransformDimensionsChange()
+        {
+            if (!_isApplying) Apply();
+        }
 
         public void Apply()
         {
-            if (_rect == null) return;
+            if (_isApplying || _rect == null) return;
             RectTransform parent = _rect.parent as RectTransform;
             if (parent == null) return;
 
@@ -58,10 +63,22 @@ namespace AwakenedRealm.UI
                 w = parentH * spriteAspect;
             }
 
-            _rect.anchorMin = _rect.anchorMax = new Vector2(0.5f, 0.5f);
-            _rect.pivot = new Vector2(0.5f, 0.5f);
-            _rect.anchoredPosition = Vector2.zero;
-            _rect.sizeDelta = new Vector2(w, h) * _fillScale;
+            Vector2 center = new Vector2(0.5f, 0.5f);
+            Vector2 targetSize = new Vector2(w, h) * _fillScale;
+
+            _isApplying = true;
+            try
+            {
+                if ((_rect.anchorMin - center).sqrMagnitude > LayoutEpsilon * LayoutEpsilon) _rect.anchorMin = center;
+                if ((_rect.anchorMax - center).sqrMagnitude > LayoutEpsilon * LayoutEpsilon) _rect.anchorMax = center;
+                if ((_rect.pivot - center).sqrMagnitude > LayoutEpsilon * LayoutEpsilon) _rect.pivot = center;
+                if (_rect.anchoredPosition.sqrMagnitude > LayoutEpsilon * LayoutEpsilon) _rect.anchoredPosition = Vector2.zero;
+                if ((_rect.sizeDelta - targetSize).sqrMagnitude > LayoutEpsilon * LayoutEpsilon) _rect.sizeDelta = targetSize;
+            }
+            finally
+            {
+                _isApplying = false;
+            }
         }
     }
 }
