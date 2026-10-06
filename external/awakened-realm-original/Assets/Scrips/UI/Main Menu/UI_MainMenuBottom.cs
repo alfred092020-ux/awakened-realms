@@ -10,6 +10,8 @@ namespace AwakenedRealm.UI
 
         [SerializeField] UI_Slide _slideUI;
 
+        bool _navigatingAway;
+
         void Start()
         {
             _slideUI.Execute();
@@ -33,6 +35,16 @@ namespace AwakenedRealm.UI
         {
             if (btnType == MainMenuButtonType.battle)
             {
+                // Latch so rapid re-taps cannot enqueue duplicate scene loads.
+                if (_navigatingAway) return;
+
+                if (!Application.CanStreamedLevelBeLoaded("Battle"))
+                {
+                    Debug.LogWarning("[MainMenuBottom] Battle scene is not in Build Settings; staying on MainMenu.");
+                    return;
+                }
+
+                _navigatingAway = true;
                 // just the load the scene for now
                 UnityEngine.SceneManagement.SceneManager.LoadScene("Battle");
             }

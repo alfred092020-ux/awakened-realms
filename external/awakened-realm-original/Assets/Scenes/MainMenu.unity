@@ -4776,7 +4776,7 @@ MonoBehaviour:
   _label: {fileID: 900001022}
   _badge: {fileID: 900001036}
   _badgeText: SOON
-  _comingSoon: 0
+  _comingSoon: 1
   _canvasGroup: {fileID: 0}
 --- !u!114 &900001040
 MonoBehaviour:
@@ -5992,7 +5992,7 @@ MonoBehaviour:
   _label: {fileID: 900001222}
   _badge: {fileID: 900001236}
   _badgeText: SOON
-  _comingSoon: 1
+  _comingSoon: 0
   _canvasGroup: {fileID: 0}
 --- !u!114 &900001240
 MonoBehaviour:
@@ -6600,7 +6600,7 @@ MonoBehaviour:
   _label: {fileID: 900001322}
   _badge: {fileID: 900001336}
   _badgeText: SOON
-  _comingSoon: 1
+  _comingSoon: 0
   _canvasGroup: {fileID: 0}
 --- !u!114 &900001340
 MonoBehaviour:
@@ -9613,6 +9613,23 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::AwakenedRealm.UI.UI_LobbyNavRail
   _slideUI: {fileID: 900000203}
+  _destinations:
+  - button: {fileID: 900001005}
+    sceneName: 
+  - button: {fileID: 900001105}
+    sceneName: HeroRoster
+  - button: {fileID: 900001205}
+    sceneName: Summon
+  - button: {fileID: 900001305}
+    sceneName: Equipment
+  - button: {fileID: 900001405}
+    sceneName: 
+  - button: {fileID: 900001505}
+    sceneName: 
+  - button: {fileID: 900001605}
+    sceneName: 
+  - button: {fileID: 900001705}
+    sceneName: 
 --- !u!1 &900000250
 GameObject:
   m_ObjectHideFlags: 0

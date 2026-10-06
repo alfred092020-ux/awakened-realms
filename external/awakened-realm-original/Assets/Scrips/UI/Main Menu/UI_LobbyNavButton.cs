@@ -31,6 +31,9 @@ namespace AwakenedRealm.UI
 
         public bool IsComingSoon => _comingSoon;
 
+        /// <summary>Underlying Unity button the rail hooks for navigation.</summary>
+        public Button Button => _button;
+
         public void SetBadge(string text)
         {
             _badgeText = text;
