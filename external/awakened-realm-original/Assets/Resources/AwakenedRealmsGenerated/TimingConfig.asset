@@ -1,0 +1,39 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8077384e51dd4e52a3c14fb910cad266, type: 3}
+  m_Name: TimingConfig
+  m_EditorClassIdentifier: Assembly-CSharp::AwakenedRealm.Presentation.PresentationTimingConfig
+  fades:
+    fadeOut: 0.35
+    fadeIn: 0.35
+    holdBlack: 0.15
+  summon:
+    portalIdle: 1.2
+    rarityReveal: 0.9
+    heroReveal: 0.8
+    resultLinger: 1
+  ultimate:
+    backplateIn: 0.25
+    cutIn: 0.55
+    impactDelay: 0.15
+    backplateOut: 0.3
+  starUp:
+    auraBuild: 0.7
+    starBurst: 0.45
+    statReveal: 0.9
+    settle: 0.6
+  battleFeedback:
+    hitFlash: 0.08
+    hitShake: 0.12
+    critFlash: 0.14
+    critShake: 0.22
+    damageNumber: 0.7

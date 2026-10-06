@@ -1,0 +1,624 @@
+fileFormatVersion: 2
+guid: 2d6a1887ce79aea4bb6ea60ab2eb255b
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: -1963603174356034923
+    second: Multiplayer Room ended_0
+  - first:
+      213: 1505835312474670613
+    second: Multiplayer Room ended_1
+  - first:
+      213: -4885836192800933923
+    second: Multiplayer Room ended_2
+  - first:
+      213: -6705145074283843179
+    second: Multiplayer Room ended_3
+  - first:
+      213: 1811920794578050478
+    second: Multiplayer Room ended_4
+  - first:
+      213: -7716940943630734914
+    second: Multiplayer Room ended_5
+  - first:
+      213: 7493056700321723625
+    second: Multiplayer Room ended_6
+  - first:
+      213: -1824087639256880762
+    second: Multiplayer Room ended_7
+  - first:
+      213: -1929718295967796195
+    second: Multiplayer Room ended_8
+  - first:
+      213: 453365195509678434
+    second: Multiplayer Room ended_9
+  - first:
+      213: -3477485447847638372
+    second: Multiplayer Room ended_10
+  - first:
+      213: -7552780094983696313
+    second: Multiplayer Room ended_11
+  - first:
+      213: 1144872961795996526
+    second: Multiplayer Room ended_12
+  - first:
+      213: 4556918969914995177
+    second: Multiplayer Room ended_13
+  - first:
+      213: -3576279184263459517
+    second: Multiplayer Room ended_14
+  - first:
+      213: 4180978935898937107
+    second: Multiplayer Room ended_15
+  - first:
+      213: -8712129257140029427
+    second: Multiplayer Room ended_16
+  - first:
+      213: -5115390263742933256
+    second: Multiplayer Room ended_17
+  - first:
+      213: 8237953343241913920
+    second: Multiplayer Room ended_18
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 1
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 2
+  spriteExtrude: 1
+  spriteMeshType: 1
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 100
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationDetail: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 4
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Android
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: Multiplayer Room ended_0
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 118
+        width: 85
+        height: 63
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 59adda80151efb4e0800000000000000
+      internalID: -1963603174356034923
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Multiplayer Room ended_1
+      rect:
+        serializedVersion: 2
+        x: 84
+        y: 119
+        width: 68
+        height: 61
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 516ca4a0d3dc5e410800000000000000
+      internalID: 1505835312474670613
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Multiplayer Room ended_2
+      rect:
+        serializedVersion: 2
+        x: 155
+        y: 120
+        width: 52
+        height: 60
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: dd77a517ed5023cb0800000000000000
+      internalID: -4885836192800933923
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Multiplayer Room ended_3
+      rect:
+        serializedVersion: 2
+        x: 206
+        y: 120
+        width: 58
+        height: 61
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 591f9df841a82f2a0800000000000000
+      internalID: -6705145074283843179
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Multiplayer Room ended_4
+      rect:
+        serializedVersion: 2
+        x: 266
+        y: 120
+        width: 30
+        height: 60
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: eadd7f9dc5c352910800000000000000
+      internalID: 1811920794578050478
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Multiplayer Room ended_5
+      rect:
+        serializedVersion: 2
+        x: 301
+        y: 120
+        width: 53
+        height: 60
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: eb9e83e091be7e490800000000000000
+      internalID: -7716940943630734914
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Multiplayer Room ended_6
+      rect:
+        serializedVersion: 2
+        x: 357
+        y: 120
+        width: 52
+        height: 60
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 9e479887e5facf760800000000000000
+      internalID: 7493056700321723625
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Multiplayer Room ended_7
+      rect:
+        serializedVersion: 2
+        x: 405
+        y: 120
+        width: 69
+        height: 61
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 689a9eed4f98fa6e0800000000000000
+      internalID: -1824087639256880762
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Multiplayer Room ended_8
+      rect:
+        serializedVersion: 2
+        x: 466
+        y: 120
+        width: 119
+        height: 61
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: d1474441f634835e0800000000000000
+      internalID: -1929718295967796195
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Multiplayer Room ended_9
+      rect:
+        serializedVersion: 2
+        x: 588
+        y: 120
+        width: 67
+        height: 60
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 26141e74e3daa4600800000000000000
+      internalID: 453365195509678434
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Multiplayer Room ended_10
+      rect:
+        serializedVersion: 2
+        x: 675
+        y: 120
+        width: 67
+        height: 60
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c9a8371e86d7dbfc0800000000000000
+      internalID: -3477485447847638372
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Multiplayer Room ended_11
+      rect:
+        serializedVersion: 2
+        x: 740
+        y: 119
+        width: 71
+        height: 62
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7401bdb15822f2790800000000000000
+      internalID: -7552780094983696313
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Multiplayer Room ended_12
+      rect:
+        serializedVersion: 2
+        x: 815
+        y: 119
+        width: 71
+        height: 62
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e6bbcc894e763ef00800000000000000
+      internalID: 1144872961795996526
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Multiplayer Room ended_13
+      rect:
+        serializedVersion: 2
+        x: 886
+        y: 118
+        width: 85
+        height: 63
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 9e1b508d8ad6d3f30800000000000000
+      internalID: 4556918969914995177
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Multiplayer Room ended_14
+      rect:
+        serializedVersion: 2
+        x: 324
+        y: 0
+        width: 52
+        height: 61
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 34d4a54a7018e5ec0800000000000000
+      internalID: -3576279184263459517
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Multiplayer Room ended_15
+      rect:
+        serializedVersion: 2
+        x: 378
+        y: 0
+        width: 72
+        height: 61
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 31795afb032d50a30800000000000000
+      internalID: 4180978935898937107
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Multiplayer Room ended_16
+      rect:
+        serializedVersion: 2
+        x: 453
+        y: 0
+        width: 67
+        height: 60
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: d0871e6799c481780800000000000000
+      internalID: -8712129257140029427
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Multiplayer Room ended_17
+      rect:
+        serializedVersion: 2
+        x: 524
+        y: 0
+        width: 52
+        height: 61
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 8f65c1a58ab7209b0800000000000000
+      internalID: -5115390263742933256
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Multiplayer Room ended_18
+      rect:
+        serializedVersion: 2
+        x: 579
+        y: 0
+        width: 67
+        height: 60
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 0460d2c4be6135270800000000000000
+      internalID: 8237953343241913920
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    customData: 
+    physicsShape: []
+    bones: []
+    spriteID: 
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    spriteCustomMetadata:
+      entries: []
+    nameFileIdTable:
+      Multiplayer Room ended_0: -1963603174356034923
+      Multiplayer Room ended_1: 1505835312474670613
+      Multiplayer Room ended_10: -3477485447847638372
+      Multiplayer Room ended_11: -7552780094983696313
+      Multiplayer Room ended_12: 1144872961795996526
+      Multiplayer Room ended_13: 4556918969914995177
+      Multiplayer Room ended_14: -3576279184263459517
+      Multiplayer Room ended_15: 4180978935898937107
+      Multiplayer Room ended_16: -8712129257140029427
+      Multiplayer Room ended_17: -5115390263742933256
+      Multiplayer Room ended_18: 8237953343241913920
+      Multiplayer Room ended_2: -4885836192800933923
+      Multiplayer Room ended_3: -6705145074283843179
+      Multiplayer Room ended_4: 1811920794578050478
+      Multiplayer Room ended_5: -7716940943630734914
+      Multiplayer Room ended_6: 7493056700321723625
+      Multiplayer Room ended_7: -1824087639256880762
+      Multiplayer Room ended_8: -1929718295967796195
+      Multiplayer Room ended_9: 453365195509678434
+  mipmapLimitGroupName: 
+  pSDRemoveMatte: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

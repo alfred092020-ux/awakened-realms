@@ -1,0 +1,676 @@
+fileFormatVersion: 2
+guid: 412f708e0df087c4bae1e30f6e254613
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: -6075284512011571183
+    second: Walter send you a friend request_0
+  - first:
+      213: 1085204880310573781
+    second: Walter send you a friend request_1
+  - first:
+      213: -1219061970236802094
+    second: Walter send you a friend request_2
+  - first:
+      213: -5958915851055266117
+    second: Walter send you a friend request_3
+  - first:
+      213: 6467332879444421240
+    second: Walter send you a friend request_4
+  - first:
+      213: -723023370031567351
+    second: Walter send you a friend request_5
+  - first:
+      213: -7057289112304007505
+    second: Walter send you a friend request_6
+  - first:
+      213: 8283221193501942404
+    second: Walter send you a friend request_7
+  - first:
+      213: 1681395303540512902
+    second: Walter send you a friend request_8
+  - first:
+      213: -7373090001112459033
+    second: Walter send you a friend request_9
+  - first:
+      213: 96213697598354117
+    second: Walter send you a friend request_10
+  - first:
+      213: -2920241247133095287
+    second: Walter send you a friend request_11
+  - first:
+      213: 7321596353059694671
+    second: Walter send you a friend request_12
+  - first:
+      213: -8491961646526044986
+    second: Walter send you a friend request_13
+  - first:
+      213: 6821782509773434364
+    second: Walter send you a friend request_14
+  - first:
+      213: -5167009307709871429
+    second: Walter send you a friend request_15
+  - first:
+      213: 6047156024769912548
+    second: Walter send you a friend request_16
+  - first:
+      213: 1466717143801786420
+    second: Walter send you a friend request_17
+  - first:
+      213: -1539345320052949131
+    second: Walter send you a friend request_18
+  - first:
+      213: -8720277437655642365
+    second: Walter send you a friend request_19
+  - first:
+      213: 820675087803583848
+    second: Walter send you a friend request_20
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 1
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 2
+  spriteExtrude: 1
+  spriteMeshType: 1
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 100
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationDetail: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 4
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Android
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: Walter send you a friend request_0
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 10
+        width: 45
+        height: 32
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 1103e10bce040bba0800000000000000
+      internalID: -6075284512011571183
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Walter send you a friend request_1
+      rect:
+        serializedVersion: 2
+        x: 34
+        y: 11
+        width: 53
+        height: 28
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 5da9e67c61c6f0f00800000000000000
+      internalID: 1085204880310573781
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Walter send you a friend request_2
+      rect:
+        serializedVersion: 2
+        x: 83
+        y: 11
+        width: 27
+        height: 28
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 2dbf8d0d895051fe0800000000000000
+      internalID: -1219061970236802094
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Walter send you a friend request_3
+      rect:
+        serializedVersion: 2
+        x: 109
+        y: 11
+        width: 25
+        height: 28
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: bb6086bea9dad4da0800000000000000
+      internalID: -5958915851055266117
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Walter send you a friend request_4
+      rect:
+        serializedVersion: 2
+        x: 133
+        y: 11
+        width: 32
+        height: 27
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 87a2d7b0df490c950800000000000000
+      internalID: 6467332879444421240
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Walter send you a friend request_5
+      rect:
+        serializedVersion: 2
+        x: 171
+        y: 10
+        width: 22
+        height: 28
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 90e66f0631e47f5f0800000000000000
+      internalID: -723023370031567351
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Walter send you a friend request_6
+      rect:
+        serializedVersion: 2
+        x: 192
+        y: 11
+        width: 25
+        height: 28
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: fa643e781f87f0e90800000000000000
+      internalID: -7057289112304007505
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Walter send you a friend request_7
+      rect:
+        serializedVersion: 2
+        x: 216
+        y: 10
+        width: 64
+        height: 29
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 482aba20ac9e3f270800000000000000
+      internalID: 8283221193501942404
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Walter send you a friend request_8
+      rect:
+        serializedVersion: 2
+        x: 287
+        y: 11
+        width: 32
+        height: 27
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 688da82ce14855710800000000000000
+      internalID: 1681395303540512902
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Walter send you a friend request_9
+      rect:
+        serializedVersion: 2
+        x: 315
+        y: 10
+        width: 32
+        height: 28
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7e815b255b58da990800000000000000
+      internalID: -7373090001112459033
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Walter send you a friend request_10
+      rect:
+        serializedVersion: 2
+        x: 346
+        y: 10
+        width: 31
+        height: 28
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 5c270e329d1d55100800000000000000
+      internalID: 96213697598354117
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Walter send you a friend request_11
+      rect:
+        serializedVersion: 2
+        x: 383
+        y: 11
+        width: 32
+        height: 28
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 98a203ece083977d0800000000000000
+      internalID: -2920241247133095287
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Walter send you a friend request_12
+      rect:
+        serializedVersion: 2
+        x: 421
+        y: 11
+        width: 23
+        height: 28
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f482be477198b9560800000000000000
+      internalID: 7321596353059694671
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Walter send you a friend request_13
+      rect:
+        serializedVersion: 2
+        x: 444
+        y: 11
+        width: 43
+        height: 27
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 6c4e294ffdd762a80800000000000000
+      internalID: -8491961646526044986
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Walter send you a friend request_14
+      rect:
+        serializedVersion: 2
+        x: 486
+        y: 11
+        width: 25
+        height: 28
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: cfda40e9c07dbae50800000000000000
+      internalID: 6821782509773434364
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Walter send you a friend request_15
+      rect:
+        serializedVersion: 2
+        x: 510
+        y: 10
+        width: 64
+        height: 29
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: bbae0de19681b48b0800000000000000
+      internalID: -5167009307709871429
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Walter send you a friend request_16
+      rect:
+        serializedVersion: 2
+        x: 583
+        y: 11
+        width: 52
+        height: 28
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 4ee16c58d50dbe350800000000000000
+      internalID: 6047156024769912548
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Walter send you a friend request_17
+      rect:
+        serializedVersion: 2
+        x: 636
+        y: 0
+        width: 48
+        height: 38
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 430f746a873da5410800000000000000
+      internalID: 1466717143801786420
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Walter send you a friend request_18
+      rect:
+        serializedVersion: 2
+        x: 666
+        y: 10
+        width: 54
+        height: 29
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 57f7593569523aae0800000000000000
+      internalID: -1539345320052949131
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Walter send you a friend request_19
+      rect:
+        serializedVersion: 2
+        x: 720
+        y: 10
+        width: 22
+        height: 28
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 30f8ea95fd95bf680800000000000000
+      internalID: -8720277437655642365
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Walter send you a friend request_20
+      rect:
+        serializedVersion: 2
+        x: 740
+        y: 11
+        width: 26
+        height: 28
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 86d8b8ce4af936b00800000000000000
+      internalID: 820675087803583848
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    customData: 
+    physicsShape: []
+    bones: []
+    spriteID: 
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    spriteCustomMetadata:
+      entries: []
+    nameFileIdTable:
+      Walter send you a friend request_0: -6075284512011571183
+      Walter send you a friend request_1: 1085204880310573781
+      Walter send you a friend request_10: 96213697598354117
+      Walter send you a friend request_11: -2920241247133095287
+      Walter send you a friend request_12: 7321596353059694671
+      Walter send you a friend request_13: -8491961646526044986
+      Walter send you a friend request_14: 6821782509773434364
+      Walter send you a friend request_15: -5167009307709871429
+      Walter send you a friend request_16: 6047156024769912548
+      Walter send you a friend request_17: 1466717143801786420
+      Walter send you a friend request_18: -1539345320052949131
+      Walter send you a friend request_19: -8720277437655642365
+      Walter send you a friend request_2: -1219061970236802094
+      Walter send you a friend request_20: 820675087803583848
+      Walter send you a friend request_3: -5958915851055266117
+      Walter send you a friend request_4: 6467332879444421240
+      Walter send you a friend request_5: -723023370031567351
+      Walter send you a friend request_6: -7057289112304007505
+      Walter send you a friend request_7: 8283221193501942404
+      Walter send you a friend request_8: 1681395303540512902
+      Walter send you a friend request_9: -7373090001112459033
+  mipmapLimitGroupName: 
+  pSDRemoveMatte: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

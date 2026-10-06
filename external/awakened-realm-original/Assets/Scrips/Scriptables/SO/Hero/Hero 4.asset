@@ -1,0 +1,32 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4fe54bbf72f118546865c3726cf017db, type: 3}
+  m_Name: Hero 4
+  m_EditorClassIdentifier: Assembly-CSharp::AwakenedRealm.Scriptables.HeroSO
+  _heroProfile:
+    HeroName: Guardian
+    HeroID: ar-legacy-009
+    HeroLevel: 0
+    Rank: 0
+    Category: 1
+    Rarity: 0
+    Stats:
+      Health: 500
+      ATK: 100
+      DEF: 20
+      MAG: 20
+      CRIT: 20
+      RES: 20
+      SPD: 50
+    IsUnlocked: 0
+  _heroSprite: {fileID: 21300000, guid: 8598e19c0a229e442828d98a4e49ec5f, type: 3}
+  _heroPrefab: {fileID: -6734777422601097665, guid: f88113d8fd61d184eb69cd56b90d5f88, type: 3}
