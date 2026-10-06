@@ -40,9 +40,181 @@ namespace AwakenedRealm.Services
                 {
                     IsSuccess = true,
                     DisplayName = res.InfoResultPayload.PlayerProfile.DisplayName,
-                    IsFirstTimeSignin = res.NewlyCreated
+                    IsFirstTimeSignin = res.NewlyCreated,
+                    Provider = AuthProviderKind.Email,
+                    PlayFabId = res.PlayFabId,
                 });
             }, err => { callback?.Invoke(new SigninResult() { IsSuccess = false, ErrorMsg = err.ErrorMessage }); });
+        }
+
+        /// <summary>
+        /// Real PlayFab Google login: accepts a server auth code previously
+        /// obtained from a Google provider and calls LoginWithGoogleAccount
+        /// with CreateAccount=true so a first-time Google user gets a real
+        /// PlayFab account. Never fabricates a credential or a success.
+        /// </summary>
+        public static void SignInWithGoogleAuthCode(string serverAuthCode, Action<SigninResult> callback)
+        {
+            if (string.IsNullOrEmpty(serverAuthCode))
+            {
+                callback?.Invoke(new SigninResult
+                {
+                    IsSuccess = false,
+                    ErrorMsg = "Google server auth code is empty",
+                    FailureKind = AuthFailureKind.CredentialFailed,
+                    Provider = AuthProviderKind.Google,
+                });
+                return;
+            }
+
+            var req = new LoginWithGoogleAccountRequest
+            {
+                ServerAuthCode = serverAuthCode,
+                CreateAccount = true,
+                InfoRequestParameters = new GetPlayerCombinedInfoRequestParams
+                {
+                    GetPlayerProfile = true,
+                },
+            };
+
+            PlayFabClientAPI.LoginWithGoogleAccount(req, res =>
+            {
+                callback?.Invoke(new SigninResult
+                {
+                    IsSuccess = true,
+                    DisplayName = res.InfoResultPayload?.PlayerProfile?.DisplayName,
+                    IsFirstTimeSignin = res.NewlyCreated,
+                    Provider = AuthProviderKind.Google,
+                    PlayFabId = res.PlayFabId,
+                });
+            }, err =>
+            {
+                callback?.Invoke(new SigninResult
+                {
+                    IsSuccess = false,
+                    ErrorMsg = err != null ? err.ErrorMessage : "Unknown PlayFab error",
+                    ErrorCode = err != null ? (int)err.Error : (int?)null,
+                    FailureKind = AuthFailureKind.PlayFabError,
+                    Provider = AuthProviderKind.Google,
+                });
+            });
+        }
+
+        /// <summary>
+        /// Links the currently authenticated PlayFab account (e.g. a guest) to a
+        /// Google identity, preserving the existing account and all of its
+        /// progress. forceLink is only used to recover from a stale mapping.
+        /// </summary>
+        public static void LinkGoogleAccount(string serverAuthCode, bool forceLink, Action<LinkResult> callback)
+        {
+            if (string.IsNullOrEmpty(serverAuthCode))
+            {
+                callback?.Invoke(new LinkResult
+                {
+                    IsSuccess = false,
+                    ErrorMsg = "Google server auth code is empty",
+                    FailureKind = AuthFailureKind.CredentialFailed,
+                    Provider = AuthProviderKind.Google,
+                });
+                return;
+            }
+
+            var req = new LinkGoogleAccountRequest
+            {
+                ServerAuthCode = serverAuthCode,
+                ForceLink = forceLink,
+            };
+
+            PlayFabClientAPI.LinkGoogleAccount(req, res =>
+            {
+                callback?.Invoke(new LinkResult
+                {
+                    IsSuccess = true,
+                    Provider = AuthProviderKind.Google,
+                });
+            }, err =>
+            {
+                callback?.Invoke(new LinkResult
+                {
+                    IsSuccess = false,
+                    ErrorMsg = err != null ? err.ErrorMessage : "Unknown PlayFab error",
+                    ErrorCode = err != null ? (int)err.Error : (int?)null,
+                    FailureKind = AuthFailureKind.PlayFabError,
+                    Provider = AuthProviderKind.Google,
+                });
+            });
+        }
+
+        /// <summary>
+        /// Attaches email/password credentials to the currently authenticated
+        /// account, letting a guest upgrade into a permanent login without
+        /// losing the PlayFab account or its progress.
+        /// </summary>
+        public static void AddUsernamePasswordToCurrentAccount(string email, string password, string username, Action<AuthResult> callback)
+        {
+            var req = new AddUsernamePasswordRequest
+            {
+                Email = email,
+                Password = password,
+                Username = username,
+            };
+
+            PlayFabClientAPI.AddUsernamePassword(req, res =>
+            {
+                callback?.Invoke(new AuthResult
+                {
+                    IsSuccess = true,
+                    DisplayName = res.Username,
+                });
+            }, err =>
+            {
+                callback?.Invoke(new AuthResult
+                {
+                    IsSuccess = false,
+                    ErrorMsg = err != null ? err.ErrorMessage : "Unknown PlayFab error",
+                    ErrorCode = err != null ? (int)err.Error : (int?)null,
+                    FailureKind = AuthFailureKind.PlayFabError,
+                });
+            });
+        }
+
+        /// <summary>
+        /// Links the current Android device id to the authenticated account so
+        /// device-bound guest recovery continues to work after upgrading.
+        /// </summary>
+        public static void LinkDeviceToCurrentAccount(Action<LinkResult> callback)
+        {
+#if UNITY_ANDROID && !UNITY_EDITOR
+            var req = new LinkAndroidDeviceIDRequest
+            {
+                AndroidDeviceId = PlayFabSettings.DeviceUniqueIdentifier,
+                AndroidDevice = SystemInfo.deviceModel,
+                OS = SystemInfo.operatingSystem,
+            };
+
+            PlayFabClientAPI.LinkAndroidDeviceID(req, res =>
+            {
+                callback?.Invoke(new LinkResult { IsSuccess = true, Provider = AuthProviderKind.Guest });
+            }, err =>
+            {
+                callback?.Invoke(new LinkResult
+                {
+                    IsSuccess = false,
+                    ErrorMsg = err != null ? err.ErrorMessage : "Unknown PlayFab error",
+                    ErrorCode = err != null ? (int)err.Error : (int?)null,
+                    FailureKind = AuthFailureKind.PlayFabError,
+                    Provider = AuthProviderKind.Guest,
+                });
+            });
+#else
+            callback?.Invoke(new LinkResult
+            {
+                IsSuccess = false,
+                ErrorMsg = "Device link is only available on Android",
+                FailureKind = AuthFailureKind.ProviderUnavailable,
+                Provider = AuthProviderKind.Guest,
+            });
+#endif
         }
 
         public static void Signup(SignupRequest request, Action<SignupResult> callback)

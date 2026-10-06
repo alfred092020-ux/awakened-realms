@@ -9,12 +9,45 @@ namespace AwakenedRealm.Models
 {
     #region Playfab Models
 
+    /// <summary>
+    /// Which identity provider produced a successful (or attempted) sign-in.
+    /// </summary>
+    public enum AuthProviderKind
+    {
+        Unknown = 0,
+        Email = 1,
+        Guest = 2,
+        Google = 3,
+        GooglePlayGames = 4,
+    }
+
+    /// <summary>
+    /// Coarse failure classification so UI can distinguish provider/config
+    /// problems (retryable, actionable) from PlayFab rejections without
+    /// parsing error strings.
+    /// </summary>
+    public enum AuthFailureKind
+    {
+        None = 0,
+        /// <summary>PlayFab returned an error response (bad credentials, throttling, etc).</summary>
+        PlayFabError = 1,
+        /// <summary>Required external configuration is absent (e.g. Google OAuth web client id).</summary>
+        ConfigRequired = 2,
+        /// <summary>The sign-in provider (SDK, Play services, platform) is unavailable.</summary>
+        ProviderUnavailable = 3,
+        /// <summary>User cancelled the provider sign-in flow.</summary>
+        Cancelled = 4,
+        /// <summary>The provider could not produce a valid credential.</summary>
+        CredentialFailed = 5,
+    }
+
     public class AuthResult
     {
         public bool IsSuccess;
         public string ErrorMsg;
         public string DisplayName;
         public int? ErrorCode;
+        public AuthFailureKind FailureKind = AuthFailureKind.None;
     }
 
     public class AuthRequest
@@ -29,10 +62,28 @@ namespace AwakenedRealm.Models
     public class SigninResult : AuthResult
     {
         public bool IsFirstTimeSignin = false;
+
+        /// <summary>Provider that produced this session (Email, Guest, Google, ...).</summary>
+        public AuthProviderKind Provider = AuthProviderKind.Unknown;
+
+        /// <summary>PlayFabId of the authenticated account (useful for link UI).</summary>
+        public string PlayFabId;
+
+        /// <summary>True when the session was created by an anonymous/guest credential.</summary>
+        public bool IsGuest => Provider == AuthProviderKind.Guest;
     }
 
     public class SignupResult : AuthResult
     {
+    }
+
+    /// <summary>
+    /// Result of linking an additional identity provider onto the currently
+    /// authenticated PlayFab account (the account, and its progress, is preserved).
+    /// </summary>
+    public class LinkResult : AuthResult
+    {
+        public AuthProviderKind Provider = AuthProviderKind.Unknown;
     }
 
     // REQUESTS
