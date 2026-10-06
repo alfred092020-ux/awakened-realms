@@ -25,10 +25,10 @@ namespace AwakenedRealm.UI
 
         [Header("Timing (unscaled seconds)")]
         [SerializeField] private float _splashFadeIn = 0.45f;
-        [SerializeField] private float _splashHold = 1.15f;
+        [SerializeField] private float _splashHold = 1.45f;
         [SerializeField] private float _brandFadeIn = 0.6f;
         [SerializeField] private float _brandHold = 1.35f;
-        [SerializeField] private float _fadeOut = 0.5f;
+        [SerializeField] private float _fadeOut = 0.4f;
 
         private RectTransform _brandRect;
         private Vector3 _brandScale;

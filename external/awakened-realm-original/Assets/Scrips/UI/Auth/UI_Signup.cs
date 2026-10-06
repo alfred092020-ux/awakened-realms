@@ -28,6 +28,14 @@ namespace AwakenedRealm.UI
 
         public UnityEvent OnSwitch;
 
+        private CanvasGroup _canvasGroup;
+
+        private void Awake()
+        {
+            // UI_Slide owns this group; used to ignore Back while sliding out.
+            _canvasGroup = GetComponent<CanvasGroup>();
+        }
+
         private void OnEnable()
         {
             _signupBtn.onClick.AddListener(HandleSignup);
@@ -42,6 +50,15 @@ namespace AwakenedRealm.UI
             _signupBtn.onClick.RemoveListener(HandleSignup);
             _alreadyHaveAnAccountBtn.onClick.RemoveListener(HandleAlreadyHaveAnAccount);
             //_signinMeAutomaticallyAfterCreatingAccountBtn.onClick.RemoveListener(HandleAutoSignin);
+        }
+
+        private void Update()
+        {
+            // Android system Back returns to Login while this panel is showing.
+            if (!Input.GetKeyDown(KeyCode.Escape)) return;
+            if (_canvasGroup == null) _canvasGroup = GetComponent<CanvasGroup>();
+            if (_canvasGroup != null && _canvasGroup.alpha <= 0.9f) return;
+            HandleAlreadyHaveAnAccount();
         }
 
 
