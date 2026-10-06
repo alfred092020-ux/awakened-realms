@@ -37,7 +37,9 @@ namespace AwakenedRealm
         /// </summary>
         void FillProfile()
         {
-            _profileUI.SetUI_Profile(ReusableData.Instance.GetPlayerProfileSO().GetPlayerData().Profile);
+            var data = ReusableData.Instance.GetPlayerProfileSO().GetPlayerData();
+            _profileUI.SetUI_Profile(data.Profile);
+            _profileUI.SetUI_Wallet(data.Wallet);
         }
 
         /// <summary>
